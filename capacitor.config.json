@@ -1,6 +1,6 @@
 {
-  "appId": "com.designerawei.infinitedream",
-  "appName": "无限梦境",
+  "appId": "com.designerawei.infinitedream.preview",
+  "appName": "无限梦境预览版",
   "webDir": "docs",
   "android": {
     "backgroundColor": "#120c1e",

@@ -39,7 +39,7 @@ jobs:
           # lock to landscape (either side), handle rotation/resize in the WebView
           sed -i 's#<activity#<activity android:screenOrientation="sensorLandscape"#' "$MAN"
           # immersive fullscreen activity
-          cp app/native/MainActivity.java android/app/src/main/java/com/designerawei/infinitedream/MainActivity.java
+          cp app/native/MainActivity.java android/app/src/main/java/com/designerawei/infinitedream/preview/MainActivity.java
           # launcher icons (pre-rendered from app/icon.png into app/res)
           rm -rf android/app/src/main/res/mipmap-anydpi-v26
           for d in app/res/mipmap-*; do
@@ -79,7 +79,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
-          name: 无限梦境 Infinite Dream 安卓版（最新构建）
+          name: 无限梦境预览版 安卓版（最新构建）
           body: |
             手机下载 `infinite-dream.apk` 安装即可（需允许"安装未知来源应用"）。
             横屏全屏运行，存档保存在本机；联机与网页版互通（房间码相同）。

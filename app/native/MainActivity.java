@@ -1,4 +1,4 @@
-package com.designerawei.infinitedream;
+package com.designerawei.infinitedream.preview;
 
 import android.os.Bundle;
 import android.view.View;
