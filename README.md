@@ -33,4 +33,4 @@ GitHub Pages：仓库 Settings → Pages → Deploy from branch → `main` / `do
 复刻自 [Designer-Awei/infinite-dream](https://github.com/Designer-Awei/infinite-dream)，保留源码、素材、许可和原提交历史。
 更新源与原生端分享地址指向本 preview 仓库。
 
-Android 自动打包需在本仓库配置原签名密钥 `ANDROID_KEYSTORE_B64`（密钥不随 Git 克隆）；iOS 流程生成未签名 IPA。原仓库的 Releases 安装包与仓库设置不随源码复制。
+Android 预览包使用每次构建自动生成的调试签名，无需配置签名变量；不同构建或正式版之间可能需卸载后重装，卸载会清除本机存档。iOS 流程生成未签名 IPA。原仓库的 Releases 安装包与仓库设置不随源码复制。
