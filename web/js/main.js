@@ -287,6 +287,7 @@ function frame(now) {
     if (consume("ult")) (inp.ult = true), (inp.castAim = { ...inp.castAim, ult: input.castAim.ult });
     if (consume("dash")) inp.dash = true;
   }
+  const networkDt = dt; // Hit stop / slow motion must not stall network packet cadence.
   if (g.hitStop > 0) {
     g.hitStop -= dt;
     dt = 0.0001;
@@ -296,9 +297,9 @@ function frame(now) {
     dt *= 0.3;
   }
   if (!frozen) {
-    if (g.mode === "client") app.net && app.net.clientTick(dt);
+    if (g.mode === "client") app.net && app.net.clientTick(dt, networkDt);
     else g.update(dt);
-    if (g.mode === "host") app.net && app.net.hostTick(dt);
+    if (g.mode === "host") app.net && app.net.hostTick(networkDt);
     fx.update(dt);
   }
   renderer.follow(g, me, dt);
