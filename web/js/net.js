@@ -1,6 +1,5 @@
 // Online play. The host runs the simulation; clients send input and render snapshots.
 // Transports: PeerJS WebRTC (static hosting, no account), BroadcastChannel (?local, two tabs), claude room (artifact).
-import { MotionBuffer } from "./net-motion.js";
 import { ENEMIES, CHARS, ELEM, GACHA, LOADOUT_SLOTS } from "./data.js";
 import { load, makeKit } from "./save.js";
 import * as UI from "./ui.js";
@@ -9,8 +8,7 @@ import { tileAt } from "./map.js";
 import { fireAttack } from "./skills.js";
 import { angTo } from "./util.js";
 
-const PREFIX = "aigirls-preview-net-v2-";
-const CRITICAL = new Set(["room", "tile", "cards", "over", "win", "pvpwin"]);
+const PREFIX = "aigirls-dungeon-v1-";
 const ALPH = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 const ICE = [
   { urls: "stun:stun.miwifi.com:3478" },
@@ -24,17 +22,10 @@ class LocalT {
   constructor(code, isHost) {
     this.id = isHost ? "host" : "c" + Math.random().toString(36).slice(2, 8);
     this.bc = new BroadcastChannel(PREFIX + code);
-    const params = new URLSearchParams(location.search);
-    const lag = +(params.get("lag") || 0);
-    const jitter = +(params.get("jitter") || 0), loss = +(params.get("loss") || 0);
-    let reliableAt = 0; // test hook: simulated one-way latency (ms)
+    const lag = +(new URLSearchParams(location.search).get("lag") || 0); // test hook: simulated one-way latency (ms)
     this.bc.onmessage = (e) => {
-      const fast = e.data.fast;
-      if (fast && Math.random() < loss) return;
-      const now = performance.now();
-      let at = now + Math.max(0, lag + (Math.random() * 2 - 1) * jitter);
-      if (!fast) reliableAt = at = Math.max(at, reliableAt + 0.01);
-      setTimeout(() => this.bc.onmessage2(e), Math.max(0, at - now));
+      if (lag) return void setTimeout(() => this.bc.onmessage2(e), lag * (0.8 + Math.random() * 0.4));
+      this.bc.onmessage2(e);
     };
     this.bc.onmessage2 = (e) => {
       const m = e.data;
@@ -46,8 +37,8 @@ class LocalT {
   async open() {
     if (this.id !== "host") this.onopen && this.onopen();
   }
-  send(to, data, fast = false) {
-    this.bc.postMessage({ from: this.id, to, data, fast });
+  send(to, data) {
+    this.bc.postMessage({ from: this.id, to, data });
   }
   close() {
     this.bc.close();
@@ -125,17 +116,6 @@ class PeerT {
   wire(c, onOpen) {
     c.on("open", () => {
       this.conns.set(c.peer, c);
-      // Both endpoints reserve the same SCTP stream. PeerJS keeps its reliable channel.
-      const dc = c.peerConnection.createDataChannel("realtime-v2", {
-        negotiated: true, id: 42, ordered: false, maxRetransmits: 0,
-      });
-      c.fast = dc;
-      dc.onmessage = e => {
-        let packet;
-        try { packet = JSON.parse(e.data); }
-        catch { console.warn("Invalid realtime packet"); return; }
-        this.onmsg && this.onmsg(this.isHost ? c.peer : "host", packet);
-      };
       onOpen && onOpen();
     });
     c.on("data", (d) => this.onmsg && this.onmsg(this.isHost ? c.peer : "host", d));
@@ -144,19 +124,11 @@ class PeerT {
       this.onleave && this.onleave(this.isHost ? c.peer : "host");
     });
   }
-  send(to, data, fast = false) {
-    const connections = to ? [this.isHost ? this.conns.get(to) : [...this.conns.values()][0]] : this.conns.values();
-    for (const c of connections) {
-      if (!c?.open) continue;
-      if (!fast) { c.send(data); continue; }
-      const dc = c.fast;
-      // Never queue stale movement behind congestion or fall back to the reliable stream.
-      if (dc?.readyState !== "open" || dc.bufferedAmount > 32768) { this.skipped = (this.skipped || 0) + 1; continue; }
-      const packet = JSON.stringify(data);
-      const limit = c.peerConnection.sctp?.maxMessageSize || 65536;
-      if (new TextEncoder().encode(packet).length > limit) { this.skipped = (this.skipped || 0) + 1; continue; }
-      try { dc.send(packet); } catch { this.skipped = (this.skipped || 0) + 1; }
-    }
+  send(to, data) {
+    if (to) {
+      const c = this.isHost ? this.conns.get(to) : [...this.conns.values()][0];
+      if (c && c.open) c.send(data);
+    } else for (const c of this.conns.values()) if (c.open) c.send(data);
   }
   close() {
     try {
@@ -205,10 +177,6 @@ export class Net {
     this.inT = 0;
     this.edges = { sk: false, ul: false, da: false };
     this.started = false;
-    this.seq = 0; this.epoch = 0; this.lastSeq = -1; this.inputSeq = 0;
-    this.motion = new MotionBuffer();
-    this.stats = { rtt: 0, jitter: 0, received: 0, stale: 0, gaps: 0, bytes: 0 };
-    this.pingAt = 0;
   }
   // ---------------- host
   async host(pvp, opt = {}) {
@@ -253,7 +221,6 @@ export class Net {
       this.showRoom();
       return;
     }
-    if (d.t === "ping") { this.t.send(from, { t: "pong", at: d.at }, true); return; }
     const mem = this.members.find((x) => x.peer === from);
     if (!mem) return;
     if (d.t === "cid" && !this.started && CHARS[d.cid]) {
@@ -266,28 +233,21 @@ export class Net {
     if (!g) return;
     const p = g.player(mem.id);
     if (!p) return;
-    if (d.t === "action") {
-      if (d.n <= (mem.actionSeq || 0) || d.epoch !== this.epoch) return;
-      mem.actionSeq = d.n;
-      if (d.sk) { p.input.skill = true; p.input.castAim = { ...p.input.castAim, skill: d.cs }; }
-      if (d.ul) { p.input.ult = true; p.input.castAim = { ...p.input.castAim, ult: d.cu }; }
-      if (d.da) p.input.dash = true;
-    } else if (d.t === "in") {
-      if (d.epoch !== this.epoch || d.n <= (mem.inputSeq || 0)) return;
-      mem.inputSeq = d.n;
-      const inputGap = performance.now() - (mem.lastInputAt || performance.now());
-      mem.lastInputAt = performance.now();
+    if (d.t === "in") {
       const i = p.input;
       i.mx = +d.mx || 0;
       i.my = +d.my || 0;
       i.atk = !!d.atk;
       i.aim = d.aim == null ? null : +d.aim;
+      if (d.sk) (i.skill = true), (i.castAim = { ...i.castAim, skill: d.cs });
+      if (d.ul) (i.ult = true), (i.castAim = { ...i.castAim, ult: d.cu });
+      if (d.da) i.dash = true;
       // client-authoritative movement (validated loosely)
-      if (!p.downed && Number.isFinite(d.x) && Number.isFinite(d.y) && Math.hypot(d.x - p.x, d.y - p.y) < 160 + Math.min(1, inputGap / 1000) * 600) {
-        if (!mem.motion) mem.motion = new MotionBuffer(0.05);
-        mem.motion.push(d.nt, new Map([[p.id, { x: d.x, y: d.y, face: p.face }]]));
+      if (!p.downed && typeof d.x === "number" && Math.hypot(d.x - p.x, d.y - p.y) < 160) {
+        p.x = d.x;
+        p.y = d.y;
       }
-    } else if (d.t === "pick" && d.epoch === this.epoch) g.pickCard(mem.id, d.card);
+    } else if (d.t === "pick") g.pickCard(mem.id, d.card);
   }
   dropMember(peer) {
     const i = this.members.findIndex((x) => x.peer === peer);
@@ -340,32 +300,10 @@ export class Net {
   hostTick(dt) {
     const g = this.app.game;
     if (!g) return;
-    for (const mem of this.members) {
-      const p = g.player(mem.id);
-      if (!p || mem.host) continue;
-      if (performance.now() - (mem.lastInputAt || 0) > 250) { p.input.mx = p.input.my = 0; p.input.atk = false; }
-      if (p.downed) mem.motion = null;
-      const pos = mem.motion?.sample().get(p.id);
-      if (pos && !p.downed) { p.x = pos.x; p.y = pos.y; }
-    }
     this.snapT -= dt;
     if (this.snapT > 0) return;
-    this.snapT += 1 / 20;
-    if (this.snapT < 0) this.snapT = 0;
-    const s = snapshot(g);
-    s.n = ++this.seq; s.nt = performance.now() / 1000;
-    if (s.ev.some(e => e.t === "room") || !this.sentBaseline) {
-      this.epoch++; this.sentBaseline = true;
-      for (const mem of this.members) { mem.motion = null; }
-      s.epoch = this.epoch;
-      this.t.send(null, { t: "sync", s });
-    } else {
-      s.epoch = this.epoch;
-      const events = s.ev.filter(e => CRITICAL.has(e.t));
-      if (events.length) this.t.send(null, { t: "event", epoch: this.epoch, n: s.n, ph: s.ph, ev: events });
-      s.ev = s.ev.filter(e => !CRITICAL.has(e.t));
-      this.t.send(null, s, true);
-    }
+    this.snapT = 1 / 20;
+    this.t.send(null, snapshot(g));
     g.events.length = 0;
   }
 
@@ -394,7 +332,6 @@ export class Net {
     }
   }
   send(d) {
-    if (d.t === "pick") d.epoch = this.epoch;
     this.t && this.t.send(this.isHost ? null : "host", d);
   }
   onClientMsg(d) {
@@ -418,74 +355,14 @@ export class Net {
         this.started = true;
         this.app.beginLoading({ mode: "client", pvp: d.pvp, seed: d.seed, players: d.players, myId: this.myId, opt: d.opt || {} });
         break;
-      case "pong": {
-        const rtt = performance.now() - d.at;
-        this.stats.rtt = this.stats.rtt ? this.stats.rtt * 0.8 + rtt * 0.2 : rtt;
-        break;
-      }
-      case "sync":
-        if (d.s.epoch <= this.epoch) break;
-        // Loading can finish after the reliable baseline arrives.
-        if (!this.app.game || this.app.game.mode !== "client") { this.pendingSync = d; break; }
-        this.epoch = d.s.epoch; this.lastSeq = d.s.n; this.lastEventSeq = 0;
-        this.motion = new MotionBuffer();
-        applySnapshot(this.app, d.s);
-        this.captureMotion(d.s);
-        this.flushEvents();
-        break;
-      case "event":
-        (this.pendingEvents ||= []).push(d);
-        this.flushEvents();
-        break;
       case "s":
-        this.receiveState(d);
+        applySnapshot(this.app, d);
         break;
     }
   }
-  captureMotion(s) {
-    const points = new Map();
-    for (const p of s.P) points.set("p" + p[0], { x: p[1], y: p[2], face: p[3] });
-    for (const b of s.B) points.set("b" + b[0], { x: b[3], y: b[4] });
-    for (const e of s.E) points.set("e" + e[0], { x: e[2], y: e[3], face: e[9] });
-    this.motion.push(s.nt, points);
-  }
-  receiveState(s) {
-    if (s.epoch !== this.epoch || !this.app.game || this.app.game.mode !== "client") return;
-    if (s.n <= this.lastSeq || s.n < (this.stateFloor || 0)) { this.stats.stale++; return; }
-    const now = performance.now();
-    if (this.lastArrival) {
-      const variation = Math.abs((now - this.lastArrival) - (s.nt - this.lastStamp) * 1000);
-      this.stats.jitter += (variation - this.stats.jitter) * 0.1;
-    }
-    this.lastArrival = now; this.lastStamp = s.nt;
-    this.stats.gaps += Math.max(0, s.n - this.lastSeq - 1);
-    this.stats.received++; this.stats.bytes += new TextEncoder().encode(JSON.stringify(s)).length;
-    this.lastSeq = s.n;
-    this.motion.delay = Math.max(0.07, Math.min(0.14, 0.07 + this.stats.jitter / 1000));
-    applySnapshot(this.app, s);
-    this.captureMotion(s);
-    this.flushEvents();
-  }
-  flushEvents() {
-    const g = this.app.game;
-    if (!g || g.mode !== "client") return;
-    this.pendingEvents = (this.pendingEvents || []).filter(d => {
-      if (d.epoch < this.epoch) return false;
-      if (d.epoch > this.epoch) return true;
-      if (d.n <= (this.lastEventSeq || 0)) return false;
-      this.lastEventSeq = d.n;
-      this.stateFloor = Math.max(this.stateFloor || 0, d.n);
-      if (d.n >= this.lastSeq) g.phase = d.ph;
-      applyEvents(g, this.app.me, d.ev);
-      return false;
-    });
-  }
-  clientTick(dt, networkDt = dt) {
+  clientTick(dt) {
     const g = this.app.game, me = this.app.me;
     if (!g || !me) return;
-    if (this.pendingSync) { const sync = this.pendingSync; this.pendingSync = null; this.onClientMsg(sync); }
-    const now = performance.now();
-    if (now >= this.pingAt) { this.pingAt = now + 1000; this.t.send("host", { t: "ping", at: now }, true); }
     const i = me.input;
     if (i.skill) {
       this.edges.sk = true;
@@ -521,27 +398,13 @@ export class Net {
       i.dash = false;
     }
     me.dashCdLocal = (me.dashCdLocal || 0) - dt;
-    if (this.edges.sk || this.edges.ul || this.edges.da) {
-      this.send({ t: "action", epoch: this.epoch, n: this.actionSeq = (this.actionSeq || 0) + 1, ...this.edges });
-      this.edges = { sk: false, ul: false, da: false };
-    }
-    this.inT -= networkDt;
+    this.inT -= dt;
     if (this.inT <= 0) {
       this.inT = 1 / 30;
-      this.t.send("host", { t: "in", n: ++this.inputSeq, epoch: this.epoch, nt: performance.now() / 1000, mx: round2(i.mx), my: round2(i.my), atk: i.atk, aim: i.aim == null ? null : round2(i.aim), x: Math.round(me.x), y: Math.round(me.y) }, true);
+      this.send({ t: "in", mx: round2(i.mx), my: round2(i.my), atk: i.atk, aim: i.aim == null ? null : round2(i.aim), sk: this.edges.sk, ul: this.edges.ul, da: this.edges.da, cs: this.edges.cs ?? null, cu: this.edges.cu ?? null, x: Math.round(me.x), y: Math.round(me.y) });
       this.edges = { sk: false, ul: false, da: false };
     }
-    clientUpdate(g, me, dt, this.motion);
-  }
-  diagnostics() {
-    const connections = this.t?.conns ? [...this.t.conns.values()] : [];
-    return {
-      ...this.stats, transport: this.t instanceof PeerT ? "WebRTC" : "local/room",
-      interpolationMs: Math.round(this.motion.delay * 1000),
-      skippedSends: this.t?.skipped || 0,
-      bufferedBytes: connections.reduce((n, c) => n + (c.fast?.bufferedAmount || 0), 0),
-      realtimeReady: connections.every(c => c.fast?.readyState === "open"),
-    };
+    clientUpdate(g, me, dt);
   }
   close() {
     this.closed = true;
@@ -662,10 +525,8 @@ function applySnapshot(app, s) {
   g.pvpScore = s.sc || {};
   g.spikeUp = s.su;
   g.runStats = s.rs || g.runStats;
-  applyEvents(g, me, s.ev);
-}
-function applyEvents(g, me, events) {
-  for (const ev of events) {
+  // events
+  for (const ev of s.ev) {
     switch (ev.t) {
       case "fx": {
         const o = { ...ev.o };
@@ -683,6 +544,7 @@ function applyEvents(g, me, events) {
       case "pvpwin": g.pvpWinner = ev.id; g.onUi("pvpwin"); break;
     }
   }
+  if (s.ev.some((e) => e.t === "room")) return;
 }
 /** the client fires its own (visual) shots immediately from where it really is: same timing rules as the host */
 function predictAttack(g, me, dt) {
@@ -714,7 +576,7 @@ function predictAttack(g, me, dt) {
   me.atkCdP = 1 / rate;
 }
 /** client-side frame: local movement prediction, interpolation of everything else */
-function clientUpdate(g, me, dt, motion) {
+function clientUpdate(g, me, dt) {
   g.time += dt;
   if (g.banner) g.banner.t -= dt;
   g.shake = Math.max(0, g.shake - dt * 30);
@@ -732,26 +594,20 @@ function clientUpdate(g, me, dt, motion) {
     predictAttack(g, me, dt);
   }
   if (me.hurtT > 0) me.hurtT -= dt;
-  const positions = motion.sample();
+  const k = Math.min(1, dt * 14);
   for (const p of g.players) {
     if (p === me) continue;
     p.animT += dt;
-    const pos = positions.get("p" + p.id);
-    if (pos) { p.x = pos.x; p.y = pos.y; p.face = pos.face; }
+    if (p.tx != null) (p.x += (p.tx - p.x) * k), (p.y += (p.ty - p.y) * k);
     if (p.hurtT > 0) p.hurtT -= dt;
     p.recoil = Math.max(0, p.recoil - dt * 30);
   }
   for (const e of g.enemies) {
     e.anim += dt;
     e.flash -= dt;
-    const pos = positions.get("e" + e.id);
-    if (pos) { e.x = pos.x; e.y = pos.y; e.face = pos.face; }
+    if (e.tx != null) (e.x += (e.tx - e.x) * k), (e.y += (e.ty - e.y) * k);
   }
   g.updateBullets(dt);
-  for (const b of g.bullets) {
-    const pos = positions.get("b" + b.id);
-    if (pos && !b.pred && !b.arcTo) { b.x = pos.x; b.y = pos.y; }
-  }
   for (const z of g.zones) (z.t += dt), (z.life -= dt);
   for (const q of g.pickups) q.t += dt;
 }

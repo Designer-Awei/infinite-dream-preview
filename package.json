@@ -4,8 +4,7 @@
   "private": true,
   "description": "无限梦境 Infinite Dream — pixel roguelike (web + Android + iOS)",
   "scripts": {
-    "build": "sh tools/build.sh",
-    "test:net": "node test/net-motion.mjs && node test/net-v2.mjs"
+    "build": "sh tools/build.sh"
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
@@ -16,7 +15,6 @@
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
-    "esbuild": "^0.25.0",
-    "playwright": "^1.64.1"
+    "esbuild": "^0.25.0"
   }
 }
