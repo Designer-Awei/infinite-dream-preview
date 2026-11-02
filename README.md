@@ -1,5 +1,7 @@
 # 无限梦境 · Infinite Dream Preview
 
+本仓库是「无限梦境」的提前测试版本，用于为[正式版](https://github.com/Designer-Awei/infinite-dream)探索新功能、尝试玩法改动并进行测试验证。新功能会先在预览版中试验，根据测试结果调整完善后，再考虑同步到正式版。预览版内容可能随测试发生变化。
+
 像素风地牢肉鸽（元气骑士式闯关 + 荒野乱斗式地图与操作）。六位 AI 娘：DeepSeek 鲸鱼娘、GPT 小龙娘、Grok 娘、Claude 娘、豆包、GLM 娘。
 浏览器打开即玩，无需注册；手机横屏支持虚拟摇杆；2~4 人联机合作或竞技场 PVP。
 
@@ -33,6 +35,6 @@ GitHub Pages：仓库 Settings → Pages → Deploy from branch → `main` / `do
 复刻自 [Designer-Awei/infinite-dream](https://github.com/Designer-Awei/infinite-dream)，保留源码、素材、许可和原提交历史。
 更新源与原生端分享地址指向本 preview 仓库。
 
-Android 预览包使用每次构建自动生成的调试签名，无需配置签名变量；不同构建或正式版之间可能需卸载后重装，卸载会清除本机存档。iOS 流程生成未签名 IPA。原仓库的 Releases 安装包与仓库设置不随源码复制。
+Android 预览包使用每次构建自动生成的调试签名，无需配置签名变量；不同预览版构建之间可能需卸载后重装，卸载会清除该预览版本机存档；预览版与正式版可同时安装。iOS 流程生成未签名 IPA。原仓库的 Releases 安装包与仓库设置不随源码复制。
 
 Android 预览版名称为「无限梦境预览版」，应用 ID 为 `com.designerawei.infinitedream.preview`，可与原版同时安装，存档独立。APK 版本末位是本仓库的构建次数，不与原仓库构建次数对应。
