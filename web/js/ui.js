@@ -125,7 +125,7 @@ export function showRoom(info) {
   if (info.isHost) acts.appendChild(btn(info.pvp ? "开战！" : "出发！", "big", () => app.startNet()));
   else acts.appendChild(el("div", "muted", "等待房主开始…"));
   acts.appendChild(btn("复制邀请链接", "blue small", async () => {
-    const base = window.Capacitor ? "https://designer-awei.github.io/infinite-dream/" : location.origin + location.pathname + location.search;
+    const base = window.Capacitor ? "https://designer-awei.github.io/infinite-dream-preview/" : location.origin + location.pathname + location.search;
     const url = base + "#join-" + info.code;
     try {
       await navigator.clipboard.writeText(url);

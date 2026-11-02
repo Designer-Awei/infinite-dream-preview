@@ -84,7 +84,7 @@ jobs:
             `infinite-dream.ipa` 是**未签名**的 iOS 安装包，需要用以下任一方式安装（苹果不允许未签名应用直接安装）：
             - **AltStore / SideStore**、**Sideloadly**：用自己的 Apple ID 免费重签后安装（免费 ID 每 7 天需重新签名一次）。
             - **TrollStore**（支持的 iOS 版本）：直接安装，永久有效。
-            - 不想折腾：用 Safari 打开 https://designer-awei.github.io/infinite-dream/ → 分享 → 「添加到主屏幕」，即可全屏游玩（存档在本机）。
+            - 不想折腾：用 Safari 打开 https://designer-awei.github.io/infinite-dream-preview/ → 分享 → 「添加到主屏幕」，即可全屏游玩（存档在本机）。
             横屏全屏运行；网页版更新后 App 启动会自动从 GitHub 增量更新，无需重装。
             构建自提交 ${{ github.sha }}
           files: out/infinite-dream.ipa

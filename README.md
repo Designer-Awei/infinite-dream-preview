@@ -1,4 +1,4 @@
-# 无限梦境 · Infinite Dream
+# 无限梦境 · Infinite Dream Preview
 
 像素风地牢肉鸽（元气骑士式闯关 + 荒野乱斗式地图与操作）。六位 AI 娘：DeepSeek 鲸鱼娘、GPT 小龙娘、Grok 娘、Claude 娘、豆包、GLM 娘。
 浏览器打开即玩，无需注册；手机横屏支持虚拟摇杆；2~4 人联机合作或竞技场 PVP。
@@ -10,6 +10,7 @@
 ## 运行 / 部署
 
 ```sh
+npm install                                # 安装依赖（含打包工具 esbuild）
 cd web && python3 -m http.server 8000      # 开发：直接用 ES 模块运行，打开 http://localhost:8000
 ./tools/build.sh                           # 打包到 dist/ 和 docs/（静态站点，约 1.4MB）
 ```
@@ -26,3 +27,10 @@ GitHub Pages：仓库 Settings → Pages → Deploy from branch → `main` / `do
 - `DESIGN.md`：元气骑士玩法拆解、框架选择、数值设计
 
 素材：角色形象来自项目素材包 `ai-girls`；字体 Cubic 11（OFL）。
+
+## Preview 仓库
+
+复刻自 [Designer-Awei/infinite-dream](https://github.com/Designer-Awei/infinite-dream)，保留源码、素材、许可和原提交历史。
+更新源与原生端分享地址指向本 preview 仓库。
+
+Android 自动打包需在本仓库配置原签名密钥 `ANDROID_KEYSTORE_B64`（密钥不随 Git 克隆）；iOS 流程生成未签名 IPA。原仓库的 Releases 安装包与仓库设置不随源码复制。

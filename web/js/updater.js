@@ -14,15 +14,15 @@ const OVERRIDE = (() => {
 })();
 const REMOTES = [
   ...(OVERRIDE ? [OVERRIDE] : []),
-  "https://designer-awei.github.io/infinite-dream/",
-  "https://cdn.jsdelivr.net/gh/Designer-Awei/infinite-dream@main/docs/",
+  "https://designer-awei.github.io/infinite-dream-preview/",
+  "https://cdn.jsdelivr.net/gh/Designer-Awei/infinite-dream-preview@main/docs/",
 ];
 const native = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 export let localVersion = "";
 /** the installed app shell: { version: "1.<nativeRev>.<build>", rev } (rev 0 = an old APK without the App plugin) */
 export const nativeInfo = { version: "", rev: 0 };
-const APK_URL = "https://github.com/Designer-Awei/infinite-dream/releases/latest/download/infinite-dream.apk";
-const IOS_URL = "https://github.com/Designer-Awei/infinite-dream/releases/tag/ios-latest";
+const APK_URL = "https://github.com/Designer-Awei/infinite-dream-preview/releases/latest/download/infinite-dream.apk";
+const IOS_URL = "https://github.com/Designer-Awei/infinite-dream-preview/releases/tag/ios-latest";
 
 async function sha12(buf) {
   const d = await crypto.subtle.digest("SHA-1", buf);

@@ -2,9 +2,13 @@
 # Bundle the game into dist/ (static site: GitHub Pages / artifact / any static host)
 set -e
 ROOT=$(cd "$(dirname "$0")/.." && pwd)
-ESB=/opt/npm-tools/node_modules/esbuild/bin/esbuild
+ESB="$ROOT/node_modules/esbuild/bin/esbuild"
+if [ ! -x "$ESB" ]; then
+  echo "Missing esbuild. Run npm install first." >&2
+  exit 1
+fi
 rm -rf "$ROOT/dist" && mkdir -p "$ROOT/dist/css" "$ROOT/dist/assets"
-$ESB "$ROOT/web/js/main.js" --bundle --minify --format=esm --target=es2020 --outfile="$ROOT/dist/game.js" --log-level=warning
+"$ESB" "$ROOT/web/js/main.js" --bundle --minify --format=esm --target=es2020 --outfile="$ROOT/dist/game.js" --log-level=warning
 sed 's#<script type="module" src="js/main.js"></script>#<script type="module" src="game.js"></script>#' "$ROOT/web/index.html" > "$ROOT/dist/index.html"
 cp "$ROOT/web/css/style.css" "$ROOT/dist/css/"
 cp "$ROOT/web/manifest.webmanifest" "$ROOT/dist/"
