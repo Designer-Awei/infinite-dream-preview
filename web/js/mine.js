@@ -573,24 +573,27 @@ export class Dive {
         this.chest[i] = "plain";
       }
     }
-    // relic chests: one per zone reached (the rift gets one)
-    for (const z of ZONES) {
-      const [a, b] = span(z);
-      if (a >= b || b - a < 6) continue;
-      for (let tries = 0; tries < 20; tries++) {
-        const x = r.int(2, W - 3), y = r.int(Math.max(a + 2, 6), b - 2), i = y * W + x;
-        if (this.t[i] === T.CHEST || this.t[i] === T.BEDROCK || this.t[i] === T.SEAL || [28, 58, 88].some((L) => y >= L - 3 && y <= L + 1)) continue;
-        this.t[i] = T.CHEST;
-        this.chest[i] = "relic";
-        break;
-      }
-      if (this.lite) break;
-    }
     // gold shovel: a 星图 chest guaranteed in the ruins
+    // ...inside a brick chamber guarded by the 遗迹守护者 (two gaps in the roof let you drop in)
+    this.guardRoom = null;
     if (this.o.shovel === "au" && !this.lite) {
-      const y = r.int(100, H - 4), x = r.int(3, W - 4), i = y * W + x;
+      const fy = r.int(110, H - 3), x0 = r.int(2, W - 16), x1 = x0 + 13, ty = fy - 7;
+      for (let y = ty; y <= fy; y++)
+        for (let x = x0; x <= x1; x++) {
+          const edge = y === ty || y === fy || x === x0 || x === x1;
+          this.t[y * W + x] = edge ? T.BRICK : T.AIR;
+          delete this.chest[y * W + x];
+          delete this.ore[y * W + x];
+        }
+      for (const gx of [x0 + 3, x1 - 3]) this.t[ty * W + gx] = this.t[ty * W + gx + 1] = T.AIR;
+      const cx = x1 - 1, i = (fy - 1) * W + cx;
       this.t[i] = T.CHEST;
       this.chest[i] = "star";
+      this.guardRoom = { x0, x1, ty, fy };
+      const g = this.mkMob("golem", (x0 + 5) * MT, (fy - 1) * MT + MT / 2);
+      g.hp = g.maxHp = MOBS.golem.hp;
+      g.cd = 2;
+      this.mobs.push(g);
     }
     // lifts (safe extraction) at the bottom of the first three zones
     this.lifts = [];
@@ -625,6 +628,22 @@ export class Dive {
       const m = this.mkMob("mole", (x + 1) * MT + MT / 2, y * MT + MT / 2);
       m.life = 22;
       this.mobs.push(m);
+    }
+    // relic chests: one per zone reached (the rift gets one)
+    for (const z of ZONES) {
+      const [a, b] = span(z);
+      if (a >= b || b - a < 6) continue;
+      for (let tries = 0; tries < 20; tries++) {
+        const x = r.int(2, W - 3), y = r.int(Math.max(a + 2, 6), b - 2), i = y * W + x;
+        const gr = this.guardRoom, mc = this.merchant;
+        if (this.t[i] === T.CHEST || this.t[i] === T.BEDROCK || this.t[i] === T.SEAL || this.t[i] === T.BRICK || this.t[i] === T.LIFT || [28, 58, 88].some((L) => y >= L - 3 && y <= L + 1)) continue;
+        if (gr && x >= gr.x0 - 1 && x <= gr.x1 + 1 && y >= gr.ty - 1 && y <= gr.fy + 1) continue;
+        if (mc && Math.abs(y - mc.r) <= 3 && x >= mc.c0 - 1 && x <= mc.c0 + 6) continue;
+        this.t[i] = T.CHEST;
+        this.chest[i] = "relic";
+        break;
+      }
+      if (this.lite) break;
     }
     // monsters in open pockets
     for (let y = 6; y < H - 2; y++)
@@ -863,6 +882,9 @@ export class Dive {
           this.text(p.x, p.y - 30, t === T.SEAL ? `封印岩：需要${this.maxDepth < 90 ? "银铲" : "金铲"}才能更深` : "基岩挖不动", "#c8b0ff");
         }
         p.dig = null;
+      } else if (t === T.CHEST && this.chest[this.idx(tgt.c, tgt.r)] === "star" && this.mobs.some((m) => m.d.boss)) {
+        if ((p.warnT || 0) < this.time) (p.warnT = this.time + 1.2), this.text(p.x, p.y - 30, "星图宝箱被守护者封印着", "#ffb070");
+        p.dig = null;
       } else if (hd.need > this.drill) {
         if ((p.warnT || 0) < this.time) (p.warnT = this.time + 1.2), this.text(p.x, p.y - 30, `钻头等级不足（需要 Lv${hd.need - 1}）`, "#ffb070");
         p.dig = null;
@@ -1033,6 +1055,10 @@ export class Dive {
         this.moleAI(m, dt, dx, d);
         continue;
       }
+      if (d0.boss) {
+        this.golemAI(m, dt, dx, dy, d);
+        continue;
+      }
       if (m.awake && d0.fly) {
         const inWater = this.waterAt(m.x, m.y);
         const sp = d0.swim && !inWater ? 10 : d0.spd;
@@ -1071,6 +1097,51 @@ export class Dive {
       }
       if (d < m.d.r + 10) this.hurt(m.d.dmg);
     }
+  }
+  /** 遗迹守护者: wakes when you enter its chamber; stomps (shockwave along the floor) up close, lobs rocks from afar */
+  golemAI(m, dt, dx, dy, d) {
+    const p = this.p, gr = this.guardRoom;
+    const inRoom = gr && p.x > gr.x0 * MT && p.x < (gr.x1 + 1) * MT && p.y > gr.ty * MT && p.y <= (gr.fy + 0.5) * MT;
+    if (!m.awake && inRoom) {
+      m.awake = true;
+      this.text(m.x, m.y - 40, "遗迹守护者 苏醒了！", "#ff8a6a", 1.4);
+      this.shake = 8;
+      sfx("explode", 0.3);
+    }
+    m.vy += G * dt;
+    m.anim += dt;
+    if (m.awake) {
+      m.cd -= dt;
+      if (m.act) {
+        m.act.t -= dt;
+        if (m.act.t <= 0) {
+          if (m.act.k === "stomp") {
+            this.shake = 10;
+            sfx("explode", 0.4);
+            this.spawnFx("explosions/dirt-explosion", m.x, m.y + m.d.r, { life: 1.4 });
+            for (let k = 0; k < 16; k++) this.parts.push({ x: m.x + (k - 8) * 6, y: m.y + m.d.r - 2, vx: (k - 8) * 18, vy: -80 - Math.random() * 60, t: 0.5, col: "#b8a890", s: 2 });
+            if (p.ground && Math.abs(p.x - m.x) < 3.6 * MT && Math.abs(p.y - (m.y + m.d.r)) < MT) this.hurt(2, "震地");
+          } else {
+            const t = 0.9, vx = (p.x - m.x) / t, vy = (p.y - PH / 2 - (m.y - 18)) / t - 0.5 * 420 * t;
+            this.bullets.push({ x: m.x, y: m.y - 18, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, col: "#b8a890" });
+            sfx("click");
+          }
+          m.act = null;
+          m.cd = 1.6 + Math.random() * 0.8;
+        }
+      } else if (m.cd <= 0) {
+        m.act = Math.abs(dx) < 3 * MT ? { k: "stomp", t: 0.7 } : { k: "throw", t: 0.45 };
+        if (m.act.k === "stomp") this.text(m.x, m.y - 34, "！", "#ff6a6a", 1.4);
+      } else {
+        const nx = m.x + Math.sign(dx) * m.d.spd * dt;
+        if (Math.abs(dx) > 10 && !this.solidAt(nx + Math.sign(dx) * m.d.r, m.y)) m.x = nx;
+      }
+      m.face = dx > 0 ? 1 : -1;
+      if (d < m.d.r + 8) this.hurt(m.d.dmg);
+    }
+    const ny = m.y + m.vy * dt;
+    if (!this.solidAt(m.x, ny + m.d.r)) m.y = ny;
+    else m.vy = 0;
   }
   /** 宝藏鼹鼠: wakes up when you get close, runs away digging through soft ground, and burrows off when its time is up */
   moleAI(m, dt, dx, d) {
@@ -1117,6 +1188,7 @@ export class Dive {
   updateBullets(dt) {
     for (const b of this.bullets) {
       b.t -= dt;
+      if (b.g) b.vy += b.g * dt;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       if (this.solidAt(b.x, b.y)) {
@@ -1151,6 +1223,20 @@ export class Dive {
       sfx("kill", 0.05);
       // monsters carry a little loot
       const z = zoneAt(Math.floor(m.y / MT)), ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
+      if (m.d.boss) {
+        this.text(m.x, m.y - 40, "遗迹守护者 倒下了！", "#ffd84a", 1.5);
+        this.spawnFx("explosions/dirt-explosion", m.x, m.y + 10, { life: 2 });
+        this.spawnFx("pickups/loot-beam", m.x, m.y + 10, { life: 2 });
+        this.shake = 12;
+        sfx("ssr");
+        this.addLoot("rune", m.x, m.y);
+        this.addLoot("gear", m.x, m.y - 8);
+        this.addStars(8, m.x, m.y);
+        this.bossDown = true;
+        const pool = Object.keys(RELICS).filter((k) => (this.rel[k] || 0) < RELICS[k].max);
+        if (pool.length) this.choice = this.r.shuffle(pool).slice(0, 3);
+        return;
+      }
       if (m.d.flee) {
         this.moles++;
         this.text(m.x, m.y - 26, "抓到宝藏鼹鼠！", "#ffd84a", 1.3);
@@ -1358,6 +1444,10 @@ export class Dive {
         this.drawMole(g, m);
         continue;
       }
+      if (m.d.draw === "golem") {
+        this.drawGolem(g, m);
+        continue;
+      }
       const s = A.critters[m.d.sprite];
       if (!s) continue;
       const fr = Math.floor(m.anim * s.fps) % s.n, sc = m.d.sc;
@@ -1388,6 +1478,15 @@ export class Dive {
     this.drawPlayer(g);
     // bullets
     for (const b of this.bullets) {
+      if (b.rock) {
+        g.fillStyle = "#1a1020";
+        g.fillRect(Math.round(b.x) - 5, Math.round(b.y) - 5, 10, 10);
+        g.fillStyle = "#b8a890";
+        g.fillRect(Math.round(b.x) - 4, Math.round(b.y) - 4, 8, 8);
+        g.fillStyle = "#d8ccb8";
+        g.fillRect(Math.round(b.x) - 4, Math.round(b.y) - 4, 4, 2);
+        continue;
+      }
       g.fillStyle = b.col;
       g.fillRect(Math.round(b.x) - 2, Math.round(b.y) - 2, 4, 4);
       g.fillStyle = "#fff";
@@ -1579,6 +1678,40 @@ export class Dive {
     g.fillRect(camp + 71, h - 41, 46, 14);
     this.label(g, "梦境矿场", camp + 94, h - 31, "#ffe36a", 10);
   }
+  drawGolem(g, m) {
+    const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1;
+    const charge = m.act && m.act.k === "stomp" ? 1 - m.act.t / 0.7 : 0, lift = Math.round(charge * 6);
+    const bob = m.awake ? Math.round(Math.sin(m.anim * 4) * 1) : 0;
+    const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
+    // legs
+    R(-12, -10, 9, 10, "#1a1020"), R(-11, -9, 7, 9, "#7a6e5e");
+    R(3, -10, 9, 10, "#1a1020"), R(4, -9, 7, 9, "#7a6e5e");
+    // body
+    R(-16, -34 + bob - lift, 32, 26, "#1a1020");
+    R(-15, -33 + bob - lift, 30, 24, "#8e8270");
+    R(-15, -33 + bob - lift, 30, 5, "#a89a86");
+    R(-15, -14 + bob - lift, 30, 4, "#6a5e4e");
+    // rune on the chest
+    const glow = m.act ? "#ff6a4a" : "#5ad8ff";
+    R(-3, -26 + bob - lift, 6, 8, glow);
+    R(-1, -24 + bob - lift, 2, 4, "#ffffff");
+    // head
+    R(-9, -44 + bob - lift, 18, 11, "#1a1020");
+    R(-8, -43 + bob - lift, 16, 9, "#a89a86");
+    R(-5, -40 + bob - lift, 3, 2, glow), R(2, -40 + bob - lift, 3, 2, glow);
+    // arms (raised while charging a stomp)
+    R(-22, -32 + bob - lift * 2, 8, 20, "#1a1020"), R(-21, -31 + bob - lift * 2, 6, 18, "#7a6e5e");
+    R(14, -32 + bob - lift * 2, 8, 20, "#1a1020"), R(15, -31 + bob - lift * 2, 6, 18, "#7a6e5e");
+    if (m.act && m.act.k === "throw") R(14, -42, 8, 8, "#b8a890");
+    if (m.flash > 0) (g.globalAlpha = 0.5), R(-22, -44, 44, 44, "#ffffff"), (g.globalAlpha = 1);
+    // health bar
+    const w = 44;
+    g.fillStyle = "#14101c";
+    g.fillRect(m.x - w / 2 - 1, m.y - m.d.r - 42, w + 2, 6);
+    g.fillStyle = "#ff6a4a";
+    g.fillRect(m.x - w / 2, m.y - m.d.r - 41, w * clamp(m.hp / m.maxHp), 4);
+    if (!m.awake) this.label(g, "遗迹守护者", m.x, m.y - m.d.r - 48, "#ffb070", 9);
+  }
   drawMole(g, m) {
     const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1, step = m.awake ? Math.round(Math.sin(m.anim * 18)) : 0;
     const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
@@ -1693,6 +1826,7 @@ export class Dive {
     const p = this.p, z = zoneAt(Math.floor(p.y / MT));
     hole(p.x, p.y - PH / 2, (z.light + (this.up.radar || 0) + 2 * (this.rel.lamp || 0)) * MT * (0.95 + 0.05 * Math.sin(this.time * 6)));
     for (const m of this.mobs) if (m.d.flee) hole(m.x, m.y, MT * 1.8, 0.7);
+    else if (m.d.boss) hole(m.x, m.y - 10, MT * 3, 0.75);
     if (this.merchant) hole(this.merchant.x + 13, this.merchant.y - 49, MT * 3.4, 0.9);
     // glowing ores, lifts, explosions
     const r0 = Math.floor(cy / MT), r1 = r0 + Math.ceil(VIEW_H / MT) + 1, c0 = Math.max(0, Math.floor(cx / MT)), c1 = Math.min(MW - 1, c0 + Math.ceil(VIEW_W / MT) + 1);

@@ -88,6 +88,7 @@ export const MOBS = {
   jelly: { sprite: "jelly", hp: 22, spd: 26, r: 10, sc: 0.32, fly: true, dmg: 1, swim: true, zones: { sea: 5 } },
   ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 1, zones: { ruin: 3, sea: 1 } },
   mole: { draw: "mole", hp: 26, spd: 74, r: 8, sc: 1, dmg: 0, flee: true, zones: {} }, // 宝藏鼹鼠: runs away, burrows off after a while
+  golem: { draw: "golem", hp: 240, spd: 28, r: 15, sc: 1, dmg: 2, boss: true, zones: {} }, // 遗迹守护者 (gold-shovel chamber)
   skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 1, shoot: 2.4, zones: { ruin: 3 } },
 };
 
