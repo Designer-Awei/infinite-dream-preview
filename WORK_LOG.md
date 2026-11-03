@@ -8,6 +8,13 @@
 
 ## 更新记录
 
+### 2026-11-04 · 像素字体补字；预览版改动合入正式版
+
+- 更新内容：合入正式版前检查发现，像素字体子集缺了近期新文案里的 90 个字（如 委托、鼹鼠、诅咒、贪婪、霜、藤蔓、商、攒），这些字会退回系统字体显示。用 `tools/subset_font.py` 按全部源码重新生成 Cubic 11 子集（1030 个字形）。“鼹”字 Cubic 11 原字体本身没有，仍由系统字体显示。
+- 更新内容：用户确认后，本仓库截至 [71eb09e](https://github.com/Designer-Awei/infinite-dream-preview/commit/71eb09e) 的全部玩法和界面改动已合入正式版仓库（Designer-Awei/infinite-dream 91dabec）。正式版保留自己的更新地址、安装包地址、邀请链接域名和 App 包名。
+- 对应 commit：[7652f1f](https://github.com/Designer-Awei/infinite-dream-preview/commit/7652f1f1e811942d1ee96125074f463b4c2c9c36)。
+- 验证：`sh tools/build.sh` 通过；用 fontTools 重新统计，Cubic 11 原字体里有的字已全部包含在新子集中。正式版同步跑了 runsmoke、mine1、mine2、relic、merchant、quests、golem、rift、maps、uifix、capsule 和双人联机 net 测试，均无页面错误。
+
 ### 2026-11-04 · 每日委托标签改为小红点
 
 - 更新内容：有可领取的委托时，「每日委托」标签页原来在文字后加一个带数字的红色圆标，会撑宽标签。改为标签右上角的小红点（12px，无数字），标签宽度不变；领取完后红点消失。
