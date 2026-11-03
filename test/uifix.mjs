@@ -44,8 +44,8 @@ const gap = await p.evaluate(() => { const l = document.querySelector(".mh-l").g
 const widths = await p.evaluate(() => [...document.querySelectorAll(".mu-b")].map((b) => Math.round(b.getBoundingClientRect().width)));
 const clipped = await p.evaluate(() => [...document.querySelectorAll(".mup .mu-t span")].filter((s) => s.scrollWidth > s.clientWidth + 1).map((s) => s.textContent));
 console.log("hub gap:", gap, "upgrade btn widths:", JSON.stringify([...new Set(widths)]), "clipped descs:", JSON.stringify(clipped));
-const al = await p.evaluate(() => { const a = document.querySelector(".mh-shovels").getBoundingClientRect(), s = document.querySelector(".mh-sup").getBoundingClientRect(); return [Math.round(a.left), Math.round(a.right), Math.round(s.left), Math.round(s.right)]; });
-console.log("shovels vs supplies left/right:", JSON.stringify(al));
+const al = await p.evaluate(() => { const a = document.querySelector(".mh-shovels").getBoundingClientRect(), s = document.querySelector(".mh-buff").getBoundingClientRect(); return [Math.round(a.left), Math.round(a.right), Math.round(s.left), Math.round(s.right)]; });
+console.log("shovels vs 当前增益 left/right:", JSON.stringify(al));
 await p.evaluate(() => document.querySelector('.curpill[data-cur="star"]').click()); await p.waitForTimeout(300);
 await shot("curinfo");
 await p.evaluate(() => document.querySelector(".cur-md").click());

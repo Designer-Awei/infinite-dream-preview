@@ -1360,3 +1360,31 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .mh-r .btn.small.gray small { color: #fff; background: rgba(0,0,0,.25); }
 .mh-r .btn.small.gray > span { text-shadow: 0 1px 0 #2a2238, 0 0 3px #2a2238; }
 .mh-r .btn.small small { color: #fff; background: rgba(40,20,8,.6); }
+/* buttons: a full 8-direction outline (the old 4 diagonal shadows left gaps that read as a double image); gray buttons use dark text */
+.btn { text-shadow: 0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px 0 0 var(--ink), 2px 0 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 3px 0 var(--ink); letter-spacing: .5px; }
+.btn.small { text-shadow: 0 -1px 0 var(--ink), 0 1px 0 var(--ink), -1px 0 0 var(--ink), 1px 0 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink); }
+.btn.gray { color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+.pause-p { min-width: 300px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
+.pause-p h2 { margin: 0; }
+.pause-p .row { justify-content: center; gap: 10px; flex-wrap: nowrap; }
+.pause-p .pz-act { min-width: 150px; height: 52px; font-size: 20px; }
+.pause-p .pz-tg { min-width: 110px; height: 40px; }
+/* mine hub: free copper shovels next to the title, 当前增益 panel */
+.mh-freecu { display: flex; align-items: center; gap: 4px; margin-left: 8px; height: 34px; padding: 0 10px 0 4px; font: inherit; color: #fff; border: 3px solid var(--ink); border-radius: 10px; background: rgba(20,12,30,.6); cursor: pointer; }
+.mh-freecu img { width: 28px; height: 28px; image-rendering: pixelated; }
+.mh-freecu b { font-weight: normal; font-size: 15px; }
+.mh-freecu small { font-size: 11px; color: #c8c0e8; min-width: 46px; }
+.mh-freecu.ready { background: linear-gradient(180deg, #ffc27a, #c8642a); box-shadow: 0 0 10px #ffb070; animation: pulse 1.2s infinite; }
+.mh-freecu.ready small { color: #fff; }
+.mh-buff { background: rgba(20,12,30,.45); border: 3px solid var(--ink); border-radius: 12px; padding: 6px 8px; }
+.mh-buff .mb-h { font-size: 12px; color: #ffe36a; margin-bottom: 4px; }
+.mh-buff .mb-g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px 8px; }
+.mh-buff .mb-i { display: flex; align-items: center; gap: 4px; font-size: 11px; color: #e8e0f0; min-width: 0; white-space: nowrap; }
+.mh-buff .mb-i img { width: 16px; height: 16px; image-rendering: pixelated; flex: none; }
+.mh-buff .mb-i b { font-weight: normal; color: #fff; margin-left: auto; }
+.topbar .btn, .topbar .logo { white-space: nowrap; }
+.mine-hub .logo { font-size: clamp(18px, 3vw, 28px); }
+.mine-hub .logo span { white-space: nowrap; }
+@media (max-width: 760px) { .mine-hub .logo span { display: none; } .mh-freecu small { min-width: 0; } .mine-hub .curpill { padding-left: 6px; padding-right: 8px; } }
+.mh-buff .mb-g { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 3px 10px; }
+.mh-buff .mb-i { font-size: 12px; }

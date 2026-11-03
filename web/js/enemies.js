@@ -74,7 +74,10 @@ export function updateEnemy(g, e, dt) {
     return dir;
   };
   const touch = () => {
-    if (e.def.touch && d < e.r + p.r + 2) g.hurt(p, e.def.touch, e);
+    if (e.def.touch && d < e.r + p.r + 2 && g.hurt(p, e.def.touch, e)) {
+      if (e.def.chill) p.buff.slow = 1.4; // 藤蔓蛇 / 霜冻爬虫 / 冰晶史莱姆
+      if (e.def.burnTouch) p.buff.burn = 2.1; // 炎蝠
+    }
   };
   switch (e.def.ai) {
     case "hop": {
@@ -107,7 +110,7 @@ export function updateEnemy(g, e, dt) {
         if (los(g.map, e.x, e.y - 10, p.x, p.y - 16)) {
           const n = e.elite ? 3 : 1;
           const lead = 0.5 * (d / e.def.shot.spd), lx = p.x + (p.input.mx || 0) * CHARS_SPEED * lead, ly = p.y + (p.input.my || 0) * CHARS_SPEED * lead;
-          for (let i = 0; i < n; i++) shoot(g, e, angTo(e.x, e.y - 16, lx, ly - 16) + (i - (n - 1) / 2) * 0.22, { spd: e.def.shot.spd });
+          for (let i = 0; i < n; i++) shoot(g, e, angTo(e.x, e.y - 16, lx, ly - 16) + (i - (n - 1) / 2) * 0.22, { spd: e.def.shot.spd, slow: e.def.shot.slow, kind: e.def.shot.slow ? "ghost" : undefined });
           g.sound("shoot_ink", 0.1);
         }
       }
@@ -200,6 +203,12 @@ export function updateEnemy(g, e, dt) {
     }
     case "boss_eye":
       bossEye(g, e, p, d, dt);
+      break;
+    case "boss_frost":
+      bossFrost(g, e, p, d, dt);
+      break;
+    case "boss_core":
+      bossCore(g, e, p, d, dt);
       break;
   }
 }
@@ -302,4 +311,136 @@ export function spawnBossAdds(g, e, list) {
     const a = (i / list.length) * TAU;
     g.spawnEnemy(t, e.x + Math.cos(a) * 70, e.y + Math.sin(a) * 50, false, 0.7);
   });
+}
+
+// ----------------------------------------------------------------- 显存冰原 boss: 冰封史莱姆王
+// slow and heavy: leaps onto you (ice ring on landing), sprays slowing shards, calls in slimes; below 1/3 it hurries
+function bossFrost(g, e, p, d, dt) {
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  if (e.phase !== phase) {
+    e.phase = phase;
+    if (phase > 1) {
+      g.text(e.x, e.y - 100, phase === 2 ? "缓存冻结！" : "绝对零度！", "#a8e0ff", 1.6, 1.5);
+      g.vfx("ice/frost-nova", e.x, e.y, {});
+      g.sound("boss");
+      spawnBossAdds(g, e, phase === 2 ? ["slime_blue", "slime_blue", "bat_ice", "bat_ice"] : ["slime_blue", "slime_blue", "bat_ice", "bat_ice", "eye_ice"]);
+    }
+  }
+  const k = phase === 3 ? 1.35 : phase === 2 ? 1.15 : 1;
+  for (const q of g.alivePlayers()) if (!e.z && dist(q.x, q.y, e.x, e.y) < e.r + 12) g.hurt(q, 1, e);
+  if (e.st === "leap") {
+    e.dt -= dt;
+    if (e.dt > 0.7) return; // crouch (the landing spot is already marked)
+    const t = 1 - Math.max(0, e.dt) / 0.7;
+    moveCircle(g.map, e, (e.ox + (e.lx - e.ox) * t) - e.x, (e.oy + (e.ly - e.oy) * t) - e.y, true);
+    e.z = Math.sin(t * Math.PI) * 70;
+    if (e.dt <= 0) {
+      e.z = 0;
+      e.st = "idle";
+      e.cd = 1.3 / k;
+      g.vfx("ice/frost-nova", e.x, e.y, {});
+      g.sound("explode", 0.4);
+      for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < 70) if (g.hurt(q, 2, e)) q.buff.slow = 2;
+      const n = phase === 1 ? 14 : 20;
+      for (let i = 0; i < n; i++) shoot(g, e, (i / n) * TAU, { spd: 120, h: 20, r: 6, slow: true, kind: "ghost" });
+    }
+    return;
+  }
+  if (e.cd > 0) {
+    const a = angTo(e.x, e.y, p.x, p.y);
+    moveCircle(g.map, e, Math.cos(a) * 22 * k * dt, Math.sin(a) * 22 * k * dt, false);
+    return;
+  }
+  const opts = ["leap", "shards", "leap", "shards"];
+  if (phase >= 2) opts.push("summon", "leap");
+  const pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === "leap") {
+    e.st = "leap";
+    e.dt = 1.4;
+    e.ox = e.x;
+    e.oy = e.y;
+    e.lx = p.x;
+    e.ly = p.y;
+    g.vfx("arcane/rune-circle", p.x, p.y, { life: 1.4, palette: ["#0a1a30", "#4a9ad8", "#a8e0ff", "#ffffff"] });
+    g.text(p.x, p.y - 40, "！", "#a8e0ff", 1.4, 0.8);
+  } else if (pick === "shards") {
+    for (let w = 0; w < 3; w++)
+      g.after(w * 0.3, () => {
+        if (e.dead) return;
+        const q = g.alivePlayers()[0] || p, a = angTo(e.x, e.y - 30, q.x, q.y - 16);
+        for (let i = -3; i <= 3; i++) shoot(g, e, a + i * 0.13, { spd: 170 * k, h: 30, r: 5, slow: true, kind: "ghost" });
+      });
+    g.sound("shoot_water", 0.2);
+    e.cd = 1.8 / k;
+  } else {
+    spawnBossAdds(g, e, ["slime_blue", "slime_blue", "bat_ice"]);
+    e.cd = 2.2;
+  }
+}
+
+// ----------------------------------------------------------------- 算力熔炉 boss: 过热核心
+// floats around the furnace: burning rings, meteor strikes on marked spots, fire bats; below 1/3 a spinning flame spiral
+function bossCore(g, e, p, d, dt) {
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  if (e.phase !== phase) {
+    e.phase = phase;
+    if (phase > 1) {
+      g.text(e.x, e.y - 110, phase === 2 ? "温度过载！" : "熔毁倒计时！", "#ff8a4a", 1.6, 1.5);
+      g.vfx("explosions/plasma-explosion", e.x, e.y - 40, {});
+      g.sound("boss");
+      spawnBossAdds(g, e, phase === 2 ? ["bat_fire", "bat_fire", "wisp", "wisp"] : ["bat_fire", "bat_fire", "skull", "wisp", "wisp"]);
+    }
+  }
+  const k = phase === 3 ? 1.35 : phase === 2 ? 1.15 : 1, H = 56;
+  const c = g.map.center, tx = c.x + Math.cos(e.t * 0.35) * 150, ty = c.y + Math.sin(e.t * 0.5) * 60;
+  const a0 = angTo(e.x, e.y, tx, ty);
+  if (dist(e.x, e.y, tx, ty) > 8) moveCircle(g.map, e, Math.cos(a0) * 46 * dt, Math.sin(a0) * 46 * dt, true);
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 10) if (g.hurt(q, 1, e)) q.buff.burn = 2.1;
+  if (e.st === "spiral") {
+    e.dt -= dt;
+    e.sp = (e.sp || 0) + dt;
+    while (e.sp > 0.08) {
+      e.sp -= 0.08;
+      e.ang += 0.42;
+      for (let i = 0; i < 3; i++) shoot(g, e, e.ang + (i / 3) * TAU, { spd: 115, h: H, r: 6, burn: true, kind: "fire", big: true });
+    }
+    if (e.dt <= 0) (e.st = "idle"), (e.cd = 1.2);
+    return;
+  }
+  if (e.cd > 0) return;
+  const opts = ["ring", "meteor", "ring", "meteor"];
+  if (phase >= 2) opts.push("summon");
+  if (phase >= 3) opts.push("spiral", "spiral");
+  const pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === "ring") {
+    for (let w = 0; w < 3; w++)
+      g.after(w * 0.4, () => {
+        if (e.dead) return;
+        const n = 18, off = w * 0.17;
+        for (let i = 0; i < n; i++) shoot(g, e, off + (i / n) * TAU, { spd: 125 * k, h: H, r: 6, burn: true, kind: "fire" });
+      });
+    g.sound("shoot_dragon", 0.25);
+    e.cd = 2 / k;
+  } else if (pick === "meteor") {
+    // marked spots around the players, then fireballs land on them
+    const spots = [];
+    for (const q of g.alivePlayers()) for (let i = 0; i < (phase === 1 ? 3 : 5); i++) spots.push([q.x + (Math.random() - 0.5) * 140, q.y + (Math.random() - 0.5) * 100]);
+    for (const [x, y] of spots) g.vfx("arcane/rune-circle", x, y, { life: 1, palette: ["#1a0600", "#d8481c", "#ffa030", "#fff0a0"] });
+    g.after(1, () => {
+      for (const [x, y] of spots) {
+        g.vfx("explosions/small-explosion", x, y, {});
+        for (const q of g.alivePlayers()) if (dist(q.x, q.y, x, y) < 30) if (g.hurt(q, 1, e)) q.buff.burn = 2.1;
+      }
+      g.sound("explode", 0.35);
+    });
+    e.cd = 2.2 / k;
+  } else if (pick === "summon") {
+    spawnBossAdds(g, e, ["bat_fire", "bat_fire", "wisp"]);
+    e.cd = 2.4;
+  } else {
+    e.st = "spiral";
+    e.dt = 2.4;
+    e.ang = Math.random() * TAU;
+    e.cd = 1;
+  }
 }

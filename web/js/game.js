@@ -108,15 +108,23 @@ export class Game {
     if (this.host) this.emit({ t: "room", idx: this.roomIdx, seed: this.seed });
   }
   roomDef(i) {
-    return this.endless ? endlessRoom(i, this.seed) : this.mapRoom(RUN[i]);
+    if (this.endless) {
+      const d = endlessRoom(i, this.seed), md = this.roomMap(i);
+      return d && d.kind === "boss" && md.boss ? { ...d, boss: md.boss } : d;
+    }
+    return this.mapRoom(RUN[i]);
   }
   /** the map (chapter) swaps some enemies for its own residents */
   mapRoom(def) {
-    if (!def || !def.waves || !this.mapDef.swap) return def;
+    const md = this.mapDef;
+    if (def && def.kind === "boss" && md.boss) return { ...def, boss: md.boss };
+    if (!def || !def.waves || !md.swap) return def;
     const rr = rng(this.seed + 4242 + (def.waves.length || 0));
-    const sw = this.mapDef.swap;
+    const sw = md.swap, el = md.elites || [];
     return { ...def, waves: def.waves.map((w) => w.map((k) => {
       const base = k.replace("*", ""), star = k.endsWith("*") ? "*" : "";
+      // elites: half of them are this map's own elite monster
+      if (star && el.length && rr() < 0.5) return el[Math.floor(rr() * el.length)] + star;
       return sw[base] && rr() < sw[base][1] ? sw[base][0] + star : k;
     })) };
   }
@@ -131,8 +139,10 @@ export class Game {
     this.room = def;
     const kind = def.kind;
     const md = this.roomMap(idx);
-    this.hazard = kind === "boss" || kind === "shop" ? "mud" : md.hazard;
-    this.map = generateRoom(this.pvp ? "combat" : kind, this.seed + idx * 1013, kind === "boss" ? 1 : md.theme, { hazard: this.hazard, koth: this.pvp && this.opt.pvpMode === "koth" });
+    // every room uses its own map's look and floor hazard (the boss fights on home ground); shops have no hazard patches
+    this.hazard = md.hazard;
+    this.map = generateRoom(this.pvp ? "combat" : kind, this.seed + idx * 1013, md.theme, { hazard: this.hazard, koth: this.pvp && this.opt.pvpMode === "koth" });
+    if (kind === "shop") this.map.mud.fill(0);
     this.ground = renderGround(this.map);
     this.enemies.length = 0;
     this.bullets.length = 0;
@@ -145,6 +155,7 @@ export class Game {
     this.waveDelay = 1.6;
     this.portal = null;
     this.chest = null;
+    this.shovelItem = null;
     this.cardOffers = {};
     const rr = rng(this.seed + idx * 31);
     // players at spawn
@@ -181,7 +192,7 @@ export class Game {
     this.phase = kind === "shop" ? "shop" : "fight";
     if (this.pvp) this.phase = "pvp";
     const floor = this.endless ? `无尽回廊 · 第 ${idx + 1} 层` : `第 ${idx + 1} 层 · ${md.name}`;
-    this.banner = { text: this.pvp ? `竞技场 · ${this.pvpRule.name}` : kind === "boss" ? (this.endless ? `第 ${idx + 1} 层 · 首领` : "首领 · 幻觉之眼") : kind === "shop" ? "补给站" : floor, sub: this.pvp ? this.pvpRule.goalText : kind === "shop" ? "扭蛋机 / 补给 · 准备好后进入传送门" : kind === "boss" ? "击败它！" : md.hazardText || "清除所有敌人", t: 2.4 };
+    this.banner = { text: this.pvp ? `竞技场 · ${this.pvpRule.name}` : kind === "boss" ? (this.endless ? `第 ${idx + 1} 层 · 首领` : `首领 · ${(ENEMIES[def.boss] || ENEMIES.boss_eye).name}`) : kind === "shop" ? "补给站" : floor, sub: this.pvp ? this.pvpRule.goalText : kind === "shop" ? "扭蛋机 / 补给 · 准备好后进入传送门" : kind === "boss" ? "击败它！" : md.hazardText || "清除所有敌人", t: 2.4 };
     if (kind === "boss") sfx("boss");
     this.flowT = 0;
     this.onUi("room");
@@ -499,6 +510,8 @@ export class Game {
       }
     }
     if (e.def.puddle) this.addZone({ kind: "poison", x: e.x, y: e.y, r: 22, life: 5, side: "neutral" });
+    if (e.def.lavaPuddle) this.addZone({ kind: "poison", fire: true, x: e.x, y: e.y, r: 24, life: 4, side: "neutral" });
+    if (e.def.split && !e.boss) for (const s of [-1, 1]) this.spawnEnemy(e.def.split, e.x + s * 16, e.y + 4, false, 0.15);
     if (e.type === "wisp" && e.st !== "boom") this.explodeAt(e.x, e.y, 34, 0, 12, null);
     if (e.boss) this.bossDown(e);
   }
@@ -917,6 +930,7 @@ export class Game {
         this.leaving = true;
         this.sound("portal");
         this.onUi("transition");
+        if (this.portal.victory) return this.after(0.7, () => ((this.leaving = false), this.victory()));
         this.after(0.7, () => {
           this.leaving = false;
           this.runStats.rooms = Math.max(this.runStats.rooms, this.roomIdx + 1);
@@ -950,6 +964,9 @@ export class Game {
     this.phase = "clear";
     this.sound("clear");
     this.runStats.rooms = Math.max(this.runStats.rooms, this.roomIdx + 1);
+    // a boss always drops a 梦境矿场 shovel: it lands with a light beam; walk over it to pick it up
+    // (it is counted at the settlement either way)
+    if (this.room.kind === "boss") this.dropShovel();
     // a boss sometimes leaves a 梦境裂隙: a 60-second dig (solo only)
     if (this.room.kind === "boss" && this.mode === "solo" && Math.random() < RIFT_CHANCE) {
       this.banner = { text: "梦境裂隙出现！", sub: "限时挖宝的机会", t: 2 };
@@ -958,15 +975,32 @@ export class Game {
       if (!this.endless) return;
     }
     if (this.room.kind === "boss" && !this.endless) {
-      this.after(2.5, () => this.victory());
+      // after the shovel lands, a portal opens; stepping in ends the run
+      this.after(1.8, () => {
+        const c = this.map.center;
+        this.phase = "portal";
+        this.portal = { x: c.x, y: c.y - 46, t: 0, victory: true };
+        this.vfx("arcane/portal", this.portal.x, this.portal.y + 8, { layer: "back" });
+        this.banner = { text: "传送门已开启", sub: "拾取铲子后进入传送门结算", t: 2 };
+      });
       return;
     }
     this.banner = { text: "清场完成！", sub: "打开补给箱选择技能卡", t: 2 };
     const c = this.map.center;
-    this.chest = { x: c.x, y: c.y - 20, opened: false };
-    this.vfx("pickups/loot-beam", c.x, c.y - 14, { life: 2.5 });
+    this.chest = { x: c.x, y: c.y + 38, opened: false };
+    this.vfx("pickups/loot-beam", c.x, c.y + 44, { life: 2.5 });
     // vacuum coins
     for (const q of this.pickups) if (q.kind === "coin") q.magnet = true;
+  }
+  /** boss reward for 梦境矿场: 金 10% / 银 35% / 铜 55%, dropped at the centre with a beam in its colour */
+  dropShovel() {
+    if (this.runStats.shovel) return;
+    const r = Math.random(), kind = r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu";
+    const c = this.map.center, col = { cu: "#ff9a4a", ag: "#d8e4ff", au: "#ffd84a" }[kind];
+    this.runStats.shovel = kind;
+    this.shovelItem = { kind, x: c.x + 46, y: c.y + 2, t: 0, col };
+    this.vfx("pickups/loot-beam", this.shovelItem.x, this.shovelItem.y + 6, { life: 2 });
+    this.text(this.shovelItem.x, this.shovelItem.y - 40, { cu: "铜铲", ag: "银铲", au: "金铲" }[kind] + "掉落！", col, 1.2, 1.4);
   }
   openChest(p) {
     if (!this.chest || this.chest.opened) return;
@@ -1021,7 +1055,8 @@ export class Game {
     }
     this.phase = "portal";
     const c = this.map.center;
-    this.portal = { x: c.x, y: c.y + 30, t: 0 };
+    // portal above, the (opened) chest below, so they never overlap
+    this.portal = { x: c.x, y: c.y - 46, t: 0 };
     this.vfx("arcane/portal", this.portal.x, this.portal.y + 8, { layer: "back" });
     this.banner = { text: "传送门已开启", sub: "所有存活角色进入传送门前往下一层", t: 2 };
   }
@@ -1206,8 +1241,17 @@ export class Game {
       if (dist(p.x, p.y, z.x, z.y) < z.r + 6) {
         p.poisonT = (p.poisonT || 0) + dt;
         if (p.poisonT > 1.2) (p.poisonT = 0), this.hurt(p, 1, z);
-        p.buff.poison = 0.3;
+        if (z.fire) p.buff.burn = Math.max(p.buff.burn || 0, 0.6);
+        else p.buff.poison = 0.3;
       }
+    }
+    // boss shovel on the ground
+    const si = this.shovelItem;
+    if (si && !si.got && dist(p.x, p.y, si.x, si.y) < 26) {
+      si.got = true;
+      this.sound("pickup");
+      this.vfx("pickups/collect-burst", si.x, si.y - 10, {});
+      this.text(si.x, si.y - 40, "获得" + { cu: "铜铲", ag: "银铲", au: "金铲" }[si.kind] + "（梦境矿场）", si.col, 1.1, 1.4);
     }
     // chest & shop interaction
     if (this.chest && !this.chest.opened && dist(p.x, p.y, this.chest.x, this.chest.y) < 30) this.openChest(p);

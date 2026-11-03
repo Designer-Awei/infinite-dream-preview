@@ -78,6 +78,13 @@ export async function loadAll(progress = () => {}) {
     const m = cj[n];
     A.critters[n] = { ...m, img: imgs[i], white: silhouette(imgs[i], "#ffffff"), red: silhouette(imgs[i], "#ff5050"), blue: silhouette(imgs[i], "#bfefff") };
   });
+  // map residents: recoloured copies of the base critters (luminance mapped onto a 5-colour ramp)
+  for (const [name, [base, ramp]] of Object.entries(VARIANTS)) {
+    const b = A.critters[base];
+    if (!b) continue;
+    const im = recolor(b.img, ramp);
+    A.critters[name] = { ...b, img: im, white: silhouette(im, "#ffffff"), red: silhouette(im, "#ff5050"), blue: silhouette(im, "#bfefff") };
+  }
   progress(0.8);
   const ps = await Promise.all(CHAR_ORDER.map((id) => img(base + "portrait_" + id + ".png")));
   CHAR_ORDER.forEach((id, i) => (A.portraits[id] = ps[i]));
@@ -86,4 +93,38 @@ export async function loadAll(progress = () => {}) {
   } catch {}
   progress(1);
   A.ready = true;
+}
+
+const ICE = ["#0a1a30", "#1e4a7a", "#4a9ad8", "#a8e0ff", "#ffffff"];
+const LAVA = ["#1a0600", "#7a1e06", "#d8481c", "#ffa030", "#fff0a0"];
+/** recoloured critters for each map's own monsters and bosses */
+const VARIANTS = {
+  snake_vine: ["snake", ["#0e2a10", "#1f5a22", "#3a9a3a", "#7ad85a", "#d8ffb0"]],
+  frog_big: ["frog", ["#20102a", "#5a2a7a", "#a050c8", "#e08aff", "#fff0ff"]],
+  bat_ice: ["bat", ICE],
+  eye_ice: ["eyeball", ICE],
+  slime_frost: ["slime_blue", ["#0a1a30", "#3a7ab8", "#8ad0ff", "#e0f8ff", "#ffffff"]],
+  slime_lava: ["slime", LAVA],
+  bat_fire: ["bat", LAVA],
+  skull_core: ["skull", ["#1a0400", "#8a1a0a", "#ff4a1a", "#ffb040", "#ffffe0"]],
+};
+function recolor(src, ramp) {
+  const c = document.createElement("canvas");
+  c.width = src.width;
+  c.height = src.height;
+  const g = c.getContext("2d");
+  g.drawImage(src, 0, 0);
+  const d = g.getImageData(0, 0, c.width, c.height), px = d.data;
+  const rgb = ramp.map((h) => [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]);
+  for (let i = 0; i < px.length; i += 4) {
+    if (!px[i + 3]) continue;
+    const l = (0.3 * px[i] + 0.59 * px[i + 1] + 0.11 * px[i + 2]) / 255;
+    if (l < 0.1) continue; // keep the dark outline
+    const k = Math.min(rgb.length - 1, Math.max(0, Math.round(l * (rgb.length - 1) * 1.08)));
+    px[i] = rgb[k][0];
+    px[i + 1] = rgb[k][1];
+    px[i + 2] = rgb[k][2];
+  }
+  g.putImageData(d, 0, 0);
+  return c;
 }

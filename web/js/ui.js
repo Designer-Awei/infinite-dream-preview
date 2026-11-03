@@ -63,11 +63,11 @@ export function showHelp() {
   手机：左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键可手动瞄准 · 技能/大招键轻点自动释放，拖动瞄准后松手释放<br><br>
   <b style="color:#ffe36a">循环</b>　每局 7 个房间：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。清场后开箱三选一技能卡，构筑你的流派。护盾受击后几秒自动回复，生命不会。<br><br>
   <b style="color:#ffe36a">技能混搭 · 元素反应</b>　每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他AI娘的弹幕和技能，不同元素先后命中同一敌人触发反应：<br>${reacts}<br><br>
-  <b style="color:#ffe36a">地图道具</b>　${Object.values(ITEMS).map((i) => `<span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span>`).join(" ")}　草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。<br><br>
+  <b style="color:#ffe36a">地图道具</b>　走过去自动拾取：<br>${Object.values(ITEMS).map((i) => `<span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span> ${i.desc}`).join("<br>")}<br>其中<b>算力方块</b>是本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，效果持续到本局结束；打碎箱子、击败敌人和竞技场里都会刷出。草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。<br><br>
   <b style="color:#ffe36a">模式与地图</b>　在大厅「开始冒险」上方左右滑动地图卡切换模式（全部支持离线单机）：<br>
   ${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `· <b>主线 ${i + 1}：${d.name}</b>　${d.desc} 敌人血量×${d.hp}，晶石奖励×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200💎。`; }).join("<br>")}<br>
   · <b>无尽回廊</b>　一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层轮换一张地图的地形，敌人越来越多越来越强；倒下时按到达层数结算并记录最佳纪录。完成任意一局后解锁。<br><br>
-  <b style="color:#ffe36a">梦境矿场（搜 · 打 · 撤）</b>　大厅「梦境矿场」用铲子下潜：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。在地面或「撤离电梯」里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。洞穴里有提着灯的「地下商人」，站在旁边就能用背包里的矿物换遗物、药水、电池和炸药；发光的「宝藏鼹鼠」会逃跑和钻土，追上打倒它能拿到一堆好矿。下潜前可以在矿场里勾选补给（花 💎）。金铲能挖到遗迹最深处的砖室，里面的「遗迹守护者」会震地和投石，打倒它才能打开星图宝箱。每层藏着一个紫色的「遗物箱」，打开后三选一获得本次下潜的增益（贪婪契约是有代价的诅咒）。铲子来自打败首领（铜/银/金）和每 4 小时的免费铜铲。矿石升级矿场装备，星砂在「梦境工坊」换金铲、SSR 兑换卡和角色专属的梦核（强化该角色的大招）。<br><br>
+  <b style="color:#ffe36a">梦境矿场（搜 · 打 · 撤）</b>　大厅「梦境矿场」用铲子下潜：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。在地面或「撤离电梯」里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。洞穴里有提着灯的「地下商人」，站在旁边就能用背包里的矿物换遗物、药水、电池和炸药；发光的「宝藏鼹鼠」会逃跑和钻土，追上打倒它能拿到一堆好矿。金铲能挖到遗迹最深处的砖室，里面的「遗迹守护者」会震地和投石，打倒它才能打开星图宝箱。每层藏着一个紫色的「遗物箱」，打开后三选一获得本次下潜的增益（贪婪契约是有代价的诅咒）。铲子来自打败首领（首领倒下时地上会掉一把带光柱的铲子）和免费铜铲（每 4 小时 1 把，最多攒 5 把，点矿场标题旁的铜铲领取）；梦境工坊里 3 把铜铲合成 1 把银铲、3 把银铲合成 1 把金铲。矿石升级矿场装备；星砂在梦境工坊换「最终减伤」（矿场里每次受到的伤害 -1，最多 2 级）、SSR 兑换卡和角色专属的梦核（强化该角色的大招）。从 4 格以上高处直接掉下来才会摔伤。<br><br>
   <b style="color:#ffe36a">养成</b>　通关获得💎晶石，扭蛋机抽取永久天赋与稀有技能卡。N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、${2} 个槽位，PVE 和 PVP 都生效。达成条件解锁新角色。
   </div><div class="row" style="margin-top:10px"></div></div>`;
   $(".row", md).appendChild(btn("知道了", "", () => md.remove()));
@@ -212,6 +212,7 @@ export function updateHud(game, me) {
     const bb = hud.querySelector(".bossbar");
     bb.style.display = v < 0 ? "none" : "";
     if (v >= 0) bb.querySelector("i").style.width = v / 2 + "%";
+    if (boss) bb.querySelector(".nm").textContent = boss.def.name;
   });
   // buffs
   const bl = [];
@@ -343,18 +344,15 @@ export function closeCards() {
 export function showPause(game, opts) {
   const md = el("div", "modal pause-modal");
   const m = load();
-  md.innerHTML = `<div class="panel" style="min-width:300px;text-align:center"><h2 class="outline">暂停</h2><div class="row r1"></div><div class="row r2" style="margin-top:10px"></div><div class="build o1"></div></div>`;
-  $(".r1", md).append(btn("继续", "", () => (md.remove(), opts.resume())));
-  $(".r2", md).append(
-    btn(`音效：${m.sound ? "开" : "关"}`, "gray small", (e) => ((m.sound = !m.sound), setSound(m.sound), save(), (e.target.closest("button").innerHTML = `音效：${m.sound ? "开" : "关"}`))),
-    btn(`音乐：${m.music ? "开" : "关"}`, "gray small", (e) => ((m.music = !m.music), setMusic(m.music), save(), (e.target.closest("button").innerHTML = `音乐：${m.music ? "开" : "关"}`))),
-    btn(`自动攻击：${m.autoFire ? "开" : "关"}`, "gray small", (e) => {
-      m.autoFire = !m.autoFire;
-      save();
-      e.target.closest("button").innerHTML = `自动攻击：${m.autoFire ? "开" : "关"}`;
-    }),
-    btn(opts.quitLabel || "放弃本局", "red small", () => (md.remove(), opts.quit())),
+  // top row: toggles; bottom row: 放弃本局 (left) and 继续 (right)
+  md.innerHTML = `<div class="panel pause-p"><h2 class="outline">暂停</h2><div class="row r1"></div><div class="row r2"></div><div class="build o1"></div></div>`;
+  const tg = (label, get, flip) => btn(`${label}：${get() ? "开" : "关"}`, "gray small pz-tg", (e) => (flip(), save(), (e.target.closest("button").innerHTML = `${label}：${get() ? "开" : "关"}`)));
+  $(".r1", md).append(
+    tg("音效", () => m.sound, () => ((m.sound = !m.sound), setSound(m.sound))),
+    tg("音乐", () => m.music, () => ((m.music = !m.music), setMusic(m.music))),
+    tg("自动攻击", () => m.autoFire, () => (m.autoFire = !m.autoFire)),
   );
+  $(".r2", md).append(btn(opts.quitLabel || "放弃本局", "red pz-act", () => (md.remove(), opts.quit())), btn("继续", "pz-act", () => (md.remove(), opts.resume())));
   const me = opts.me;
   if (me) {
     const owned = Object.entries(me.cards);

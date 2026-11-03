@@ -1,4 +1,4 @@
-// 地下商人 + 宝藏鼹鼠 + 补给: supplies are charged and applied, the mole flees/drops loot, the merchant trades bag ore
+// 地下商人 + 宝藏鼹鼠: the mole flees/drops loot, the merchant trades bag ore (下潜补给 was removed: nothing is charged)
 import { createRequire } from "module"; const require = createRequire(import.meta.url); const { chromium } = require("playwright");
 const W = +(process.argv[2] || 804), H = +(process.argv[3] || 360), touch = W < 1000;
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });
@@ -8,8 +8,7 @@ await p.evaluate(() => localStorage.setItem("ai-girls-dungeon-v1", JSON.stringif
 await p.reload(); await p.waitForTimeout(1800);
 if (touch) await p.touchscreen.tap(5, H - 5);
 await p.evaluate(() => document.querySelector(".t-mine").click()); await p.waitForTimeout(900);
-await p.evaluate(() => { document.querySelector('.msup[data-k="bomb"]').click(); document.querySelector('.msup[data-k="plate"]').click(); });
-await p.waitForTimeout(200);
+
 await p.screenshot({ path: `tmp/hub_sup_${W}.png` });
 await p.evaluate(() => document.querySelector('.mshv[data-k="au"]').click());
 const goTxt = await p.evaluate(() => document.querySelector(".mh-go").textContent);

@@ -10,7 +10,7 @@ import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
 import { Dive } from "./mine.js";
 import { progressQuests, questText } from "./minequests.js";
 import * as MUI from "./mineui.js";
-import { SUPPLIES, SHOVELS } from "./minedata.js";
+import { SHOVELS } from "./minedata.js";
 import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
@@ -169,7 +169,7 @@ export const app = {
     save();
     const unl = checkUnlocks();
     // 梦境矿场 shovels: a boss always drops one; a decent run sometimes gives a copper one
-    const drop = rollShovel(rs);
+    const drop = rs.shovel || rollShovel(rs);
     if (drop) {
       mineState().shovels[drop]++;
       save();
@@ -216,17 +216,9 @@ export const app = {
     if (!ms.shovels[shovel]) return;
     ms.shovels[shovel]--;
     ms.dives++;
-    // supplies: pay for each selected one we can afford
-    const supply = [];
-    for (const k of ms.supply || []) {
-      const c = SUPPLIES[k] && SUPPLIES[k].cost;
-      if (!c) continue;
-      if (m.tokens >= c) (m.tokens -= c), supply.push(k);
-      else UI.toast(`晶石不足，没带上${SUPPLIES[k].name}`);
-    }
     save();
     fx.clearAll();
-    const d = new Dive({ cid: m.chars.includes(m.sel) ? m.sel : "deepseek", shovel, up: { ...ms.up }, fx, talents: m.talents, supply });
+    const d = new Dive({ cid: m.chars.includes(m.sel) ? m.sel : "deepseek", shovel, up: { ...ms.up }, fx, talents: m.talents });
     d.onEnd = (res) => setTimeout(() => this.endDive(d, res), res.how === "dead" ? 1100 : 500);
     this.dive = d;
     this.diveShovel = shovel;
@@ -471,7 +463,7 @@ function diveFrame(dt) {
 /** shovel drop at the end of a run */
 function rollShovel(rs) {
   const r = Math.random();
-  if (rs.boss) return r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu";
+  if (rs.boss) return r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu"; // normally already dropped in the boss room (rs.shovel)
   if (rs.rooms >= 3 && r < 0.4) return "cu";
   return null;
 }

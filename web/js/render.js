@@ -5,6 +5,8 @@ import { WALL, WATER, BUSH, CRATE, BARREL, wallSprite, wallMask, crateSprite, bu
 import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
+import { icon } from "./icons.js";
+const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
   let v = HC.get(c);
@@ -123,6 +125,7 @@ export class Renderer {
     for (const z of game.zones) if (z.kind === "station") list.push({ y: z.y, k: 6, o: z });
     if (game.shop && game.room && game.room.kind === "shop") for (const it of game.shop) list.push({ y: it.y + 10, k: 7, o: it });
     if (game.chest && !game.chest.opened) list.push({ y: game.chest.y + 8, k: 8, o: game.chest });
+    if (game.shovelItem && !game.shovelItem.got) list.push({ y: game.shovelItem.y, k: 9, o: game.shovelItem });
     list.sort((a, b) => a.y - b.y);
     for (const d of list) {
       switch (d.k) {
@@ -155,6 +158,7 @@ export class Renderer {
         case 6: this.drawStation(g, d.o); break;
         case 7: this.drawShopItem(g, d.o, me); break;
         case 8: this.drawChest(g, d.o); break;
+        case 9: this.drawShovelDrop(g, d.o, game.time); break;
       }
     }
     // lobbed bullets get a shadow on the ground (drawn already) - lines
@@ -574,16 +578,17 @@ export class Renderer {
     } else if (z.kind === "poison") {
       // bubbling toxic pool (drawn by hand, Brawl Stars style poison)
       const fade = clamp(z.life * 2) * clamp(z.t * 3);
+      const pc = z.fire ? ["#7a1e06", "#ff6a1a", "#ffd04a", "#fff0a0"] : ["#2f6a1e", "#6fd23a", "#a6f05a", "#d8ffa0"];
       g.globalAlpha = 0.85 * fade;
-      g.fillStyle = "#2f6a1e";
+      g.fillStyle = pc[0];
       g.beginPath();
       g.ellipse(z.x, z.y, z.r + 2, z.r * 0.62 + 2, 0, 0, TAU);
       g.fill();
-      g.fillStyle = "#6fd23a";
+      g.fillStyle = pc[1];
       g.beginPath();
       g.ellipse(z.x, z.y, z.r, z.r * 0.62, 0, 0, TAU);
       g.fill();
-      g.fillStyle = "#a6f05a";
+      g.fillStyle = pc[2];
       g.beginPath();
       g.ellipse(z.x - z.r * 0.25, z.y - z.r * 0.18, z.r * 0.45, z.r * 0.2, 0, 0, TAU);
       g.fill();
@@ -591,7 +596,7 @@ export class Renderer {
         const ph = (this.t * 0.9 + i * 0.27 + (z.id % 7) * 0.13) % 1, a = i * 1.7 + z.id;
         const bx = z.x + Math.cos(a) * z.r * 0.55, by = z.y + Math.sin(a) * z.r * 0.3 - ph * 10;
         g.globalAlpha = (1 - ph) * fade;
-        g.strokeStyle = "#d8ffa0";
+        g.strokeStyle = pc[3];
         g.lineWidth = 1;
         g.beginPath();
         g.arc(bx, by, 1.5 + ph * 2.5, 0, TAU);
@@ -731,6 +736,29 @@ export class Renderer {
     this.text(g, `${it.name}`, x, y + 24, near ? "#ffe14a" : "#ffffff", 11);
     this.text(g, `◎${it.price}`, x, y + 37, "#ffd84a", 11);
     if (near) this.text(g, input.touch ? "按攻击购买" : "按 J 购买", x, y - 46 + Math.sin(this.t * 5) * 2, "#5dff7a", 11);
+  }
+  /** boss shovel: a light pillar in its colour and the shovel bobbing above a glow */
+  drawShovelDrop(g, si, t) {
+    const x = si.x, y = si.y, bob = Math.sin(t * 4) * 3;
+    g.save();
+    const gr = g.createLinearGradient(0, y - 120, 0, y);
+    gr.addColorStop(0, "rgba(255,255,255,0)");
+    gr.addColorStop(1, si.col);
+    g.globalCompositeOperation = "lighter";
+    g.globalAlpha = 0.55 + 0.2 * Math.sin(t * 6);
+    g.fillStyle = gr;
+    g.fillRect(x - 12, y - 140, 24, 140);
+    g.fillRect(x - 5, y - 160, 10, 160);
+    g.globalCompositeOperation = "source-over";
+    g.globalAlpha = 0.5;
+    g.fillStyle = si.col;
+    g.beginPath();
+    g.ellipse(x, y, 18, 6, 0, 0, TAU);
+    g.fill();
+    g.globalAlpha = 1;
+    const ic = shovelIcon(si.kind);
+    if (ic) g.drawImage(ic, x - 16, y - 40 + bob, 32, 32);
+    g.restore();
   }
   drawChest(g, c) {
     const x = Math.round(c.x), y = Math.round(c.y), b = Math.round(Math.abs(Math.sin(this.t * 4)) * -2);

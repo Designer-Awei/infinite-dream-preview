@@ -1063,7 +1063,8 @@ export class Dive {
     // camera
     const VW = vw(), VH = vh(), tx = p.x - VW / 2, bossOn = this.mobs.some((m) => m.d.boss && m.awake), ty = p.y - VH * (bossOn ? 0.74 : 0.45);
     const worldW = MW * MT;
-    this.cam.x = worldW <= VW ? (worldW - VW) / 2 : clamp(this.cam.x + (tx - this.cam.x) * Math.min(1, dt * 6), 0, worldW - VW);
+    // the bedrock columns at both edges stay just off screen, so the view is always filled
+    this.cam.x = worldW - 2 * MT <= VW ? (worldW - VW) / 2 : clamp(this.cam.x + (tx - this.cam.x) * Math.min(1, dt * 6), MT, worldW - VW - MT);
     this.cam.y += (clamp(ty, -SURF * MT + 20, this.rows * MT - VH) - this.cam.y) * Math.min(1, dt * 6);
   }
   moveP(dx, dy) {
@@ -1087,7 +1088,7 @@ export class Dive {
         if (dy > 0) {
           p.ground = true;
           p.y = Math.floor((p.y + dy) / MT) * MT;
-          if (p.vy > 330) this.hurt(1, "摔伤");
+          if (p.vy > 390) this.hurt(1, "摔伤"); // falls of up to 3 tiles are free (4+ hurts)
         } else p.y = Math.ceil((p.y + dy - PH) / MT) * MT + PH;
         p.vy = 0;
       }
@@ -1102,6 +1103,16 @@ export class Dive {
       return;
     }
     if (this.rel.greed) n += 1;
+    // 最终减伤 (梦境工坊): -1 per level; the guardian's hits and drowning still cost at least 1
+    const dr = this.up.dr || 0;
+    if (dr) {
+      n = Math.max(why === "缺氧" || this.bossHit ? 1 : 0, n - dr);
+      if (n <= 0) {
+        p.inv = 0.5;
+        this.text(p.x, p.y - PH - 12, "减伤", "#c8d8ff");
+        return;
+      }
+    }
     p.hp -= n;
     p.inv = 0.9;
     p.hurtT = 0.3;
@@ -1241,13 +1252,13 @@ export class Dive {
         }
       }
       m.face = dx > 0 ? 1 : -1;
-      if (Math.abs(p.x - m.x) < 26 && p.y > m.y - 70 && p.y < m.y + m.d.r + 4) this.hurt(1);
+      if (Math.abs(p.x - m.x) < 26 && p.y > m.y - 70 && p.y < m.y + m.d.r + 4) (this.bossHit = true), this.hurt(1), (this.bossHit = false);
     }
     // shockwave rolls out along the floor both ways
     if (m.wave) {
       m.wave.t += dt;
       const reach = m.wave.t * 260;
-      if (p.ground && Math.abs(p.y - (m.y + m.d.r)) < MT && Math.abs(Math.abs(p.x - m.wave.x) - reach) < 14) this.hurt(2, "震地");
+      if (p.ground && Math.abs(p.y - (m.y + m.d.r)) < MT && Math.abs(Math.abs(p.x - m.wave.x) - reach) < 14) (this.bossHit = true), this.hurt(2, "震地"), (this.bossHit = false);
       if (Math.random() < 0.8) for (const side of [-1, 1]) this.parts.push({ x: m.wave.x + side * reach, y: m.y + m.d.r - 3, vx: 0, vy: -70, t: 0.3, col: m.rage ? "#ff7a4a" : "#d8ccb8", s: 3 });
       if (reach > 9 * MT) m.wave = null;
     }
@@ -1309,7 +1320,7 @@ export class Dive {
         continue;
       }
       if (b.enemy) {
-        if (Math.hypot(b.x - this.p.x, b.y - (this.p.y - PH / 2)) < 10) (b.t = 0), this.hurt(b.dmg);
+        if (Math.hypot(b.x - this.p.x, b.y - (this.p.y - PH / 2)) < 10) (b.t = 0), (this.bossHit = !!b.rock), this.hurt(b.dmg), (this.bossHit = false);
         continue;
       }
       for (const m of this.mobs) {

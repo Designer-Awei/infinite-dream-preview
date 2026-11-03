@@ -12,28 +12,28 @@ export const THEMES = [
     name: "数据草原",
     g1: "#78c850", g2: "#6fbf48", gHi: "#8fd862", gLo: "#5aa83a", dirt: "#c8a26a", dirtLo: "#a8824e",
     top: "#e8c08a", topHi: "#fde3b0", front: "#b07a48", frontLo: "#8a5a34", ink: "#2a1a14",
-    bush: "#3c9a3c", bushHi: "#5cc04e", bushLo: "#2a7a30", water: "#3fb4ea", waterHi: "#8fe0ff", waterLo: "#2a86c8",
+    bush: "#3c9a3c", bushHi: "#5cc04e", bushLo: "#2a7a30", water: "#3fb4ea", waterHi: "#8fe0ff", waterLo: "#2a86c8", rim: "#e8d8a8",
     mud: "#7a5a3a", mudHi: "#9a7650",
   },
   { // 显存冰原 (used by the boss room for contrast)
     name: "幻觉神殿",
     g1: "#8a7ac8", g2: "#8070bd", gHi: "#a090dc", gLo: "#6a5aa8", dirt: "#c4a6e0", dirtLo: "#9a80c0",
     top: "#d8d0f0", topHi: "#f4f0ff", front: "#8a7ab8", frontLo: "#62529a", ink: "#1e1430",
-    bush: "#c85aa8", bushHi: "#f08ad0", bushLo: "#9a3a84", water: "#40d0e0", waterHi: "#a0f4ff", waterLo: "#2a98b8",
+    bush: "#c85aa8", bushHi: "#f08ad0", bushLo: "#9a3a84", water: "#40d0e0", waterHi: "#a0f4ff", waterLo: "#2a98b8", rim: "#e8d8a8",
     mud: "#5a4a7a", mudHi: "#7a6aa0",
   },
   { // 显存冰原: snow field; the patches are slippery ice
     name: "显存冰原",
     g1: "#dbe8f4", g2: "#d2e1ef", gHi: "#f4faff", gLo: "#b4c8de", dirt: "#a8bcd4", dirtLo: "#8aa0bc",
     top: "#e6eef8", topHi: "#ffffff", front: "#8aa4c4", frontLo: "#6a84a8", ink: "#1a2238",
-    bush: "#5a8ab0", bushHi: "#8ab8dc", bushLo: "#3a648a", water: "#2a6ab8", waterHi: "#7ab8f0", waterLo: "#1a4a8a",
+    bush: "#5a8ab0", bushHi: "#8ab8dc", bushLo: "#3a648a", water: "#2a6ab8", waterHi: "#7ab8f0", waterLo: "#1a4a8a", rim: "#f4faff",
     mud: "#9ad8f4", mudHi: "#e4f8ff", mudDot: "#6ab4e0", flowers: ["#ffffff", "#bfe8ff", "#d8c8ff"],
   },
   { // 算力熔炉: scorched factory floor; the glowing cracks are lava
     name: "算力熔炉",
     g1: "#5a4a48", g2: "#544442", gHi: "#76625c", gLo: "#3e302e", dirt: "#7a5a4a", dirtLo: "#5a3e32",
     top: "#8a7a74", topHi: "#b0a098", front: "#4a3a3a", frontLo: "#32262a", ink: "#140c0c",
-    bush: "#7a4a3a", bushHi: "#a86a4a", bushLo: "#4e2e24", water: "#1e6a72", waterHi: "#5ac0c8", waterLo: "#124a52",
+    bush: "#7a4a3a", bushHi: "#a86a4a", bushLo: "#4e2e24", water: "#5a1a08", waterHi: "#ff8a2a", waterLo: "#2a0a04", rim: "#3a2a28",
     mud: "#d8481c", mudHi: "#ffc23a", mudDot: "#8a1e0a", flowers: ["#ffb04a", "#ff6a2a", "#ffe08a"],
   },
 ];
@@ -319,10 +319,10 @@ export function renderGround(m) {
     px(g, X, Y, T, T, th.water);
     const up = y > 0 && m.t[(y - 1) * W + x] === WATER, dn = m.t[(y + 1) * W + x] === WATER;
     const lf = m.t[y * W + x - 1] === WATER, rt = m.t[y * W + x + 1] === WATER;
-    if (!up) px(g, X, Y, T, 6, th.waterLo), px(g, X, Y, T, 2, "#e8d8a8");
+    if (!up) px(g, X, Y, T, 6, th.waterLo), px(g, X, Y, T, 2, th.rim);
     if (!dn) px(g, X, Y + T - 3, T, 3, th.waterHi);
-    if (!lf) px(g, X, Y, 3, T, "#e8d8a8");
-    if (!rt) px(g, X + T - 3, Y, 3, T, "#e8d8a8");
+    if (!lf) px(g, X, Y, 3, T, th.rim);
+    if (!rt) px(g, X + T - 3, Y, 3, T, th.rim);
   }
   // decals
   for (const d of m.decals) {

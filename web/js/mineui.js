@@ -1,7 +1,7 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
 import { CHARS, GACHA, VIEW_H, CORE_FX } from "./data.js";
-import { RELICS, SUPPLIES, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
-import { load, save, mineState, refreshFreeShovels } from "./save.js";
+import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
+import { load, save, mineState, refreshFreeShovels, claimFreeShovels } from "./save.js";
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
@@ -71,15 +71,14 @@ export function showMineHub() {
   const wait = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP);
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
-  <div class="topbar"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><div class="spacer"></div>
+  <div class="topbar"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-n"></b><small class="fc-t"></small></button><div class="spacer"></div>
     <button class="pill o1 curpill" data-cur="gem">${CUR.gem()}<span class="tok">${m.tokens}</span></button>
     <button class="pill o1 curpill" data-cur="ore">${CUR.ore()}<span class="mats">${ms.mats}</span></button>
     <button class="pill o1 curpill" data-cur="star">${CUR.star()}<span class="stars">${ms.stars}</span></button></div>
   <div class="mh-l">
     <div class="mh-h o1">选择铲子下潜（一把铲 = 一次下潜）</div>
     <div class="mh-shovels"></div>
-    <div class="mh-free o1">${ms.shovels.cu >= FREE_SHOVEL_CAP ? `免费铜铲已存满（${FREE_SHOVEL_CAP} 把）` : `下一把免费铜铲：${fmtMs(wait)}后`}　·　打败首领必得铲子</div>
-    <div class="mh-sup"></div>
+    <div class="mh-buff"></div>
     <div class="mh-rec o1">最深 ${ms.best}m · 下潜 ${ms.dives} 次</div>
     <button class="btn big mh-go"><span class="pt">下潜</span></button>
   </div>
@@ -104,29 +103,42 @@ export function showMineHub() {
     }));
   };
   const go = q(".mh-go", s);
-  const supCost = () => (ms.supply || []).reduce((a, k) => a + (SUPPLIES[k] ? SUPPLIES[k].cost : 0), 0);
   const updGo = () => {
-    const n = ms.shovels[pick], c = supCost();
+    const n = ms.shovels[pick];
     go.disabled = !n;
-    q(".pt", go).innerHTML = n ? `用${SHOVELS[pick].name}下潜${c ? `<small class="go-c">${CUR.gem()}${c}</small>` : ""}` : `没有${SHOVELS[pick].name}`;
+    q(".pt", go).textContent = n ? `用${SHOVELS[pick].name}下潜` : `没有${SHOVELS[pick].name}`;
   };
-  // supplies: toggles that stay selected between dives; paid when you dive
-  const sup = q(".mh-sup", s);
-  const drawSup = () => {
-    const on = new Set(ms.supply || []);
-    sup.innerHTML = Object.entries(SUPPLIES).map(([k, d]) => `<button class="msup${on.has(k) ? " on" : ""}" data-k="${k}" title="${d.name}：${d.desc}"><img src="${iconURL(d.icon, 2)}" alt=""><small>${CUR.gem()}${d.cost}</small></button>`).join("");
-    sup.querySelectorAll(".msup").forEach((b) => (b.onclick = () => {
-      const k = b.dataset.k, cur = new Set(ms.supply || []);
-      cur.has(k) ? cur.delete(k) : cur.add(k);
-      toast(cur.has(k) ? `已勾选补给：${SUPPLIES[k].name}（${SUPPLIES[k].desc}，下潜时扣 ${SUPPLIES[k].cost} 晶石）` : `取消补给：${SUPPLIES[k].name}`);
-      ms.supply = [...cur];
-      save();
-      sfx("click");
-      drawSup();
-      updGo();
-    }));
+  // 当前增益: what the next dive starts with (mine gear + workshop)
+  const buff = q(".mh-buff", s);
+  const drawBuff = () => {
+    const u = ms.up, U = UPGRADES;
+    const rows = [
+      ["heart", "生命", 5 + 2 * u.armor], ["battery", "电量", U.battery.val(u.battery)], ["bag", "背包", U.bag.val(u.bag)], ["pick", "挖速", U.drill.val(u.drill)],
+      ["target", "视野", U.radar.val(u.radar)], ["elem_bubble", "氧气", U.tank.val(u.tank)], ["beacon", "信标", U.beacon.val(u.beacon)], ["shield", "减伤", u.dr ? `-${u.dr}` : "0"],
+    ];
+    buff.innerHTML = `<div class="mb-h o1">当前增益</div><div class="mb-g">${rows.map(([ic, n, v]) => `<div class="mb-i"><img src="${iconURL(ic, 2)}" alt=""><span>${n}</span><b>${v}</b></div>`).join("")}</div>`;
   };
-  drawSup();
+  drawBuff();
+  // free copper shovels: they pile up next to the title (max ${FREE_SHOVEL_CAP}); tap to claim them into stock
+  const fc = q(".mh-freecu", s);
+  const drawFree = () => {
+    const w = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP), n = ms.freePend || 0;
+    q(".fc-n", fc).textContent = "×" + n;
+    const sec = Math.ceil(w / 1000);
+    q(".fc-t", fc).textContent = n >= FREE_SHOVEL_CAP ? "已满" : `${Math.floor(sec / 3600)}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+    fc.classList.toggle("ready", n > 0);
+  };
+  fc.onclick = () => {
+    const n = claimFreeShovels();
+    if (!n) return toast(`下一把免费铜铲还在路上（每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把）`);
+    sfx("card");
+    toast(`领取了 ${n} 把铜铲`);
+    drawFree();
+    drawShovels();
+    updGo();
+  };
+  drawFree();
+  const freeTimer = setInterval(() => (s.isConnected ? drawFree() : clearInterval(freeTimer)), 1000);
   go.onclick = () => {
     if (!ms.shovels[pick]) return;
     sfx("portal");
@@ -158,6 +170,7 @@ export function showMineHub() {
       save();
       sfx("card");
       toast(`${UPGRADES[k].name} 升到 Lv${ms.up[k]}`);
+      drawBuff();
       pills();
       drawUps();
     }));
@@ -165,24 +178,60 @@ export function showMineHub() {
   const drawShop = () => {
     const cid = m.chars.includes(m.sel) ? m.sel : "deepseek", hasCore = !!(m.cores || {})[cid];
     const rows = Object.entries(WORKSHOP).map(([k, w]) => {
-      const owned = k === "card" ? `持有 ${ms.cards}` : k === "core" ? (hasCore ? `${CHARS[cid].short} 已拥有` : `给 ${CHARS[cid].short}`) : `持有 ${ms.shovels[k]}`;
-      const can = ms.stars >= w.cost && !(k === "core" && hasCore);
-      const ico = k === "card" ? iconURL("cardgold", 2) : k === "core" ? `assets/head_${cid}.png` : iconURL("shovel_" + k, 2);
+      let owned, price, can, label = "兑换", ico;
+      if (w.trade) {
+        owned = `持有 ${ms.shovels[k]}`;
+        price = `<img class="cur" src="${iconURL("shovel_" + w.trade, 1)}" alt="">×${w.n}`;
+        can = ms.shovels[w.trade] >= w.n;
+        label = "合成";
+        ico = iconURL("shovel_" + k, 2);
+      } else if (k === "dr") {
+        const l = ms.up.dr || 0, max = l >= w.max;
+        owned = `Lv${l}/${w.max}`;
+        price = max ? "" : `${CUR.star()}${w.cost(l)}`;
+        can = !max && ms.stars >= w.cost(l);
+        label = max ? "已满级" : "升级";
+        ico = iconURL("shield", 2);
+      } else {
+        owned = k === "card" ? `持有 ${ms.cards}` : hasCore ? `${CHARS[cid].short} 已拥有` : `给 ${CHARS[cid].short}`;
+        price = `${CUR.star()}${w.cost}`;
+        can = ms.stars >= w.cost && !(k === "core" && hasCore);
+        if (k === "core" && hasCore) label = "已拥有";
+        ico = k === "card" ? iconURL("cardgold", 2) : `assets/head_${cid}.png`;
+      }
       return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${k === "core" ? CORE_FX[cid] : w.desc}</span></div>
-        <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${k === "core" && hasCore ? "已拥有" : "兑换"}</span><small>${CUR.star()}${w.cost}</small></button></div>`;
+        <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${label}</span>${price ? `<small>${price}</small>` : ""}</button></div>`;
     }).join("");
     ups.innerHTML = rows + (ms.cards ? `<div class="ws-note o1"><b class="ws-use">使用兑换卡 ›</b></div>` : "");
     ups.querySelectorAll(".ws-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, w = WORKSHOP[k];
-      if (k === "core" && hasCore) return toast("这个角色已经有梦核了：去大厅换个角色");
-      if (ms.stars < w.cost) return toast(`星砂不足（${ms.stars}/${w.cost}）：越深的宝箱星砂越多`);
-      ms.stars -= w.cost;
-      if (k === "card") ms.cards++;
-      else if (k === "core") (m.cores = m.cores || {}), (m.cores[cid] = 1);
-      else ms.shovels[k]++;
-      save();
-      sfx(k === "core" ? "ssr" : "card");
-      toast(k === "core" ? `${CHARS[cid].short} 获得梦核：${CORE_FX[cid]}` : `获得 ${w.name}`, 2600);
+      if (w.trade) {
+        if (ms.shovels[w.trade] < w.n) return toast(`${SHOVELS[w.trade].name}不够（${ms.shovels[w.trade]}/${w.n}）`);
+        ms.shovels[w.trade] -= w.n;
+        ms.shovels[k]++;
+        save();
+        sfx("card");
+        toast(`合成了 1 把${w.name}`);
+      } else if (k === "dr") {
+        const l = ms.up.dr || 0;
+        if (l >= w.max) return toast("最终减伤已满级");
+        if (ms.stars < w.cost(l)) return toast(`星砂不足（${ms.stars}/${w.cost(l)}）`);
+        ms.stars -= w.cost(l);
+        ms.up.dr = l + 1;
+        save();
+        sfx("card");
+        toast(`最终减伤升到 Lv${l + 1}：矿场里每次受到的伤害 -${l + 1}`);
+        drawBuff();
+      } else {
+        if (k === "core" && hasCore) return toast("这个角色已经有梦核了：去大厅换个角色");
+        if (ms.stars < w.cost) return toast(`星砂不足（${ms.stars}/${w.cost}）：越深的宝箱星砂越多`);
+        ms.stars -= w.cost;
+        if (k === "card") ms.cards++;
+        else (m.cores = m.cores || {}), (m.cores[cid] = 1);
+        save();
+        sfx(k === "core" ? "ssr" : "card");
+        toast(k === "core" ? `${CHARS[cid].short} 获得梦核：${CORE_FX[cid]}` : `获得 ${w.name}`, 2600);
+      }
       pills();
       drawShovels();
       updGo();

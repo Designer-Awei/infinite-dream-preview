@@ -191,7 +191,7 @@ export function mineState() {
   if (!m.mine) m.mine = {};
   const s = m.mine;
   s.shovels = Object.assign({ cu: 1, ag: 0, au: 0 }, s.shovels || {});
-  s.up = Object.assign({ drill: 0, battery: 0, bag: 0, armor: 0, radar: 0, beacon: 0, tank: 0 }, s.up || {});
+  s.up = Object.assign({ drill: 0, battery: 0, bag: 0, armor: 0, radar: 0, beacon: 0, tank: 0, dr: 0 }, s.up || {});
   s.mats = s.mats || 0;
   s.stars = s.stars || 0;
   s.cards = s.cards || 0;
@@ -200,20 +200,23 @@ export function mineState() {
   if (s.freeAt == null) s.freeAt = Date.now();
   return s;
 }
-/** free copper shovel every FREE_SHOVEL_HOURS (stored up to the cap). returns ms until the next one (0 if capped) */
+/** free copper shovels pile up (one every FREE_SHOVEL_HOURS, up to the cap) until the player claims them into stock.
+ *  returns ms until the next one (0 while the pile is full: the clock waits) */
 export function refreshFreeShovels(hours, cap) {
   const s = mineState(), per = hours * 3600e3, now = Date.now();
-  if (s.freeCu == null) s.freeCu = 0; // how many of the copper shovels are free ones (only those count for the cap)
-  while (now - s.freeAt >= per) {
-    if (s.shovels.cu >= cap) {
-      s.freeAt = now;
-      break;
-    }
-    s.shovels.cu++;
-    s.freeAt += per;
-  }
+  s.freePend = s.freePend || 0;
+  while (s.freePend < cap && now - s.freeAt >= per) (s.freePend++), (s.freeAt += per);
+  if (s.freePend >= cap) s.freeAt = now;
   save();
-  return s.shovels.cu >= cap ? 0 : per - (now - s.freeAt);
+  return s.freePend >= cap ? 0 : per - (now - s.freeAt);
+}
+/** move the pending free shovels into stock; returns how many */
+export function claimFreeShovels() {
+  const s = mineState(), n = s.freePend || 0;
+  s.shovels.cu += n;
+  s.freePend = 0;
+  save();
+  return n;
 }
 
 /** 每日委托: today's three quests (regenerated when the local date changes) */

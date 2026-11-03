@@ -60,10 +60,12 @@ export const SHOVELS = {
   ag: { name: "银铲", depth: 90, col: "#d8e4f4", desc: "可下潜到深海层（90m），星砂更多" },
   au: { name: "金铲", depth: MH, col: "#ffd84a", desc: "全部四层开放，遗迹中必定有一个星辉宝箱" },
 };
-export const FREE_SHOVEL_HOURS = 4, FREE_SHOVEL_CAP = 2;
+export const FREE_SHOVEL_HOURS = 4, FREE_SHOVEL_CAP = 5;
 // 梦境工坊: what 星砂 buys. 梦核 is the long goal (~5 hours of play): a third SSR slot and a boost for one girl
 export const WORKSHOP = {
-  au: { name: "金铲", cost: 90, desc: "全层开放 + 星辉宝箱" },
+  ag: { name: "银铲", trade: "cu", n: 3, desc: "用 3 把铜铲合成" },
+  au: { name: "金铲", trade: "ag", n: 3, desc: "用 3 把银铲合成" },
+  dr: { name: "最终减伤", max: 2, cost: (l) => [120, 260][l], desc: "矿场里每次受到的伤害 -1" },
   card: { name: "SSR 兑换卡", cost: 160, desc: "任选 1 个未满级 SSR" },
   core: { name: "梦核", cost: 360, desc: "角色专属：强化这个角色的大招" },
 };
