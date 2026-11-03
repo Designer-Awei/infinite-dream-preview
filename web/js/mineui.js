@@ -267,6 +267,7 @@ export function updateMineHud(dive) {
   set("rel", JSON.stringify(dive.rel), () => {
     q(".mrel", hud).innerHTML = Object.entries(dive.rel).map(([id, n]) => `<span class="${RELICS[id].curse ? "curse" : ""}" title="${RELICS[id].name}：${RELICS[id].desc}"><img src="${iconURL(RELICS[id].icon, 2)}" alt="">${n > 1 ? `<b>${n}</b>` : ""}</span>`).join("");
   });
+  set("keys", dive.time > 15, (v) => q(".keys", hud).classList.toggle("gone", v));
   set("g", Math.round((p.y / MT / dive.rows) * 200), () => (q(".gauge .me", hud).style.top = clamp01(p.y / MT / dive.rows) * 100 + "%"));
   set("cnt", p.bombs + "|" + p.beacons, () => {
     document.querySelectorAll(".s-skill .cnt").forEach((n) => (n.textContent = p.bombs));

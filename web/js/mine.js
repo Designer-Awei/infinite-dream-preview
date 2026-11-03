@@ -209,6 +209,118 @@ function tileArt(kind, zone, v, extra) {
   return c;
 }
 
+// ------------------------------------------------------------------ surface parallax layers (built once)
+let SKY = null;
+function skyLayers() {
+  if (SKY) return SKY;
+  const W = 480;
+  const noise = (seed) => {
+    const r = rng(seed), pts = Array.from({ length: 13 }, () => r());
+    pts[12] = pts[0];
+    return (x) => {
+      const u = ((x / W) * 12) % 12, i = Math.floor(u), f = u - i, s = f * f * (3 - 2 * f);
+      return pts[i] * (1 - s) + pts[i + 1] * s;
+    };
+  };
+  const layer = (H, draw) => {
+    const c = cv(W, H), g = c.getContext("2d");
+    draw(g, H);
+    return c;
+  };
+  const ridge = (g, H, n, lo, hi, col, edge) => {
+    for (let x = 0; x < W; x++) {
+      const y = Math.round(H - lo - (hi - lo) * n(x));
+      g.fillStyle = edge;
+      g.fillRect(x, y - 1, 1, 1);
+      g.fillStyle = col;
+      g.fillRect(x, y, 1, H - y);
+    }
+  };
+  // distant mountains: jagged, with snow caps
+  const far = layer(110, (g, H) => {
+    const n1 = noise(11), n2 = noise(23);
+    for (let x = 0; x < W; x++) {
+      const y = Math.round(H - 30 - 70 * (0.7 * n1(x) + 0.3 * n2(x * 3)));
+      g.fillStyle = "#8a86d0";
+      g.fillRect(x, y, 1, H - y);
+      g.fillStyle = "#a8a4e8";
+      g.fillRect(x, y, 1, 2);
+      if (y < H - 78) (g.fillStyle = "#f4f0ff"), g.fillRect(x, y, 1, Math.min(8, H - 78 - y + 3));
+    }
+    // light haze at the foot
+    const hz = g.createLinearGradient(0, H - 40, 0, H);
+    hz.addColorStop(0, "rgba(255,210,180,0)");
+    hz.addColorStop(1, "rgba(255,210,180,.55)");
+    g.fillStyle = hz;
+    g.fillRect(0, H - 40, W, 40);
+  });
+  const hills = layer(70, (g, H) => {
+    ridge(g, H, noise(37), 18, 58, "#5f8f96", "#7fb0b0");
+    const hz = g.createLinearGradient(0, H - 26, 0, H);
+    hz.addColorStop(0, "rgba(255,220,190,0)");
+    hz.addColorStop(1, "rgba(255,220,190,.35)");
+    g.fillStyle = hz;
+    g.fillRect(0, H - 26, W, 26);
+  });
+  const pines = layer(64, (g, H) => {
+    const n = noise(51), r = rng(77);
+    ridge(g, H, n, 10, 30, "#4f8a52", "#6fb06a");
+    for (let k = 0; k < 34; k++) {
+      const x = Math.floor(r() * W), gy = Math.round(H - 10 - 20 * n(x)), th = 16 + Math.floor(r() * 18);
+      for (let yy = 0; yy < th; yy++) {
+        const w = Math.max(1, Math.round(((yy + 2) / th) * 7));
+        for (const dx of [0, -W, W]) {
+          g.fillStyle = yy === 0 ? "#6fb06a" : "#2f6a3e";
+          g.fillRect(x - w + dx, gy - th + yy, w * 2 + 1, 1);
+          g.fillStyle = "#4a8a50";
+          g.fillRect(x - w + dx, gy - th + yy, 1, 1);
+        }
+      }
+      for (const dx of [0, -W, W]) (g.fillStyle = "#3a2a1a"), g.fillRect(x - 1 + dx, gy - 2, 2, 4);
+    }
+  });
+  const near = layer(34, (g, H) => {
+    const n = noise(63), r = rng(91);
+    ridge(g, H, n, 4, 14, "#3e7a3a", "#62a85a");
+    for (let k = 0; k < 26; k++) {
+      const x = Math.floor(r() * W), gy = Math.round(H - 4 - 10 * n(x)), rr = 5 + Math.floor(r() * 6);
+      for (const dx of [0, -W, W]) {
+        g.fillStyle = "#2e6a32";
+        g.beginPath();
+        g.arc(x + dx, gy, rr, Math.PI, 0);
+        g.fill();
+        g.fillStyle = "#4e9a48";
+        g.fillRect(x + dx - Math.round(rr / 2), gy - rr + 1, 3, 2);
+        if (r() < 0.3) (g.fillStyle = r() < 0.5 ? "#ffd84a" : "#ff8ac8"), g.fillRect(x + dx + 2, gy - rr + 3, 2, 2);
+      }
+    }
+    // fence
+    for (let x = 6; x < W; x += 40) {
+      const gy = Math.round(H - 4 - 10 * n(x));
+      g.fillStyle = "#1a1020";
+      g.fillRect(x - 1, gy - 13, 4, 14);
+      g.fillStyle = "#8a6038";
+      g.fillRect(x, gy - 12, 2, 12);
+      g.fillRect(x, gy - 9, 22, 2);
+    }
+  });
+  const clouds = layer(70, (g) => {
+    const r = rng(5);
+    for (let k = 0; k < 6; k++) {
+      const x = Math.floor(r() * W), y = 10 + Math.floor(r() * 44), w = 28 + Math.floor(r() * 34);
+      for (const dx of [0, -W, W]) {
+        g.fillStyle = "rgba(255,255,255,.85)";
+        g.fillRect(x + dx, y, w, 6);
+        g.fillRect(x + dx + 6, y - 5, w - 14, 5);
+        g.fillRect(x + dx + 12, y - 9, w / 3, 4);
+        g.fillStyle = "rgba(255,210,200,.7)";
+        g.fillRect(x + dx + 2, y + 6, w - 4, 2);
+      }
+    }
+  });
+  return (SKY = { far, hills, pines, near, clouds });
+}
+
 // ------------------------------------------------------------------ the dive
 export class Dive {
   /** o: { cid, shovel: "cu"|"ag"|"au", up: upgrades, fx, seed, talents, lite: {rows, time} } */
@@ -1073,32 +1185,157 @@ export class Dive {
     g.setTransform(rs, 0, 0, rs, 0, 0);
   }
   drawSky(g, cx, cy) {
-    const h = -cy, VIEW_W = vw();
-    const sky = g.createLinearGradient(0, 0, 0, h);
-    sky.addColorStop(0, "#5a8ae8");
-    sky.addColorStop(1, "#ffc8a0");
+    const h = -cy, VIEW_W = vw(), t = this.time;
+    const L = skyLayers();
+    g.save();
+    g.beginPath();
+    g.rect(0, 0, VIEW_W, h);
+    g.clip();
+    // sky
+    const top = h - SURF * MT - 40;
+    const sky = g.createLinearGradient(0, top, 0, h);
+    sky.addColorStop(0, "#3c58c8");
+    sky.addColorStop(0.55, "#8aa4f0");
+    sky.addColorStop(0.85, "#ffc8a0");
+    sky.addColorStop(1, "#ffe0b0");
     g.fillStyle = sky;
     g.fillRect(0, 0, VIEW_W, h);
-    // hills and the camp
-    g.fillStyle = "#6a9a5a";
-    for (let x = -40; x < VIEW_W + 40; x += 70) {
-      g.beginPath();
-      g.ellipse(x - (cx % 70), h, 60, 26, 0, Math.PI, 0);
-      g.fill();
+    // a layer's ground line follows the real horizon at a fraction of the camera's vertical movement
+    const h0 = SURF * MT * 0.62, base = (f) => Math.round(h0 + (h - h0) * f);
+    const tile = (img, f, y, drift = 0) => {
+      const w = img.width, ox = Math.round(((cx * f + drift) % w) + w) % w;
+      for (let x = -ox; x < VIEW_W; x += w) g.drawImage(img, x, y);
+    };
+    // sun with a soft glow
+    const sx = VIEW_W * 0.78 - cx * 0.03, sy = Math.max(26, base(0.05) - 86);
+    const glow = g.createRadialGradient(sx, sy, 4, sx, sy, 60);
+    glow.addColorStop(0, "rgba(255,240,190,.9)");
+    glow.addColorStop(1, "rgba(255,220,160,0)");
+    g.fillStyle = glow;
+    g.fillRect(sx - 60, sy - 60, 120, 120);
+    g.fillStyle = "#fff4c8";
+    g.fillRect(sx - 9, sy - 12, 18, 24);
+    g.fillRect(sx - 12, sy - 9, 24, 18);
+    // clouds drift on their own
+    tile(L.clouds, 0.08, base(0.08) - 150, t * 6);
+    tile(L.far, 0.12, base(0.12) - L.far.height);
+    tile(L.hills, 0.28, base(0.28) - L.hills.height);
+    // birds
+    for (let k = 0; k < 3; k++) {
+      const bx = ((t * (14 + k * 3) + k * 210 - cx * 0.3) % (VIEW_W + 80) + VIEW_W + 80) % (VIEW_W + 80) - 40, by = base(0.3) - 90 - k * 14 + Math.sin(t * 2 + k) * 4;
+      const wing = Math.sin(t * 9 + k * 2) > 0 ? -2 : 1;
+      g.fillStyle = "#2a2440";
+      g.fillRect(bx - 4, by + wing, 3, 1);
+      g.fillRect(bx - 1, by, 2, 1);
+      g.fillRect(bx + 1, by + wing, 3, 1);
     }
+    tile(L.pines, 0.5, base(0.5) - L.pines.height);
+    tile(L.near, 0.78, base(0.78) - L.near.height);
+    g.restore();
+    // the camp on the real ground (moves with the world)
     const camp = (MW * MT) / 2 - cx;
-    g.fillStyle = "#3a2a1a";
-    g.fillRect(camp - 70, h - 34, 4, 34);
-    g.fillRect(camp + 66, h - 34, 4, 34);
-    g.fillStyle = "#c8643a";
+    // headframe over the shaft, the wheel turns while you dig
+    g.fillStyle = "#1a1020";
+    g.fillRect(camp - 34, h - 74, 5, 74);
+    g.fillRect(camp + 29, h - 74, 5, 74);
+    g.fillStyle = "#6a4a2e";
+    g.fillRect(camp - 33, h - 73, 3, 73);
+    g.fillRect(camp + 30, h - 73, 3, 73);
+    for (let y = h - 66; y < h - 4; y += 16) {
+      g.fillStyle = "#1a1020";
+      g.fillRect(camp - 30, y, 60, 3);
+      g.fillStyle = "#8a6038";
+      g.fillRect(camp - 30, y, 60, 2);
+    }
+    g.fillStyle = "#1a1020";
+    g.fillRect(camp - 38, h - 80, 76, 7);
+    g.fillStyle = "#a8743e";
+    g.fillRect(camp - 37, h - 79, 74, 4);
+    const ang = this.dug * 0.35 + t * 0.4, wx = camp, wy = h - 88;
+    g.fillStyle = "#1a1020";
     g.beginPath();
-    g.moveTo(camp - 80, h - 30);
-    g.lineTo(camp - 52, h - 52);
-    g.lineTo(camp - 24, h - 30);
+    g.arc(wx, wy, 11, 0, Math.PI * 2);
     g.fill();
+    g.fillStyle = "#c8c0d8";
+    g.beginPath();
+    g.arc(wx, wy, 9, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#1a1020";
+    g.beginPath();
+    g.arc(wx, wy, 6, 0, Math.PI * 2);
+    g.fill();
+    g.strokeStyle = "#c8c0d8";
+    g.lineWidth = 2;
+    for (let k = 0; k < 4; k++) {
+      const a = ang + (k * Math.PI) / 2;
+      g.beginPath();
+      g.moveTo(wx, wy);
+      g.lineTo(wx + Math.cos(a) * 7, wy + Math.sin(a) * 7);
+      g.stroke();
+    }
+    g.fillStyle = "#1a1020";
+    g.fillRect(wx - 1, wy, 2, h - wy);
+    // tent
+    g.fillStyle = "#1a1020";
+    g.beginPath();
+    g.moveTo(camp - 112, h);
+    g.lineTo(camp - 86, h - 34);
+    g.lineTo(camp - 60, h);
+    g.fill();
+    g.fillStyle = "#d8683a";
+    g.beginPath();
+    g.moveTo(camp - 108, h);
+    g.lineTo(camp - 86, h - 30);
+    g.lineTo(camp - 64, h);
+    g.fill();
+    g.fillStyle = "#7a2a1a";
+    g.beginPath();
+    g.moveTo(camp - 90, h);
+    g.lineTo(camp - 86, h - 14);
+    g.lineTo(camp - 82, h);
+    g.fill();
+    // campfire with smoke
+    const fx = camp - 52;
     g.fillStyle = "#5a3a1a";
-    g.fillRect(camp + 24, h - 40, 52, 14);
-    this.label(g, "梦境矿场", camp + 50, h - 30, "#ffe36a", 10);
+    g.fillRect(fx - 6, h - 3, 12, 3);
+    const fl = 4 + Math.round(Math.sin(t * 14) * 1.5);
+    g.fillStyle = "#ff7a2a";
+    g.fillRect(fx - 3, h - 3 - fl, 6, fl);
+    g.fillStyle = "#ffe36a";
+    g.fillRect(fx - 1, h - 2 - fl + 2, 2, fl - 2);
+    for (let k = 0; k < 4; k++) {
+      const q = (t * 0.5 + k / 4) % 1;
+      g.globalAlpha = 0.45 * (1 - q);
+      g.fillStyle = "#e8e0f0";
+      const r = 2 + q * 5;
+      g.fillRect(fx + Math.sin(t + k) * 4 * q - r / 2, h - 10 - q * 46 - r / 2, r, r);
+    }
+    g.globalAlpha = 1;
+    // mine cart on rails
+    const mc = camp + 46;
+    g.fillStyle = "#3a3040";
+    g.fillRect(mc - 4, h - 2, 46, 2);
+    g.fillStyle = "#1a1020";
+    g.fillRect(mc, h - 16, 26, 12);
+    g.fillStyle = "#7a6a8a";
+    g.fillRect(mc + 1, h - 15, 24, 10);
+    g.fillStyle = "#c08a50";
+    g.fillRect(mc + 3, h - 19, 6, 4);
+    g.fillStyle = "#e0e0f0";
+    g.fillRect(mc + 10, h - 20, 5, 5);
+    g.fillStyle = "#ffd84a";
+    g.fillRect(mc + 16, h - 18, 5, 3);
+    g.fillStyle = "#1a1020";
+    g.fillRect(mc + 3, h - 5, 5, 5);
+    g.fillRect(mc + 18, h - 5, 5, 5);
+    // sign
+    g.fillStyle = "#3a2a1a";
+    g.fillRect(camp + 92, h - 30, 3, 30);
+    g.fillStyle = "#1a1020";
+    g.fillRect(camp + 70, h - 42, 48, 16);
+    g.fillStyle = "#6a4426";
+    g.fillRect(camp + 71, h - 41, 46, 14);
+    this.label(g, "梦境矿场", camp + 94, h - 31, "#ffe36a", 10);
   }
   drawPlayer(g) {
     const p = this.p, set = A.girls[this.o.cid];
