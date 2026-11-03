@@ -124,3 +124,14 @@ export const SHOP = {
   cell: { name: "电池组", icon: "battery", desc: "电量回满", base: 6, max: 3 },
   bomb: { name: "炸药", icon: "bomb", desc: "炸药 +2", base: 5, max: 3 },
 };
+
+// 每日委托: three a day, progress adds up over the day's dives
+export const QUESTS = {
+  ore: { w: 3 }, // 带出 N 个某种矿
+  depth: { w: 2 }, // 到达某深度
+  kill: { w: 2 }, // 击败怪物（累计）
+  mole: { w: 1 }, // 抓到宝藏鼹鼠
+  relic: { w: 2 }, // 打开遗物箱（累计）
+  haul: { w: 2 }, // 单次带出 💎 ≥ V
+  extract: { w: 2 }, // 安全撤离（累计）
+};

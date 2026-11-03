@@ -1215,3 +1215,12 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .ms-it.sold { opacity: .5; }
 .ms-acts { justify-content: flex-end; }
 @media (max-height: 420px) { .ms-it img { width: 28px; height: 28px; } .ms-it { padding: 3px 6px; } .msup b { display: none; } }
+/* 每日委托 */
+.mh-tab .qdot { display: inline-block; margin-left: 4px; min-width: 16px; padding: 0 4px; border-radius: 8px; background: #ff4a6a; color: #fff; font-size: 11px; font-style: normal; font-weight: normal; line-height: 16px; }
+.mq .mu-t { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+.mq-bar { position: relative; display: block; height: 14px; border-radius: 7px; background: rgba(10,6,30,.5); overflow: hidden; }
+.mq-bar i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(90deg, #7dffb0, #3ac878); }
+.mq-bar em { position: relative; font-style: normal; font-size: 10px; padding-left: 6px; line-height: 14px; color: #fff; }
+.mq.claimed { opacity: .55; }
+.mres-q { font-size: 11px; color: #7dffb0; margin-top: 3px; }
+.lb-tile .rdot { position: absolute; top: 4px; left: 4px; width: 12px; height: 12px; border-radius: 50%; background: #ff3a5a; box-shadow: 0 0 0 2px var(--ink), 0 0 8px #ff3a5a; animation: pulse 1s infinite; }

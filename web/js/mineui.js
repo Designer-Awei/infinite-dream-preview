@@ -7,6 +7,7 @@ import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
 import { btn, toast, clear, uiRoot } from "./ui.js";
 import { app } from "./main.js";
+import { todayQuests, questText, claimQuest, claimable } from "./minequests.js";
 
 const q = (s, r) => r.querySelector(s);
 
@@ -63,7 +64,7 @@ export function showMineHub() {
     <div class="mh-rec o1">最深 ${ms.best}m · 下潜 ${ms.dives} 次</div>
   </div>
   <div class="mh-r">
-    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊<i class="o1">星砂</i></button></div>
+    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊<i class="o1">星砂</i></button><button class="mh-tab" data-t="quest">每日委托<b class="qdot o1"></b></button></div>
     <div class="mh-ups"></div>
   </div>`;
   uiRoot().appendChild(s);
@@ -168,7 +169,33 @@ export function showMineHub() {
     const use = q(".ws-use", ups);
     if (use) use.onclick = () => showExchange(() => showMineHub());
   };
-  const draw = () => (tab === "ups" ? drawUps() : drawShop());
+  const qdot = () => {
+    const n = claimable(), d = q(".qdot", s);
+    d.textContent = n || "";
+    d.style.display = n ? "" : "none";
+  };
+  const drawQuests = () => {
+    const list = todayQuests();
+    ups.innerHTML = list.map((x, i) => {
+      const ok = x.prog >= x.n, pct = Math.round((x.prog / x.n) * 100);
+      const rw = [x.stars ? `★${x.stars}` : "", x.tokens ? `💎${x.tokens}` : ""].filter(Boolean).join(" ");
+      return `<div class="mup mq${x.claimed ? " claimed" : ""}"><div class="mu-t"><b class="o1">${questText(x)}</b><span class="mq-bar"><i style="width:${pct}%"></i><em class="o1">${x.k === "haul" ? (ok ? "完成" : "未完成") : `${x.prog}/${x.n}`}</em></span></div>
+        ${x.claimed ? `<span class="mu-max o1">已领取</span>` : `<button class="btn small ${ok ? "" : "gray"} mq-b" data-i="${i}"><span>${ok ? "领取" : "进行中"}</span><small>${rw}</small></button>`}</div>`;
+    }).join("") + `<div class="ws-note o1">每天刷新 3 个委托，进度在当天的所有下潜里累计。</div>`;
+    ups.querySelectorAll(".mq-b").forEach((b) => (b.onclick = () => {
+      const x = claimQuest(+b.dataset.i);
+      if (!x) return toast("还没完成：去矿场里完成它吧");
+      if (x.tokens) m.tokens += x.tokens;
+      save();
+      sfx("card");
+      toast(`委托完成：${[x.stars ? `星砂 +${x.stars}` : "", x.tokens ? `💎 +${x.tokens}` : ""].filter(Boolean).join("，")}`);
+      pills();
+      qdot();
+      drawQuests();
+    }));
+  };
+  qdot();
+  const draw = () => (tab === "ups" ? drawUps() : tab === "quest" ? drawQuests() : drawShop());
   s.querySelectorAll(".mh-tab").forEach((b) => (b.onclick = () => {
     tab = b.dataset.t;
     s.querySelectorAll(".mh-tab").forEach((x) => x.classList.toggle("on", x === b));
@@ -318,6 +345,7 @@ export function showMineResult(res, again, back) {
       <div class="res-chip o1"><span>矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1"><span>★ 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
       ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
+      ${res.questsDone && res.questsDone.length ? `<div class="mres-q o1">✔ 委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
       ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
     <div class="res-r"><div class="mres-items">${Object.keys(counts).length ? Object.entries(counts).sort((a, b) => ORES[b[0]].v - ORES[a[0]].v).map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="muted">两手空空…</div>`}</div>
       <div class="res-stats"><div class="res-st"><span>到达深度</span><b class="outline">${res.depth}m</b></div><div class="res-st"><span>挖掘方块</span><b class="outline">${res.dug}</b></div><div class="res-st"><span>击败怪物</span><b class="outline">${res.kills}</b></div><div class="res-st"><span>剩余铲子</span><b class="outline">${ms.shovels.cu + ms.shovels.ag + ms.shovels.au}</b></div></div>

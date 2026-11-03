@@ -1,6 +1,7 @@
 // Lobby (Brawl Stars-style home: hero on a stage in the middle, info on the left, play button bottom-right)
 // and the capsule gacha with a staged pull sequence (crank → capsule → open → card flips → summary).
 import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS } from "./data.js";
+import { claimable } from "./minequests.js";
 import { load, save, unlockProgress, pull, checkUnlocks, loadoutOf, setLoadout, exportSave, parseSave, importSave, mineState } from "./save.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
@@ -133,6 +134,7 @@ export function showLobby() {
   tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 ? Math.min(99, pulls) : "");
   const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au;
   tile("⛏", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "");
+  if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
   tile("👥", "联机对战", "t-net", () => showNet());
   tile("📖", "玩法说明", "t-help", () => showHelp());
   const play = q(".lb-play", s);

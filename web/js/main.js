@@ -8,6 +8,7 @@ import { input, initInput, consume } from "./input.js";
 import { initAudio, playMusic, sfx, setSound, setMusic } from "./audio.js";
 import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
 import { Dive } from "./mine.js";
+import { progressQuests, questText } from "./minequests.js";
 import * as MUI from "./mineui.js";
 import { SUPPLIES, SHOVELS } from "./minedata.js";
 import * as UI from "./ui.js";
@@ -284,6 +285,7 @@ export const app = {
     res.record = res.depth > ms.best;
     ms.best = Math.max(ms.best, res.depth);
     save();
+    res.questsDone = progressQuests(res).map(questText);
     this.dive = null;
     MUI.hideMineHud();
     const sh = this.diveShovel, again = ms.shovels[sh] ? () => this.startDive({ shovel: sh }) : null;

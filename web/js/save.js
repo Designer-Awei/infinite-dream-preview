@@ -194,3 +194,10 @@ export function refreshFreeShovels(hours, cap) {
   save();
   return s.shovels.cu >= cap ? 0 : per - (now - s.freeAt);
 }
+
+/** 每日委托: today's three quests (regenerated when the local date changes) */
+export function mineQuests(gen) {
+  const s = mineState(), day = new Date().toDateString();
+  if (!s.quests || s.quests.day !== day) s.quests = { day, list: gen(s) };
+  return s.quests.list;
+}

@@ -354,6 +354,8 @@ export class Dive {
     this.bagCap = 12 + 6 * (up.bag || 0);
     this.stars = 0;
     this.kills = 0;
+    this.moles = 0;
+    this.relicsOpened = 0;
     this.dug = 0;
     this.ended = null;
     this.extractT = 0;
@@ -638,6 +640,7 @@ export class Dive {
     this.spawnFx("pickups/chest-open", x, y + 8, {});
     sfx("pickup");
     if (kind === "relic") {
+      this.relicsOpened++;
       const pool = Object.keys(RELICS).filter((k) => (this.rel[k] || 0) < RELICS[k].max);
       const ids = r.shuffle(pool).slice(0, 3);
       if (ids.length) {
@@ -1064,6 +1067,7 @@ export class Dive {
       // monsters carry a little loot
       const z = zoneAt(Math.floor(m.y / MT)), ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
       if (m.d.flee) {
+        this.moles++;
         this.text(m.x, m.y - 26, "抓到宝藏鼹鼠！", "#ffd84a", 1.3);
         this.spawnFx("pickups/loot-beam", m.x, m.y + 8, { life: 1.5 });
         const n = this.r.int(4, 6);
@@ -1134,7 +1138,7 @@ export class Dive {
     const kept = bag.slice(0, Math.round(bag.length * keep));
     const dz = DEPTH_STARS[zoneAt(Math.max(0, this.p.deepest - 1)).id] || 0;
     const stars = Math.floor((this.stars + dz) * keep);
-    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
+    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, moles: this.moles, relicsOpened: this.relicsOpened, mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
     sfx(how === "dead" ? "lose" : "clear");
     this.onEnd && this.onEnd(this.ended);
   }
