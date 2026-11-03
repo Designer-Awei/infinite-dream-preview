@@ -321,6 +321,91 @@ function skyLayers() {
   return (SKY = { far, hills, pines, near, clouds });
 }
 
+// ------------------------------------------------------------------ underground back walls (parallax, one per zone)
+const DEEP = {};
+const DEEP_K = 0.55; // how fast the back wall moves relative to the rock
+function deepLayer(z) {
+  if (DEEP[z.id]) return DEEP[z.id];
+  const W = 384, H = 384, c = cv(W, H), g = c.getContext("2d"), r = rng(z.id.length * 977 + z.from);
+  const px = (x, y, w, h, col) => {
+    g.fillStyle = col;
+    for (const dx of [0, -W, W]) for (const dy of [0, -H, H]) g.fillRect(x + dx, y + dy, w, h);
+  };
+  const base = shade(z.bg[0], 0.72), alt = shade(z.bg[1], 0.62), hi = shade(z.bg[0], 0.95);
+  g.fillStyle = base;
+  g.fillRect(0, 0, W, H);
+  // soft rock blotches
+  for (let k = 0; k < 90; k++) {
+    const x = Math.floor(r() * W), y = Math.floor(r() * H), w = 6 + Math.floor(r() * 26), h = 3 + Math.floor(r() * 10);
+    px(x, y, w, h, r() < 0.5 ? alt : shade(z.bg[0], 0.8));
+    px(x, y, w, 1, hi);
+  }
+  if (z.id === "pit") {
+    // strata and timber supports
+    for (let y = 20; y < H; y += 48 + Math.floor(r() * 20)) px(0, y, W, 2, shade(z.bg[1], 0.5));
+    for (let x = 30; x < W; x += 128) {
+      px(x, 0, 6, H, "#2a1a10");
+      px(x + 1, 0, 4, H, "#5a3a20");
+      for (let y = 40; y < H; y += 96) {
+        px(x - 34, y, 74, 6, "#2a1a10");
+        px(x - 33, y + 1, 72, 4, "#6a4626");
+        if (r() < 0.6) (px(x + 14, y + 6, 1, 8, "#2a1a10"), px(x + 11, y + 14, 7, 7, "#2a1a10"), px(x + 12, y + 15, 5, 5, "#ffc860"));
+      }
+    }
+  } else if (z.id === "cave") {
+    // stalactites, stalagmites, glowing mushrooms and crystals
+    for (let k = 0; k < 18; k++) {
+      const x = Math.floor(r() * W), y = Math.floor(r() * H), len = 10 + Math.floor(r() * 26), down = r() < 0.5;
+      for (let i = 0; i < len; i++) {
+        const w = Math.max(1, Math.round(((len - i) / len) * 6));
+        px(x - w, down ? y + i : y - i, w * 2, 1, i % 5 === 0 ? hi : alt);
+      }
+    }
+    for (let k = 0; k < 22; k++) {
+      const x = Math.floor(r() * W), y = Math.floor(r() * H), cyan = r() < 0.5;
+      px(x, y, 2, 4, "#3a3050");
+      px(x - 2, y - 3, 6, 3, cyan ? "#5affd8" : "#c87aff");
+      px(x - 1, y - 3, 2, 1, "#ffffff");
+    }
+  } else if (z.id === "sea") {
+    // kelp, bubbles, light shafts, a far fish school
+    for (let k = 0; k < 16; k++) {
+      const x = Math.floor(r() * W), y0 = Math.floor(r() * H), len = 40 + Math.floor(r() * 60);
+      for (let i = 0; i < len; i++) px(x + Math.round(Math.sin(i / 7 + k) * 3), y0 + i, 3, 1, i % 9 < 2 ? "#3a8a6a" : "#1e5a4a");
+    }
+    for (let k = 0; k < 40; k++) {
+      const x = Math.floor(r() * W), y = Math.floor(r() * H);
+      px(x, y, 2, 2, "rgba(200,248,255,.45)");
+    }
+    for (let k = 0; k < 4; k++) {
+      const x = Math.floor(r() * W);
+      g.fillStyle = "rgba(160,230,255,.06)";
+      for (let y = 0; y < H; y++) g.fillRect(x + y * 0.25, y, 22, 1);
+    }
+    for (let k = 0; k < 12; k++) {
+      const x = 200 + Math.floor(r() * 60), y = 120 + Math.floor(r() * 40);
+      px(x, y, 5, 2, "#0a2238");
+      px(x + 5, y - 1, 2, 4, "#0a2238");
+    }
+  } else {
+    // ruins: brick courses, pillars, arches and faint runes
+    for (let y = 0; y < H; y += 12) for (let x = (y / 12) % 2 ? 0 : 12; x < W; x += 24) px(x, y, 1, 12, shade(z.bg[1], 0.45)), px(x, y, 24, 1, shade(z.bg[1], 0.45));
+    for (let x = 48; x < W; x += 192) {
+      px(x, 0, 18, H, shade(z.bg[0], 0.55));
+      px(x + 2, 0, 3, H, hi);
+      for (let y = 30; y < H; y += 128) {
+        for (let a = 0; a <= 16; a++) {
+          const t = (a / 16) * Math.PI, ax = x + 18 + Math.round((1 - Math.cos(t)) * 40), ay = y + 40 - Math.round(Math.sin(t) * 34);
+          px(ax, ay, 4, 4, shade(z.bg[0], 0.5));
+        }
+        px(x + 50, y + 18, 6, 8, "rgba(90,216,255,.5)");
+        px(x + 52, y + 20, 2, 4, "rgba(200,244,255,.7)");
+      }
+    }
+  }
+  return (DEEP[z.id] = c);
+}
+
 // ------------------------------------------------------------------ the dive
 export class Dive {
   /** o: { cid, shovel: "cu"|"ag"|"au", up: upgrades, fx, seed, talents, lite: {rows, time} } */
@@ -1155,6 +1240,22 @@ export class Dive {
     g.fillStyle = z0.bg[1];
     g.fillRect(0, 0, VIEW_W, VIEW_H);
     if (cy < 0) this.drawSky(g, cx, cy);
+    // back walls: each zone's layer, clipped to the rows that zone covers on screen
+    for (const z of ZONES) {
+      const y0 = z.from * MT - cy, y1 = Math.min(z.to, this.rows) * MT - cy;
+      if (y1 <= 0 || y0 >= VIEW_H) continue;
+      const img = deepLayer(z), top = Math.max(0, y0), bot = Math.min(VIEW_H, y1);
+      const ox = ((Math.round(cx * DEEP_K) % img.width) + img.width) % img.width;
+      // the wall moves at DEEP_K of the camera's speed: anchor = zone top + (camera into zone) * (1 - k)
+      let sy = Math.round(y0 + (cy - z.from * MT) * (1 - DEEP_K));
+      sy -= Math.ceil((sy - top) / img.height) * img.height;
+      g.save();
+      g.beginPath();
+      g.rect(0, top, VIEW_W, bot - top);
+      g.clip();
+      for (let x = -ox; x < VIEW_W; x += img.width) for (let y = sy; y < bot; y += img.height) g.drawImage(img, x, y);
+      g.restore();
+    }
     g.translate(-cx, -cy);
     const c0 = Math.max(0, Math.floor(cx / MT) - 1), c1 = Math.min(MW - 1, Math.floor((cx + VIEW_W) / MT) + 1);
     const r0 = Math.max(0, Math.floor(cy / MT) - 1), r1 = Math.min(this.rows - 1, Math.floor((cy + VIEW_H) / MT) + 1);
@@ -1166,7 +1267,7 @@ export class Dive {
       const z = zoneAt(r);
       for (let c = c0; c <= c1; c++) {
         const i = r * MW + c, t = this.t[i], X = c * MT, Y = r * MT, v = (c * 7 + r * 13) % 4;
-        if (!SOLID(t) || t === T.BOULDER) g.drawImage(tileArt("bg", z, v), X, Y);
+        if (t === T.BOULDER) g.drawImage(tileArt("bg", z, v), X, Y);
         switch (t) {
           case T.DIRT: g.drawImage(tileArt("dirt", z, v), X, Y); break;
           case T.ROOT: g.drawImage(tileArt("root", z, v), X, Y); break;
