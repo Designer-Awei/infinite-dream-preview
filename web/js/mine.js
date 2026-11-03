@@ -8,6 +8,10 @@ import { rng, clamp, TAU } from "./util.js";
 import { sfx } from "./audio.js";
 
 const SURF = 8; // air rows above ground
+let MUTE = false;
+/** demos (the ❓ guide) run real dives silently */
+export const setMute = (v) => (MUTE = v);
+const snd = (...a) => !MUTE && sfx(...a);
 const G = 900; // gravity
 const PW = 14, PH = 20; // player box
 const Z = 1.3; // camera zoom (the mine reads better close up)
@@ -758,12 +762,12 @@ export class Dive {
     if (this.rel.compass) n = Math.ceil(n * 1.5);
     this.stars += n;
     this.text(x, y - 22, `+${n} 星砂`, "#ffd84a", n >= 10 ? 1.3 : 1);
-    if (n >= 10) sfx("ssr");
+    if (n >= 10) snd("ssr");
   }
   addLoot(id, x, y) {
     if (this.bag.length >= this.bagCap) {
       this.text(x, y - 10, "背包满了！", "#ff8a8a");
-      sfx("hit");
+      snd("hit");
       return;
     }
     this.bag.push(id);
@@ -775,7 +779,7 @@ export class Dive {
       this._lucky = false;
     }
     this.text(x, y - 10, "+" + ORES[id].name, ORES[id].col[1]);
-    sfx("coin", 0.05);
+    snd("coin", 0.05);
   }
 
   // ---------------------------------------------------------------- digging
@@ -796,11 +800,11 @@ export class Dive {
       this.clouds.push({ x, y, r: 46, t: 5 });
       this.spawnFx("nature/poison-cloud", x, y + 10, { life: 5 });
       this.text(x, y - 16, "瓦斯泄漏！", "#9cff5a", 1.2);
-      sfx("explode", 0.2);
+      snd("explode", 0.2);
     }
     // anything resting on this tile may start to fall
     this.checkFall(c, r - 1);
-    if (!byBomb) sfx("hit", 0.04);
+    if (!byBomb) snd("hit", 0.04);
     return true;
   }
   openChest(i, x, y) {
@@ -808,7 +812,7 @@ export class Dive {
     delete this.chest[i];
     const r = this.r, row = Math.floor(i / MW), z = zoneAt(row);
     this.spawnFx("pickups/chest-open", x, y + 8, {});
-    sfx("pickup");
+    snd("pickup");
     if (kind === "relic") {
       this.relicsOpened++;
       const pool = Object.keys(RELICS).filter((k) => (this.rel[k] || 0) < RELICS[k].max);
@@ -841,7 +845,7 @@ export class Dive {
     if (id === "beacon") p.beacons += 1;
     this.text(p.x, p.y - PH - 16, RELICS[id].name, RELICS[id].curse ? "#ff9ad0" : "#d8a8ff", 1.2);
     this.spawnFx("spawn/respawn-beam", p.x, p.y, { life: 0.8 });
-    sfx("card");
+    snd("card");
   }
   /** merchant offers with their current prices */
   shopOffers() {
@@ -873,7 +877,7 @@ export class Dive {
       this.shop = false;
       this.choice = this.r.shuffle(pool).slice(0, 3);
     }
-    sfx("coin");
+    snd("coin");
     return true;
   }
   checkFall(c, r) {
@@ -981,14 +985,14 @@ export class Dive {
       if (best) p.face = Math.cos(a) >= 0 ? 1 : -1;
       this.bullets.push({ x: ox, y: oy, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, t: 0.6, dmg: p.atkDmg * (1 + 0.6 * (this.rel.blade || 0)), col: ELEM[p.elem].glow });
       p.atkCd = 0.28;
-      sfx("shoot_" + p.elem, 0.06);
+      snd("shoot_" + p.elem, 0.06);
     }
     // ---- bomb (K): breaks a 3x3 area after a fuse
     if (inp.bomb) {
       if (p.bombs > 0) {
         p.bombs--;
         this.bombs.push({ x: p.x, y: p.y - PH / 2, vx: p.face * 60, vy: -80, t: 1.3 });
-        sfx("click");
+        snd("click");
       } else this.text(p.x, p.y - 30, "没有炸药了", "#ff8a8a");
     }
     // ---- beacon (L): channel 1.5s then extract anywhere
@@ -997,7 +1001,7 @@ export class Dive {
         p.beacons--;
         p.beaconT = 1.5;
         this.spawnFx("spawn/respawn-beam", p.x, p.y, { life: 1.6 });
-        sfx("portal");
+        snd("portal");
         this.text(p.x, p.y - 34, "撤离信标启动…", "#7dffb0", 1.1);
       } else this.text(p.x, p.y - 30, "没有撤离信标了", "#ff8a8a");
     }
@@ -1023,7 +1027,7 @@ export class Dive {
       this.nearShop = near && mc.away;
       if (this.nearShop && idle) {
         mc.t = (mc.t || 0) + dt;
-        if (mc.t > 0.6) (mc.t = 0), (mc.away = false), (this.shop = true), sfx("click");
+        if (mc.t > 0.6) (mc.t = 0), (mc.away = false), (this.shop = true), snd("click");
       } else mc.t = 0;
     }
     // ---- power out: emergency recall
@@ -1103,7 +1107,7 @@ export class Dive {
     p.hurtT = 0.3;
     this.shake = 6;
     this.text(p.x, p.y - PH - 12, why ? `-${n} ${why}` : "-" + n, "#ff6a6a", 1.1);
-    sfx("hurt");
+    snd("hurt");
     if (p.hp <= 0) {
       p.hp = 0;
       this.finish("dead");
@@ -1174,7 +1178,7 @@ export class Dive {
       m.intro = 1.4;
       this.text(m.x, m.y - 130, "遗迹守护者 苏醒了！", "#ff8a6a", 1.5);
       this.shake = 10;
-      sfx("explode", 0.3);
+      snd("explode", 0.3);
     }
     m.vy += G * dt;
     m.anim += dt;
@@ -1184,7 +1188,7 @@ export class Dive {
       m.cd = 0.8;
       this.text(m.x, m.y - 130, "守护者 狂暴了！", "#ff4a4a", 1.4);
       this.shake = 12;
-      sfx("explode", 0.4);
+      snd("explode", 0.4);
       for (let k = 0; k < 14; k++) this.parts.push({ x: m.x + (Math.random() - 0.5) * 40, y: m.y - 20 - Math.random() * 30, vx: (Math.random() - 0.5) * 200, vy: -100 - Math.random() * 120, t: 0.8, col: Math.random() < 0.5 ? "#958a74" : "#5e5648", s: 3 });
     }
     // falling rocks from the rain
@@ -1207,7 +1211,7 @@ export class Dive {
             const k = m.act.k;
             if (k === "slam") {
               this.shake = 12;
-              sfx("explode", 0.45);
+              snd("explode", 0.45);
               for (const side of [-1, 1]) {
                 const fx = m.x + side * 68;
                 this.spawnFx("explosions/dirt-explosion", fx, m.y + m.d.r, { life: 1.4 });
@@ -1217,7 +1221,7 @@ export class Dive {
             } else if (k === "throw") {
               const t = 0.85, ox = m.x + m.face * 80, oy = m.y - 70, vx = (p.x - ox) / t, vy = (p.y - PH / 2 - oy) / t - 0.5 * 420 * t;
               this.bullets.push({ x: ox, y: oy, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, big: true, col: "#b8a890" });
-              sfx("click");
+              snd("click");
             } else if (k === "rain") {
               m.rain = [];
               for (let i = 0; i < 5; i++) m.rain.push({ x: clamp(p.x + (i - 2) * 30 + (Math.random() - 0.5) * 16, (gr.x0 + 1.5) * MT, (gr.x1 - 0.5) * MT), t: 0.9 + i * 0.12 });
@@ -1256,7 +1260,7 @@ export class Dive {
     if (!m.awake && d < 7 * MT) {
       m.awake = true;
       this.text(m.x, m.y - 20, "宝藏鼹鼠！快抓住它", "#ffd84a", 1.1);
-      sfx("pickup", 0.1);
+      snd("pickup", 0.1);
     }
     if (Math.random() < dt * 4) this.parts.push({ x: m.x + (Math.random() - 0.5) * 14, y: m.y - 6, vx: 0, vy: -20, t: 0.5, col: "#ffe36a", s: 1, glow: true });
     m.vy += G * dt;
@@ -1323,12 +1327,12 @@ export class Dive {
     m.flash = 0.1;
     m.awake = true;
     this.text(m.x, m.y - 12, Math.round(dmg), "#fff", 0.8);
-    sfx("hit", 0.03);
+    snd("hit", 0.03);
     if (m.hp <= 0) {
       this.mobs.splice(this.mobs.indexOf(m), 1);
       this.kills++;
       this.spawnFx("spawn/poof", m.x, m.y + 6, {});
-      sfx("kill", 0.05);
+      snd("kill", 0.05);
       // monsters carry a little loot
       const z = zoneAt(Math.floor(m.y / MT)), ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
       if (m.d.boss) {
@@ -1336,7 +1340,7 @@ export class Dive {
         this.spawnFx("explosions/dirt-explosion", m.x, m.y + 10, { life: 2 });
         this.spawnFx("pickups/loot-beam", m.x, m.y + 10, { life: 2 });
         this.shake = 12;
-        sfx("ssr");
+        snd("ssr");
         this.addLoot("rune", m.x, m.y);
         this.addLoot("gear", m.x, m.y - 8);
         this.addStars(8, m.x, m.y);
@@ -1374,7 +1378,7 @@ export class Dive {
         if (Math.hypot(this.p.x - b.x, this.p.y - PH / 2 - b.y) < 34) this.hurt(2, "炸伤");
         this.spawnFx("explosions/dirt-explosion", b.x, b.y + 10, { life: 2 });
         this.shake = 10;
-        sfx("explode");
+        snd("explode");
       }
     }
     this.bombs = this.bombs.filter((b) => b.t > 0);
@@ -1401,7 +1405,7 @@ export class Dive {
         const r = below - 1;
         if (this.get(f.c, r) === T.AIR) this.set(f.c, r, T.BOULDER);
         this.shake = 5;
-        sfx("hit");
+        snd("hit");
         for (let k = 0; k < 6; k++) this.parts.push({ x: f.x + (Math.random() - 0.5) * 20, y: r * MT + MT, vx: (Math.random() - 0.5) * 80, vy: -Math.random() * 60, t: 0.5, col: "#b8a890", s: 2 });
       } else f.y = ny;
     }
@@ -1418,7 +1422,7 @@ export class Dive {
     const dz = DEPTH_STARS[zoneAt(Math.max(0, this.p.deepest - 1)).id] || 0;
     const stars = Math.floor((this.stars + dz) * keep);
     this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, moles: this.moles, relicsOpened: this.relicsOpened, mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
-    sfx(how === "dead" ? "lose" : "clear");
+    snd(how === "dead" ? "lose" : "clear");
     this.onEnd && this.onEnd(this.ended);
   }
 

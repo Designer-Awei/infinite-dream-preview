@@ -435,7 +435,16 @@ function frame(now) {
 function diveFrame(dt) {
   const d = app.dive;
   if (consume("pause")) app.pauseMd ? null : app.pause();
-  const bomb = consume("skill"), beacon = consume("ult");
+  const bomb = consume("skill");
+  let beacon = consume("ult");
+  // the beacon ends the dive, so ask first (only when there is one to use and it isn't already counting down)
+  if (beacon && d.p.beacons > 0 && !d.p.beaconT && !app.beaconAsk) {
+    beacon = false;
+    app.beaconAsk = true;
+    app.paused = true;
+    MUI.confirmBeacon(d, () => ((app.beaconAsk = false), (app.paused = false), (app.beaconGo = true)), () => ((app.beaconAsk = false), (app.paused = false)));
+  }
+  if (app.beaconGo) (beacon = true), (app.beaconGo = false);
   consume("dash");
   if (d.shop && !app.shopOpen) {
     app.shopOpen = true;

@@ -60,7 +60,7 @@ export function loadoutOf(cid) {
   return page.slice(0, n);
 }
 /** 2 SSR slots, 3 with that girl's 梦核 */
-export const slotsOf = (cid) => LOADOUT_SLOTS + ((load().cores || {})[cid] ? 1 : 0);
+export const slotsOf = () => LOADOUT_SLOTS; // 梦核 now strengthens the ult instead of adding a slot
 export function setLoadout(cid, page) {
   const m = load();
   m.loadout = m.loadout || {};
@@ -103,6 +103,18 @@ export function unlockProgress(id) {
   return Math.min(1, (load().stats[u.stat] || 0) / u.need);
 }
 
+/** what an SSR pull gives once every SSR is maxed */
+export const STASH_ITEM = { id: "cardgold", r: "SSR", name: "积攒点 +1", desc: "SSR 已全部收齐，这张转化为 1 点积攒", max: 1 };
+/** every SSR owned at max level (from then on SSR pulls become 积攒点) */
+export const ssrDone = () => {
+  const m = load();
+  return GACHA.pool.filter((p) => p.r === "SSR").every((p) => (m.talents[p.id] || 0) >= p.max);
+};
+/** every card in the pool at max level (the lobby stops showing a pull count) */
+export const gachaDone = () => {
+  const m = load();
+  return GACHA.pool.every((p) => (m.talents[p.id] || 0) >= p.max);
+};
 /** One gacha pull with pity. Returns {item, dup, refund}. */
 export function pull(rand = Math.random) {
   const m = load();
@@ -119,7 +131,16 @@ export function pull(rand = Math.random) {
   }
   if (r === "SSR") m.pity = 0;
   if (r === "SR" || r === "SSR") m.pity10 = 0;
-  const pool = GACHA.pool.filter((p) => p.r === r);
+  // SSR never repeats: only SSRs that aren't owned / maxed can come out; once every SSR is maxed an SSR pull turns into
+  // one 积攒点 (stash point), saved without a cap. N/R/SR may repeat and refund crystals when maxed.
+  let pool = GACHA.pool.filter((p) => p.r === r);
+  if (r === "SSR") {
+    pool = pool.filter((p) => (m.talents[p.id] || 0) < p.max);
+    if (!pool.length) {
+      m.stash = (m.stash || 0) + 1;
+      return { item: STASH_ITEM, r, dup: false, refund: 0, stash: true, lv: m.stash };
+    }
+  }
   const item = pool[Math.floor(rand() * pool.length)];
   const lv = m.talents[item.id] || 0;
   let dup = false, refund = 0;

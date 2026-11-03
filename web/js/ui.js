@@ -67,7 +67,7 @@ export function showHelp() {
   <b style="color:#ffe36a">模式与地图</b>　在大厅「开始冒险」上方左右滑动地图卡切换模式（全部支持离线单机）：<br>
   ${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `· <b>主线 ${i + 1}：${d.name}</b>　${d.desc} 敌人血量×${d.hp}，晶石奖励×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200💎。`; }).join("<br>")}<br>
   · <b>无尽回廊</b>　一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层轮换一张地图的地形，敌人越来越多越来越强；倒下时按到达层数结算并记录最佳纪录。完成任意一局后解锁。<br><br>
-  <b style="color:#ffe36a">梦境矿场（搜 · 打 · 撤）</b>　大厅「梦境矿场」用铲子下潜：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。在地面或「撤离电梯」里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。洞穴里有提着灯的「地下商人」，站在旁边就能用背包里的矿物换遗物、药水、电池和炸药；发光的「宝藏鼹鼠」会逃跑和钻土，追上打倒它能拿到一堆好矿。下潜前可以在矿场里勾选补给（花 💎）。金铲能挖到遗迹最深处的砖室，里面的「遗迹守护者」会震地和投石，打倒它才能打开星图宝箱。每层藏着一个紫色的「遗物箱」，打开后三选一获得本次下潜的增益（贪婪契约是有代价的诅咒）。铲子来自打败首领（铜/银/金）和每 4 小时的免费铜铲。矿石升级矿场装备，星砂在「梦境工坊」换铲子、SSR 兑换卡和角色专属的梦核（第 3 个天赋槽）。<br><br>
+  <b style="color:#ffe36a">梦境矿场（搜 · 打 · 撤）</b>　大厅「梦境矿场」用铲子下潜：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。在地面或「撤离电梯」里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。洞穴里有提着灯的「地下商人」，站在旁边就能用背包里的矿物换遗物、药水、电池和炸药；发光的「宝藏鼹鼠」会逃跑和钻土，追上打倒它能拿到一堆好矿。下潜前可以在矿场里勾选补给（花 💎）。金铲能挖到遗迹最深处的砖室，里面的「遗迹守护者」会震地和投石，打倒它才能打开星图宝箱。每层藏着一个紫色的「遗物箱」，打开后三选一获得本次下潜的增益（贪婪契约是有代价的诅咒）。铲子来自打败首领（铜/银/金）和每 4 小时的免费铜铲。矿石升级矿场装备，星砂在「梦境工坊」换金铲、SSR 兑换卡和角色专属的梦核（强化该角色的大招）。<br><br>
   <b style="color:#ffe36a">养成</b>　通关获得💎晶石，扭蛋机抽取永久天赋与稀有技能卡。N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、${2} 个槽位，PVE 和 PVP 都生效。达成条件解锁新角色。
   </div><div class="row" style="margin-top:10px"></div></div>`;
   $(".row", md).appendChild(btn("知道了", "", () => md.remove()));
@@ -103,29 +103,29 @@ export function showRoom(info) {
   const m = load();
   const s = el("div", "modal");
   s.style.background = "radial-gradient(120% 90% at 30% 20%, #4a7cff 0%, #3a3ad0 35%, #241a6a 70%, #140c30 100%)";
-  s.innerHTML = `<div class="panel netp"><h2 class="outline">${info.pvp ? "竞技场 PVP" : "合作闯关"} · 房间</h2>
-    <div class="row o1">房间码 <span class="code outline">${info.code}</span></div>
-    <div class="muted">${info.status || ""}</div>
+  s.innerHTML = `<div class="panel netp room2"><div class="rm-h"><h2 class="outline">${info.pvp ? "竞技场 PVP" : "合作闯关"}</h2><span class="o1">房间码</span><span class="code outline">${info.code}</span></div>
+    <div class="muted rm-st">${info.status || "把房间码或邀请链接发给朋友"}</div>
     <div class="plist"></div>
-    <div class="o1" style="text-align:center;font-size:13px">选择你的角色：</div>
-    <div class="row mychars" style="margin:6px 0"></div>
     <div class="row acts"></div></div>`;
   root.appendChild(s);
   const pl = $(".plist", s);
   for (const p of info.players) {
-    const d = el("div", "pl o1", `<img src="assets/portrait_${p.cid}.png"><div>${escapeHtml(p.name)}${p.host ? " 👑" : ""}</div><div style="color:#ffe36a">${CHARS[p.cid].short}</div>`);
+    const mine = p.id === info.myId;
+    const d = el("div", "pl o1" + (mine ? " me" : ""), `<img src="assets/portrait_${p.cid}.png"><div>${escapeHtml(p.name)}${p.host ? " 👑" : ""}</div><div style="color:#ffe36a">${CHARS[p.cid].short}</div>`);
+    if (mine) {
+      const sw = el("button", "pl-sw", "⇄");
+      sw.title = "切换角色";
+      sw.onclick = () => (sfx("click"), pickRoomChar(m.chars, info.myCid));
+      d.appendChild(sw);
+      d.querySelector("img").onclick = sw.onclick;
+    }
     pl.appendChild(d);
   }
-  for (let i = info.players.length; i < 4; i++) pl.appendChild(el("div", "pl o1", `<div style="height:70px;display:flex;align-items:center;justify-content:center;font-size:26px;opacity:.4">?</div><div>等待加入…</div>`));
-  const mc = $(".mychars", s);
-  for (const id of m.chars) {
-    const b = btn(CHARS[id].short, id === info.myCid ? "" : "gray small", () => app.pickNetChar(id));
-    mc.appendChild(b);
-  }
+  for (let i = info.players.length; i < 4; i++) pl.appendChild(el("div", "pl o1", `<div class="pl-q">?</div><div>等待加入…</div>`));
   const acts = $(".acts", s);
-  if (info.isHost) acts.appendChild(btn(info.pvp ? "开战！" : "出发！", "big", () => app.startNet()));
-  else acts.appendChild(el("div", "muted", "等待房主开始…"));
-  acts.appendChild(btn("复制邀请链接", "blue small", async () => {
+  if (info.isHost) acts.appendChild(btn(info.pvp ? "开战！" : "出发！", "rm-act", () => app.startNet()));
+  else acts.appendChild(el("div", "muted rm-act rm-wait", "等待房主开始…"));
+  acts.appendChild(btn("复制邀请链接", "blue rm-act", async () => {
     const base = window.Capacitor ? "https://designer-awei.github.io/infinite-dream-preview/" : location.origin + location.pathname + location.search;
     const url = base + "#join-" + info.code;
     try {
@@ -135,7 +135,20 @@ export function showRoom(info) {
       toast("房间码：" + info.code);
     }
   }));
-  acts.appendChild(btn("离开", "gray small", () => app.leaveNet()));
+  acts.appendChild(btn("离开", "gray rm-act", () => app.leaveNet()));
+}
+/** room: choose your girl (opened from the ⇄ on your own card) */
+function pickRoomChar(ids, cur) {
+  const md = el("div", "modal rc-pick");
+  md.innerHTML = `<div class="panel rcp"><h2 class="outline">切换角色</h2><div class="rcp-g"></div></div>`;
+  const g = $(".rcp-g", md);
+  for (const id of ids) {
+    const b = el("button", "rcp-c o1" + (id === cur ? " on" : ""), `<img src="assets/portrait_${id}.png" alt=""><span>${CHARS[id].short}</span>`);
+    b.onclick = () => (md.remove(), app.pickNetChar(id));
+    g.appendChild(b);
+  }
+  md.onclick = (e) => e.target === md && md.remove();
+  root.appendChild(md);
 }
 function escapeHtml(s) {
   return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);

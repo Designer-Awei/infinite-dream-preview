@@ -203,7 +203,7 @@ export class Net {
   showRoom() {
     if (this.started) return;
     const me = this.isHost ? this.members[0] : this.members.find((x) => x.id === this.myId) || { cid: load().sel };
-    UI.showRoom({ code: this.code, pvp: this.pvp, opt: this.opt || {}, players: this.members, isHost: this.isHost, myCid: me.cid, status: this.status });
+    UI.showRoom({ code: this.code, pvp: this.pvp, opt: this.opt || {}, players: this.members, isHost: this.isHost, myCid: me.cid, myId: me.id, status: this.status });
   }
   lobbyMsg() {
     return { t: "lobby", pvp: this.pvp, opt: this.opt, code: this.code, players: this.members.map(({ id, name, cid, host }) => ({ id, name, cid, host })) };
@@ -621,7 +621,7 @@ function cleanKit(k) {
     if (lv) (it.eq ? out.eq : out.tal)[it.id] = lv;
   }
   out.core = k.core ? 1 : 0;
-  if (Object.keys(out.eq).length > LOADOUT_SLOTS + out.core) out.eq = {};
+  if (Object.keys(out.eq).length > LOADOUT_SLOTS) out.eq = {};
   out.cards = Array.isArray(k.cards) ? k.cards.filter((c) => typeof c === "string").slice(0, 40) : [];
   return out;
 }

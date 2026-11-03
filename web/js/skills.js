@@ -53,7 +53,7 @@ export function fireAttack(g, p, a, target) {
     g.bullets.push(atkBullet(g, p, p.cid, aa, { dmgK: k, elem, pierce: p.cid === "grok" && p.buff.ultOn > 0 ? 1 : 0 }));
   }
   // Grok ult side shots
-  if (p.cid === "grok" && p.buff.ultOn > 0) for (const d of [-0.5, 0.5]) g.bullets.push(atkBullet(g, p, "grok", a + d, { dmgK: 0.5 }));
+  if (p.cid === "grok" && p.buff.ultOn > 0) for (const d of p.core ? [-0.16, 0.16] : [-0.5, 0.5]) g.bullets.push(atkBullet(g, p, "grok", a + d, { dmgK: p.core ? 0.8 : 0.5 }));
   // SSR 模型集成: every 4th attack adds a 3-bullet spread
   if (p.kit && p.kit.eq && p.kit.eq.t_ensemble && p.atkCount % 4 === 0)
     for (const d of [-0.32, 0, 0.32]) g.bullets.push(atkBullet(g, p, p.cid, a + d, { dmgK: 0.4, elem }));
@@ -268,7 +268,7 @@ export function castUlt(g, p, a, target) {
         if (g.pvp) for (const o of g.players) if (o !== p && dist(o.x, o.y, cx, cy) < 66) g.hit(o, 30, { p });
         const fh = g.vfx("water/whirlpool", cx, cy, { palette: pal, layer: "back", life: 5 });
         g.addZone({
-          kind: "tide", x: cx, y: cy, r: 72, life: 5, side: "p", owner: p.id, sh: 0,
+          kind: "tide", x: cx, y: cy, r: p.core ? 90 : 72, life: p.core ? 8 : 5, side: "p", owner: p.id, sh: 0,
           update: (z, dt) => {
             z.tick += dt;
             z.sh += dt;
@@ -286,11 +286,11 @@ export function castUlt(g, p, a, target) {
       break;
     }
     case "gpt": {
-      p.buff.ultOn = 6;
+      p.buff.ultOn = p.core ? 9 : 6;
       p.shield = Math.min(p.maxShield + 2, p.shield + 3);
       g.vfx("explosions/plasma-explosion", p.x, p.y - 16, { palette: ELEM.dragon.ramp.slice(1) });
       g.vfx("holy/divine-shield", p.x, p.y, { palette: pal, follow: p, life: 6 });
-      for (const e of g.enemiesNear(p.x, p.y, 90)) (g.hit(e, 10, { p, elem: "dragon" })), g.knock(e, p.x, p.y, 320);
+      for (const e of g.enemiesNear(p.x, p.y, p.core ? 130 : 90)) (g.hit(e, 10, { p, elem: "dragon" })), g.knock(e, p.x, p.y, 320);
       break;
     }
     case "grok": {
@@ -308,6 +308,13 @@ export function castUlt(g, p, a, target) {
       g.addZone({
         kind: "domain", x: cx, y: cy, r: 104, life: 6, side: "p", owner: p.id,
         update: (z, dt) => {
+          if (p.core) {
+            const ne = g.nearestEnemy(z.x, z.y, 400);
+            if (ne) {
+              const an = angTo(z.x, z.y, ne.x, ne.y), d = dist(z.x, z.y, ne.x, ne.y);
+              if (d > 8) (z.x += Math.cos(an) * Math.min(d, 70 * dt)), (z.y += Math.sin(an) * Math.min(d, 70 * dt));
+            }
+          }
           z.tick += dt;
           if (z.tick < 0.6) return;
           z.tick = 0;
@@ -335,7 +342,7 @@ export function castUlt(g, p, a, target) {
         update: (z, dt) => {
           z.shot += dt;
           z.heal += dt;
-          if (z.shot >= 0.5) {
+          if (z.shot >= (p.core ? 0.35 : 0.5)) {
             z.shot = 0;
             const tg = p.target && dist(p.target.x, p.target.y, z.x, z.y) < 220 ? p.target : g.nearestEnemy(z.x, z.y, 220);
             if (tg) {
@@ -343,7 +350,7 @@ export function castUlt(g, p, a, target) {
               g.bullets.push(b);
             }
           }
-          if (z.heal >= 1.4) {
+          if (z.heal >= (p.core ? 1 : 1.4)) {
             z.heal = 0;
             g.fx.spawn("holy/heal-aoe", z.x, z.y, { palette: ELEM.bubble.ramp, opts: { reach: 84 }, layer: "back", speed2: 1.4 });
             for (const q of g.alivePlayers()) if (dist(q.x, q.y, z.x, z.y) < z.r && q.hp < q.maxHp) (q.hp++), g.text(q.x, q.y - 62, "+1", "#ff9ac0");
@@ -360,12 +367,12 @@ export function castUlt(g, p, a, target) {
       g.vfx("shadow/black-hole", cx, cy - 10, { palette: pal, life: 3.5 });
       for (const e of g.enemiesNear(cx, cy, 104)) (g.hit(e, 20, { p, elem: "ink" })), (e.inkMark = g.time + 6);
       g.addZone({
-        kind: "tome", x: cx, y: cy, r: 104, life: 3.5, side: "p", owner: p.id,
+        kind: "tome", x: cx, y: cy, r: 104, life: p.core ? 5 : 3.5, side: "p", owner: p.id,
         update: (z, dt) => {
           for (const e of g.enemiesNear(z.x, z.y, z.r + 20)) if (!e.boss) {
             const an = angTo(e.x, e.y, z.x, z.y);
-            e.kbx += Math.cos(an) * 150 * dt * 4;
-            e.kby += Math.sin(an) * 150 * dt * 4;
+            e.kbx += Math.cos(an) * 150 * dt * (p.core ? 6 : 4);
+            e.kby += Math.sin(an) * 150 * dt * (p.core ? 6 : 4);
           }
           z.tick += dt;
           if (z.tick < 0.4) return;

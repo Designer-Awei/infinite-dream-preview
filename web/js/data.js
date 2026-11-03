@@ -291,12 +291,12 @@ export const GACHA = {
     { id: "t_firewall", r: "SSR", name: "零信任防火墙", desc: "护盾被打破时释放冲击波：伤害并击退周围敌人（8秒冷却）", max: 1, eq: 1 },
     { id: "t_ensemble", r: "SSR", name: "模型集成", desc: "每第 4 次普攻额外射出 3 发散射弹（每发 40% 伤害）", max: 1, eq: 1 },
     { id: "u_kill_boom", r: "SR", name: "卡牌·连锁崩溃", desc: "解锁技能卡【连锁崩溃】", max: 1, card: "kill_boom" },
-    { id: "u_reaction_amp", r: "SR", name: "卡牌·跨模态融合", desc: "解锁技能卡【跨模态融合】", max: 1, card: "reaction_amp" },
+    { id: "u_reaction_amp", r: "SR", name: "卡牌·模态融合", desc: "解锁技能卡【跨模态融合】", max: 1, card: "reaction_amp" },
     { id: "u_element_spread", r: "SR", name: "卡牌·知识蒸馏", desc: "解锁技能卡【知识蒸馏】", max: 1, card: "element_spread" },
     { id: "u_shield_nova", r: "SR", name: "卡牌·防御反制", desc: "解锁技能卡【防御反制】", max: 1, card: "shield_nova" },
     { id: "u_echo", r: "SSR", name: "卡牌·自洽回声", desc: "解锁技能卡【自洽回声】；装配后开局自带（小技能 35% 再释放一次）", max: 1, card: "echo", eq: 1 },
     { id: "u_second_ult", r: "SSR", name: "卡牌·持续学习", desc: "解锁技能卡【持续学习】；装配后开局自带（放大招返还 40% 充能）", max: 1, card: "second_ult", eq: 1 },
-    { id: "u_links", r: "SSR", name: "卡牌包·技能联动", desc: "解锁全部【联动】技能卡；装配后开局随机自带 1 张联动卡", max: 1, card: "links", eq: 1 },
+    { id: "u_links", r: "SSR", name: "卡牌·技能联动", desc: "解锁全部【联动】技能卡；装配后开局随机自带 1 张联动卡", max: 1, card: "links", eq: 1 },
   ],
 };
 
@@ -306,3 +306,13 @@ export const LOADOUT_SLOTS = 2;
 // tokens earned per run
 export const REWARD = { room: 15, kill: 1, elite: 6, boss: 120, firstBoss: 200 };
 export const START_TOKENS = 300;
+
+/** 梦核 (from 梦境工坊): each girl's ult gets stronger in its own way */
+export const CORE_FX = {
+  deepseek: "大招持续 8 秒、范围更大",
+  gpt: "大招持续 9 秒、冲击更广",
+  grok: "大招散射收束、副弹更痛",
+  claude: "大招领域自动追向敌人",
+  doubao: "补给站射速与回血更快",
+  glm: "大招持续 5 秒、牵引更强",
+};

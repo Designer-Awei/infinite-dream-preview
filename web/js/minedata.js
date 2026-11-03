@@ -63,22 +63,26 @@ export const SHOVELS = {
 export const FREE_SHOVEL_HOURS = 4, FREE_SHOVEL_CAP = 2;
 // 梦境工坊: what 星砂 buys. 梦核 is the long goal (~5 hours of play): a third SSR slot and a boost for one girl
 export const WORKSHOP = {
-  ag: { name: "银铲", cost: 35, desc: "下潜到深海层" },
   au: { name: "金铲", cost: 90, desc: "全层开放 + 星辉宝箱" },
-  card: { name: "SSR 兑换卡", cost: 160, desc: "在扭蛋机任选 1 个未满级的 SSR" },
-  core: { name: "梦核", cost: 360, desc: "角色专属：第 3 个 SSR 天赋槽，伤害 +10%，生命 +1" },
+  card: { name: "SSR 兑换卡", cost: 160, desc: "任选 1 个未满级 SSR" },
+  core: { name: "梦核", cost: 360, desc: "角色专属：强化这个角色的大招" },
 };
 
 // mine upgrades (养成): level 0 = base
 export const UPGRADES = {
-  drill: { name: "钻头", max: 3, desc: (l) => `挖掘速度 ×${(1 + 0.35 * l).toFixed(2)}${l >= 1 ? "，可挖坚岩/遗迹砖" : ""}${l >= 2 ? "，可挖花岗岩" : ""}`, cost: (l) => ({ m: [20, 70, 180][l], v: [60, 150, 300][l] }) },
-  battery: { name: "电池", max: 5, desc: (l) => `电量 ${100 + 40 * l}`, cost: (l) => ({ m: [12, 30, 60, 100, 160][l], v: [30, 60, 100, 150, 220][l] }) },
-  bag: { name: "背包", max: 5, desc: (l) => `容量 ${12 + 6 * l} 格`, cost: (l) => ({ m: [10, 26, 50, 90, 140][l], v: [30, 60, 100, 150, 220][l] }) },
-  armor: { name: "护甲", max: 3, desc: (l) => `生命 ${5 + 2 * l}`, cost: (l) => ({ m: [16, 45, 100][l], v: [40, 100, 200][l] }) },
-  radar: { name: "雷达", max: 3, desc: (l) => `视野 +${l}${l >= 1 ? "，显示瓦斯与宝箱" : ""}${l >= 2 ? "，显示矿物轮廓" : ""}`, cost: (l) => ({ m: [15, 50, 120][l], v: [40, 120, 240][l] }) },
-  beacon: { name: "信标", max: 2, desc: (l) => `撤离信标 ${1 + l} 个`, cost: (l) => ({ m: [30, 90][l], v: [80, 200][l] }) },
-  tank: { name: "氧气瓶", max: 3, desc: (l) => `水下氧气 ${20 + 10 * l} 秒`, cost: (l) => ({ m: [20, 50, 110][l], v: [50, 120, 220][l] }) },
+  drill: { name: "钻头", max: 3, label: "挖速", val: (l) => `×${(1 + 0.35 * l).toFixed(2)}`, unlock: (l) => (l === 1 ? " · 坚岩" : l === 2 ? " · 花岗岩" : ""), cost: (l) => ({ m: [20, 70, 180][l], v: [60, 150, 300][l] }) },
+  battery: { name: "电池", max: 5, label: "电量", val: (l) => `${100 + 40 * l}`, cost: (l) => ({ m: [12, 30, 60, 100, 160][l], v: [30, 60, 100, 150, 220][l] }) },
+  bag: { name: "背包", max: 5, label: "容量", val: (l) => `${12 + 6 * l} 格`, cost: (l) => ({ m: [10, 26, 50, 90, 140][l], v: [30, 60, 100, 150, 220][l] }) },
+  armor: { name: "护甲", max: 3, label: "生命", val: (l) => `${5 + 2 * l}`, cost: (l) => ({ m: [16, 45, 100][l], v: [40, 100, 200][l] }) },
+  radar: { name: "雷达", max: 3, label: "视野", val: (l) => `+${l}`, unlock: (l) => (l === 1 ? " · 透视瓦斯" : l === 2 ? " · 透视矿物" : ""), cost: (l) => ({ m: [15, 50, 120][l], v: [40, 120, 240][l] }) },
+  beacon: { name: "信标", max: 2, label: "信标", val: (l) => `${1 + l} 个`, cost: (l) => ({ m: [30, 90][l], v: [80, 200][l] }) },
+  tank: { name: "氧气瓶", max: 3, label: "氧气", val: (l) => `${20 + 10 * l} 秒`, cost: (l) => ({ m: [20, 50, 110][l], v: [50, 120, 220][l] }) },
 };
+// one-line upgrade text: "挖速 ×1.00 → ×1.35 · 坚岩" (or just the current value when maxed)
+for (const u of Object.values(UPGRADES)) {
+  u.desc = (l) => `${u.label} ${u.val(l)}`;
+  u.line = (l) => (l >= u.max ? `${u.label} ${u.val(l)}` : `${u.label} ${u.val(l)} → ${u.val(l + 1)}${u.unlock ? u.unlock(l + 1) : ""}`);
+}
 
 // monsters living in the mine (sprites from critters/)
 export const MOBS = {

@@ -1,5 +1,5 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
-import { CHARS, GACHA, VIEW_H } from "./data.js";
+import { CHARS, GACHA, VIEW_H, CORE_FX } from "./data.js";
 import { RELICS, SUPPLIES, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
 import { load, save, mineState, refreshFreeShovels } from "./save.js";
 import { el } from "./util.js";
@@ -7,6 +7,7 @@ import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
 import { btn, toast, clear, uiRoot } from "./ui.js";
 import { app } from "./main.js";
+import { showMineGuide } from "./mineguide.js";
 import { todayQuests, questText, claimQuest, claimable } from "./minequests.js";
 
 const q = (s, r) => r.querySelector(s);
@@ -37,6 +38,25 @@ export function oreIcon(id) {
   g.fillRect(9, 11, 3, 2);
   return (oreIcons[id] = c.toDataURL());
 }
+/** one look for each currency everywhere in the mine UI */
+export const CUR = {
+  gem: () => `<i class="cur gem"></i>`,
+  ore: () => `<img class="cur" src="${iconURL("ore", 1)}" alt="">`,
+  star: () => `<img class="cur" src="${oreIcon("star")}" alt="">`,
+};
+const CUR_INFO = {
+  gem: ["晶石", "通用货币。从闯关、矿场带出的矿物换来；用于扭蛋、矿场装备升级和下潜补给。"],
+  ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备。"],
+  star: ["星砂", "稀有货币。来自宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊兑换金铲、SSR 兑换卡和梦核。"],
+};
+export function showCurInfo(k) {
+  const [name, text] = CUR_INFO[k];
+  const md = el("div", "modal cur-md");
+  md.innerHTML = `<div class="panel cur-p"><div class="cur-h">${CUR[k]().replace('class="cur', 'class="cur big')}<h2 class="outline">${name}</h2></div><p class="o1">${text}</p></div>`;
+  md.onclick = () => md.remove();
+  uiRoot().appendChild(md);
+  sfx("click");
+}
 const fmtMs = (ms) => {
   const m = Math.ceil(ms / 60000);
   return m >= 60 ? `${Math.floor(m / 60)}小时${m % 60 ? (m % 60) + "分" : ""}` : `${m}分钟`;
@@ -51,24 +71,26 @@ export function showMineHub() {
   const wait = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP);
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
-  <div class="topbar"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><div class="spacer"></div>
-    <div class="pill o1" title="晶石"><div class="gem"></div><span class="tok">${m.tokens}</span></div>
-    <div class="pill o1" title="矿石：升级矿场装备"><img class="pi" src="${iconURL("ore", 1)}" alt=""><span class="mats">${ms.mats}</span></div>
-    <div class="pill o1" title="星砂：在梦境工坊兑换梦核、兑换卡、铲子"><img class="pi" src="${oreIcon("star")}" alt=""><span class="stars">${ms.stars}</span></div></div>
+  <div class="topbar"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><div class="spacer"></div>
+    <button class="pill o1 curpill" data-cur="gem">${CUR.gem()}<span class="tok">${m.tokens}</span></button>
+    <button class="pill o1 curpill" data-cur="ore">${CUR.ore()}<span class="mats">${ms.mats}</span></button>
+    <button class="pill o1 curpill" data-cur="star">${CUR.star()}<span class="stars">${ms.stars}</span></button></div>
   <div class="mh-l">
     <div class="mh-h o1">选择铲子下潜（一把铲 = 一次下潜）</div>
     <div class="mh-shovels"></div>
     <div class="mh-free o1">${ms.shovels.cu >= FREE_SHOVEL_CAP ? `免费铜铲已存满（${FREE_SHOVEL_CAP} 把）` : `下一把免费铜铲：${fmtMs(wait)}后`}　·　打败首领必得铲子</div>
     <div class="mh-sup"></div>
-    <button class="btn big mh-go"><span class="pt">下潜</span></button>
     <div class="mh-rec o1">最深 ${ms.best}m · 下潜 ${ms.dives} 次</div>
+    <button class="btn big mh-go"><span class="pt">下潜</span></button>
   </div>
   <div class="mh-r">
-    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊<i class="o1">星砂</i></button><button class="mh-tab" data-t="quest">每日委托<b class="qdot o1"></b></button></div>
+    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊</button><button class="mh-tab" data-t="quest">每日委托<b class="qdot o1"></b></button></div>
     <div class="mh-ups"></div>
   </div>`;
   uiRoot().appendChild(s);
   q(".back-btn", s).onclick = () => (sfx("click"), import("./lobby.js").then((L) => L.showLobby()));
+  q(".mh-help", s).onclick = () => showMineGuide();
+  s.querySelectorAll(".curpill").forEach((b) => (b.onclick = () => showCurInfo(b.dataset.cur)));
   // shovels
   let pick = ["au", "ag", "cu"].find((k) => ms.shovels[k] > 0) || "cu";
   const sh = q(".mh-shovels", s);
@@ -86,17 +108,17 @@ export function showMineHub() {
   const updGo = () => {
     const n = ms.shovels[pick], c = supCost();
     go.disabled = !n;
-    q(".pt", go).textContent = n ? `用${SHOVELS[pick].name}下潜${c ? ` · 💎${c}` : ""}` : `没有${SHOVELS[pick].name}`;
+    q(".pt", go).innerHTML = n ? `用${SHOVELS[pick].name}下潜${c ? `<small class="go-c">${CUR.gem()}${c}</small>` : ""}` : `没有${SHOVELS[pick].name}`;
   };
   // supplies: toggles that stay selected between dives; paid when you dive
   const sup = q(".mh-sup", s);
   const drawSup = () => {
     const on = new Set(ms.supply || []);
-    sup.innerHTML = `<span class="o1">补给</span>` + Object.entries(SUPPLIES).map(([k, d]) => `<button class="msup${on.has(k) ? " on" : ""}" data-k="${k}" title="${d.name}：${d.desc}"><img src="${iconURL(d.icon, 2)}" alt=""><b>${d.desc}</b><small>💎${d.cost}</small></button>`).join("");
+    sup.innerHTML = Object.entries(SUPPLIES).map(([k, d]) => `<button class="msup${on.has(k) ? " on" : ""}" data-k="${k}" title="${d.name}：${d.desc}"><img src="${iconURL(d.icon, 2)}" alt=""><small>${CUR.gem()}${d.cost}</small></button>`).join("");
     sup.querySelectorAll(".msup").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, cur = new Set(ms.supply || []);
       cur.has(k) ? cur.delete(k) : cur.add(k);
-      toast(cur.has(k) ? `已勾选补给：${SUPPLIES[k].name}（${SUPPLIES[k].desc}，下潜时扣 💎${SUPPLIES[k].cost}）` : `取消补给：${SUPPLIES[k].name}`);
+      toast(cur.has(k) ? `已勾选补给：${SUPPLIES[k].name}（${SUPPLIES[k].desc}，下潜时扣 ${SUPPLIES[k].cost} 晶石）` : `取消补给：${SUPPLIES[k].name}`);
       ms.supply = [...cur];
       save();
       sfx("click");
@@ -124,8 +146,8 @@ export function showMineHub() {
     ups.innerHTML = Object.entries(UPGRADES).map(([k, u]) => {
       const l = ms.up[k], max = l >= u.max, c = max ? null : u.cost(l);
       const ok = c && ms.mats >= c.m && m.tokens >= c.v;
-      return `<div class="mup"><div class="mu-t"><b class="o1">${u.name} <small>Lv${l}/${u.max}</small></b><span>${u.desc(l)}${max ? "" : `　→　${u.desc(l + 1)}`}</span></div>
-        ${max ? `<span class="mu-max o1">已满级</span>` : `<button class="btn small ${ok ? "" : "gray"} mu-b" data-k="${k}"><span>升级</span><small>⛏${c.m} · 💎${c.v}</small></button>`}</div>`;
+      return `<div class="mup"><div class="mu-t"><b class="o1">${u.name} <small>Lv${l}/${u.max}</small></b><span>${u.line(l)}</span></div>
+        ${max ? `<span class="mu-max o1">已满级</span>` : `<button class="btn small ${ok ? "" : "gray"} mu-b" data-k="${k}"><span>升级</span><small>${CUR.ore()}${c.m} ${CUR.gem()}${c.v}</small></button>`}</div>`;
     }).join("");
     ups.querySelectorAll(".mu-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, c = UPGRADES[k].cost(ms.up[k]);
@@ -146,10 +168,10 @@ export function showMineHub() {
       const owned = k === "card" ? `持有 ${ms.cards}` : k === "core" ? (hasCore ? `${CHARS[cid].short} 已拥有` : `给 ${CHARS[cid].short}`) : `持有 ${ms.shovels[k]}`;
       const can = ms.stars >= w.cost && !(k === "core" && hasCore);
       const ico = k === "card" ? iconURL("cardgold", 2) : k === "core" ? `assets/head_${cid}.png` : iconURL("shovel_" + k, 2);
-      return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${w.desc}</span></div>
-        <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${k === "core" && hasCore ? "已拥有" : "兑换"}</span><small>★${w.cost}</small></button></div>`;
+      return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${k === "core" ? CORE_FX[cid] : w.desc}</span></div>
+        <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${k === "core" && hasCore ? "已拥有" : "兑换"}</span><small>${CUR.star()}${w.cost}</small></button></div>`;
     }).join("");
-    ups.innerHTML = rows + `<div class="ws-note o1">梦核是长期目标：大约需要 5 小时的打宝收益。换角色后这里显示对应角色的梦核。${ms.cards ? `　<b class="ws-use">使用兑换卡 ›</b>` : ""}</div>`;
+    ups.innerHTML = rows + (ms.cards ? `<div class="ws-note o1"><b class="ws-use">使用兑换卡 ›</b></div>` : "");
     ups.querySelectorAll(".ws-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, w = WORKSHOP[k];
       if (k === "core" && hasCore) return toast("这个角色已经有梦核了：去大厅换个角色");
@@ -160,7 +182,7 @@ export function showMineHub() {
       else ms.shovels[k]++;
       save();
       sfx(k === "core" ? "ssr" : "card");
-      toast(k === "core" ? `${CHARS[cid].short} 获得梦核：第 3 个天赋槽已开启！` : `获得 ${w.name}`, 2200);
+      toast(k === "core" ? `${CHARS[cid].short} 获得梦核：${CORE_FX[cid]}` : `获得 ${w.name}`, 2600);
       pills();
       drawShovels();
       updGo();
@@ -178,17 +200,17 @@ export function showMineHub() {
     const list = todayQuests();
     ups.innerHTML = list.map((x, i) => {
       const ok = x.prog >= x.n, pct = Math.round((x.prog / x.n) * 100);
-      const rw = [x.stars ? `★${x.stars}` : "", x.tokens ? `💎${x.tokens}` : ""].filter(Boolean).join(" ");
+      const rw = [x.stars ? `${CUR.star()}${x.stars}` : "", x.tokens ? `${CUR.gem()}${x.tokens}` : ""].filter(Boolean).join(" ");
       return `<div class="mup mq${x.claimed ? " claimed" : ""}"><div class="mu-t"><b class="o1">${questText(x)}</b><span class="mq-bar"><i style="width:${pct}%"></i><em class="o1">${x.k === "haul" ? (ok ? "完成" : "未完成") : `${x.prog}/${x.n}`}</em></span></div>
         ${x.claimed ? `<span class="mu-max o1">已领取</span>` : `<button class="btn small ${ok ? "" : "gray"} mq-b" data-i="${i}"><span>${ok ? "领取" : "进行中"}</span><small>${rw}</small></button>`}</div>`;
-    }).join("") + `<div class="ws-note o1">每天刷新 3 个委托，进度在当天的所有下潜里累计。</div>`;
+    }).join("");
     ups.querySelectorAll(".mq-b").forEach((b) => (b.onclick = () => {
       const x = claimQuest(+b.dataset.i);
       if (!x) return toast("还没完成：去矿场里完成它吧");
       if (x.tokens) m.tokens += x.tokens;
       save();
       sfx("card");
-      toast(`委托完成：${[x.stars ? `星砂 +${x.stars}` : "", x.tokens ? `💎 +${x.tokens}` : ""].filter(Boolean).join("，")}`);
+      toast(`委托完成：${[x.stars ? `星砂 +${x.stars}` : "", x.tokens ? `晶石 +${x.tokens}` : ""].filter(Boolean).join("，")}`);
       pills();
       qdot();
       drawQuests();
@@ -307,7 +329,7 @@ export function updateMineHud(dive) {
   set("dep", row, (v) => (q(".depth", hud).textContent = v <= 0 ? "地面 · 营地" : `${v}m · ${zoneAt(v).name}`));
   if (dive.lite) set("lite", Math.ceil(dive.lite.left ?? dive.lite.time), (v) => (q(".lite", hud).textContent = `裂隙关闭 ${v}s`));
   set("bag", dive.bag.length + "|" + dive.stars + "|" + dive.bagCap, () => {
-    q(".bag", hud).innerHTML = `🎒 ${dive.bag.length}/${dive.bagCap}<small>💎${dive.bagValue()}</small>${dive.stars ? `<small class="fr">★${dive.stars}</small>` : ""}`;
+    q(".bag", hud).innerHTML = `🎒 ${dive.bag.length}/${dive.bagCap}<small>${CUR.gem()}${dive.bagValue()}</small>${dive.stars ? `<small class="fr">${CUR.star()}${dive.stars}</small>` : ""}`;
     q(".bag", hud).classList.toggle("full", dive.bag.length >= dive.bagCap);
   });
   const boss = dive.mobs.find((m) => m.d.boss && m.awake);
@@ -351,8 +373,8 @@ export function showMineResult(res, again, back) {
   md.innerHTML = `<div class="panel res2 ${res.how === "dead" ? "lose" : "win"}">
     <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
       <div class="res-gain"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
-      <div class="res-chip o1"><span>矿石</span><b>+${res.mats}</b></div>
-      ${res.stars ? `<div class="res-chip o1"><span>★ 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
+      <div class="res-chip o1"><span>${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
+      ${res.stars ? `<div class="res-chip o1"><span>${CUR.star()} 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
       ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
       ${res.questsDone && res.questsDone.length ? `<div class="mres-q o1">✔ 委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
       ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
@@ -412,9 +434,9 @@ export function showMerchant(dive, onClose) {
   const md = el("div", "modal mshop-md");
   const draw = () => {
     const offers = dive.shopOffers(), bv = dive.bagValue();
-    md.innerHTML = `<div class="panel mshop"><div class="ms-h"><h2 class="outline">地下商人</h2><span class="o1">用背包里的矿物付款（从最便宜的开始扣）· 背包价值 💎${bv}</span></div>
+    md.innerHTML = `<div class="panel mshop"><div class="ms-h"><h2 class="outline">地下商人</h2><span class="o1">用背包里的矿物付款（从最便宜的开始扣）· 背包价值 ${CUR.gem()}${bv}</span></div>
       <div class="ms-list">${offers.map((o) => `<div class="ms-it${o.left <= 0 ? " sold" : ""}"><img src="${iconURL(o.icon, 3)}" alt=""><div class="mu-t"><b class="o1">${o.name}</b><span>${o.desc}${o.left > 0 ? `　剩 ${o.left}` : "　售罄"}</span></div>
-        <button class="btn small ${o.left > 0 && bv >= o.price ? "" : "gray"}" data-k="${o.k}"><span>${o.left > 0 ? "购买" : "售罄"}</span><small>💎${o.price}</small></button></div>`).join("")}</div>
+        <button class="btn small ${o.left > 0 && bv >= o.price ? "" : "gray"}" data-k="${o.k}"><span>${o.left > 0 ? "购买" : "售罄"}</span><small>${CUR.gem()}${o.price}</small></button></div>`).join("")}</div>
       <div class="row ms-acts"></div></div>`;
     md.querySelectorAll(".ms-it button").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, o = dive.shopOffers().find((x) => x.k === k);
@@ -434,4 +456,16 @@ export function showMerchant(dive, onClose) {
   draw();
   uiRoot().appendChild(md);
   sfx("card");
+}
+
+// ------------------------------------------------------------------ beacon: ask before leaving
+export function confirmBeacon(dive, yes, no) {
+  const md = el("div", "modal bc-md");
+  md.innerHTML = `<div class="panel bc-p"><h2 class="outline">确认撤离？</h2><p class="o1">启动撤离信标，1.5 秒后带着背包全部离开（剩余信标 ${dive.p.beacons}）。</p><div class="row bc-acts"></div></div>`;
+  const a = md.querySelector(".bc-acts");
+  const done = (f) => (md.remove(), f());
+  a.appendChild(btn("撤离", "green", () => done(yes)));
+  a.appendChild(btn("继续挖", "gray", () => done(no)));
+  uiRoot().appendChild(md);
+  sfx("click");
 }

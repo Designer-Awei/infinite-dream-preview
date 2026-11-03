@@ -51,10 +51,10 @@ export class Game {
     const p = {
       id, cid, name, local, kind: "player",
       x: 0, y: 0, r: 12, vx: 0, vy: 0, face: 0, moving: false, animT: Math.random() * 3,
-      hp: c.hp + talent("t_hp") + (kit.core ? 1 : 0), maxHp: c.hp + talent("t_hp") + (kit.core ? 1 : 0), shield: c.shield, maxShield: c.shield,
+      hp: c.hp + talent("t_hp"), maxHp: c.hp + talent("t_hp"), core: kit.core ? 1 : 0, shield: c.shield, maxShield: c.shield,
       atkCd: 0, atkCount: 0, rampT: 0, idleFire: 1, skillCd: 0, ult: 0.3 * talent("t_ult"), dashCd: 0, dashT: 0, dashDx: 0, dashDy: 0,
       invuln: 0, hurtT: 0, lastHit: 99, shieldT: 0, recoil: 0, castT: 0,
-      st: { dmg: (1 + 0.04 * talent("t_dmg")) * (kit.core ? 1.1 : 1), rate: 1, crit: 0.05 + 0.03 * talent("t_crit"), multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1, bspd: 1, size: 1, cd: 1, ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield") },
+      st: { dmg: 1 + 0.04 * talent("t_dmg"), rate: 1, crit: 0.05 + 0.03 * talent("t_crit"), multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1, bspd: 1, size: 1, cd: 1, ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield") },
       cards: {}, fusions: [], links: [],
       buff: {}, // name -> seconds left
       coins: 15 * talent("t_start_coin"), cubes: 0,
