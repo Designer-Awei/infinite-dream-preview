@@ -17,7 +17,7 @@ const s1 = await p.evaluate(() => { const d = __app.dive, g = d.mobs.find((m) =>
 await p.screenshot({ path: `tmp/golem_${W}.png` });
 console.log("after entering:", JSON.stringify(s1));
 // try to dig the star chest while it lives
-const sealed = await p.evaluate(() => { const d = __app.dive, i = +Object.entries(d.chest).find(([, k]) => k === "star")[0]; d.p.x = (i % 26) * 24 - 12; return i; });
+const sealed = await p.evaluate(() => { const d = __app.dive, i = +Object.entries(d.chest).find(([, k]) => k === "star")[0]; d.p.x = (i % __app.dive.MW) * 24 - 12; return i; });
 await p.keyboard.down("KeyD"); await p.waitForTimeout(1500); await p.keyboard.up("KeyD");
 console.log("chest still sealed:", await p.evaluate((i) => __app.dive.t[i] === 12, sealed));
 await p.waitForTimeout(2500);

@@ -242,7 +242,7 @@ export function showMineHud(dive) {
   hud.innerHTML = `
    <div class="tl"><div class="face"><img src="assets/head_${cid}.png"></div>
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar en"><i></i><span class="o1"></span></div><div class="bar ox"><i></i><span class="o1"></span></div><div class="mrel"></div></div></div>
-   <div class="tc o1"><div class="depth"></div><div class="lite"></div></div>
+   <div class="tc o1"><div class="depth"></div><div class="lite"></div><div class="mboss"><b class="outline"></b><div class="bb"><i></i></div></div></div>
    <div class="tr"><div class="bag o1"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
    <div class="gauge"><i class="me"></i></div>
    <div class="keys o1">A/D 移动 · S 向下挖 · W 喷气上升（耗电）· 顶着墙走 = 横挖 · J 攻击 · K 炸药 · L 撤离信标</div>
@@ -309,6 +309,15 @@ export function updateMineHud(dive) {
   set("bag", dive.bag.length + "|" + dive.stars + "|" + dive.bagCap, () => {
     q(".bag", hud).innerHTML = `🎒 ${dive.bag.length}/${dive.bagCap}<small>💎${dive.bagValue()}</small>${dive.stars ? `<small class="fr">★${dive.stars}</small>` : ""}`;
     q(".bag", hud).classList.toggle("full", dive.bag.length >= dive.bagCap);
+  });
+  const boss = dive.mobs.find((m) => m.d.boss && m.awake);
+  set("boss", boss ? Math.ceil((boss.hp / boss.maxHp) * 100) + "|" + !!boss.rage : "", (v) => {
+    const b = q(".mboss", hud);
+    b.classList.toggle("on", !!v);
+    if (!boss) return;
+    q("b", b).textContent = boss.rage ? "遗迹守护者 · 狂暴" : "遗迹守护者";
+    q(".bb i", b).style.width = (boss.hp / boss.maxHp) * 100 + "%";
+    b.classList.toggle("rage", !!boss.rage);
   });
   set("rel", JSON.stringify(dive.rel), () => {
     q(".mrel", hud).innerHTML = Object.entries(dive.rel).map(([id, n]) => `<span class="${RELICS[id].curse ? "curse" : ""}" title="${RELICS[id].name}：${RELICS[id].desc}"><img src="${iconURL(RELICS[id].icon, 2)}" alt="">${n > 1 ? `<b>${n}</b>` : ""}</span>`).join("");

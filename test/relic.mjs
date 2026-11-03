@@ -10,10 +10,10 @@ if (touch) await p.touchscreen.tap(5, H - 5);
 await p.evaluate(() => document.querySelector(".t-mine").click()); await p.waitForTimeout(900);
 await p.evaluate(() => document.querySelector('.mshv[data-k="au"]').click()); await p.waitForTimeout(200);
 await p.evaluate(() => document.querySelector(".mh-go").click()); await p.waitForTimeout(1200);
-const info = await p.evaluate(() => { const d = __app.dive; const rel = Object.entries(d.chest).filter(([, k]) => k === "relic").map(([i]) => Math.floor(i / 26)); return { relicRows: rel }; });
+const info = await p.evaluate(() => { const d = __app.dive; const rel = Object.entries(d.chest).filter(([, k]) => k === "relic").map(([i]) => Math.floor(i / __app.dive.MW)); return { relicRows: rel }; });
 console.log("relic chest rows", JSON.stringify(info.relicRows));
 for (let round = 0; round < 3; round++) {
-  await p.evaluate(() => { const d = __app.dive; const i = +Object.entries(d.chest).find(([, k]) => k === "relic")[0]; d.breakTile(i % 26, Math.floor(i / 26)); });
+  await p.evaluate(() => { const d = __app.dive; const i = +Object.entries(d.chest).find(([, k]) => k === "relic")[0]; d.breakTile(i % __app.dive.MW, Math.floor(i / __app.dive.MW)); });
   await p.waitForTimeout(700);
   const st = await p.evaluate(() => ({ choice: __app.dive.choice, modal: !!document.querySelector(".relic-modal"), t: __app.dive.time }));
   if (round === 0) await p.screenshot({ path: `tmp/relic_pick_${W}.png` });

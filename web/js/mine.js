@@ -323,7 +323,7 @@ function skyLayers() {
 
 // ------------------------------------------------------------------ underground back walls (parallax, one per zone)
 const DEEP = {};
-const DEEP_K = 0.55; // how fast the back wall moves relative to the rock
+const DEEP_K = 0.4; // how fast the back wall moves relative to the rock
 function deepLayer(z) {
   if (DEEP[z.id]) return DEEP[z.id];
   const W = 384, H = 384, c = cv(W, H), g = c.getContext("2d"), r = rng(z.id.length * 977 + z.from);
@@ -406,6 +406,68 @@ function deepLayer(z) {
   return (DEEP[z.id] = c);
 }
 
+// ------------------------------------------------------------------ 遗迹守护者 sprite parts (shaded stone, built once)
+let GOLEM = null;
+function golemParts() {
+  if (GOLEM) return GOLEM;
+  const STONE = ["#3e372e", "#5e5648", "#7a705e", "#958a74", "#b4a88c"], INK = "#1a1020";
+  const r = rng(4242);
+  // inside(x, y) decides the silhouette; light comes from the top-left
+  const part = (w, h, inside, opts = {}) => {
+    const c = cv(w, h), g = c.getContext("2d"), m = [];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) m[y * w + x] = inside(x, y) ? 1 : 0;
+    const at = (x, y) => (x < 0 || y < 0 || x >= w || y >= h ? 0 : m[y * w + x]);
+    for (let y = 0; y < h; y++)
+      for (let x = 0; x < w; x++) {
+        if (!at(x, y)) continue;
+        const edge = !at(x - 1, y) || !at(x + 1, y) || !at(x, y - 1) || !at(x, y + 1);
+        if (edge) {
+          g.fillStyle = INK;
+          g.fillRect(x, y, 1, 1);
+          continue;
+        }
+        const lit = 1 - (x / w) * 0.55 - (y / h) * 0.65 + (r() - 0.5) * 0.35 + (!at(x, y - 2) ? 0.5 : 0) + (!at(x + 2, y) ? -0.35 : 0);
+        g.fillStyle = STONE[clamp(Math.round(1 + lit * 2.2), 0, 4)];
+        g.fillRect(x, y, 1, 1);
+      }
+    // cracks
+    for (let k = 0; k < (opts.cracks || 0); k++) {
+      let x = Math.floor(r() * w), y = Math.floor(r() * h);
+      for (let i = 0; i < 6 + r() * 8; i++) {
+        if (at(x, y) && at(x + 1, y) && at(x, y + 1)) (g.fillStyle = STONE[0]), g.fillRect(x, y, 1, 1);
+        x += Math.round(r() * 2 - 1);
+        y += 1;
+      }
+    }
+    // moss on the top surfaces
+    if (opts.moss)
+      for (let x = 1; x < w - 1; x++)
+        for (let y = 0; y < h; y++)
+          if (at(x, y) && !at(x, y - 1)) {
+            if (r() < 0.55) (g.fillStyle = r() < 0.5 ? "#4e8a3e" : "#6aae4e"), g.fillRect(x, y + 1, 1, 1 + Math.floor(r() * 2));
+            break;
+          }
+    return c;
+  };
+  const rr = (x, y, x0, y0, x1, y1, k) => x >= x0 && x <= x1 && y >= y0 && y <= y1 && !(Math.min(x - x0, x1 - x) + Math.min(y - y0, y1 - y) < k);
+  const body = part(46, 38, (x, y) => rr(x, y, 2 + Math.max(0, y - 26) * 0.5, 0, 43 - Math.max(0, y - 26) * 0.5, 37, 6), { cracks: 7, moss: true });
+  const head = part(26, 20, (x, y) => rr(x, y, 0, 0, 25, 19, 5) && !(y > 15 && (x < 4 || x > 21)), { cracks: 2, moss: true });
+  const fist = part(18, 16, (x, y) => rr(x, y, 0, 0, 17, 15, 4), { cracks: 2 });
+  const leg = part(12, 14, (x, y) => rr(x, y, 0, 0, 11, 13, 2), { cracks: 1 });
+  const shoulder = part(16, 12, (x, y) => rr(x, y, 0, 0, 15, 11, 4), { cracks: 1, moss: true });
+  // knuckle lines on the fist, brow ridge on the head
+  const fg = fist.getContext("2d");
+  fg.fillStyle = STONE[0];
+  for (const x of [5, 9, 13]) fg.fillRect(x, 2, 1, 5);
+  const hg = head.getContext("2d");
+  hg.fillStyle = STONE[0];
+  hg.fillRect(3, 7, 20, 2);
+  hg.fillStyle = INK;
+  hg.fillRect(5, 9, 6, 4), hg.fillRect(15, 9, 6, 4); // eye sockets
+  hg.fillRect(9, 15, 8, 2); // mouth slit
+  return (GOLEM = { body, head, fist, leg, shoulder });
+}
+
 // ------------------------------------------------------------------ the dive
 export class Dive {
   /** o: { cid, shovel: "cu"|"ag"|"au", up: upgrades, fx, seed, talents, lite: {rows, time} } */
@@ -415,6 +477,7 @@ export class Dive {
     this.seed = o.seed ?? (Math.random() * 1e9) | 0;
     this.r = rng(this.seed);
     this.lite = o.lite || null;
+    this.MW = MW;
     const up = o.up || {};
     this.up = up;
     this.drill = 1 + (up.drill || 0); // drill level 1..4
@@ -481,7 +544,7 @@ export class Dive {
     this.t[r * MW + c] = v;
   }
   gen() {
-    const r = this.r, W = MW, H = this.rows;
+    const r = this.r, W = MW, H = this.rows, K = W / 26; // K: counts were tuned for a 26-wide shaft
     // base fill by depth: two octaves of smooth noise pick dirt / stone / hard rock in coherent blobs and layers
     const N1 = noise2(this.seed & 0xffff), N2 = noise2((this.seed >> 8) & 0xffff);
     for (let y = 0; y < H; y++)
@@ -512,13 +575,13 @@ export class Dive {
     for (const z of ZONES) {
       const [a, b] = span(z);
       if (a >= b) continue;
-      const n = { pit: 4, cave: 9, sea: 6, ruin: 3 }[z.id];
+      const n = Math.round({ pit: 4, cave: 9, sea: 6, ruin: 3 }[z.id] * K);
       for (let i = 0; i < n; i++) carve(r.int(2, W - 6), r.int(Math.max(a, 4), b - 2), r.int(10, z.id === "cave" ? 30 : 18), z.id === "pit" ? 2 : r.int(2, 3), z.id === "sea" && r.chance(0.8) ? T.WATER : T.AIR);
     }
     // ruins: brick rooms with a chest and a guardian
     const [ra, rb] = span(ZONES[3]);
     if (ra < rb) {
-      const rooms = Math.max(1, Math.floor((rb - ra) / 8));
+      const rooms = Math.max(1, Math.round((Math.floor((rb - ra) / 8)) * K));
       for (let i = 0; i < rooms; i++) {
         const w = r.int(6, 9), h = r.int(4, 5), x0 = r.int(1, W - w - 1), y0 = r.int(ra + 1, rb - h - 1);
         for (let y = y0; y < y0 + h; y++) for (let x = x0; x < x0 + w; x++) this.t[y * W + x] = y === y0 || y === y0 + h - 1 || x === x0 || x === x0 + w - 1 ? T.BRICK : T.AIR;
@@ -566,7 +629,7 @@ export class Dive {
     for (const z of ZONES) {
       const [a, b] = span(z);
       if (a >= b) continue;
-      const n = { pit: 3, cave: 4, sea: 4, ruin: 3 }[z.id] + (this.lite ? 2 : 0);
+      const n = Math.round(({ pit: 3, cave: 4, sea: 4, ruin: 3 }[z.id] + (this.lite ? 2 : 0)) * K);
       for (let k = 0; k < n; k++) {
         const x = r.int(2, W - 3), y = r.int(Math.max(a, 5), b - 2), i = y * W + x;
         this.t[i] = T.CHEST;
@@ -577,7 +640,7 @@ export class Dive {
     // ...inside a brick chamber guarded by the 遗迹守护者 (two gaps in the roof let you drop in)
     this.guardRoom = null;
     if (this.o.shovel === "au" && !this.lite) {
-      const fy = r.int(110, H - 3), x0 = r.int(2, W - 16), x1 = x0 + 13, ty = fy - 7;
+      const fy = r.int(112, H - 3), x0 = r.int(2, W - 21), x1 = x0 + 18, ty = fy - 9;
       for (let y = ty; y <= fy; y++)
         for (let x = x0; x <= x1; x++) {
           const edge = y === ty || y === fy || x === x0 || x === x1;
@@ -585,12 +648,12 @@ export class Dive {
           delete this.chest[y * W + x];
           delete this.ore[y * W + x];
         }
-      for (const gx of [x0 + 3, x1 - 3]) this.t[ty * W + gx] = this.t[ty * W + gx + 1] = T.AIR;
+      for (const gx of [x0 + 3, x1 - 4]) this.t[ty * W + gx] = this.t[ty * W + gx + 1] = T.AIR;
       const cx = x1 - 1, i = (fy - 1) * W + cx;
       this.t[i] = T.CHEST;
       this.chest[i] = "star";
       this.guardRoom = { x0, x1, ty, fy };
-      const g = this.mkMob("golem", (x0 + 5) * MT, (fy - 1) * MT + MT / 2);
+      const g = this.mkMob("golem", (x0 + 6) * MT, fy * MT - MOBS.golem.r - 1);
       g.hp = g.maxHp = MOBS.golem.hp;
       g.cd = 2;
       this.mobs.push(g);
@@ -599,11 +662,14 @@ export class Dive {
     this.lifts = [];
     for (const row of this.lite ? [] : [28, 58, 88]) {
       if (row >= H - 2) continue;
-      const x0 = r.int(3, W - 7);
-      for (let y = row - 2; y <= row; y++) for (let x = x0; x < x0 + 4; x++) this.t[y * W + x] = T.AIR;
-      for (let x = x0; x < x0 + 4; x++) this.t[(row + 1) * W + x] = T.BRICK;
-      this.t[row * W + x0 + 2] = T.LIFT;
-      this.lifts.push({ c: x0 + 2, r: row });
+      // one lift in each half of the (wide) shaft
+      for (const [lo, hi] of [[3, (W >> 1) - 6], [(W >> 1) + 2, W - 7]]) {
+        const x0 = r.int(lo, hi);
+        for (let y = row - 2; y <= row; y++) for (let x = x0; x < x0 + 4; x++) this.t[y * W + x] = T.AIR;
+        for (let x = x0; x < x0 + 4; x++) this.t[(row + 1) * W + x] = T.BRICK;
+        this.t[row * W + x0 + 2] = T.LIFT;
+        this.lifts.push({ c: x0 + 2, r: row });
+      }
     }
     // 地下商人: a lantern-lit pocket in the caves
     if (!this.lite && this.maxDepth > 44) {
@@ -991,7 +1057,7 @@ export class Dive {
     const rr = 3 + (this.up.radar || 0) * 2;
     for (let y = headRow - rr; y <= headRow + rr; y++) for (let x = cx - rr; x <= cx + rr; x++) if (x >= 0 && y >= 0 && x < MW && y < this.rows) this.revealed[y * MW + x] = 1;
     // camera
-    const VW = vw(), VH = vh(), tx = p.x - VW / 2, ty = p.y - VH * 0.45;
+    const VW = vw(), VH = vh(), tx = p.x - VW / 2, bossOn = this.mobs.some((m) => m.d.boss && m.awake), ty = p.y - VH * (bossOn ? 0.74 : 0.45);
     const worldW = MW * MT;
     this.cam.x = worldW <= VW ? (worldW - VW) / 2 : clamp(this.cam.x + (tx - this.cam.x) * Math.min(1, dt * 6), 0, worldW - VW);
     this.cam.y += (clamp(ty, -SURF * MT + 20, this.rows * MT - VH) - this.cam.y) * Math.min(1, dt * 6);
@@ -1098,46 +1164,88 @@ export class Dive {
       if (d < m.d.r + 10) this.hurt(m.d.dmg);
     }
   }
-  /** 遗迹守护者: wakes when you enter its chamber; stomps (shockwave along the floor) up close, lobs rocks from afar */
+  /** 遗迹守护者: wakes when you enter its chamber. Fist slam (shockwave along the floor) up close, rock throw at range;
+   *  below half health it enrages (red runes, faster) and adds a rock rain with warning marks on the floor. */
   golemAI(m, dt, dx, dy, d) {
     const p = this.p, gr = this.guardRoom;
     const inRoom = gr && p.x > gr.x0 * MT && p.x < (gr.x1 + 1) * MT && p.y > gr.ty * MT && p.y <= (gr.fy + 0.5) * MT;
     if (!m.awake && inRoom) {
       m.awake = true;
-      this.text(m.x, m.y - 40, "遗迹守护者 苏醒了！", "#ff8a6a", 1.4);
-      this.shake = 8;
+      m.intro = 1.4;
+      this.text(m.x, m.y - 130, "遗迹守护者 苏醒了！", "#ff8a6a", 1.5);
+      this.shake = 10;
       sfx("explode", 0.3);
     }
     m.vy += G * dt;
     m.anim += dt;
+    if (m.awake && !m.rage && m.hp < m.maxHp / 2) {
+      m.rage = true;
+      m.act = null;
+      m.cd = 0.8;
+      this.text(m.x, m.y - 130, "守护者 狂暴了！", "#ff4a4a", 1.4);
+      this.shake = 12;
+      sfx("explode", 0.4);
+      for (let k = 0; k < 14; k++) this.parts.push({ x: m.x + (Math.random() - 0.5) * 40, y: m.y - 20 - Math.random() * 30, vx: (Math.random() - 0.5) * 200, vy: -100 - Math.random() * 120, t: 0.8, col: Math.random() < 0.5 ? "#958a74" : "#5e5648", s: 3 });
+    }
+    // falling rocks from the rain
+    for (const f of m.rain || []) {
+      f.t -= dt;
+      if (f.t <= 0 && !f.done) {
+        f.done = true;
+        this.bullets.push({ x: f.x, y: (gr.ty + 1) * MT, vx: 0, vy: 60, g: 600, t: 2, dmg: 1, enemy: true, rock: true, col: "#b8a890" });
+      }
+    }
+    if (m.rain) m.rain = m.rain.filter((f) => !f.done);
     if (m.awake) {
-      m.cd -= dt;
-      if (m.act) {
-        m.act.t -= dt;
-        if (m.act.t <= 0) {
-          if (m.act.k === "stomp") {
-            this.shake = 10;
-            sfx("explode", 0.4);
-            this.spawnFx("explosions/dirt-explosion", m.x, m.y + m.d.r, { life: 1.4 });
-            for (let k = 0; k < 16; k++) this.parts.push({ x: m.x + (k - 8) * 6, y: m.y + m.d.r - 2, vx: (k - 8) * 18, vy: -80 - Math.random() * 60, t: 0.5, col: "#b8a890", s: 2 });
-            if (p.ground && Math.abs(p.x - m.x) < 3.6 * MT && Math.abs(p.y - (m.y + m.d.r)) < MT) this.hurt(2, "震地");
-          } else {
-            const t = 0.9, vx = (p.x - m.x) / t, vy = (p.y - PH / 2 - (m.y - 18)) / t - 0.5 * 420 * t;
-            this.bullets.push({ x: m.x, y: m.y - 18, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, col: "#b8a890" });
-            sfx("click");
+      if (m.intro > 0) m.intro -= dt;
+      else {
+        const fast = m.rage ? 1.45 : 1;
+        m.cd -= dt * fast;
+        if (m.act) {
+          m.act.t -= dt * fast;
+          if (m.act.t <= 0) {
+            const k = m.act.k;
+            if (k === "slam") {
+              this.shake = 12;
+              sfx("explode", 0.45);
+              for (const side of [-1, 1]) {
+                const fx = m.x + side * 68;
+                this.spawnFx("explosions/dirt-explosion", fx, m.y + m.d.r, { life: 1.4 });
+                for (let k2 = 0; k2 < 10; k2++) this.parts.push({ x: fx + (Math.random() - 0.5) * 16, y: m.y + m.d.r - 2, vx: side * (40 + Math.random() * 160), vy: -60 - Math.random() * 90, t: 0.55, col: Math.random() < 0.5 ? "#b8a890" : "#7a705e", s: 2 });
+              }
+              m.wave = { t: 0, x: m.x };
+            } else if (k === "throw") {
+              const t = 0.85, ox = m.x + m.face * 80, oy = m.y - 70, vx = (p.x - ox) / t, vy = (p.y - PH / 2 - oy) / t - 0.5 * 420 * t;
+              this.bullets.push({ x: ox, y: oy, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, big: true, col: "#b8a890" });
+              sfx("click");
+            } else if (k === "rain") {
+              m.rain = [];
+              for (let i = 0; i < 5; i++) m.rain.push({ x: clamp(p.x + (i - 2) * 30 + (Math.random() - 0.5) * 16, (gr.x0 + 1.5) * MT, (gr.x1 - 0.5) * MT), t: 0.9 + i * 0.12 });
+              this.text(m.x, m.y - 130, "落石雨！", "#ffb070", 1.1);
+            }
+            m.act = null;
+            m.cd = (m.rage ? 1.1 : 1.7) + Math.random() * 0.7;
           }
-          m.act = null;
-          m.cd = 1.6 + Math.random() * 0.8;
+        } else if (m.cd <= 0) {
+          const near = Math.abs(dx) < 3.4 * MT;
+          const k = m.rage && Math.random() < 0.35 ? "rain" : near ? "slam" : "throw";
+          m.act = { k, t: k === "slam" ? 0.75 : k === "rain" ? 0.6 : 0.5, T: k === "slam" ? 0.75 : k === "rain" ? 0.6 : 0.5 };
+          if (k === "slam") this.text(m.x, m.y - 130, "！", "#ff6a6a", 1.5);
+        } else {
+          const nx = m.x + Math.sign(dx) * m.d.spd * fast * dt;
+          if (Math.abs(dx) > 14 && !this.solidAt(nx + Math.sign(dx) * m.d.r, m.y)) m.x = nx;
         }
-      } else if (m.cd <= 0) {
-        m.act = Math.abs(dx) < 3 * MT ? { k: "stomp", t: 0.7 } : { k: "throw", t: 0.45 };
-        if (m.act.k === "stomp") this.text(m.x, m.y - 34, "！", "#ff6a6a", 1.4);
-      } else {
-        const nx = m.x + Math.sign(dx) * m.d.spd * dt;
-        if (Math.abs(dx) > 10 && !this.solidAt(nx + Math.sign(dx) * m.d.r, m.y)) m.x = nx;
       }
       m.face = dx > 0 ? 1 : -1;
-      if (d < m.d.r + 8) this.hurt(m.d.dmg);
+      if (Math.abs(p.x - m.x) < 26 && p.y > m.y - 70 && p.y < m.y + m.d.r + 4) this.hurt(1);
+    }
+    // shockwave rolls out along the floor both ways
+    if (m.wave) {
+      m.wave.t += dt;
+      const reach = m.wave.t * 260;
+      if (p.ground && Math.abs(p.y - (m.y + m.d.r)) < MT && Math.abs(Math.abs(p.x - m.wave.x) - reach) < 14) this.hurt(2, "震地");
+      if (Math.random() < 0.8) for (const side of [-1, 1]) this.parts.push({ x: m.wave.x + side * reach, y: m.y + m.d.r - 3, vx: 0, vy: -70, t: 0.3, col: m.rage ? "#ff7a4a" : "#d8ccb8", s: 3 });
+      if (reach > 9 * MT) m.wave = null;
     }
     const ny = m.y + m.vy * dt;
     if (!this.solidAt(m.x, ny + m.d.r)) m.y = ny;
@@ -1437,6 +1545,7 @@ export class Dive {
       g.drawImage(tileArt("boulder", z, 0), 0, 2, MT, MT - 4, f.x - MT / 2 + wob, f.y - MT / 2 + 2, MT, MT - 4);
     }
     if (this.merchant) this.drawMerchant(g);
+    if (this.guardRoom) this.drawGuardRoom(g);
     // monsters
     for (const m of this.mobs) {
       if (m.y < cy - 40 || m.y > cy + VIEW_H + 40) continue;
@@ -1479,12 +1588,13 @@ export class Dive {
     // bullets
     for (const b of this.bullets) {
       if (b.rock) {
+        const h = b.big ? 7 : 5;
         g.fillStyle = "#1a1020";
-        g.fillRect(Math.round(b.x) - 5, Math.round(b.y) - 5, 10, 10);
-        g.fillStyle = "#b8a890";
-        g.fillRect(Math.round(b.x) - 4, Math.round(b.y) - 4, 8, 8);
-        g.fillStyle = "#d8ccb8";
-        g.fillRect(Math.round(b.x) - 4, Math.round(b.y) - 4, 4, 2);
+        g.fillRect(Math.round(b.x) - h, Math.round(b.y) - h, h * 2, h * 2);
+        g.fillStyle = "#958a74";
+        g.fillRect(Math.round(b.x) - h + 1, Math.round(b.y) - h + 1, h * 2 - 2, h * 2 - 2);
+        g.fillStyle = "#c8bca4";
+        g.fillRect(Math.round(b.x) - h + 1, Math.round(b.y) - h + 1, h, 2);
         continue;
       }
       g.fillStyle = b.col;
@@ -1524,6 +1634,7 @@ export class Dive {
       this.label(g, "撤离中", p.x, p.y - PH - 28, "#7dffb0");
     }
     g.setTransform(rs, 0, 0, rs, 0, 0);
+    this.drawPointers(g, cx, cy);
   }
   drawSky(g, cx, cy) {
     const h = -cy, VIEW_W = vw(), t = this.time;
@@ -1558,9 +1669,9 @@ export class Dive {
     g.fillRect(sx - 9, sy - 12, 18, 24);
     g.fillRect(sx - 12, sy - 9, 24, 18);
     // clouds drift on their own
-    tile(L.clouds, 0.08, base(0.08) - 150, t * 6);
-    tile(L.far, 0.12, base(0.12) - L.far.height);
-    tile(L.hills, 0.28, base(0.28) - L.hills.height);
+    tile(L.clouds, 0.04, base(0.04) - 150, t * 6);
+    tile(L.far, 0.07, base(0.07) - L.far.height);
+    tile(L.hills, 0.22, base(0.22) - L.hills.height);
     // birds
     for (let k = 0; k < 3; k++) {
       const bx = ((t * (14 + k * 3) + k * 210 - cx * 0.3) % (VIEW_W + 80) + VIEW_W + 80) % (VIEW_W + 80) - 40, by = base(0.3) - 90 - k * 14 + Math.sin(t * 2 + k) * 4;
@@ -1570,8 +1681,8 @@ export class Dive {
       g.fillRect(bx - 1, by, 2, 1);
       g.fillRect(bx + 1, by + wing, 3, 1);
     }
-    tile(L.pines, 0.5, base(0.5) - L.pines.height);
-    tile(L.near, 0.78, base(0.78) - L.near.height);
+    tile(L.pines, 0.42, base(0.42) - L.pines.height);
+    tile(L.near, 0.68, base(0.68) - L.near.height);
     g.restore();
     // the camp on the real ground (moves with the world)
     const camp = (MW * MT) / 2 - cx;
@@ -1678,39 +1789,139 @@ export class Dive {
     g.fillRect(camp + 71, h - 41, 46, 14);
     this.label(g, "梦境矿场", camp + 94, h - 31, "#ffe36a", 10);
   }
+  /** edge arrows for things off to the side at about this depth: lifts, the merchant, the guardian chamber */
+  drawPointers(g, cx, cy) {
+    const VW = vw(), VH = vh(), t = this.time, list = [];
+    for (const l of this.lifts) list.push([l.c * MT + MT / 2, l.r * MT, "电梯", "#7dffb0"]);
+    if (this.merchant) list.push([this.merchant.x, this.merchant.y - 20, "商人", "#e0c8ff"]);
+    const boss = this.mobs.find((m) => m.d.boss);
+    if (boss) list.push([boss.x, boss.y, "守护者", "#ff8a6a"]);
+    for (const [x, y, name, col] of list) {
+      const sx = x - cx, sy = y - cy;
+      if (sy < -MT * 2 || sy > VH + MT * 2 || (sx > 0 && sx < VW)) continue;
+      const left = sx <= 0, ex = left ? 10 : VW - 10, ey = clamp(sy, 40, VH - 50), bob = Math.sin(t * 5) * 2 * (left ? -1 : 1);
+      g.fillStyle = "#1a1020";
+      g.beginPath();
+      g.moveTo(ex + bob + (left ? -7 : 7), ey);
+      g.lineTo(ex + bob + (left ? 5 : -5), ey - 8);
+      g.lineTo(ex + bob + (left ? 5 : -5), ey + 8);
+      g.fill();
+      g.fillStyle = col;
+      g.beginPath();
+      g.moveTo(ex + bob + (left ? -4 : 4), ey);
+      g.lineTo(ex + bob + (left ? 3 : -3), ey - 5);
+      g.lineTo(ex + bob + (left ? 3 : -3), ey + 5);
+      g.fill();
+      const dist = Math.round(Math.abs(left ? sx : sx - VW) / MT);
+      this.label(g, `${name} ${dist}格`, ex + (left ? 26 : -26), ey + 14, col, 8);
+    }
+  }
   drawGolem(g, m) {
-    const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1;
-    const charge = m.act && m.act.k === "stomp" ? 1 - m.act.t / 0.7 : 0, lift = Math.round(charge * 6);
-    const bob = m.awake ? Math.round(Math.sin(m.anim * 4) * 1) : 0;
-    const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
+    const P = golemParts(), x = Math.round(m.x), foot = Math.round(m.y + m.d.r), f = m.face || 1, t = this.time;
+    const act = m.act, ph = act ? 1 - act.t / act.T : 0, S = 2;
+    g.save();
+    g.translate(x, foot);
+    g.scale(S, S);
+    g.translate(-x, -foot);
+    const breath = m.awake ? Math.round(Math.sin(m.anim * 3) * 1.5) : 0;
+    const rune = m.rage ? "#ff4a3a" : "#5ad8ff", runeHi = m.rage ? "#ffd0a0" : "#d8f8ff";
+    const glow = 0.6 + 0.4 * Math.sin(t * (m.rage ? 9 : 4));
+    // floor shadow
+    g.fillStyle = "rgba(0,0,0,.35)";
+    g.fillRect(x - 30, foot - 2, 60, 3);
     // legs
-    R(-12, -10, 9, 10, "#1a1020"), R(-11, -9, 7, 9, "#7a6e5e");
-    R(3, -10, 9, 10, "#1a1020"), R(4, -9, 7, 9, "#7a6e5e");
-    // body
-    R(-16, -34 + bob - lift, 32, 26, "#1a1020");
-    R(-15, -33 + bob - lift, 30, 24, "#8e8270");
-    R(-15, -33 + bob - lift, 30, 5, "#a89a86");
-    R(-15, -14 + bob - lift, 30, 4, "#6a5e4e");
-    // rune on the chest
-    const glow = m.act ? "#ff6a4a" : "#5ad8ff";
-    R(-3, -26 + bob - lift, 6, 8, glow);
-    R(-1, -24 + bob - lift, 2, 4, "#ffffff");
-    // head
-    R(-9, -44 + bob - lift, 18, 11, "#1a1020");
-    R(-8, -43 + bob - lift, 16, 9, "#a89a86");
-    R(-5, -40 + bob - lift, 3, 2, glow), R(2, -40 + bob - lift, 3, 2, glow);
-    // arms (raised while charging a stomp)
-    R(-22, -32 + bob - lift * 2, 8, 20, "#1a1020"), R(-21, -31 + bob - lift * 2, 6, 18, "#7a6e5e");
-    R(14, -32 + bob - lift * 2, 8, 20, "#1a1020"), R(15, -31 + bob - lift * 2, 6, 18, "#7a6e5e");
-    if (m.act && m.act.k === "throw") R(14, -42, 8, 8, "#b8a890");
-    if (m.flash > 0) (g.globalAlpha = 0.5), R(-22, -44, 44, 44, "#ffffff"), (g.globalAlpha = 1);
-    // health bar
-    const w = 44;
-    g.fillStyle = "#14101c";
-    g.fillRect(m.x - w / 2 - 1, m.y - m.d.r - 42, w + 2, 6);
-    g.fillStyle = "#ff6a4a";
-    g.fillRect(m.x - w / 2, m.y - m.d.r - 41, w * clamp(m.hp / m.maxHp), 4);
-    if (!m.awake) this.label(g, "遗迹守护者", m.x, m.y - m.d.r - 48, "#ffb070", 9);
+    g.drawImage(P.leg, x - 17, foot - 14);
+    g.drawImage(P.leg, x + 5, foot - 14);
+    // body (squash while winding up a slam)
+    const squash = act && act.k === "slam" ? Math.round(ph * 4) : 0;
+    const by = foot - 12 - 38 + breath + squash;
+    g.save();
+    g.translate(x, 0);
+    g.scale(f, 1);
+    g.drawImage(P.body, -23, by);
+    // rune lines and the core
+    g.globalAlpha = glow;
+    g.fillStyle = rune;
+    g.fillRect(-14, by + 10, 8, 2), g.fillRect(-14, by + 10, 2, 12), g.fillRect(8, by + 14, 8, 2), g.fillRect(14, by + 14, 2, 10);
+    g.fillRect(-8, by + 28, 16, 2);
+    g.globalAlpha = 1;
+    const cs = 5 + Math.round(glow * 2);
+    g.fillStyle = "#1a1020";
+    g.fillRect(-cs - 1, by + 16 - cs - 1, cs * 2 + 2, cs * 2 + 2);
+    g.fillStyle = rune;
+    g.fillRect(-cs, by + 16 - cs, cs * 2, cs * 2);
+    g.fillStyle = runeHi;
+    g.fillRect(-2, by + 14, 3, 3);
+    // shoulders and head
+    g.drawImage(P.shoulder, -30, by - 4);
+    g.drawImage(P.shoulder, 14, by - 4);
+    const hy = by - 16 + Math.round(Math.sin(m.anim * 3 + 1) * 1);
+    g.drawImage(P.head, -13, hy);
+    const eyeOn = m.awake || Math.sin(t * 1.5) > 0.6;
+    if (eyeOn) {
+      g.fillStyle = rune;
+      g.fillRect(-7, hy + 10, 4, 2), g.fillRect(3, hy + 10, 4, 2);
+      g.globalAlpha = 0.35 * glow;
+      g.fillRect(-9, hy + 8, 8, 6), g.fillRect(1, hy + 8, 8, 6);
+      g.globalAlpha = 1;
+    }
+    g.restore();
+    // floating fists: idle bob; raised high while winding a slam, then down on the floor; the throwing fist pulls back
+    for (const side of [-1, 1]) {
+      let fx = x + side * 34, fy = by + 10 + Math.round(Math.sin(m.anim * 3 + (side > 0 ? 0 : 1.6)) * 3);
+      if (act && act.k === "slam") (fx = x + side * (34 - ph * 6)), (fy = by - 26 * Math.min(1, ph * 1.4));
+      if (m.wave && m.wave.t < 0.25) fy = foot - 16;
+      if (act && act.k === "throw" && side === f) (fx = x + side * (34 + ph * 8)), (fy = by - 12 * ph);
+      if (act && act.k === "rain") fy = by - 30 - Math.sin(ph * Math.PI) * 6;
+      g.drawImage(P.fist, Math.round(fx - 9), Math.round(fy));
+      if (m.rage) (g.globalAlpha = 0.5 * glow), (g.fillStyle = rune), g.fillRect(Math.round(fx - 7), Math.round(fy + 12), 14, 2), (g.globalAlpha = 1);
+    }
+    if (act && act.k === "throw") {
+      const hx = x + f * (40 + ph * 8), hy2 = by - 22 * ph;
+      g.fillStyle = "#1a1020";
+      g.fillRect(hx - 7, hy2 - 7, 14, 14);
+      g.fillStyle = "#958a74";
+      g.fillRect(hx - 6, hy2 - 6, 12, 12);
+    }
+    if (m.flash > 0) {
+      g.globalAlpha = 0.45;
+      g.globalCompositeOperation = "lighter";
+      g.fillStyle = "#ffffff";
+      g.fillRect(x - 24, by - 16, 48, 66);
+      g.globalCompositeOperation = "source-over";
+      g.globalAlpha = 1;
+    }
+    g.restore();
+    // rock rain warnings
+    for (const r of m.rain || []) {
+      const a = 0.4 + 0.4 * Math.sin(t * 20);
+      g.fillStyle = `rgba(255,80,60,${a})`;
+      g.fillRect(r.x - 8, foot - 2, 16, 2);
+      g.fillRect(r.x - 1, foot - 10, 2, 6);
+    }
+    if (!m.awake) this.label(g, "遗迹守护者", x, foot - 150, "#ffb070", 10);
+  }
+  /** torches on the chamber walls and a rune line along its floor */
+  drawGuardRoom(g) {
+    const gr = this.guardRoom, t = this.time, boss = this.mobs.find((m) => m.d.boss), rage = boss && boss.rage;
+    const col = rage ? "#ff4a3a" : "#5ad8ff";
+    g.globalAlpha = boss ? 0.5 + 0.3 * Math.sin(t * 3) : 0.25;
+    g.fillStyle = col;
+    g.fillRect((gr.x0 + 1) * MT, gr.fy * MT - 2, (gr.x1 - gr.x0 - 1) * MT, 2);
+    for (let c = gr.x0 + 2; c < gr.x1; c += 3) g.fillRect(c * MT + 8, gr.fy * MT - 5, 8, 2);
+    g.globalAlpha = 1;
+    for (const c of [gr.x0 + 1, gr.x1 - 1]) {
+      const tx = c * MT + MT / 2, ty = (gr.fy - 4) * MT;
+      g.fillStyle = "#1a1020";
+      g.fillRect(tx - 3, ty, 6, 10);
+      g.fillStyle = "#6a4a2e";
+      g.fillRect(tx - 2, ty + 1, 4, 8);
+      const fl = 5 + Math.round(Math.sin(t * 13 + c) * 2);
+      g.fillStyle = "#ff7a2a";
+      g.fillRect(tx - 3, ty - fl, 6, fl);
+      g.fillStyle = "#ffe36a";
+      g.fillRect(tx - 1, ty - fl + 2, 2, fl - 2);
+    }
   }
   drawMole(g, m) {
     const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1, step = m.awake ? Math.round(Math.sin(m.anim * 18)) : 0;
@@ -1826,7 +2037,8 @@ export class Dive {
     const p = this.p, z = zoneAt(Math.floor(p.y / MT));
     hole(p.x, p.y - PH / 2, (z.light + (this.up.radar || 0) + 2 * (this.rel.lamp || 0)) * MT * (0.95 + 0.05 * Math.sin(this.time * 6)));
     for (const m of this.mobs) if (m.d.flee) hole(m.x, m.y, MT * 1.8, 0.7);
-    else if (m.d.boss) hole(m.x, m.y - 10, MT * 3, 0.75);
+    else if (m.d.boss) hole(m.x, m.y - 30, MT * 4.5, 0.8);
+    if (this.guardRoom) for (const c of [this.guardRoom.x0 + 1, this.guardRoom.x1 - 1]) hole(c * MT + MT / 2, (this.guardRoom.fy - 4) * MT - 4, MT * 3, 0.85 + 0.1 * Math.sin(this.time * 13 + c));
     if (this.merchant) hole(this.merchant.x + 13, this.merchant.y - 49, MT * 3.4, 0.9);
     // glowing ores, lifts, explosions
     const r0 = Math.floor(cy / MT), r1 = r0 + Math.ceil(VIEW_H / MT) + 1, c0 = Math.max(0, Math.floor(cx / MT)), c1 = Math.min(MW - 1, c0 + Math.ceil(VIEW_W / MT) + 1);

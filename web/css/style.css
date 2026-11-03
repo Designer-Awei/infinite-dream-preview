@@ -1224,3 +1224,31 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .mq.claimed { opacity: .55; }
 .mres-q { font-size: 11px; color: #7dffb0; margin-top: 3px; }
 .lb-tile .rdot { position: absolute; top: 4px; left: 4px; width: 12px; height: 12px; border-radius: 50%; background: #ff3a5a; box-shadow: 0 0 0 2px var(--ink), 0 0 8px #ff3a5a; animation: pulse 1s infinite; }
+/* mine boss bar */
+.mhud .mboss { display: none; flex-direction: column; align-items: center; gap: 2px; margin-top: 4px; }
+.mhud .mboss.on { display: flex; animation: popIn .3s; }
+.mhud .mboss b { font-weight: normal; font-size: 13px; color: #ffd0a0; }
+.mhud .mboss .bb { width: min(42vw, 320px); height: 10px; border: 2px solid var(--ink); border-radius: 6px; background: #2a1420; overflow: hidden; box-shadow: 0 0 10px rgba(255,120,80,.5); }
+.mhud .mboss .bb i { display: block; height: 100%; background: linear-gradient(180deg, #ffb07a, #ff5a3a); transition: width .2s; }
+.mhud .mboss.rage .bb i { background: linear-gradient(180deg, #ff7a7a, #c81a2a); animation: pulse .5s infinite; }
+.mhud .mboss.rage b { color: #ff7a7a; }
+/* lobby: two wide feature tiles; 联机/说明 moved to the top bar */
+.lb-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; gap: 8px !important; }
+.lb-tile { aspect-ratio: auto; flex-direction: row; justify-content: flex-start; gap: 8px; padding: 6px 10px; min-height: clamp(48px, 13vh, 70px); }
+.lb-tile .ti { font-size: clamp(24px, 3.2vw, 38px); flex: none; }
+.lb-tile .tt { display: flex; flex-direction: column; align-items: flex-start; min-width: 0; gap: 2px; }
+.lb-tile .tl { font-size: clamp(13px, 1.7vw, 19px) !important; white-space: nowrap; }
+.lb-tile .tt small { font-size: clamp(9px, 1.05vw, 12px); color: rgba(255,255,255,.9); white-space: nowrap; }
+.lb-tile .rdot { top: auto; bottom: 5px; left: auto; right: 6px; }
+.topbar .tb-ico { position: relative; width: 40px; height: 40px; padding: 0 !important; font-size: 18px !important; display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; }
+.topbar .tb-ico span { font-size: 18px; }
+.topbar .tb-ico i { position: absolute; bottom: -13px; left: 50%; transform: translateX(-50%); font-style: normal; font-size: 9px; color: #fff; white-space: nowrap; }
+.topbar .tb-ico.t-net { background: linear-gradient(180deg, #6ac8ff, #2a7ae8); }
+.topbar .tb-ico.t-help { background: linear-gradient(180deg, #b8f08a, #3aa84a); }
+.lb-tiles { grid-template-columns: minmax(0, 1fr) !important; gap: 7px !important; }
+.lb-tile { min-height: clamp(36px, 10.5vh, 56px); padding: 4px 12px; }
+.lb-tile .ti { font-size: clamp(20px, 2.8vw, 32px); }
+.lb-tile .tt { flex-direction: row; align-items: baseline; gap: 8px; }
+.lb-tile .tl { font-size: clamp(14px, 1.8vw, 20px) !important; }
+.lb-tile .badge { top: 50%; right: 10px; transform: translateY(-50%); }
+.lb-tile .rdot { top: -5px; left: -5px; right: auto; bottom: auto; }
