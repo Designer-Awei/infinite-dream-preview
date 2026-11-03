@@ -469,7 +469,34 @@ function golemParts() {
   hg.fillStyle = INK;
   hg.fillRect(5, 9, 6, 4), hg.fillRect(15, 9, 6, 4); // eye sockets
   hg.fillRect(9, 15, 8, 2); // mouth slit
-  return (GOLEM = { body, head, fist, leg, shoulder });
+  // white copies for the hit flash (only the stone itself lights up, not a box around it)
+  const white = (c) => {
+    const w = cv(c.width, c.height), wg = w.getContext("2d");
+    wg.drawImage(c, 0, 0);
+    wg.globalCompositeOperation = "source-in";
+    wg.fillStyle = "#ffffff";
+    wg.fillRect(0, 0, w.width, w.height);
+    return w;
+  };
+  return (GOLEM = { body, head, fist, leg, shoulder, W: { body: white(body), head: white(head), fist: white(fist), leg: white(leg), shoulder: white(shoulder) } });
+}
+/** one look for every rock: the one in the guardian's hand, the thrown one and the rain (s = half size) */
+function drawRock(g, x, y, s) {
+  x = Math.round(x);
+  y = Math.round(y);
+  g.fillStyle = "#1a1020";
+  g.fillRect(x - s, y - s + 2, s * 2, s * 2 - 4);
+  g.fillRect(x - s + 2, y - s, s * 2 - 4, s * 2);
+  g.fillStyle = "#7a705e";
+  g.fillRect(x - s + 1, y - s + 3, s * 2 - 2, s * 2 - 6);
+  g.fillRect(x - s + 3, y - s + 1, s * 2 - 6, s * 2 - 2);
+  g.fillStyle = "#958a74";
+  g.fillRect(x - s + 2, y - s + 2, s * 2 - 6, s * 2 - 7);
+  g.fillStyle = "#c8bca4";
+  g.fillRect(x - s + 3, y - s + 2, Math.max(2, s - 2), 2);
+  g.fillStyle = "#5e5648";
+  g.fillRect(x + 1, y - 1, Math.max(1, s - 3), 1);
+  g.fillRect(x + s - 3, y, 1, Math.max(1, s - 4));
 }
 
 // ------------------------------------------------------------------ the dive
@@ -1230,7 +1257,7 @@ export class Dive {
               }
               m.wave = { t: 0, x: m.x };
             } else if (k === "throw") {
-              const t = 0.85, ox = m.x + m.face * 80, oy = m.y - 70, vx = (p.x - ox) / t, vy = (p.y - PH / 2 - oy) / t - 0.5 * 420 * t;
+              const t = 0.85, ox = m.x + m.face * 96, oy = m.y - 110, vx = (p.x - ox) / t, vy = (p.y - PH / 2 - oy) / t - 0.5 * 420 * t;
               this.bullets.push({ x: ox, y: oy, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, big: true, col: "#b8a890" });
               snd("click");
             } else if (k === "rain") {
@@ -1320,7 +1347,7 @@ export class Dive {
         continue;
       }
       if (b.enemy) {
-        if (Math.hypot(b.x - this.p.x, b.y - (this.p.y - PH / 2)) < 10) (b.t = 0), (this.bossHit = !!b.rock), this.hurt(b.dmg), (this.bossHit = false);
+        if (Math.hypot(b.x - this.p.x, b.y - (this.p.y - PH / 2)) < (b.rock ? (b.big ? 16 : 13) : 10)) (b.t = 0), (this.bossHit = !!b.rock), this.hurt(b.dmg), (this.bossHit = false);
         continue;
       }
       for (const m of this.mobs) {
@@ -1603,13 +1630,7 @@ export class Dive {
     // bullets
     for (const b of this.bullets) {
       if (b.rock) {
-        const h = b.big ? 7 : 5;
-        g.fillStyle = "#1a1020";
-        g.fillRect(Math.round(b.x) - h, Math.round(b.y) - h, h * 2, h * 2);
-        g.fillStyle = "#958a74";
-        g.fillRect(Math.round(b.x) - h + 1, Math.round(b.y) - h + 1, h * 2 - 2, h * 2 - 2);
-        g.fillStyle = "#c8bca4";
-        g.fillRect(Math.round(b.x) - h + 1, Math.round(b.y) - h + 1, h, 2);
+        drawRock(g, b.x, b.y, b.big ? 10 : 7);
         continue;
       }
       g.fillStyle = b.col;
@@ -1845,15 +1866,21 @@ export class Dive {
     g.fillStyle = "rgba(0,0,0,.35)";
     g.fillRect(x - 30, foot - 2, 60, 3);
     // legs
-    g.drawImage(P.leg, x - 17, foot - 14);
-    g.drawImage(P.leg, x + 5, foot - 14);
+    const fl = m.flash > 0 ? 0.75 : 0;
+    // draw a part, and its white copy on top while flashing from a hit
+    const part = (k, px, py) => {
+      g.drawImage(P[k], px, py);
+      if (fl) (g.globalAlpha = fl), g.drawImage(P.W[k], px, py), (g.globalAlpha = 1);
+    };
+    part("leg", x - 17, foot - 14);
+    part("leg", x + 5, foot - 14);
     // body (squash while winding up a slam)
     const squash = act && act.k === "slam" ? Math.round(ph * 4) : 0;
     const by = foot - 12 - 38 + breath + squash;
     g.save();
     g.translate(x, 0);
     g.scale(f, 1);
-    g.drawImage(P.body, -23, by);
+    part("body", -23, by);
     // rune lines and the core
     g.globalAlpha = glow;
     g.fillStyle = rune;
@@ -1868,10 +1895,10 @@ export class Dive {
     g.fillStyle = runeHi;
     g.fillRect(-2, by + 14, 3, 3);
     // shoulders and head
-    g.drawImage(P.shoulder, -30, by - 4);
-    g.drawImage(P.shoulder, 14, by - 4);
+    part("shoulder", -30, by - 4);
+    part("shoulder", 14, by - 4);
     const hy = by - 16 + Math.round(Math.sin(m.anim * 3 + 1) * 1);
-    g.drawImage(P.head, -13, hy);
+    part("head", -13, hy);
     const eyeOn = m.awake || Math.sin(t * 1.5) > 0.6;
     if (eyeOn) {
       g.fillStyle = rune;
@@ -1888,25 +1915,15 @@ export class Dive {
       if (m.wave && m.wave.t < 0.25) fy = foot - 16;
       if (act && act.k === "throw" && side === f) (fx = x + side * (34 + ph * 8)), (fy = by - 12 * ph);
       if (act && act.k === "rain") fy = by - 30 - Math.sin(ph * Math.PI) * 6;
-      g.drawImage(P.fist, Math.round(fx - 9), Math.round(fy));
+      part("fist", Math.round(fx - 9), Math.round(fy));
       if (m.rage) (g.globalAlpha = 0.5 * glow), (g.fillStyle = rune), g.fillRect(Math.round(fx - 7), Math.round(fy + 12), 14, 2), (g.globalAlpha = 1);
     }
+    g.restore();
+    // the rock it is about to throw: same size and look as the thrown one (drawn at world scale)
     if (act && act.k === "throw") {
       const hx = x + f * (40 + ph * 8), hy2 = by - 22 * ph;
-      g.fillStyle = "#1a1020";
-      g.fillRect(hx - 7, hy2 - 7, 14, 14);
-      g.fillStyle = "#958a74";
-      g.fillRect(hx - 6, hy2 - 6, 12, 12);
+      drawRock(g, x + (hx - x) * S, foot + (hy2 - foot) * S, 10);
     }
-    if (m.flash > 0) {
-      g.globalAlpha = 0.45;
-      g.globalCompositeOperation = "lighter";
-      g.fillStyle = "#ffffff";
-      g.fillRect(x - 24, by - 16, 48, 66);
-      g.globalCompositeOperation = "source-over";
-      g.globalAlpha = 1;
-    }
-    g.restore();
     // rock rain warnings
     for (const r of m.rain || []) {
       const a = 0.4 + 0.4 * Math.sin(t * 20);

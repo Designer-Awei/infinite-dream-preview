@@ -71,15 +71,13 @@ export function showMineHub() {
   const wait = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP);
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
-  <div class="topbar"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-n"></b><small class="fc-t"></small></button><div class="spacer"></div>
+  <div class="topbar"><div class="mh-tl"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-n"></b><small class="fc-t"></small></button></div><div class="spacer"></div>
     <button class="pill o1 curpill" data-cur="gem">${CUR.gem()}<span class="tok">${m.tokens}</span></button>
     <button class="pill o1 curpill" data-cur="ore">${CUR.ore()}<span class="mats">${ms.mats}</span></button>
     <button class="pill o1 curpill" data-cur="star">${CUR.star()}<span class="stars">${ms.stars}</span></button></div>
   <div class="mh-l">
-    <div class="mh-h o1">选择铲子下潜（一把铲 = 一次下潜）</div>
     <div class="mh-shovels"></div>
     <div class="mh-buff"></div>
-    <div class="mh-rec o1">最深 ${ms.best}m · 下潜 ${ms.dives} 次</div>
     <button class="btn big mh-go"><span class="pt">下潜</span></button>
   </div>
   <div class="mh-r">

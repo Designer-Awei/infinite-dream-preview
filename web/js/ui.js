@@ -113,7 +113,7 @@ export function showRoom(info) {
     const mine = p.id === info.myId;
     const d = el("div", "pl o1" + (mine ? " me" : ""), `<img src="assets/portrait_${p.cid}.png"><div>${escapeHtml(p.name)}${p.host ? " 👑" : ""}</div><div style="color:#ffe36a">${CHARS[p.cid].short}</div>`);
     if (mine) {
-      const sw = el("button", "pl-sw", "⇄");
+      const sw = el("button", "pl-sw", `<svg viewBox="0 0 24 24" width="20" height="20"><g fill="none" stroke="#1a1020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11a7.5 7.5 0 0 1 13.2-4.6"/><path d="M19.5 13a7.5 7.5 0 0 1-13.2 4.6"/><polyline points="18.6 2.6 18 6.8 13.8 6.2"/><polyline points="5.4 21.4 6 17.2 10.2 17.8"/></g></svg>`);
       sw.title = "切换角色";
       sw.onclick = () => (sfx("click"), pickRoomChar(m.chars, info.myCid));
       d.appendChild(sw);
@@ -125,7 +125,7 @@ export function showRoom(info) {
   const acts = $(".acts", s);
   if (info.isHost) acts.appendChild(btn(info.pvp ? "开战！" : "出发！", "rm-act", () => app.startNet()));
   else acts.appendChild(el("div", "muted rm-act rm-wait", "等待房主开始…"));
-  acts.appendChild(btn("复制邀请链接", "blue rm-act", async () => {
+  acts.appendChild(btn("复制邀请", "blue rm-act", async () => {
     const base = window.Capacitor ? "https://designer-awei.github.io/infinite-dream-preview/" : location.origin + location.pathname + location.search;
     const url = base + "#join-" + info.code;
     try {
@@ -136,6 +136,8 @@ export function showRoom(info) {
     }
   }));
   acts.appendChild(btn("离开", "gray rm-act", () => app.leaveNet()));
+  // the buttons span exactly the row of player slots
+  requestAnimationFrame(() => (acts.style.width = pl.getBoundingClientRect().width + "px"));
 }
 /** room: choose your girl (opened from the ⇄ on your own card) */
 function pickRoomChar(ids, cur) {

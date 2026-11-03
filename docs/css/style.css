@@ -1388,3 +1388,52 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 @media (max-width: 760px) { .mine-hub .logo span { display: none; } .mh-freecu small { min-width: 0; } .mine-hub .curpill { padding-left: 6px; padding-right: 8px; } }
 .mh-buff .mb-g { grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 3px 10px; }
 .mh-buff .mb-i { font-size: 12px; }
+/* settings: 2-column grid, full-width close; version line below with room for the buttons' drop shadow */
+.set-p { width: min(440px, 92vw); display: flex; flex-direction: column; align-items: stretch; gap: 12px; text-align: center; }
+.set-p h2 { margin: 0; }
+.set-g { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 12px; }
+.set-g .btn { height: 48px; font-size: 18px; padding: 0 10px; }
+.set-g .set-x { grid-column: 1 / -1; }
+.set-v { font-size: 12px; margin-top: 4px; }
+/* rows of buttons inside panels leave room for the 5px drop shadow, so it never covers the next line */
+.panel .row:has(> .btn) { padding-bottom: 6px; }
+/* flat icon buttons (no drop shadow): lobby help/fullscreen/settings, mine back and ? */
+.lb .topbar .btn, .mine-hub .topbar .back-btn, .mine-hub .mh-help { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 rgba(0,0,0,.15); }
+.lb .topbar .btn:active, .mine-hub .topbar .back-btn:active, .mine-hub .mh-help:active { transform: translateY(2px); }
+/* mine hub top-left: back, title, ?, and the free-shovel button whose right edge lines up with the left column */
+.mine-hub .mh-tl { display: flex; align-items: center; gap: 10px; width: calc(45vw - 20px); min-width: 0; }
+.mine-hub .mh-tl .mh-freecu { margin-left: auto; }
+.mine-hub .mh-tl .mh-help { margin-left: 0; }
+.mine-hub .mh-buff { margin-top: 2px; }
+.mine-hub .mh-go { margin-top: auto !important; }
+/* rows on the right leave room under their button's drop shadow (it no longer covers the 梦核 gold edge) */
+.mh-r .mup { padding-bottom: 10px; }
+/* mine guide arrows: just a big bold chevron, no button box */
+.mg-arw { background: none !important; border: 0 !important; box-shadow: none !important; width: 40px; height: 64px; padding: 0; display: flex; align-items: center; justify-content: center; }
+.mg-arw svg { width: 30px; height: 50px; filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); }
+.mg-arw:active svg { transform: scale(.9); }
+/* net room: switch icon centred; the three buttons span exactly the width of the player slots */
+.pl-sw { display: flex; align-items: center; justify-content: center; padding: 0; }
+.room2 .plist { display: flex; gap: 10px; justify-content: center; width: max-content; margin: 4px auto; }
+.room2 .acts { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; max-width: 100%; margin: 0 auto; padding-bottom: 6px; }
+.room2 .rm-act { min-width: 0; width: 100%; }
+/* pause: both rows the same height and the same total width */
+.pause-p .row { display: grid !important; width: min(460px, 78vw); gap: 10px; padding-bottom: 6px; }
+.pause-p .r1 { grid-template-columns: repeat(3, 1fr); }
+.pause-p .r2 { grid-template-columns: repeat(2, 1fr); }
+.pause-p .pz-tg, .pause-p .pz-act { min-width: 0; width: 100%; height: 48px; font-size: 17px; padding: 0 6px; }
+.mine-hub .mh-tl > * { flex: none; }
+.mine-hub .mh-tl .mh-help { width: 34px; }
+.mine-hub .mh-tl .mh-freecu { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+@media (max-width: 900px) {
+  .mine-hub .mh-tl { gap: 6px; }
+  .mine-hub .mh-tl .back-btn { padding: 4px 8px 6px !important; font-size: 13px !important; }
+  .mine-hub .mh-tl .logo { font-size: 18px; }
+  .mine-hub .mh-tl .mh-help { width: 30px; height: 30px; font-size: 17px !important; }
+  .mine-hub .mh-freecu { display: grid; grid-template-columns: auto auto; grid-template-rows: auto auto; column-gap: 3px; height: 34px; padding: 0 6px 0 2px; }
+  .mine-hub .mh-freecu img { grid-row: 1 / 3; width: 24px; height: 24px; align-self: center; }
+  .mine-hub .mh-freecu b { font-size: 12px; line-height: 13px; align-self: end; }
+  .mine-hub .mh-freecu small { font-size: 9px; line-height: 11px; align-self: start; min-width: 0; }
+}
+.room2 .rm-act { white-space: nowrap; font-size: 15px !important; padding: 0 6px !important; letter-spacing: 0; }
+@media (max-width: 900px) { .mine-hub .mshv b { white-space: nowrap; font-size: 12px; } .mine-hub .mshv img { width: 30px; height: 30px; } .mine-hub .mh-shovels { gap: 8px; } }

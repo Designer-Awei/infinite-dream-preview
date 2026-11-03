@@ -190,7 +190,7 @@ const PAGES = [
 export function showMineGuide() {
   const md = el("div", "modal mg-md");
   md.innerHTML = `<div class="panel mg-p"><div class="mg-h"><h2 class="outline">矿场玩法说明</h2><span class="mg-n o1"></span><button class="btn gray small mg-x">关闭</button></div>
-    <div class="mg-body"><button class="mg-arw l">‹</button><div class="mg-stage"><canvas></canvas><div class="mg-t outline"></div></div><button class="mg-arw r">›</button></div>
+    <div class="mg-body"><button class="mg-arw l" aria-label="上一页"><svg viewBox="0 0 24 40" width="100%" height="100%"><polyline points="18,6 6,20 18,34" fill="none" stroke="#1a1020" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><polyline points="18,6 6,20 18,34" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><div class="mg-stage"><canvas></canvas><div class="mg-t outline"></div></div><button class="mg-arw r" aria-label="下一页"><svg viewBox="0 0 24 40" width="100%" height="100%"><polyline points="6,6 18,20 6,34" fill="none" stroke="#1a1020" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><polyline points="6,6 18,20 6,34" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
     <p class="mg-text o1"></p><div class="mg-dots"></div></div>`;
   uiRoot().appendChild(md);
   const cvs = md.querySelector("canvas"), K = 0.6;

@@ -520,17 +520,18 @@ function updatePlay(s, cid) {
 function showSettings() {
   const m = load();
   const md = el("div", "modal");
-  md.innerHTML = `<div class="panel" style="min-width:300px;text-align:center"><h2 class="outline">设置</h2><div class="row r1"></div><div class="row r2" style="margin-top:10px"></div></div>`;
+  // two even columns: toggles, save tools, then a full-width close; the version line sits clear below the buttons
+  md.innerHTML = `<div class="panel set-p"><h2 class="outline">设置</h2><div class="set-g"></div><div class="muted set-v"></div></div>`;
   const tg = (label, key, fn) =>
-    btn(`${label}：${m[key] ? "开" : "关"}`, "gray small", (ev) => {
+    btn(`${label}：${m[key] ? "开" : "关"}`, "gray", (ev) => {
       m[key] = !m[key];
       fn && fn(m[key]);
       save();
       ev.target.closest("button").innerHTML = `${label}：${m[key] ? "开" : "关"}`;
     });
-  q(".r1", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic));
-  q(".r2", md).append(btn("导出存档", "blue small", () => showSaveExport()), btn("导入存档", "green small", () => showSaveImport()), btn("关闭", "", () => md.remove()));
-  q(".panel", md).appendChild(el("div", "muted", `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`));
+  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("关闭", "set-x", () => md.remove()));
+  q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
+  md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);
 }
 
