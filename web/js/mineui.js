@@ -81,7 +81,7 @@ export function showMineHub() {
     <button class="btn big mh-go"><span class="pt">下潜</span></button>
   </div>
   <div class="mh-r">
-    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊</button><button class="mh-tab" data-t="quest">每日委托<b class="qdot o1"></b></button></div>
+    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊</button><button class="mh-tab" data-t="quest">每日委托<b class="qdot"></b></button></div>
     <div class="mh-ups"></div>
   </div>`;
   uiRoot().appendChild(s);
@@ -239,9 +239,8 @@ export function showMineHub() {
     if (use) use.onclick = () => showExchange(() => showMineHub());
   };
   const qdot = () => {
-    const n = claimable(), d = q(".qdot", s);
-    d.textContent = n || "";
-    d.style.display = n ? "" : "none";
+    // a small red dot in the tab's top-right corner when something can be claimed (no number, so the tab keeps its width)
+    q(".qdot", s).style.display = claimable() ? "" : "none";
   };
   const drawQuests = () => {
     const list = todayQuests();
