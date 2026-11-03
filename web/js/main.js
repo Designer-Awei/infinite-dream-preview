@@ -76,27 +76,39 @@ export const app = {
     const pm = playMode();
     this.beginLoading({ mode: "solo", pvp: false, seed: (Math.random() * 1e9) | 0, players: [{ id: 1, cid: m.sel, name: m.name, kit: makeKit(m.sel) }], myId: 1, opt: pm });
   },
-  /** show a loading screen, build the run behind it, then fade it out */
-  beginLoading(cfg) {
-    const ov = document.createElement("div");
-    ov.className = "enter-ld";
+  /** two sliding doors shut over the screen (if they aren't shut already); resolves once closed */
+  closeDoors() {
+    let d = uiRoot.querySelector(".doors");
+    if (d) return Promise.resolve(d);
+    d = document.createElement("div");
+    d.className = "doors";
+    d.innerHTML = `<div class="dr l"><i class="dr-bolt"></i><i class="dr-bolt b"></i><i class="dr-half"></i></div><div class="dr r"><i class="dr-bolt"></i><i class="dr-bolt b"></i><i class="dr-half"></i></div><div class="dr-plate"><div class="el-t outline"></div><div class="el-s o1"></div><div class="ld-bar"><i></i></div><div class="el-tip o1"></div></div>`;
+    uiRoot.appendChild(d);
+    sfx("portal");
+    requestAnimationFrame(() => requestAnimationFrame(() => d.classList.add("shut")));
+    return new Promise((r) => setTimeout(() => (sfx("hit", 0.3), r(d)), 430));
+  },
+  /** shut the doors, build the run behind them, then slide them open */
+  async beginLoading(cfg) {
     const c = CHARS[cfg.players.find((p) => p.id === cfg.myId)?.cid || "deepseek"];
     const o = cfg.opt || {};
     const where = cfg.pvp ? "竞技场 · " + (PVP_MODES[o.pvpMode] || PVP_MODES.brawl).name : o.endless ? "无尽回廊" : (MAPS[o.map] || MAPS.grass).name;
-    ov.innerHTML = `<div class="el-box"><div class="el-t outline">${where}</div><div class="el-s o1">${c.short} · ${c.title}</div><div class="ld-bar"><i></i></div><div class="el-tip o1">${TIPS[(Math.random() * TIPS.length) | 0]}</div></div>`;
-    uiRoot.appendChild(ov);
-    const bar = ov.querySelector(".ld-bar i");
+    const d = await this.closeDoors();
+    d.querySelector(".el-t").textContent = where;
+    d.querySelector(".el-s").textContent = `${c.short} · ${c.title}`;
+    d.querySelector(".el-tip").textContent = TIPS[(Math.random() * TIPS.length) | 0];
+    d.classList.add("info");
+    const bar = d.querySelector(".ld-bar i");
     requestAnimationFrame(() => (bar.style.width = "45%"));
-    setTimeout(() => {
-      try {
-        this.begin(cfg);
-      } finally {
-        uiRoot.appendChild(ov); // keep it on top of the freshly built HUD
-        bar.style.width = "100%";
-        setTimeout(() => ov.classList.add("out"), 450);
-        setTimeout(() => ov.remove(), 900);
-      }
-    }, 80);
+    await new Promise((r) => setTimeout(r, 120));
+    try {
+      this.begin(cfg);
+    } finally {
+      uiRoot.appendChild(d); // keep the doors on top of the freshly built HUD
+      bar.style.width = "100%";
+      setTimeout(() => (d.classList.remove("info"), d.classList.remove("shut"), d.classList.add("open"), sfx("portal")), 520);
+      setTimeout(() => d.remove(), 1200);
+    }
   },
   /** start a run (solo, host or client). cfg: {mode, pvp, seed, players:[{id,cid,name}], myId} */
   begin(cfg) {
@@ -231,9 +243,10 @@ export const app = {
     const g = this.game;
     if (!g || this.net) return;
     this.paused = true;
-    UI.showMsg("梦境裂隙", "首领倒下时撕开了一道裂隙：<br>进入后有 <b>60 秒</b>限时挖宝（不消耗铲子，矿物更密集），时间到自动带出全部收获。", "进入裂隙", () => this.startRift());
+    UI.showMsg("梦境裂隙", "首领倒下时撕开了一道裂隙：<br>进入后有 <b>90 秒</b>限时挖宝：电量无限、不消耗铲子、矿物更密集，时间到自动带出全部收获。", "进入裂隙", () => this.startRift());
     const md = document.querySelector("#ui .modal:last-child .row");
-    if (md) md.appendChild(UI.btn("不了，直接结算", "gray small", () => {
+    if (md) md.classList.add("eq-btns");
+    if (md) md.appendChild(UI.btn("不了，直接结算", "gray", () => {
       document.querySelector("#ui .modal:last-child")?.remove();
       this.paused = false;
       if (!g.endless) g.victory();
@@ -242,7 +255,7 @@ export const app = {
   startRift() {
     const m = load(), ms = mineState();
     fx.clearAll();
-    const d = new Dive({ cid: this.me ? this.me.cid : m.sel, shovel: "cu", up: { ...ms.up }, fx, talents: m.talents, lite: { rows: 34, time: 60, rich: true } });
+    const d = new Dive({ cid: this.me ? this.me.cid : m.sel, shovel: "cu", up: { ...ms.up }, fx, talents: m.talents, lite: { rows: 34, time: 90, rich: true, power: true } });
     d.onEnd = (res) => setTimeout(() => this.endRift(d, res), 600);
     this.dive = d;
     this.paused = false;

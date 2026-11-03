@@ -140,10 +140,9 @@ export function showLobby() {
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
   const play = q(".lb-play", s);
   const pb = btn(`<span class="pt">开始冒险</span>`, "big play-btn", () => {
-    // launch: the hero leaps off the island, white wipe, then the run starts
+    // launch: the hero leaps off the island while two doors slide shut, then the run starts behind them
     s.classList.add("launch");
-    sfx("portal");
-    setTimeout(() => app.startSolo(), 520);
+    app.closeDoors().then(() => app.startSolo());
   });
   play.appendChild(pb);
   play.appendChild(el("div", "lb-stats o1", `击败 ${m.stats.kills} · 反应 ${m.stats.reactions} · 通关 ${m.stats.bossKills} · 最远 ${m.stats.best}/7`));
@@ -271,6 +270,7 @@ function showCharDetail(id) {
     </div></div>`;
   uiRoot().appendChild(md);
   q(".x-btn", md).onclick = () => md.remove();
+  md.addEventListener("click", (e) => e.target === md && md.remove());
   md.onclick = (ev) => ev.target === md && md.remove();
 }
 
@@ -529,7 +529,7 @@ function showSettings() {
       save();
       ev.target.closest("button").innerHTML = `${label}：${m[key] ? "开" : "关"}`;
     });
-  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("关闭", "set-x", () => md.remove()));
+  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()));
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
   md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);
@@ -562,6 +562,7 @@ export function showSaveExport() {
   q(".acts", md).append(btn("复制存档码", "", copy));
   if (navigator.share) q(".acts", md).append(btn("分享…", "blue small", () => navigator.share({ title: "无限梦境存档", text: code }).catch(() => {})));
   q(".acts", md).append(btn("关闭", "gray small", () => md.remove()));
+  md.addEventListener("click", (e) => e.target === md && md.remove());
   uiRoot().appendChild(md);
   ta.onclick = () => ta.select();
 }
@@ -925,7 +926,7 @@ function showStash() {
       <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">UR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 10</small></button></div>
       <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">HUR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 20</small></button></div>
     </div><div class="row st-acts"></div></div>`;
-  q(".st-acts", md).appendChild(btn("关闭", "blue", () => md.remove()));
+
   md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);
 }

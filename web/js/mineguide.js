@@ -241,6 +241,7 @@ export function showMineGuide() {
     md.remove();
   };
   md.querySelector(".mg-x").onclick = close;
+  md.addEventListener("click", (e) => e.target === md && close());
   md.querySelector(".mg-arw.l").onclick = () => (sfx("click"), open(page - 1));
   md.querySelector(".mg-arw.r").onclick = () => (sfx("click"), open(page + 1));
   dots.onclick = (e) => e.target.dataset.i != null && (sfx("click"), open(+e.target.dataset.i));

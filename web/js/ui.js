@@ -54,23 +54,58 @@ export function showUnlock(id) {
   root.appendChild(md);
   sfx("ssr");
 }
+/** close a modal by tapping its dark background (not the panel) */
+export function bgClose(md, onClose) {
+  md.addEventListener("click", (e) => {
+    if (e.target !== md) return;
+    md.remove();
+    onClose && onClose();
+  });
+  md.classList.add("bg-close");
+}
+const H = (t) => `<b class="hp-h">${t}</b>`;
 export function showHelp() {
-  const md = el("div", "modal");
+  const md = el("div", "modal help-md");
   const reacts = Object.entries(REACTIONS).map(([k, r]) => `<span class="chip">${k === "bubble" ? "泡+任意" : k.split("+").map((x) => ELEM[x].name).join("+")} → ${r.name}</span>`).join(" ");
-  md.innerHTML = `<div class="panel" style="max-width:720px"><h2 class="outline">玩法说明</h2>
-  <div class="muted" style="text-align:left;font-size:13px;color:#fff">
-  <b style="color:#ffe36a">操作</b>　电脑：WASD 移动 · <b>J</b> 攻击（自动吸附锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停<br>
-  手机：左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键可手动瞄准 · 技能/大招键轻点自动释放，拖动瞄准后松手释放<br><br>
-  <b style="color:#ffe36a">循环</b>　每局 7 个房间：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。清场后开箱三选一技能卡，构筑你的流派。护盾受击后几秒自动回复，生命不会。<br><br>
-  <b style="color:#ffe36a">技能混搭 · 元素反应</b>　每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他AI娘的弹幕和技能，不同元素先后命中同一敌人触发反应：<br>${reacts}<br><br>
-  <b style="color:#ffe36a">地图道具</b>　走过去自动拾取：<br>${Object.values(ITEMS).map((i) => `<span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span> ${i.desc}`).join("<br>")}<br>其中<b>算力方块</b>是本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，效果持续到本局结束；打碎箱子、击败敌人和竞技场里都会刷出。草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。<br><br>
-  <b style="color:#ffe36a">模式与地图</b>　在大厅「开始冒险」上方左右滑动地图卡切换模式（全部支持离线单机）：<br>
-  ${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `· <b>主线 ${i + 1}：${d.name}</b>　${d.desc} 敌人血量×${d.hp}，晶石奖励×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200💎。`; }).join("<br>")}<br>
-  · <b>无尽回廊</b>　一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层轮换一张地图的地形，敌人越来越多越来越强；倒下时按到达层数结算并记录最佳纪录。完成任意一局后解锁。<br><br>
-  <b style="color:#ffe36a">梦境矿场（搜 · 打 · 撤）</b>　大厅「梦境矿场」用铲子下潜：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。在地面或「撤离电梯」里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。洞穴里有提着灯的「地下商人」，站在旁边就能用背包里的矿物换遗物、药水、电池和炸药；发光的「宝藏鼹鼠」会逃跑和钻土，追上打倒它能拿到一堆好矿。金铲能挖到遗迹最深处的砖室，里面的「遗迹守护者」会震地和投石，打倒它才能打开星图宝箱。每层藏着一个紫色的「遗物箱」，打开后三选一获得本次下潜的增益（贪婪契约是有代价的诅咒）。铲子来自打败首领（首领倒下时地上会掉一把带光柱的铲子）和免费铜铲（每 4 小时 1 把，最多攒 5 把，点矿场标题旁的铜铲领取）；梦境工坊里 3 把铜铲合成 1 把银铲、3 把银铲合成 1 把金铲。矿石升级矿场装备；星砂在梦境工坊换「最终减伤」（矿场里每次受到的伤害 -1，最多 2 级）、SSR 兑换卡和角色专属的梦核（强化该角色的大招）。从 4 格以上高处直接掉下来才会摔伤。<br><br>
-  <b style="color:#ffe36a">养成</b>　通关获得💎晶石，扭蛋机抽取永久天赋与稀有技能卡。N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、${2} 个槽位，PVE 和 PVP 都生效。达成条件解锁新角色。
-  </div><div class="row" style="margin-top:10px"></div></div>`;
-  $(".row", md).appendChild(btn("知道了", "", () => md.remove()));
+  const cur = (cls, name, text) => `<div class="hp-cur"><span class="chip ${cls}">${name}</span><span>${text}</span></div>`;
+  const SECS = [
+    ["操作", `${H("电脑")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
+      ${H("手机")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放`],
+    ["闯关循环", `每局 7 个房间：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
+      ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
+      ${H("生存")}护盾受击后几秒自动回复，生命不会。
+      ${H("首领")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），然后开出传送门；捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限。`],
+    ["技能混搭", `每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他 AI 娘的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
+    ["地图道具", `走过去自动拾取：${Object.values(ITEMS).map((i) => `<div class="hp-cur"><span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span><span>${i.desc}</span></div>`).join("")}
+      ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，持续到本局结束。打碎箱子、击败敌人会刷出。
+      ${H("地块")}草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。`],
+    ["模式与地图", `在大厅「开始冒险」上方左右滑动地图卡切换（全部支持离线单机）：${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `${H(`主线 ${i + 1} · ${d.name}`)}${d.desc} 敌人血量 ×${d.hp}，晶石奖励 ×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200 晶石。`; }).join("")}
+      ${H("无尽回廊")}一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层换一张地图，敌人越来越多越来越强；倒下时按层数结算。完成任意一局后解锁。`],
+    ["梦境矿场", `${H("下潜")}用一把铲子下潜一次：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。从 4 格以上高处直接掉下来才会摔伤。
+      ${H("分层")}越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。铜铲到 60m，银铲到 90m，金铲全层。
+      ${H("撤离")}在地面或撤离电梯里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。
+      ${H("遭遇")}每层有一个紫色遗物箱（三选一本次增益）；洞穴里的地下商人用背包矿物换东西；宝藏鼹鼠会逃跑，追上打倒掉一堆好矿；金铲能挖到遗迹最深处的砖室，打倒遗迹守护者才能开星图宝箱。
+      ${H("铲子")}首领掉落；免费铜铲每 4 小时 1 把、最多攒 5 把（点矿场标题旁领取）；梦境工坊里 3 铜合 1 银、3 银合 1 金。
+      ${H("货币")}${cur("cur-gem", "晶石", "通用货币：闯关和矿场带出的矿物换来；用于扭蛋、矿场装备升级。")}${cur("cur-ore", "矿石", "矿场材料：矿物带出时附带；和晶石一起升级矿场装备。")}${cur("cur-star", "星砂", "稀有货币：宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊换最终减伤、SSR 兑换卡和梦核。")}
+      ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
+    ["养成", `${H("扭蛋机")}通关获得晶石，扭蛋机抽取永久天赋与稀有技能卡。SSR 不会重复，全部集齐后再抽到 SSR 会变成积攒点。
+      ${H("天赋")}N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、2 个槽位，PVE 和 PVP 都生效。
+      ${H("角色")}达成条件解锁新角色。`],
+  ];
+  md.innerHTML = `<div class="panel help-p"><h2 class="outline">玩法说明</h2><div class="hp-body"><div class="hp-nav"></div><div class="hp-main o1"></div></div></div>`;
+  const nav = $(".hp-nav", md), main = $(".hp-main", md);
+  const open = (i) => {
+    nav.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === i));
+    main.innerHTML = `<div class="hp-t">${SECS[i][0]}</div>` + SECS[i][1];
+    main.scrollTop = 0;
+  };
+  SECS.forEach(([t], i) => {
+    const b = el("button", "hp-tab o1", t);
+    b.onclick = () => (sfx("click"), open(i));
+    nav.appendChild(b);
+  });
+  open(0);
+  bgClose(md);
   root.appendChild(md);
 }
 
@@ -113,7 +148,7 @@ export function showRoom(info) {
     const mine = p.id === info.myId;
     const d = el("div", "pl o1" + (mine ? " me" : ""), `<img src="assets/portrait_${p.cid}.png"><div>${escapeHtml(p.name)}${p.host ? " 👑" : ""}</div><div style="color:#ffe36a">${CHARS[p.cid].short}</div>`);
     if (mine) {
-      const sw = el("button", "pl-sw", `<svg viewBox="0 0 24 24" width="20" height="20"><g fill="none" stroke="#1a1020" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 11a7.5 7.5 0 0 1 13.2-4.6"/><path d="M19.5 13a7.5 7.5 0 0 1-13.2 4.6"/><polyline points="18.6 2.6 18 6.8 13.8 6.2"/><polyline points="5.4 21.4 6 17.2 10.2 17.8"/></g></svg>`);
+      const sw = el("button", "pl-sw", `<svg viewBox="0 0 24 24" width="20" height="20"><path fill="#1a1020" d="M4 11 L10.5 4.5 L10.5 8.5 L20 8.5 L20 11 Z"/><path fill="#1a1020" d="M20 13 L13.5 19.5 L13.5 15.5 L4 15.5 L4 13 Z"/></svg>`);
       sw.title = "切换角色";
       sw.onclick = () => (sfx("click"), pickRoomChar(m.chars, info.myCid));
       d.appendChild(sw);

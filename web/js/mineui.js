@@ -71,7 +71,7 @@ export function showMineHub() {
   const wait = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP);
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
-  <div class="topbar"><div class="mh-tl"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-n"></b><small class="fc-t"></small></button></div><div class="spacer"></div>
+  <div class="topbar"><div class="mh-tl"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-v"></b></button></div><div class="spacer"></div>
     <button class="pill o1 curpill" data-cur="gem">${CUR.gem()}<span class="tok">${m.tokens}</span></button>
     <button class="pill o1 curpill" data-cur="ore">${CUR.ore()}<span class="mats">${ms.mats}</span></button>
     <button class="pill o1 curpill" data-cur="star">${CUR.star()}<span class="stars">${ms.stars}</span></button></div>
@@ -121,9 +121,9 @@ export function showMineHub() {
   const fc = q(".mh-freecu", s);
   const drawFree = () => {
     const w = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP), n = ms.freePend || 0;
-    q(".fc-n", fc).textContent = "×" + n;
+    // none waiting: the countdown; one or more: just the count (tap to claim)
     const sec = Math.ceil(w / 1000);
-    q(".fc-t", fc).textContent = n >= FREE_SHOVEL_CAP ? "已满" : `${Math.floor(sec / 3600)}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
+    q(".fc-v", fc).textContent = n ? "×" + n : `${Math.floor(sec / 3600)}:${String(Math.floor((sec % 3600) / 60)).padStart(2, "0")}:${String(sec % 60).padStart(2, "0")}`;
     fc.classList.toggle("ready", n > 0);
   };
   fc.onclick = () => {
@@ -264,7 +264,7 @@ export function showMineHub() {
     }));
   };
   qdot();
-  const draw = () => (tab === "ups" ? drawUps() : tab === "quest" ? drawQuests() : drawShop());
+  const draw = () => (ups.classList.toggle("fill", tab === "shop"), tab === "ups" ? drawUps() : tab === "quest" ? drawQuests() : drawShop());
   s.querySelectorAll(".mh-tab").forEach((b) => (b.onclick = () => {
     tab = b.dataset.t;
     s.querySelectorAll(".mh-tab").forEach((x) => x.classList.toggle("on", x === b));
@@ -287,6 +287,7 @@ export function showExchange(after) {
   uiRoot().appendChild(md);
   const close = () => (md.remove(), after && after());
   q(".x-btn", md).onclick = close;
+  md.addEventListener("click", (e) => e.target === md && close());
   md.querySelectorAll(".kcard").forEach((b) => (b.onclick = () => {
     const it = GACHA.pool.find((p) => p.id === b.dataset.id), lv = m.talents[it.id] || 0;
     if (lv >= it.max) return toast("已经满级了");
@@ -362,7 +363,7 @@ export function updateMineHud(dive) {
   });
   set("en", Math.ceil(p.energy), (v) => {
     q(".en i", hud).style.width = (p.energy / p.maxE) * 100 + "%";
-    q(".en span", hud).textContent = `⚡ ${v}/${p.maxE}`;
+    q(".en span", hud).textContent = dive.lite && dive.lite.power ? "⚡ 无限" : `⚡ ${v}/${p.maxE}`;
     q(".en", hud).classList.toggle("low", p.energy < p.maxE * 0.2);
   });
   set("ox", Math.ceil(p.o2) + "|" + (p.o2 < p.maxO2), () => {
@@ -495,6 +496,7 @@ export function showMerchant(dive, onClose) {
       draw();
     }));
     q(".ms-acts", md).appendChild(btn("离开", "blue", () => (dive.shop = false, close())));
+    md.onclick = (e) => e.target === md && ((dive.shop = false), close());
   };
   function close() {
     md.remove();

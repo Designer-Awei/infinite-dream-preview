@@ -928,6 +928,7 @@ export class Dive {
     // lite (in-run rift) dives are timed
     if (this.lite) {
       this.lite.left = (this.lite.left ?? this.lite.time) - dt;
+      if (this.lite.power) p.energy = p.maxE; // the rift gives unlimited power
       if (this.lite.left <= 0) return this.finish("timeup");
     }
     const cx = Math.floor(p.x / MT), headRow = Math.floor((p.y - PH + 2) / MT);

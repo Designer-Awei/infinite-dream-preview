@@ -1437,3 +1437,70 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 }
 .room2 .rm-act { white-space: nowrap; font-size: 15px !important; padding: 0 6px !important; letter-spacing: 0; }
 @media (max-width: 900px) { .mine-hub .mshv b { white-space: nowrap; font-size: 12px; } .mine-hub .mshv img { width: 30px; height: 30px; } .mine-hub .mh-shovels { gap: 8px; } }
+/* help: narrower panel, section tabs on the left, tap outside to close */
+.help-p { width: min(660px, 92vw); height: min(330px, 86vh); height: min(330px, 86dvh); display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; overflow: hidden; }
+.help-p h2 { margin: 0; text-align: center; font-size: 22px; }
+.hp-body { flex: 1; min-height: 0; display: flex; gap: 10px; }
+.hp-nav { flex: none; width: 104px; display: flex; flex-direction: column; gap: 5px; overflow: auto; }
+.hp-tab { font: inherit; font-size: 13px; color: #e8e0ff; text-align: left; padding: 6px 10px; border: 2px solid var(--ink); border-radius: 9px; background: rgba(10,6,30,.45); cursor: pointer; }
+.hp-tab.on { color: var(--ink); background: linear-gradient(180deg, var(--y1), var(--y2)); }
+.hp-main { flex: 1; min-width: 0; overflow: auto; font-size: 13px; line-height: 1.6; color: #fff; background: rgba(10,6,30,.3); border-radius: 10px; padding: 8px 12px; }
+.hp-t { font-size: 16px; color: var(--y1); margin-bottom: 4px; }
+.hp-h { display: block; color: #ffe36a; font-weight: normal; margin-top: 6px; }
+.hp-cur { display: flex; gap: 8px; align-items: baseline; margin: 3px 0; }
+.hp-cur .chip { flex: none; }
+.hp-cur .cur-gem { background: #3ab0ff; } .hp-cur .cur-ore { background: #8a7a6a; } .hp-cur .cur-star { background: #ffd84a; color: #1a1020; }
+.hp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.modal.bg-close { cursor: pointer; } .modal.bg-close > * { cursor: auto; }
+/* 10-pull: taller cards, the two rows reach down to just above the bottom bar (4vh → 78vh) */
+.pv-cards.ten { align-content: start !important; padding-top: 4vh !important; padding-bottom: 0 !important; grid-auto-rows: min(26vw, calc((80vh - 1.6vmin) / 2)) !important; }
+.pv-cards.ten .rc-front { justify-content: space-evenly; }
+/* free copper shovels: one line, no box; icon and text as tall as the ? button */
+.mine-hub .mh-freecu, .mine-hub .mh-freecu.ready { display: flex !important; align-items: center; gap: 4px; height: 34px; padding: 0 !important; border: 0; background: none; box-shadow: none; animation: none; overflow: visible; }
+.mine-hub .mh-freecu img { width: 34px !important; height: 34px !important; grid-row: auto; }
+.mine-hub .mh-freecu .fc-v { font-weight: normal; font-size: 24px; line-height: 34px; color: #fff; white-space: nowrap; }
+.mine-hub .mh-freecu.ready .fc-v { color: #ffe36a; font-size: 28px; }
+.mine-hub .mh-freecu.ready img { animation: icoFloat 1.4s ease-in-out infinite; }
+@media (max-width: 900px) { .mine-hub .mh-freecu { height: 30px; } .mine-hub .mh-freecu img { width: 30px !important; height: 30px !important; } .mine-hub .mh-freecu .fc-v { font-size: 18px; line-height: 30px; } .mine-hub .mh-freecu.ready .fc-v { font-size: 22px; } }
+/* right column buttons: no drop shadow (so rows keep their height and the 梦核 gold edge shows); workshop rows split the height evenly */
+.mh-r .mup { padding-bottom: 5px; }
+.mh-r .btn.small { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -3px 0 rgba(0,0,0,.18); }
+.mh-r .btn.small:active { transform: translateY(2px); }
+.mh-ups.fill { overflow: hidden; }
+.mh-ups.fill .mup { flex: 1 1 0; min-height: 0; }
+.mh-ups.fill .ws-note { flex: none; }
+.row.eq-btns { align-items: stretch; gap: 12px; }
+.row.eq-btns .btn { height: 52px; min-width: 150px; font-size: 18px; padding: 0 18px; }
+/* run entry: two sliding doors shut, the run loads behind them, then they slide open */
+.lb.launch::after { display: none; }
+.doors { position: absolute; inset: 0; z-index: 45; pointer-events: auto; overflow: hidden; }
+.doors .dr { position: absolute; top: 0; bottom: 0; width: 50.5%; transition: transform .42s cubic-bezier(.6,0,.9,.5); box-sizing: border-box;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0 22px, rgba(0,0,0,.22) 22px 25px, rgba(255,255,255,.08) 25px 27px), linear-gradient(180deg, #4a3a9a, #2a1e66 55%, #1e1450); border: 5px solid var(--ink); }
+.doors .dr.l { left: 0; transform: translateX(-102%); border-left: 0; }
+.doors .dr.r { right: 0; transform: translateX(102%); border-right: 0; }
+.doors.shut .dr { transform: none; }
+.doors.open .dr { transition: transform .55s cubic-bezier(.2,.7,.3,1); }
+.doors.open .dr.l { transform: translateX(-102%); } .doors.open .dr.r { transform: translateX(102%); }
+/* hazard stripe along the meeting edge, rivets, and half an emblem on each door */
+.doors .dr::before { content: ""; position: absolute; top: 0; bottom: 0; width: 18px; background: repeating-linear-gradient(45deg, #ffd84a 0 12px, #1a1020 12px 24px); border: 3px solid var(--ink); border-top: 0; border-bottom: 0; }
+.doors .dr.l::before { right: 0; } .doors .dr.r::before { left: 0; }
+.doors .dr::after { content: ""; position: absolute; left: 10%; right: 10%; top: 12%; height: 6px; background: rgba(255,255,255,.18); border-radius: 3px; box-shadow: 0 calc(76vh - 6px) 0 rgba(0,0,0,.25); }
+.doors .dr-bolt { position: absolute; top: 8%; width: 12px; height: 12px; border-radius: 50%; background: #8a7ac8; border: 3px solid var(--ink); }
+.doors .dr-bolt.b { top: auto; bottom: 8%; }
+.doors .dr.l .dr-bolt { left: 8%; } .doors .dr.r .dr-bolt { right: 8%; }
+.doors .dr-half { position: absolute; top: 50%; width: 22vmin; height: 44vmin; transform: translateY(-50%); border: 5px solid var(--ink); background: radial-gradient(circle at 100% 50%, #ffe36a 0 30%, #ffb21e 31% 48%, #6a5ac8 49%); }
+.doors .dr.l .dr-half { right: 12px; border-radius: 44vmin 0 0 44vmin; border-right: 0; }
+.doors .dr.r .dr-half { left: 12px; border-radius: 0 44vmin 44vmin 0; border-left: 0; background: radial-gradient(circle at 0% 50%, #ffe36a 0 30%, #ffb21e 31% 48%, #6a5ac8 49%); }
+.doors .dr-plate { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%) scale(.9); width: min(60vw, 520px); display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px 16px; border: 4px solid var(--ink); border-radius: 14px; background: rgba(20,12,50,.88); opacity: 0; transition: opacity .2s, transform .2s; }
+.doors.info .dr-plate { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+.doors .dr-plate .el-t { font-size: 26px; } .doors .dr-plate .el-s { font-size: 13px; color: #e8e0ff; } .doors .dr-plate .el-tip { font-size: 12px; color: #c8c0e8; text-align: center; }
+.doors .ld-bar { width: 100%; }
+.mh-ups { flex: 1 1 0; }
+.mh-ups.fill .mup { flex: 1 1 0; min-height: 0; padding-top: 2px; padding-bottom: 2px; }
+.doors .dr-half { z-index: 2; width: 18vmin; height: 36vmin; top: 42%; }
+.doors .dr.l .dr-half { right: 0; } .doors .dr.r .dr-half { left: 0; }
+.doors .dr-plate { top: auto; bottom: 7%; transform: translate(-50%, 0) scale(.9); padding: 8px 14px; gap: 5px; width: min(56vw, 480px); }
+.doors.info .dr-plate { transform: translate(-50%, 0) scale(1); }
+.doors .dr-plate .el-t { font-size: 22px; }
+.doors .ld-bar { height: 12px; }
+.doors .dr-half { top: 34%; width: 15vmin; height: 30vmin; }

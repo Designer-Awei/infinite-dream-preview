@@ -979,7 +979,7 @@ export class Game {
       this.after(1.8, () => {
         const c = this.map.center;
         this.phase = "portal";
-        this.portal = { x: c.x, y: c.y - 46, t: 0, victory: true };
+        this.portal = { x: c.x, y: c.y - 14, t: 0, victory: true };
         this.vfx("arcane/portal", this.portal.x, this.portal.y + 8, { layer: "back" });
         this.banner = { text: "传送门已开启", sub: "拾取铲子后进入传送门结算", t: 2 };
       });
@@ -1056,7 +1056,7 @@ export class Game {
     this.phase = "portal";
     const c = this.map.center;
     // portal above, the (opened) chest below, so they never overlap
-    this.portal = { x: c.x, y: c.y - 46, t: 0 };
+    this.portal = { x: c.x, y: c.y - 14, t: 0 };
     this.vfx("arcane/portal", this.portal.x, this.portal.y + 8, { layer: "back" });
     this.banner = { text: "传送门已开启", sub: "所有存活角色进入传送门前往下一层", t: 2 };
   }
