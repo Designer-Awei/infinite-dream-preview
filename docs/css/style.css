@@ -1510,3 +1510,8 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .help-p .hp-main .chip { font-size: 12px; padding: 1px 8px; line-height: 1.6; white-space: nowrap; }
 .help-p .hp-main .chip:not([style]):not(.cur-star) { color: #fff; }
 .help-p .hp-t, .help-p .hp-h { text-shadow: 0 1px 0 rgba(10,4,24,.8); }
+/* daily commissions: label above the reward line (like the upgrade buttons), so two rewards always fit inside */
+.mh-r .mq-b { flex-direction: column; gap: 1px; padding: 3px 4px !important; line-height: 1.1; }
+.mh-r .mq-b > span { font-size: 14px; }
+.mh-r .mq-b small { gap: 3px; padding: 0 6px; max-width: 100%; box-sizing: border-box; white-space: nowrap; }
+.mq-bar em, .mh-tab .qdot { text-shadow: 0 1px 0 rgba(10,4,24,.75); }
