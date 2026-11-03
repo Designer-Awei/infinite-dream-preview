@@ -841,15 +841,13 @@ function pullSequence(screen, res) {
     if (!skip) {
       cap.classList.add("shake");
       if (best === "SSR") sfx("ssr");
-      if (best === "SSR" || best === "SR") fx.burst(innerWidth / 2, innerHeight / 2, best === "SSR" ? 60 : 30, ["#ffffff", RCOL[best]], "spark", best === "SSR" ? 14 : 10);
       await sleep(best === "SSR" ? 700 : best === "SR" ? 450 : 250);
     }
     cap.classList.remove("shake");
     cap.classList.add("open");
     ov.classList.add("flash");
     sfx("pickup");
-    fx.burst(innerWidth / 2, innerHeight / 2, 40, ["#ffffff", RCOL[best]], "spark", 12);
-    await sleep(skip ? 0 : 420);
+    await sleep(skip ? 0 : 700);
     q(".pv-stage", ov).classList.add("gone");
     // 4. cards
     const wrap = q(".pv-cards", ov);
@@ -871,15 +869,11 @@ function pullSequence(screen, res) {
       if (!skip) {
         if (r.r === "SSR") {
           sfx("ssr");
-          const b = d.getBoundingClientRect();
-          fx.burst(b.left + b.width / 2, b.top + b.height / 2, 90, ["#ffe36a", "#ff7cc8", "#5fb4ff", "#ffffff", "#5dff7a"], "confetti", 11);
           ov.classList.add("flash");
           setTimeout(() => ov.classList.remove("flash"), 260);
           await sleep(700);
         } else if (r.r === "SR") {
           sfx("card");
-          const b = d.getBoundingClientRect();
-          fx.burst(b.left + b.width / 2, b.top + b.height / 2, 30, ["#e0b0ff", "#ffffff"], "spark", 7);
           await sleep(380);
         } else {
           sfx("click");
