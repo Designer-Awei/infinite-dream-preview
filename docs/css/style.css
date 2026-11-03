@@ -1168,3 +1168,22 @@ body.mining .tbtn .cd, body.mining .tbtn .ring { display: none !important; }
 .relic-modal .c-desc { font-size: 12px; }
 body.mining .hud .keys { max-width: calc(100vw - 360px); }
 body.mining .b-skill .cdt, body.mining .b-ult .cdt { inset: auto -4px -4px auto; width: auto; height: auto; min-width: 0; line-height: 16px; display: block !important; transform: none; font-size: 12px; padding: 0 5px; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }
+/* capsule v6: the open lid sits clear above the bottom half's glowing rim */
+@keyframes lidDome {
+  0% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-62%) scaleY(.92); }
+  100% { transform: translateY(-112%) scaleY(.71); }
+}
+@keyframes lidIn {
+  0% { transform: translateY(0) scaleY(0); }
+  50% { transform: translateY(-31%) scaleY(.38); }
+  100% { transform: translateY(-56%) scaleY(.71); }
+}
+/* card faces: solid rarity colour, no spinning rays (the background already has rays); rarity as a header band, content spread evenly */
+.rc-front::before { display: none; }
+.rc-front { justify-content: space-evenly; padding: 0 1vmin 1vmin; }
+.rc.N .rc-front, .rc-front { background: #f4f0ff; }
+.rc.R .rc-front { background: #b8dcff; }
+.rc.SR .rc-front { background: #d6b4ff; }
+.rc.SSR .rc-front { background: #ffd24a; }
+.rc-front .rr { align-self: stretch; margin: 0 -1vmin; border-radius: 0; padding: .5vmin 0; border-bottom: 3px solid var(--ink); background: var(--c); }
