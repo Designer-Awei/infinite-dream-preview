@@ -1,7 +1,7 @@
 // 梦境矿场 · one dive: a side-view vertical slice (搜 search · 打 fight · 撤 extract).
 // Dig down through 矿坑 / 洞穴 / 深海 / 遗迹, fill the bag, and get out: on the surface, at a lift, or with a beacon.
 // Dying keeps 30% of the bag, running out of power keeps 50%.
-import { RELICS, MT, MW, MH, T, SOLID, HARD, ZONES, zoneAt, ORES, SHOVELS, MOBS, CHEST_STARS, DEPTH_STARS } from "./minedata.js";
+import { RELICS, SHOP, MT, MW, MH, T, SOLID, HARD, ZONES, zoneAt, ORES, SHOVELS, MOBS, CHEST_STARS, DEPTH_STARS } from "./minedata.js";
 import { CHARS, ELEM, VIEW_W, VIEW_H } from "./data.js";
 import { A } from "./assets.js";
 import { rng, clamp, TAU } from "./util.js";
@@ -366,6 +366,16 @@ export class Dive {
       bombs: 2, beacons: 1 + (up.beacon || 0), beaconT: 0, dig: null, deepest: 0, anim: 0, jet: false,
       atkDmg: c.atk.dmg * (1 + 0.04 * ((o.talents && o.talents.t_dmg) || 0)), elem: c.elem,
     };
+    // pre-bought supplies
+    for (const k of o.supply || []) {
+      if (k === "bomb") this.p.bombs += 2;
+      if (k === "cell") (this.p.maxE += 50), (this.p.energy += 50);
+      if (k === "plate") (this.p.maxHp += 2), (this.p.hp += 2);
+      if (k === "flare") this.p.beacons += 1;
+    }
+    this.shop = false; // merchant window open (the dive waits)
+    this.bought = {};
+    this.merchant = null;
     this.cam = { x: 0, y: -VIEW_H / 2 };
     this.gen();
   }
@@ -505,6 +515,30 @@ export class Dive {
       this.t[row * W + x0 + 2] = T.LIFT;
       this.lifts.push({ c: x0 + 2, r: row });
     }
+    // 地下商人: a lantern-lit pocket in the caves
+    if (!this.lite && this.maxDepth > 44) {
+      const y = r.int(36, Math.min(54, this.maxDepth - 4)), x0 = r.int(3, W - 9);
+      for (let yy = y - 2; yy <= y; yy++) for (let x = x0; x < x0 + 6; x++) this.t[yy * W + x] = T.AIR;
+      for (let x = x0; x < x0 + 6; x++) this.t[(y + 1) * W + x] = T.BRICK;
+      this.merchant = { x: (x0 + 3) * MT, y: (y + 1) * MT, c0: x0, r: y };
+      for (const k of Object.keys(this.chest)) if (this.t[k] !== T.CHEST) delete this.chest[k];
+    }
+    // 宝藏鼹鼠: one per dive (half the rifts), in a little pocket
+    if (!this.lite || r.chance(0.5)) {
+      let y = 10, x = 3;
+      for (let k = 0; k < 20; k++) {
+        y = this.lite ? r.int(10, H - 6) : r.int(10, Math.min(this.maxDepth - 3, 84));
+        x = r.int(3, W - 5);
+        const mc = this.merchant;
+        if (![28, 58, 88].some((L) => y >= L - 4 && y <= L + 2) && !(mc && Math.abs(y - mc.r) < 5)) break;
+      }
+      for (let yy = y - 1; yy <= y; yy++) for (let xx = x; xx < x + 3; xx++) this.t[yy * W + xx] = T.AIR;
+      if (!SOLID(this.t[(y + 1) * W + x + 1])) this.t[(y + 1) * W + x + 1] = T.DIRT;
+      for (const k of Object.keys(this.chest)) if (this.t[k] !== T.CHEST) delete this.chest[k];
+      const m = this.mkMob("mole", (x + 1) * MT + MT / 2, y * MT + MT / 2);
+      m.life = 22;
+      this.mobs.push(m);
+    }
     // monsters in open pockets
     for (let y = 6; y < H - 2; y++)
       for (let x = 2; x < W - 2; x++) {
@@ -636,6 +670,39 @@ export class Dive {
     this.spawnFx("spawn/respawn-beam", p.x, p.y, { life: 0.8 });
     sfx("card");
   }
+  /** merchant offers with their current prices */
+  shopOffers() {
+    return Object.entries(SHOP).map(([k, s]) => ({ k, ...s, price: Math.round(s.base * (1 + 0.5 * (this.bought[k] || 0))), left: s.max - (this.bought[k] || 0) }));
+  }
+  /** pay with ore from the bag, cheapest first; returns false if the bag isn't worth enough */
+  pay(price) {
+    if (this.bagValue() < price) return false;
+    const order = this.bag.map((id, i) => [ORES[id].v, i]).sort((a, b) => a[0] - b[0]);
+    let paid = 0;
+    const drop = new Set();
+    for (const [v, i] of order) {
+      if (paid >= price) break;
+      paid += v;
+      drop.add(i);
+    }
+    this.bag = this.bag.filter((_, i) => !drop.has(i));
+    return true;
+  }
+  buy(k) {
+    const o = this.shopOffers().find((x) => x.k === k), p = this.p;
+    if (!o || o.left <= 0 || !this.pay(o.price)) return false;
+    this.bought[k] = (this.bought[k] || 0) + 1;
+    if (k === "heal") p.hp = p.maxHp;
+    if (k === "cell") p.energy = p.maxE;
+    if (k === "bomb") p.bombs += 2;
+    if (k === "relic") {
+      const pool = Object.keys(RELICS).filter((id) => (this.rel[id] || 0) < RELICS[id].max);
+      this.shop = false;
+      this.choice = this.r.shuffle(pool).slice(0, 3);
+    }
+    sfx("coin");
+    return true;
+  }
   checkFall(c, r) {
     if (this.get(c, r) !== T.BOULDER || this.get(c, r + 1) !== T.AIR) return;
     this.set(c, r, T.AIR);
@@ -647,7 +714,7 @@ export class Dive {
   // ---------------------------------------------------------------- update
   /** inp: { mx, my, atk, bomb, beacon } */
   update(dt, inp) {
-    if (this.ended || this.choice) return;
+    if (this.ended || this.choice || this.shop) return;
     this.time += dt;
     const p = this.p;
     p.anim += dt;
@@ -772,6 +839,17 @@ export class Dive {
       if (this.extractT >= 1.2) return this.finish("extract");
     } else this.extractT = 0;
     this.atLift = !!lift;
+    // ---- merchant: stand still next to them to trade
+    const mc = this.merchant;
+    if (mc) {
+      const near = Math.abs(p.x - mc.x) < 34 && Math.abs(p.y - mc.y) < 8;
+      if (!near) mc.away = true;
+      this.nearShop = near && mc.away;
+      if (this.nearShop && idle) {
+        mc.t = (mc.t || 0) + dt;
+        if (mc.t > 0.6) (mc.t = 0), (mc.away = false), (this.shop = true), sfx("click");
+      } else mc.t = 0;
+    }
     // ---- power out: emergency recall
     if (p.energy <= 0 && !p.dig) {
       p.outT = (p.outT || 0) + dt;
@@ -863,6 +941,10 @@ export class Dive {
       const dx = p.x - m.x, dy = py - m.y, d = Math.hypot(dx, dy);
       if (!m.awake && d < 6 * MT) m.awake = true;
       const d0 = m.d;
+      if (d0.flee) {
+        this.moleAI(m, dt, dx, d);
+        continue;
+      }
       if (m.awake && d0.fly) {
         const inWater = this.waterAt(m.x, m.y);
         const sp = d0.swim && !inWater ? 10 : d0.spd;
@@ -902,6 +984,48 @@ export class Dive {
       if (d < m.d.r + 10) this.hurt(m.d.dmg);
     }
   }
+  /** 宝藏鼹鼠: wakes up when you get close, runs away digging through soft ground, and burrows off when its time is up */
+  moleAI(m, dt, dx, d) {
+    if (!m.awake && d < 7 * MT) {
+      m.awake = true;
+      this.text(m.x, m.y - 20, "宝藏鼹鼠！快抓住它", "#ffd84a", 1.1);
+      sfx("pickup", 0.1);
+    }
+    if (Math.random() < dt * 4) this.parts.push({ x: m.x + (Math.random() - 0.5) * 14, y: m.y - 6, vx: 0, vy: -20, t: 0.5, col: "#ffe36a", s: 1, glow: true });
+    m.vy += G * dt;
+    if (m.awake) {
+      m.life -= dt;
+      if (m.life <= 0) {
+        this.mobs.splice(this.mobs.indexOf(m), 1);
+        this.spawnFx("spawn/poof", m.x, m.y + 6, {});
+        this.text(m.x, m.y - 14, "鼹鼠钻走了…", "#c8b0ff");
+        return;
+      }
+      m.turnT = (m.turnT || 0) - dt;
+      if (m.turnT <= 0) m.dir = d < 9 * MT ? -Math.sign(dx || 1) : m.dir || 1;
+      const spd = m.d.spd * (d < 4 * MT ? 1.15 : 0.8);
+      const ahead = m.x + m.dir * (m.d.r + 2), c = Math.floor(ahead / MT), rr = Math.floor(m.y / MT);
+      const t = this.get(c, rr);
+      if (c <= 0 || c >= MW - 1 || t === T.BEDROCK || t === T.SEAL) (m.dir = -m.dir), (m.turnT = 1.2);
+      else if (SOLID(t)) {
+        const hd = HARD[t];
+        if (hd && hd.need <= 1 && t !== T.CHEST && t !== T.ORE) {
+          m.digK = (m.digK || 0) + dt * 2.2;
+          if (Math.random() < dt * 10) this.parts.push({ x: ahead, y: m.y, vx: -m.dir * 60, vy: -60, t: 0.3, col: "#c8a070", s: 2 });
+          if (m.digK >= 1) {
+            m.digK = 0;
+            this.set(c, rr, T.AIR);
+            this.checkFall(c, rr - 1);
+          }
+        } else (m.dir = -m.dir), (m.turnT = 1.2);
+      } else m.x += m.dir * spd * dt;
+      m.face = m.dir;
+    }
+    const ny = m.y + m.vy * dt;
+    if (!this.solidAt(m.x, ny + m.d.r)) m.y = ny;
+    else m.vy = 0;
+    m.anim += m.awake ? dt * 2 : 0;
+  }
   updateBullets(dt) {
     for (const b of this.bullets) {
       b.t -= dt;
@@ -939,6 +1063,14 @@ export class Dive {
       sfx("kill", 0.05);
       // monsters carry a little loot
       const z = zoneAt(Math.floor(m.y / MT)), ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
+      if (m.d.flee) {
+        this.text(m.x, m.y - 26, "抓到宝藏鼹鼠！", "#ffd84a", 1.3);
+        this.spawnFx("pickups/loot-beam", m.x, m.y + 8, { life: 1.5 });
+        const n = this.r.int(4, 6);
+        for (let k = 0; k < n; k++) this.addLoot(this.r.weighted(ids, (q) => ORES[q].zones[z.id] * ORES[q].v * ORES[q].v), m.x, m.y - k * 6);
+        this.addStars(this.r.int(2, 5), m.x, m.y);
+        return;
+      }
       if (this.r.chance(0.6)) this.addLoot(this.r.weighted(ids, (q) => ORES[q].zones[z.id]), m.x, m.y);
     }
   }
@@ -1113,9 +1245,14 @@ export class Dive {
       const z = zoneAt(Math.floor(f.y / MT)), wob = f.wait > 0 ? Math.round(Math.sin(this.time * 60) * 1.5) : 0;
       g.drawImage(tileArt("boulder", z, 0), 0, 2, MT, MT - 4, f.x - MT / 2 + wob, f.y - MT / 2 + 2, MT, MT - 4);
     }
+    if (this.merchant) this.drawMerchant(g);
     // monsters
     for (const m of this.mobs) {
       if (m.y < cy - 40 || m.y > cy + VIEW_H + 40) continue;
+      if (m.d.draw === "mole") {
+        this.drawMole(g, m);
+        continue;
+      }
       const s = A.critters[m.d.sprite];
       if (!s) continue;
       const fr = Math.floor(m.anim * s.fps) % s.n, sc = m.d.sc;
@@ -1337,6 +1474,61 @@ export class Dive {
     g.fillRect(camp + 71, h - 41, 46, 14);
     this.label(g, "梦境矿场", camp + 94, h - 31, "#ffe36a", 10);
   }
+  drawMole(g, m) {
+    const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1, step = m.awake ? Math.round(Math.sin(m.anim * 18)) : 0;
+    const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
+    R(-9, -12, 15, 11, "#1a1020"); // outline
+    R(-8, -11, 13, 9, "#7a5034"); // body
+    R(-8, -11, 13, 3, "#9a6a44");
+    R(2, -8, 6, 5, "#1a1020"); // snout
+    R(3, -7, 4, 3, "#c88a64");
+    R(7, -7, 2, 2, "#ff8ab0"); // nose
+    R(1, -10, 2, 2, "#1a1020"); // eye
+    R(-6, -15, 9, 4, "#1a1020"); // helmet
+    R(-5, -14, 7, 3, "#ffc83a");
+    R(1, -14, 2, 2, "#fff6c0"); // lamp
+    R(-14, -14, 7, 9, "#1a1020"); // sack
+    R(-13, -13, 5, 7, "#c8a060");
+    R(-12, -12, 2, 2, "#ffe36a");
+    R(-6 + step, -2, 3, 2, "#1a1020"); // feet
+    R(1 - step, -2, 3, 2, "#1a1020");
+    if (m.flash > 0) (g.globalAlpha = 0.6), R(-9, -15, 18, 15, "#ffffff"), (g.globalAlpha = 1);
+    if (m.awake) {
+      const w = 16;
+      g.fillStyle = "#14101c";
+      g.fillRect(m.x - w / 2 - 1, m.y - m.d.r - 16, w + 2, 4);
+      g.fillStyle = "#ffd84a";
+      g.fillRect(m.x - w / 2, m.y - m.d.r - 15, w * clamp(m.life / 22), 2);
+    }
+  }
+  drawMerchant(g) {
+    const mc = this.merchant, x = Math.round(mc.x), y = mc.y, t = this.time;
+    const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(x + dx, y + dy, w, h));
+    g.save();
+    g.translate(x, y);
+    g.scale(1.4, 1.4);
+    g.translate(-x, -y);
+    // rug and wares
+    R(-30, -3, 60, 3, "#7a2a4a");
+    R(-30, -3, 60, 1, "#c8508a");
+    R(-26, -9, 6, 6, "#1a1020"), R(-25, -8, 4, 4, "#ff6a8a");
+    R(-18, -8, 6, 5, "#1a1020"), R(-17, -7, 4, 3, "#7dd8ff");
+    R(14, -10, 8, 7, "#1a1020"), R(15, -9, 6, 5, "#c8a060");
+    // hooded figure
+    R(-7, -26, 14, 23, "#1a1020");
+    R(-6, -25, 12, 22, "#5a3a9a");
+    R(-6, -25, 12, 4, "#7a5ac8");
+    R(-4, -20, 8, 6, "#1a1020");
+    const blink = Math.sin(t * 1.3) > 0.95;
+    if (!blink) R(-3, -18, 2, 1, "#ffe36a"), R(1, -18, 2, 1, "#ffe36a");
+    // lantern on a staff
+    R(8, -34, 2, 31, "#3a2a1a");
+    R(6, -38, 6, 6, "#1a1020");
+    R(7, -37, 4, 4, Math.sin(t * 8) > 0 ? "#ffe36a" : "#ffc83a");
+    g.restore();
+    this.label(g, "地下商人", x, y - 62, "#e0c8ff", 9);
+    if (this.nearShop) this.label(g, "站定交易", x, y - 74, "#7dffb0", 9, 0.6 + 0.4 * Math.sin(t * 6));
+  }
   drawPlayer(g) {
     const p = this.p, set = A.girls[this.o.cid];
     if (!set) return;
@@ -1395,6 +1587,8 @@ export class Dive {
     };
     const p = this.p, z = zoneAt(Math.floor(p.y / MT));
     hole(p.x, p.y - PH / 2, (z.light + (this.up.radar || 0) + 2 * (this.rel.lamp || 0)) * MT * (0.95 + 0.05 * Math.sin(this.time * 6)));
+    for (const m of this.mobs) if (m.d.flee) hole(m.x, m.y, MT * 1.8, 0.7);
+    if (this.merchant) hole(this.merchant.x + 13, this.merchant.y - 49, MT * 3.4, 0.9);
     // glowing ores, lifts, explosions
     const r0 = Math.floor(cy / MT), r1 = r0 + Math.ceil(VIEW_H / MT) + 1, c0 = Math.max(0, Math.floor(cx / MT)), c1 = Math.min(MW - 1, c0 + Math.ceil(VIEW_W / MT) + 1);
     for (let r = Math.max(0, r0); r <= Math.min(this.rows - 1, r1); r++)

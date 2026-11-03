@@ -87,6 +87,7 @@ export const MOBS = {
   slime_purple: { sprite: "slime_purple", hp: 20, spd: 30, r: 9, sc: 0.42, dmg: 1, zones: { cave: 2, ruin: 1 } },
   jelly: { sprite: "jelly", hp: 22, spd: 26, r: 10, sc: 0.32, fly: true, dmg: 1, swim: true, zones: { sea: 5 } },
   ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 1, zones: { ruin: 3, sea: 1 } },
+  mole: { draw: "mole", hp: 26, spd: 74, r: 8, sc: 1, dmg: 0, flee: true, zones: {} }, // 宝藏鼹鼠: runs away, burrows off after a while
   skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 1, shoot: 2.4, zones: { ruin: 3 } },
 };
 
@@ -107,4 +108,19 @@ export const RELICS = {
   rock: { name: "坚岩之肤", icon: "shield", desc: "免疫落石、瓦斯与炸药伤害", max: 1 },
   beacon: { name: "应急信标", icon: "beacon", desc: "撤离信标 +1", max: 2 },
   greed: { name: "贪婪契约", icon: "coin", desc: "带出的 💎 +30%，但受到的伤害 +1", max: 1, curse: true },
+};
+
+// 补给: bought with 💎 in the hub, applied at the start of every dive while selected
+export const SUPPLIES = {
+  bomb: { name: "炸药包", icon: "bomb", desc: "炸药 +2", cost: 15 },
+  cell: { name: "便携电池", icon: "battery", desc: "电量 +50", cost: 20 },
+  plate: { name: "护甲片", icon: "shield", desc: "生命 +2", cost: 25 },
+  flare: { name: "备用信标", icon: "beacon", desc: "撤离信标 +1", cost: 30 },
+};
+// 地下商人: pays with ore from the bag (cheapest first). price grows 50% per purchase
+export const SHOP = {
+  relic: { name: "神秘遗物", icon: "scroll", desc: "遗物三选一", base: 14, max: 2 },
+  heal: { name: "治疗药水", icon: "heart", desc: "生命回满", base: 8, max: 3 },
+  cell: { name: "电池组", icon: "battery", desc: "电量回满", base: 6, max: 3 },
+  bomb: { name: "炸药", icon: "bomb", desc: "炸药 +2", base: 5, max: 3 },
 };

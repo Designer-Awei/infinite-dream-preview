@@ -1,6 +1,6 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
 import { CHARS, GACHA, VIEW_H } from "./data.js";
-import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
+import { RELICS, SUPPLIES, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
 import { load, save, mineState, refreshFreeShovels } from "./save.js";
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
@@ -58,6 +58,7 @@ export function showMineHub() {
     <div class="mh-h o1">选择铲子下潜（一把铲 = 一次下潜）</div>
     <div class="mh-shovels"></div>
     <div class="mh-free o1">${ms.shovels.cu >= FREE_SHOVEL_CAP ? `免费铜铲已存满（${FREE_SHOVEL_CAP} 把）` : `下一把免费铜铲：${fmtMs(wait)}后`}　·　打败首领必得铲子</div>
+    <div class="mh-sup"></div>
     <button class="btn big mh-go"><span class="pt">下潜</span></button>
     <div class="mh-rec o1">最深 ${ms.best}m · 下潜 ${ms.dives} 次</div>
   </div>
@@ -80,11 +81,29 @@ export function showMineHub() {
     }));
   };
   const go = q(".mh-go", s);
+  const supCost = () => (ms.supply || []).reduce((a, k) => a + (SUPPLIES[k] ? SUPPLIES[k].cost : 0), 0);
   const updGo = () => {
-    const n = ms.shovels[pick];
+    const n = ms.shovels[pick], c = supCost();
     go.disabled = !n;
-    q(".pt", go).textContent = n ? `用${SHOVELS[pick].name}下潜` : `没有${SHOVELS[pick].name}`;
+    q(".pt", go).textContent = n ? `用${SHOVELS[pick].name}下潜${c ? ` · 💎${c}` : ""}` : `没有${SHOVELS[pick].name}`;
   };
+  // supplies: toggles that stay selected between dives; paid when you dive
+  const sup = q(".mh-sup", s);
+  const drawSup = () => {
+    const on = new Set(ms.supply || []);
+    sup.innerHTML = `<span class="o1">补给</span>` + Object.entries(SUPPLIES).map(([k, d]) => `<button class="msup${on.has(k) ? " on" : ""}" data-k="${k}" title="${d.name}：${d.desc}"><img src="${iconURL(d.icon, 2)}" alt=""><b>${d.desc}</b><small>💎${d.cost}</small></button>`).join("");
+    sup.querySelectorAll(".msup").forEach((b) => (b.onclick = () => {
+      const k = b.dataset.k, cur = new Set(ms.supply || []);
+      cur.has(k) ? cur.delete(k) : cur.add(k);
+      toast(cur.has(k) ? `已勾选补给：${SUPPLIES[k].name}（${SUPPLIES[k].desc}，下潜时扣 💎${SUPPLIES[k].cost}）` : `取消补给：${SUPPLIES[k].name}`);
+      ms.supply = [...cur];
+      save();
+      sfx("click");
+      drawSup();
+      updGo();
+    }));
+  };
+  drawSup();
   go.onclick = () => {
     if (!ms.shovels[pick]) return;
     sfx("portal");
@@ -347,6 +366,35 @@ export function showRelicPick(dive, onPick) {
   }
   setTimeout(() => addEventListener("keydown", key), 350);
   document.body.classList.add("cards-open");
+  uiRoot().appendChild(md);
+  sfx("card");
+}
+
+// ------------------------------------------------------------------ 地下商人 (pays with ore from the bag)
+export function showMerchant(dive, onClose) {
+  const md = el("div", "modal mshop-md");
+  const draw = () => {
+    const offers = dive.shopOffers(), bv = dive.bagValue();
+    md.innerHTML = `<div class="panel mshop"><div class="ms-h"><h2 class="outline">地下商人</h2><span class="o1">用背包里的矿物付款（从最便宜的开始扣）· 背包价值 💎${bv}</span></div>
+      <div class="ms-list">${offers.map((o) => `<div class="ms-it${o.left <= 0 ? " sold" : ""}"><img src="${iconURL(o.icon, 3)}" alt=""><div class="mu-t"><b class="o1">${o.name}</b><span>${o.desc}${o.left > 0 ? `　剩 ${o.left}` : "　售罄"}</span></div>
+        <button class="btn small ${o.left > 0 && bv >= o.price ? "" : "gray"}" data-k="${o.k}"><span>${o.left > 0 ? "购买" : "售罄"}</span><small>💎${o.price}</small></button></div>`).join("")}</div>
+      <div class="row ms-acts"></div></div>`;
+    md.querySelectorAll(".ms-it button").forEach((b) => (b.onclick = () => {
+      const k = b.dataset.k, o = dive.shopOffers().find((x) => x.k === k);
+      if (o.left <= 0) return;
+      if (dive.bagValue() < o.price) return toast("背包里的矿物不够付款");
+      dive.buy(k);
+      toast(`买下了 ${o.name}`);
+      if (k === "relic") return close();
+      draw();
+    }));
+    q(".ms-acts", md).appendChild(btn("离开", "blue", () => (dive.shop = false, close())));
+  };
+  function close() {
+    md.remove();
+    onClose && onClose();
+  }
+  draw();
   uiRoot().appendChild(md);
   sfx("card");
 }

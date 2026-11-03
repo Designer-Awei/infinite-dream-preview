@@ -9,7 +9,7 @@ import { initAudio, playMusic, sfx, setSound, setMusic } from "./audio.js";
 import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
 import { Dive } from "./mine.js";
 import * as MUI from "./mineui.js";
-import { SHOVELS } from "./minedata.js";
+import { SUPPLIES, SHOVELS } from "./minedata.js";
 import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
@@ -215,9 +215,17 @@ export const app = {
     if (!ms.shovels[shovel]) return;
     ms.shovels[shovel]--;
     ms.dives++;
+    // supplies: pay for each selected one we can afford
+    const supply = [];
+    for (const k of ms.supply || []) {
+      const c = SUPPLIES[k] && SUPPLIES[k].cost;
+      if (!c) continue;
+      if (m.tokens >= c) (m.tokens -= c), supply.push(k);
+      else UI.toast(`晶石不足，没带上${SUPPLIES[k].name}`);
+    }
     save();
     fx.clearAll();
-    const d = new Dive({ cid: m.chars.includes(m.sel) ? m.sel : "deepseek", shovel, up: { ...ms.up }, fx, talents: m.talents });
+    const d = new Dive({ cid: m.chars.includes(m.sel) ? m.sel : "deepseek", shovel, up: { ...ms.up }, fx, talents: m.talents, supply });
     d.onEnd = (res) => setTimeout(() => this.endDive(d, res), res.how === "dead" ? 1100 : 500);
     this.dive = d;
     this.diveShovel = shovel;
@@ -427,6 +435,10 @@ function diveFrame(dt) {
   if (consume("pause")) app.pauseMd ? null : app.pause();
   const bomb = consume("skill"), beacon = consume("ult");
   consume("dash");
+  if (d.shop && !app.shopOpen) {
+    app.shopOpen = true;
+    MUI.showMerchant(d, () => (app.shopOpen = false));
+  }
   if (d.choice && !app.relicOpen) {
     app.relicOpen = true;
     MUI.showRelicPick(d, (id) => {
