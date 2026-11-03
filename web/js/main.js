@@ -136,6 +136,7 @@ export const app = {
     else if (kind === "win") this.endRun(true);
     else if (kind === "pvpwin") this.endPvp();
     else if (kind === "transition") fade();
+    else if (kind === "rift") this.offerRift();
     else if (kind === "cardsClosed") {
       UI.closeCards();
       this.cardOpen = false;
@@ -184,6 +185,11 @@ export const app = {
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
     if (drop) extras.push(["⛏ 梦境矿场", "获得" + SHOVELS[drop].name]);
+    if (this.riftLoot) {
+      const r = this.riftLoot;
+      extras.push(["梦境裂隙", `💎${r.value} · 矿石${r.mats}${r.stars ? " · 星砂" + r.stars : ""}`]);
+      this.riftLoot = null;
+    }
     const title = endless ? `无尽回廊 · 第 ${rs.rooms} 层` : win ? "通关！幻觉已破除" : "倒下了…";
     const sub = endless ? (rs.rooms > prevBest ? "刷新了最佳纪录！" : `最佳纪录 ${Math.max(prevBest, rs.rooms)} 层`) : win ? `${CHARS[this.me.cid].name} 击败了${md.name}的幻觉之眼` : "再接再厉，构筑会更强！";
     UI.showResult({ title, sub, rows, extras, tokens, win: win || (endless && rs.rooms > prevBest), cid: this.me.cid },
@@ -218,6 +224,48 @@ export const app = {
     this.paused = false;
     MUI.showMineHud(d);
     playMusic("battle");
+  },
+  /** boss rift: a timed 60-second dig with no shovel; the haul joins this run's rewards */
+  offerRift() {
+    const g = this.game;
+    if (!g || this.net) return;
+    this.paused = true;
+    UI.showMsg("梦境裂隙", "首领倒下时撕开了一道裂隙：<br>进入后有 <b>60 秒</b>限时挖宝（不消耗铲子，矿物更密集），时间到自动带出全部收获。", "进入裂隙", () => this.startRift());
+    const md = document.querySelector("#ui .modal:last-child .row");
+    if (md) md.appendChild(UI.btn("不了，直接结算", "gray small", () => {
+      document.querySelector("#ui .modal:last-child")?.remove();
+      this.paused = false;
+      if (!g.endless) g.victory();
+    }));
+  },
+  startRift() {
+    const m = load(), ms = mineState();
+    fx.clearAll();
+    const d = new Dive({ cid: this.me ? this.me.cid : m.sel, shovel: "cu", up: { ...ms.up }, fx, talents: m.talents, lite: { rows: 34, time: 60, rich: true } });
+    d.onEnd = (res) => setTimeout(() => this.endRift(d, res), 600);
+    this.dive = d;
+    this.paused = false;
+    MUI.showMineHud(d);
+  },
+  endRift(d, res) {
+    if (this.dive !== d) return;
+    const m = load(), ms = mineState(), g = this.game;
+    m.tokens += res.value;
+    ms.mats += res.mats;
+    ms.stars += res.stars;
+    save();
+    this.dive = null;
+    MUI.hideMineHud();
+    this.riftLoot = res;
+    if (!g) return MUI.showMineHub();
+    if (g.endless) {
+      // back to the corridor: the haul also feeds this run (coins and a power cube)
+      if (this.me) (this.me.coins += res.value), (this.me.cubes += 1);
+      UI.showHud(g, this.me);
+      UI.toast(`裂隙收获：💎${res.value} · 矿石 ${res.mats}${res.stars ? " · 星砂 " + res.stars : ""}`, 2600);
+      return;
+    }
+    g.victory();
   },
   endDive(d, res) {
     if (this.dive !== d) return;

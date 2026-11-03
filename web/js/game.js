@@ -6,6 +6,7 @@ import { sfx } from "./audio.js";
 import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
 
+export const RIFT_CHANCE = 0.25;
 export class Game {
   constructor({ mode = "solo", pvp = false, seed = (Math.random() * 1e9) | 0, fx, opt = {} }) {
     this.mode = mode; // solo | host | client
@@ -949,6 +950,13 @@ export class Game {
     this.phase = "clear";
     this.sound("clear");
     this.runStats.rooms = Math.max(this.runStats.rooms, this.roomIdx + 1);
+    // a boss sometimes leaves a 梦境裂隙: a 60-second dig (solo only)
+    if (this.room.kind === "boss" && this.mode === "solo" && Math.random() < RIFT_CHANCE) {
+      this.banner = { text: "梦境裂隙出现！", sub: "限时挖宝的机会", t: 2 };
+      this.vfx("arcane/portal", this.map.center.x, this.map.center.y + 8, { layer: "back", life: 3 });
+      this.after(1.8, () => this.onUi("rift"));
+      if (!this.endless) return;
+    }
     if (this.room.kind === "boss" && !this.endless) {
       this.after(2.5, () => this.victory());
       return;

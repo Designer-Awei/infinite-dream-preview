@@ -323,7 +323,7 @@ export class Dive {
         if (this.t[i] === T.AIR || this.t[i] === T.WATER || this.t[i] === T.BRICK) continue;
         const z = zoneAt(y);
         const depthK = (y - z.from) / (z.to - z.from);
-        if (r() < 0.06 + depthK * 0.025) {
+        if (r() < (0.06 + depthK * 0.025) * (this.lite && this.lite.rich ? 1.7 : 1)) {
           const ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
           const id = r.weighted(ids, (k) => ORES[k].zones[z.id]);
           const n = r.int(2, 5);
@@ -354,7 +354,7 @@ export class Dive {
     for (const z of ZONES) {
       const [a, b] = span(z);
       if (a >= b) continue;
-      const n = { pit: 3, cave: 4, sea: 4, ruin: 3 }[z.id];
+      const n = { pit: 3, cave: 4, sea: 4, ruin: 3 }[z.id] + (this.lite ? 2 : 0);
       for (let k = 0; k < n; k++) {
         const x = r.int(2, W - 3), y = r.int(Math.max(a, 5), b - 2), i = y * W + x;
         this.t[i] = T.CHEST;
