@@ -1143,3 +1143,16 @@ body.mining .tbtn .cd, body.mining .tbtn .ring { display: none !important; }
 .pv-cap.open .beam { height: 22%; }
 .pv-cap::after { z-index: 1; }
 .pv-cap.open::after { height: 190%; }
+/* capsule v5: lid stops at 45°; the bottom half's glowing opening gets the same dark outline as the shell */
+@keyframes lidDome {
+  0% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-38%) scaleY(.92); }
+  100% { transform: translateY(-71%) scaleY(.71); }
+}
+@keyframes lidIn {
+  0% { transform: translateY(0) scaleY(0); }
+  50% { transform: translateY(-19%) scaleY(.38); }
+  100% { transform: translateY(-35%) scaleY(.71); }
+}
+.pv-cap.open .beam { left: 0; width: 100%; box-sizing: border-box; border: 6px solid var(--ink); height: 24%;
+  background: radial-gradient(ellipse at 50% 50%, #fff 0%, #fff 35%, color-mix(in srgb, var(--c) 70%, #fff) 70%, var(--c) 100%); }
