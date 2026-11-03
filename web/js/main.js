@@ -427,6 +427,13 @@ function diveFrame(dt) {
   if (consume("pause")) app.pauseMd ? null : app.pause();
   const bomb = consume("skill"), beacon = consume("ult");
   consume("dash");
+  if (d.choice && !app.relicOpen) {
+    app.relicOpen = true;
+    MUI.showRelicPick(d, (id) => {
+      app.relicOpen = false;
+      if (app.dive === d) d.takeRelic(id);
+    });
+  }
   if (!app.paused) {
     d.update(dt, { mx: input.mx, my: input.my, atk: input.atk, bomb, beacon });
     fx.update(dt);

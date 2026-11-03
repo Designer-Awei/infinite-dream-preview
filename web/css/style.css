@@ -1156,3 +1156,15 @@ body.mining .tbtn .cd, body.mining .tbtn .ring { display: none !important; }
 }
 .pv-cap.open .beam { left: 0; width: 100%; box-sizing: border-box; border: 6px solid var(--ink); height: 24%;
   background: radial-gradient(ellipse at 50% 50%, #fff 0%, #fff 35%, color-mix(in srgb, var(--c) 70%, #fff) 70%, var(--c) 100%); }
+/* mine relics */
+.mhud .mrel { display: flex; gap: 3px; flex-wrap: wrap; max-width: 150px; pointer-events: auto; }
+.mhud .mrel:empty { display: none; }
+.mhud .mrel span { position: relative; width: 22px; height: 22px; border-radius: 5px; background: rgba(60, 30, 110, .75); box-shadow: 0 0 0 2px var(--ink), 0 0 6px #b07dff; display: grid; place-items: center; }
+.mhud .mrel span.curse { background: rgba(110, 20, 60, .8); box-shadow: 0 0 0 2px var(--ink), 0 0 6px #ff6ab0; }
+.mhud .mrel img { width: 18px; height: 18px; image-rendering: pixelated; }
+.mhud .mrel b { position: absolute; right: -4px; bottom: -5px; font-size: 9px; color: #fff; text-shadow: 0 0 2px #000, 0 0 2px #000; }
+.mres-rel { display: flex; align-items: center; gap: 4px; margin-top: 4px; font-size: 12px; }
+.mres-rel img { width: 22px; height: 22px; image-rendering: pixelated; }
+.relic-modal .c-desc { font-size: 12px; }
+body.mining .hud .keys { max-width: calc(100vw - 360px); }
+body.mining .b-skill .cdt, body.mining .b-ult .cdt { inset: auto -4px -4px auto; width: auto; height: auto; min-width: 0; line-height: 16px; display: block !important; transform: none; font-size: 12px; padding: 0 5px; box-shadow: 0 0 0 2px rgba(255,255,255,.35); }

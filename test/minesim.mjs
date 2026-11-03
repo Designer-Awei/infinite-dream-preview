@@ -34,6 +34,7 @@ const out = await p.evaluate(async () => {
         else if (hd && hd.need > d.drill) inp.mx = (Math.floor(t) % 6) < 3 ? 1 : -1; // go around hard rock
         else inp.my = 1;
       }
+      if (d.choice) d.takeRelic(d.choice.find((k) => k !== "greed") || d.choice[0]);
       d.update(dt, inp);
       t += dt;
     }

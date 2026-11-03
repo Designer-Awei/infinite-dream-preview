@@ -1,7 +1,7 @@
 // 梦境矿场 · one dive: a side-view vertical slice (搜 search · 打 fight · 撤 extract).
 // Dig down through 矿坑 / 洞穴 / 深海 / 遗迹, fill the bag, and get out: on the surface, at a lift, or with a beacon.
 // Dying keeps 30% of the bag, running out of power keeps 50%.
-import { MT, MW, MH, T, SOLID, HARD, ZONES, zoneAt, ORES, SHOVELS, MOBS, CHEST_STARS, DEPTH_STARS } from "./minedata.js";
+import { RELICS, MT, MW, MH, T, SOLID, HARD, ZONES, zoneAt, ORES, SHOVELS, MOBS, CHEST_STARS, DEPTH_STARS } from "./minedata.js";
 import { CHARS, ELEM, VIEW_W, VIEW_H } from "./data.js";
 import { A } from "./assets.js";
 import { rng, clamp, TAU } from "./util.js";
@@ -189,13 +189,14 @@ function tileArt(kind, zone, v, extra) {
     }
     case "chest": {
       base(zone.dirt);
-      const gold = extra === "star";
+      const gold = extra === "star", relic = extra === "relic";
       px(4, 7, 16, 13, "#1a1020");
-      px(5, 8, 14, 11, gold ? "#e0a020" : "#a8642e");
-      px(5, 8, 14, 4, gold ? "#ffd84a" : "#c88048");
+      px(5, 8, 14, 11, gold ? "#e0a020" : relic ? "#6a3cc0" : "#a8642e");
+      px(5, 8, 14, 4, gold ? "#ffd84a" : relic ? "#a878ff" : "#c88048");
       px(5, 12, 14, 1, "#1a1020");
-      px(11, 11, 3, 4, gold ? "#fff6c0" : "#ffd84a");
+      px(11, 11, 3, 4, gold ? "#fff6c0" : relic ? "#7dffe8" : "#ffd84a");
       if (gold) speck(["#ffffff", "#ffe8a0"], 4, 1);
+      if (relic) speck(["#ffffff", "#e0c8ff"], 4, 1);
       break;
     }
     case "bg": {
@@ -225,7 +226,9 @@ export class Dive {
     this.rows = this.lite ? this.lite.rows + 2 : MH;
     this.t = new Uint8Array(MW * this.rows);
     this.ore = {}; // index -> ore id
-    this.chest = {}; // index -> "plain" | "star"
+    this.chest = {}; // index -> "plain" | "star" | "relic"
+    this.rel = {}; // relic id -> stacks
+    this.choice = null; // relic ids on offer (the dive pauses until one is taken)
     this.revealed = new Uint8Array(MW * this.rows);
     this.mobs = [];
     this.bullets = [];
@@ -361,6 +364,19 @@ export class Dive {
         this.chest[i] = "plain";
       }
     }
+    // relic chests: one per zone reached (the rift gets one)
+    for (const z of ZONES) {
+      const [a, b] = span(z);
+      if (a >= b || b - a < 6) continue;
+      for (let tries = 0; tries < 20; tries++) {
+        const x = r.int(2, W - 3), y = r.int(Math.max(a + 2, 6), b - 2), i = y * W + x;
+        if (this.t[i] === T.CHEST || this.t[i] === T.BEDROCK || this.t[i] === T.SEAL || [28, 58, 88].some((L) => y >= L - 3 && y <= L + 1)) continue;
+        this.t[i] = T.CHEST;
+        this.chest[i] = "relic";
+        break;
+      }
+      if (this.lite) break;
+    }
     // gold shovel: a 星图 chest guaranteed in the ruins
     if (this.o.shovel === "au" && !this.lite) {
       const y = r.int(100, H - 4), x = r.int(3, W - 4), i = y * W + x;
@@ -421,6 +437,7 @@ export class Dive {
   }
   addStars(n, x, y) {
     if (!n) return;
+    if (this.rel.compass) n = Math.ceil(n * 1.5);
     this.stars += n;
     this.text(x, y - 22, `+${n} 星砂`, "#ffd84a", n >= 10 ? 1.3 : 1);
     if (n >= 10) sfx("ssr");
@@ -433,6 +450,12 @@ export class Dive {
     }
     this.bag.push(id);
     if (ORES[id].s) this.addStars(ORES[id].s, x, y);
+    if (this.rel.lucky && !this._lucky && id !== "coinbag" && this.r.chance(0.3 * this.rel.lucky)) {
+      this._lucky = true;
+      this.text(x, y - 24, "幸运！", "#7dffb0");
+      this.addLoot(id, x, y - 8);
+      this._lucky = false;
+    }
     this.text(x, y - 10, "+" + ORES[id].name, ORES[id].col[1]);
     sfx("coin", 0.05);
   }
@@ -468,6 +491,16 @@ export class Dive {
     const r = this.r, row = Math.floor(i / MW), z = zoneAt(row);
     this.spawnFx("pickups/chest-open", x, y + 8, {});
     sfx("pickup");
+    if (kind === "relic") {
+      const pool = Object.keys(RELICS).filter((k) => (this.rel[k] || 0) < RELICS[k].max);
+      const ids = r.shuffle(pool).slice(0, 3);
+      if (ids.length) {
+        this.choice = ids;
+        this.spawnFx("pickups/loot-beam", x, y + 8, { life: 1.5 });
+        this.text(x, y - 18, "梦境遗物！", "#d8a8ff", 1.3);
+        return;
+      }
+    }
     const ids = Object.keys(ORES).filter((k) => ORES[k].zones[z.id]);
     const n = kind === "star" ? 4 : r.int(2, 4);
     for (let k = 0; k < n; k++) this.addLoot(r.weighted(ids, (q) => ORES[q].zones[z.id] * (ORES[q].v + 2)), x, y - k * 8);
@@ -475,6 +508,21 @@ export class Dive {
     const [a, b] = CHEST_STARS[kind === "star" ? "star" : z.id];
     this.addStars(r.int(a, b), x, y);
     if (kind === "star") this.spawnFx("pickups/loot-beam", x, y + 8, { life: 2 });
+  }
+  /** take one relic from the current offer */
+  takeRelic(id) {
+    if (!this.choice || !this.choice.includes(id)) return;
+    this.choice = null;
+    this.rel[id] = (this.rel[id] || 0) + 1;
+    const p = this.p;
+    if (id === "cell") (p.maxE += 40), (p.energy = p.maxE);
+    if (id === "pocket") this.bagCap += 6;
+    if (id === "heart") (p.maxHp += 1), (p.hp = p.maxHp);
+    if (id === "tnt") p.bombs += 3;
+    if (id === "beacon") p.beacons += 1;
+    this.text(p.x, p.y - PH - 16, RELICS[id].name, RELICS[id].curse ? "#ff9ad0" : "#d8a8ff", 1.2);
+    this.spawnFx("spawn/respawn-beam", p.x, p.y, { life: 0.8 });
+    sfx("card");
   }
   checkFall(c, r) {
     if (this.get(c, r) !== T.BOULDER || this.get(c, r + 1) !== T.AIR) return;
@@ -487,7 +535,7 @@ export class Dive {
   // ---------------------------------------------------------------- update
   /** inp: { mx, my, atk, bomb, beacon } */
   update(dt, inp) {
-    if (this.ended) return;
+    if (this.ended || this.choice) return;
     this.time += dt;
     const p = this.p;
     p.anim += dt;
@@ -517,7 +565,7 @@ export class Dive {
       if (up && p.energy > 0 && !(p.dig && p.dig.dir === "up")) {
         p.vy -= 1500 * dt;
         p.jet = true;
-        p.energy = Math.max(0, p.energy - 3.2 * dt);
+        p.energy = Math.max(0, p.energy - 3.2 * dt * (this.rel.feather ? 0.5 : 1));
         if (Math.random() < 0.7) this.parts.push({ x: p.x - p.face * 4 + (Math.random() - 0.5) * 4, y: p.y - 4, vx: (Math.random() - 0.5) * 30, vy: 80 + Math.random() * 60, t: 0.25, col: Math.random() < 0.5 ? "#ffd84a" : "#ff7a2a", s: 2, glow: true });
       }
       p.vy = clamp(p.vy, -170, 420);
@@ -527,7 +575,7 @@ export class Dive {
     this.moveP(0, p.vy * dt);
     // ---- oxygen
     if (headWet) {
-      p.o2 -= dt;
+      p.o2 -= dt * (this.rel.gill ? 0.4 : 1);
       if (p.o2 <= 0) {
         p.o2 = 0;
         p.drownT = (p.drownT || 0) + dt;
@@ -555,7 +603,7 @@ export class Dive {
         p.dig = null;
       } else {
         if (!p.dig || p.dig.c !== tgt.c || p.dig.r !== tgt.r) p.dig = { ...tgt, k: 0 };
-        p.dig.k += (dt * this.power) / hd.h;
+        p.dig.k += (dt * this.power * (1 + 0.4 * (this.rel.drill || 0))) / hd.h;
         if (tgt.dir === "down") p.x += (tgt.c * MT + MT / 2 - p.x) * Math.min(1, dt * 10);
         if (Math.random() < dt * 14) this.parts.push({ x: tgt.c * MT + MT / 2 + (Math.random() - 0.5) * 18, y: tgt.r * MT + (tgt.dir === "down" ? 2 : MT / 2), vx: (Math.random() - 0.5) * 90, vy: -60 - Math.random() * 60, t: 0.35, col: "#e8dcc0", s: 1 });
         if (p.dig.k >= 1) {
@@ -576,7 +624,7 @@ export class Dive {
       const ox = p.x, oy = p.y - PH / 2 - 2;
       const a = best ? Math.atan2(best.y - oy, best.x - ox) : p.face > 0 ? 0 : Math.PI;
       if (best) p.face = Math.cos(a) >= 0 ? 1 : -1;
-      this.bullets.push({ x: ox, y: oy, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, t: 0.6, dmg: p.atkDmg, col: ELEM[p.elem].glow });
+      this.bullets.push({ x: ox, y: oy, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, t: 0.6, dmg: p.atkDmg * (1 + 0.6 * (this.rel.blade || 0)), col: ELEM[p.elem].glow });
       p.atkCd = 0.28;
       sfx("shoot_" + p.elem, 0.06);
     }
@@ -678,6 +726,12 @@ export class Dive {
   hurt(n, why) {
     const p = this.p;
     if (p.inv > 0 || this.ended) return;
+    if (this.rel.rock && (why === "落石" || why === "中毒" || why === "炸伤")) {
+      p.inv = 0.5;
+      this.text(p.x, p.y - PH - 12, "坚岩之肤", "#c8d8ff");
+      return;
+    }
+    if (this.rel.greed) n += 1;
     p.hp -= n;
     p.inv = 0.9;
     p.hurtT = 0.3;
@@ -787,8 +841,9 @@ export class Dive {
       else (b.vy = 0), (b.vx *= 0.8);
       if (b.t <= 0) {
         const c0 = Math.floor(b.x / MT), r0 = Math.floor(b.y / MT);
-        for (let r = r0 - 1; r <= r0 + 1; r++) for (let c = c0 - 1; c <= c0 + 1; c++) this.breakTile(c, r, true);
-        for (const m of [...this.mobs]) if (Math.hypot(m.x - b.x, m.y - b.y) < 44) this.hitMob(m, 40);
+        const br = this.rel.tnt ? 2 : 1;
+        for (let r = r0 - br; r <= r0 + br; r++) for (let c = c0 - br; c <= c0 + br; c++) this.breakTile(c, r, true);
+        for (const m of [...this.mobs]) if (Math.hypot(m.x - b.x, m.y - b.y) < 44 * br) this.hitMob(m, 40);
         if (Math.hypot(this.p.x - b.x, this.p.y - PH / 2 - b.y) < 34) this.hurt(2, "炸伤");
         this.spawnFx("explosions/dirt-explosion", b.x, b.y + 10, { life: 2 });
         this.shake = 10;
@@ -835,7 +890,7 @@ export class Dive {
     const kept = bag.slice(0, Math.round(bag.length * keep));
     const dz = DEPTH_STARS[zoneAt(Math.max(0, this.p.deepest - 1)).id] || 0;
     const stars = Math.floor((this.stars + dz) * keep);
-    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: kept.reduce((a, id) => a + ORES[id].v, 0), mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
+    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
     sfx(how === "dead" ? "lose" : "clear");
     this.onEnd && this.onEnd(this.ended);
   }
@@ -1102,7 +1157,7 @@ export class Dive {
       d.fillRect(x - cx - r, y - cy - r, r * 2, r * 2);
     };
     const p = this.p, z = zoneAt(Math.floor(p.y / MT));
-    hole(p.x, p.y - PH / 2, (z.light + (this.up.radar || 0)) * MT * (0.95 + 0.05 * Math.sin(this.time * 6)));
+    hole(p.x, p.y - PH / 2, (z.light + (this.up.radar || 0) + 2 * (this.rel.lamp || 0)) * MT * (0.95 + 0.05 * Math.sin(this.time * 6)));
     // glowing ores, lifts, explosions
     const r0 = Math.floor(cy / MT), r1 = r0 + Math.ceil(VIEW_H / MT) + 1, c0 = Math.max(0, Math.floor(cx / MT)), c1 = Math.min(MW - 1, c0 + Math.ceil(VIEW_W / MT) + 1);
     for (let r = Math.max(0, r0); r <= Math.min(this.rows - 1, r1); r++)
@@ -1110,6 +1165,7 @@ export class Dive {
         const i = r * MW + c;
         if (this.t[i] === T.ORE && ORES[this.ore[i]].light) hole(c * MT + 12, r * MT + 12, MT * 2.2, 0.8);
         if (this.t[i] === T.SEAL) hole(c * MT + 12, r * MT + 12, MT * 1.2, 0.5);
+        if (this.t[i] === T.CHEST && this.chest[i] === "relic") hole(c * MT + 12, r * MT + 12, MT * 1.6, 0.55 + 0.2 * Math.sin(this.time * 4));
       }
     for (const l of this.lifts) hole(l.c * MT + 12, l.r * MT, MT * 3, 0.85);
     for (const b of this.bombs) hole(b.x, b.y, 40, 0.6);

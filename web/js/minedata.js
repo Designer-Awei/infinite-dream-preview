@@ -89,3 +89,22 @@ export const MOBS = {
   ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 1, zones: { ruin: 3, sea: 1 } },
   skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 1, shoot: 2.4, zones: { ruin: 3 } },
 };
+
+// 梦境遗物: roguelike buffs found in relic chests (one per zone). Pick 1 of 3; they last for this dive only.
+// max = how many times it can stack
+export const RELICS = {
+  drill: { name: "狂热钻头", icon: "overclock", desc: "挖掘速度 +40%", max: 2 },
+  lamp: { name: "萤火矿灯", icon: "nova", desc: "视野 +2 格", max: 2 },
+  cell: { name: "备用电池", icon: "battery", desc: "电量上限 +40 并回满", max: 3 },
+  lucky: { name: "幸运十字镐", icon: "pick", desc: "挖到矿物时 30% 多得一块", max: 2 },
+  pocket: { name: "次元口袋", icon: "bag", desc: "背包 +6 格", max: 2 },
+  heart: { name: "守护之心", icon: "heart", desc: "生命上限 +1 并回满", max: 2 },
+  feather: { name: "羽毛喷气", icon: "wing", desc: "喷气耗电 -50%", max: 1 },
+  tnt: { name: "爆破专家", icon: "bomb", desc: "炸药 +3，爆炸范围扩大到 5×5", max: 1 },
+  compass: { name: "星砂罗盘", icon: "target", desc: "本次获得的星砂 +50%", max: 1 },
+  blade: { name: "矿工之刃", icon: "sword", desc: "攻击伤害 +60%", max: 2 },
+  gill: { name: "人鱼之鳃", icon: "elem_bubble", desc: "水下氧气消耗 -60%", max: 1 },
+  rock: { name: "坚岩之肤", icon: "shield", desc: "免疫落石、瓦斯与炸药伤害", max: 1 },
+  beacon: { name: "应急信标", icon: "beacon", desc: "撤离信标 +1", max: 2 },
+  greed: { name: "贪婪契约", icon: "coin", desc: "带出的 💎 +30%，但受到的伤害 +1", max: 1, curse: true },
+};

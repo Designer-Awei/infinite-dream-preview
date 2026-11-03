@@ -1,6 +1,6 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
 import { CHARS, GACHA, VIEW_H } from "./data.js";
-import { ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
+import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
 import { load, save, mineState, refreshFreeShovels } from "./save.js";
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
@@ -195,7 +195,7 @@ export function showMineHud(dive) {
   const cid = dive.o.cid;
   hud.innerHTML = `
    <div class="tl"><div class="face"><img src="assets/head_${cid}.png"></div>
-     <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar en"><i></i><span class="o1"></span></div><div class="bar ox"><i></i><span class="o1"></span></div></div></div>
+     <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar en"><i></i><span class="o1"></span></div><div class="bar ox"><i></i><span class="o1"></span></div><div class="mrel"></div></div></div>
    <div class="tc o1"><div class="depth"></div><div class="lite"></div></div>
    <div class="tr"><div class="bag o1"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
    <div class="gauge"><i class="me"></i></div>
@@ -264,6 +264,9 @@ export function updateMineHud(dive) {
     q(".bag", hud).innerHTML = `🎒 ${dive.bag.length}/${dive.bagCap}<small>💎${dive.bagValue()}</small>${dive.stars ? `<small class="fr">★${dive.stars}</small>` : ""}`;
     q(".bag", hud).classList.toggle("full", dive.bag.length >= dive.bagCap);
   });
+  set("rel", JSON.stringify(dive.rel), () => {
+    q(".mrel", hud).innerHTML = Object.entries(dive.rel).map(([id, n]) => `<span class="${RELICS[id].curse ? "curse" : ""}" title="${RELICS[id].name}：${RELICS[id].desc}"><img src="${iconURL(RELICS[id].icon, 2)}" alt="">${n > 1 ? `<b>${n}</b>` : ""}</span>`).join("");
+  });
   set("g", Math.round((p.y / MT / dive.rows) * 200), () => (q(".gauge .me", hud).style.top = clamp01(p.y / MT / dive.rows) * 100 + "%"));
   set("cnt", p.bombs + "|" + p.beacons, () => {
     document.querySelectorAll(".s-skill .cnt").forEach((n) => (n.textContent = p.bombs));
@@ -294,7 +297,8 @@ export function showMineResult(res, again, back) {
       <div class="res-gain"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
       <div class="res-chip o1"><span>矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1"><span>★ 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
-      ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}</div>
+      ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
+      ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
     <div class="res-r"><div class="mres-items">${Object.keys(counts).length ? Object.entries(counts).sort((a, b) => ORES[b[0]].v - ORES[a[0]].v).map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="muted">两手空空…</div>`}</div>
       <div class="res-stats"><div class="res-st"><span>到达深度</span><b class="outline">${res.depth}m</b></div><div class="res-st"><span>挖掘方块</span><b class="outline">${res.dug}</b></div><div class="res-st"><span>击败怪物</span><b class="outline">${res.kills}</b></div><div class="res-st"><span>剩余铲子</span><b class="outline">${ms.shovels.cu + ms.shovels.ag + ms.shovels.au}</b></div></div>
       <div class="row acts"></div></div></div>`;
@@ -303,4 +307,45 @@ export function showMineResult(res, again, back) {
   a.appendChild(btn(again ? "返回矿场" : "继续", "blue", back));
   uiRoot().appendChild(md);
   void m;
+}
+
+// ------------------------------------------------------------------ relic pick (pick 1 of 3; the dive waits)
+export function showRelicPick(dive, onPick) {
+  const md = el("div", "modal cards-modal relic-modal");
+  const touch = document.body.classList.contains("touchmode");
+  md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">梦境遗物</div><div class="cm-sub o1">三选一 · 只在本次下潜生效</div><div class="cards"></div><div class="muted cm-hint">${touch ? "点击选择" : "点击或按 1 / 2 / 3 选择"}</div></div>`;
+  const wrap = q(".cards", md), els = [];
+  dive.choice.forEach((id, i) => {
+    const r = RELICS[id], lv = dive.rel[id] || 0;
+    const d = el("div", "card2 " + (r.curse ? "SSR" : "SR"));
+    d.style.setProperty("--rc", r.curse ? "#ff6ab0" : "#b07dff");
+    d.style.animationDelay = i * 0.09 + "s";
+    const pips = r.max > 1 ? `<div class="c-pips">${Array.from({ length: r.max }, (_, k) => `<i class="${k < lv ? "on" : k === lv ? "new" : ""}"></i>`).join("")}</div>` : `<div class="c-pips one">唯一</div>`;
+    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${r.curse ? "诅咒" : "遗物"}</div><div class="c-art" style="--ac:${r.curse ? "#ff6ab0" : "#b07dff"}"><i class="c-rays"></i><img class="c-ico" src="${iconURL(r.icon, 4)}" alt=""></div><div class="c-body"><div class="c-name">${r.name}</div><div class="c-desc">${r.desc}</div>${pips}</div><div class="c-key">${i + 1}</div>`;
+    d.onclick = () => pick(id, d);
+    wrap.appendChild(d);
+    els.push(d);
+  });
+  let done = false;
+  function pick(id, d) {
+    if (done) return;
+    done = true;
+    removeEventListener("keydown", key);
+    md.classList.add("picking");
+    for (const o of els) o.classList.add(o === d ? "picked" : "dropped");
+    setTimeout(() => {
+      md.remove();
+      document.body.classList.remove("cards-open");
+      onPick(id);
+    }, 480);
+  }
+  function key(e) {
+    if (e.repeat) return;
+    const k = { Digit1: 0, Digit2: 1, Digit3: 2 }[e.code];
+    if (k != null && dive.choice[k]) pick(dive.choice[k], els[k]);
+  }
+  setTimeout(() => addEventListener("keydown", key), 350);
+  document.body.classList.add("cards-open");
+  uiRoot().appendChild(md);
+  sfx("card");
 }
