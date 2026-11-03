@@ -801,12 +801,12 @@ function pullSequence(screen, res) {
     machine.classList.remove("crank");
     // overlay
     const ov = el("div", "pull-ov");
-    ov.innerHTML = `<canvas class="pv-fx"></canvas><div class="pv-rays"></div><div class="pv-stage"><div class="pv-cap"><i class="top"></i><i class="bot"></i></div><div class="pv-hint outline">点击打开</div></div><div class="pv-cards"></div><div class="pv-foot"></div><button class="btn gray small pv-skip">跳过 ▶▶</button>`;
+    ov.innerHTML = `<canvas class="pv-fx"></canvas><div class="pv-rays"></div><div class="pv-stage"><div class="pv-cap"><i class="beam"></i><i class="top"></i><i class="bot"></i></div><div class="pv-hint outline">点击打开</div></div><div class="pv-cards"></div><div class="pv-foot"></div><button class="btn gray small pv-skip">跳过 ▶▶</button>`;
     uiRoot().appendChild(ov);
     const fx = particles(q(".pv-fx", ov));
     const cap = q(".pv-cap", ov), rays = q(".pv-rays", ov);
-    // the capsule shows the best rarity (SSR fakes out as SR first)
-    const shown = best === "SSR" ? "SR" : best;
+    // the capsule shows the best rarity of the pull right away (no colour switch later)
+    const shown = best;
     cap.style.setProperty("--c", RCOL[shown]);
     rays.style.setProperty("--c", RCOL[shown]);
     ov.classList.add("r-" + shown);
@@ -818,6 +818,7 @@ function pullSequence(screen, res) {
     setTimeout(() => sfx("coin"), 420);
     setTimeout(() => sfx("coin"), 700);
     await sleep(skip ? 0 : 950);
+    cap.classList.add("landed"); // stays centred from now on (no replay of the entry animation)
     // 2. wait for the tap (or skip)
     ov.classList.add("ready");
     if (!skip)
@@ -827,24 +828,19 @@ function pullSequence(screen, res) {
         const t = setInterval(() => skip && (clearInterval(t), r()), 100);
       });
     ov.classList.remove("ready");
-    if (best === "SSR" && !skip) {
-      // fake-out: the purple glow cracks into gold
+    // 3. open in place: it trembles (longer and with sparks for SR/SSR), the seam glows, then the halves part up/down
+    if (!skip) {
       cap.classList.add("shake");
-      await sleep(600);
-      cap.style.setProperty("--c", RCOL.SSR);
-      rays.style.setProperty("--c", RCOL.SSR);
-      ov.classList.remove("r-SR");
-      ov.classList.add("r-SSR");
-      sfx("ssr");
-      fx.burst(innerWidth / 2, innerHeight / 2, 60, ["#ffe36a", "#ffffff", "#ff9a2e"], "spark", 14);
-      await sleep(500);
+      if (best === "SSR") sfx("ssr");
+      if (best === "SSR" || best === "SR") fx.burst(innerWidth / 2, innerHeight / 2, best === "SSR" ? 60 : 30, ["#ffffff", RCOL[best]], "spark", best === "SSR" ? 14 : 10);
+      await sleep(best === "SSR" ? 700 : best === "SR" ? 450 : 250);
     }
-    // 3. open
     cap.classList.remove("shake");
     cap.classList.add("open");
+    ov.classList.add("flash");
     sfx("pickup");
     fx.burst(innerWidth / 2, innerHeight / 2, 40, ["#ffffff", RCOL[best]], "spark", 12);
-    await sleep(skip ? 0 : 320);
+    await sleep(skip ? 0 : 420);
     q(".pv-stage", ov).classList.add("gone");
     // 4. cards
     const wrap = q(".pv-cards", ov);
