@@ -810,7 +810,7 @@ function pullSequence(screen, res) {
     machine.classList.remove("crank");
     // overlay
     const ov = el("div", "pull-ov");
-    ov.innerHTML = `<canvas class="pv-fx"></canvas><div class="pv-rays"></div><div class="pv-stage"><div class="pv-cap"><i class="beam"></i><i class="top"></i><i class="bot"></i></div><div class="pv-hint outline">点击打开</div></div><div class="pv-cards"></div><div class="pv-foot"></div><button class="btn gray small pv-skip">跳过 ▶▶</button>`;
+    ov.innerHTML = `<canvas class="pv-fx"></canvas><div class="pv-rays"></div><div class="pv-stage"><div class="pv-cap"><i class="beam"></i><i class="top"></i><i class="lin"></i><i class="bot"></i></div><div class="pv-hint outline">点击打开</div></div><div class="pv-cards"></div><div class="pv-foot"></div><button class="btn gray small pv-skip">跳过 ▶▶</button>`;
     uiRoot().appendChild(ov);
     const fx = particles(q(".pv-fx", ov));
     const cap = q(".pv-cap", ov), rays = q(".pv-rays", ov);
