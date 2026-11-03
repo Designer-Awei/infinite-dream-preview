@@ -94,6 +94,8 @@ export function showLobby() {
     <div class="spacer"></div>
     <div class="pill o1"><span>👤</span><span class="pname"></span></div>
     <div class="pill o1"><div class="gem"></div><span class="tok">${m.tokens}</span></div>
+    <button class="btn small tb-ico net-btn t-net" title="联机对战"><span>👥</span><i class="o1">联机</i></button>
+    <button class="btn small tb-ico help-btn t-help" title="玩法说明"><span>📖</span><i class="o1">说明</i></button>
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
     <button class="btn gray small set-btn" title="设置">⚙</button>
   </div>
@@ -126,17 +128,17 @@ export function showLobby() {
   };
   // side tiles (Brawl Stars keeps shop / brawlers / social as square tiles)
   const tiles = q(".lb-tiles", s);
-  const tile = (icon, label, cls, fn, badge) => {
-    const t = el("button", "lb-tile " + cls, `<span class="ti">${icon}</span><span class="tl outline">${label}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
+  const tile = (icon, label, cls, fn, badge, sub = "") => {
+    const t = el("button", "lb-tile " + cls, `<span class="ti">${icon}</span><span class="tt"><span class="tl outline">${label}</span>${sub ? `<small class="o1">${sub}</small>` : ""}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
     t.onclick = () => (sfx("click"), fn());
     tiles.appendChild(t);
   };
-  tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 ? Math.min(99, pulls) : "");
+  tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 ? Math.min(99, pulls) : "", "抽天赋卡");
   const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au;
-  tile("⛏", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "");
+  tile("⛏", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "", "搜 · 打 · 撤");
   if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
-  tile("👥", "联机对战", "t-net", () => showNet());
-  tile("📖", "玩法说明", "t-help", () => showHelp());
+  q(".net-btn", s).onclick = () => (sfx("click"), showNet());
+  q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
   const play = q(".lb-play", s);
   const pb = btn(`<span class="pt">开始冒险</span>`, "big play-btn", () => {
     // launch: the hero leaps off the island, white wipe, then the run starts
