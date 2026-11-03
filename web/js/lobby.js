@@ -529,9 +529,28 @@ function showSettings() {
       save();
       ev.target.closest("button").innerHTML = `${label}：${m[key] ? "开" : "关"}`;
     });
-  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()));
+  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("联系作者", "pink", () => showContact()));
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
   md.onclick = (e) => e.target === md && md.remove();
+  uiRoot().appendChild(md);
+}
+
+/** the author's contact details (tap a line to copy it) */
+const CONTACT = [["Email", "1974379701@qq.com"], ["微信", "WZin9921"]];
+function showContact() {
+  const md = el("div", "modal");
+  md.innerHTML = `<div class="panel ct-p"><h2 class="outline">联系作者</h2>${CONTACT.map(([k, v]) => `<button class="ct-row" data-v="${v}"><span class="o1">${k}</span><b>${v}</b><small>点击复制</small></button>`).join("")}<div class="muted ct-tip">有建议或发现 bug，欢迎联系～</div></div>`;
+  md.querySelectorAll(".ct-row").forEach((b) => (b.onclick = async () => {
+    const v = b.dataset.v;
+    let ok = false;
+    try {
+      await navigator.clipboard.writeText(v);
+      ok = true;
+    } catch {}
+    toast(ok ? `已复制：${v}` : v);
+  }));
+  md.onclick = (e) => e.target === md && md.remove();
+  md.classList.add("bg-close");
   uiRoot().appendChild(md);
 }
 

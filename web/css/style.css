@@ -1516,3 +1516,17 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .mh-r .mq-b small { gap: 3px; padding: 0 6px; max-width: 100%; box-sizing: border-box; white-space: nowrap; }
 .mq-bar em, .mh-tab .qdot { text-shadow: 0 1px 0 rgba(10,4,24,.75); }
 .mh-tab .qdot { position: absolute; top: -5px; right: -5px; width: 12px; height: 12px; min-width: 0; padding: 0; margin: 0; border-radius: 50%; background: #ff3a5a; box-shadow: 0 0 0 2px var(--ink); font-size: 0; line-height: 0; }
+.play-btn { padding: 17px 10px 17px !important; line-height: 1; }
+/* settings: two toggles on top, 导出 / 导入 / 联系作者 below */
+.set-p { width: min(500px, 92vw); }
+.set-g { grid-template-columns: repeat(6, 1fr); }
+.set-g > .btn { grid-column: span 2; }
+.set-g > .btn:nth-child(-n+2) { grid-column: span 3; }
+.set-g .btn { font-size: 17px; white-space: nowrap; padding: 0 6px; }
+.ct-p { width: min(400px, 90vw); display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.ct-p h2 { margin: 0 0 2px; }
+.ct-row { font: inherit; display: flex; align-items: center; gap: 10px; padding: 8px 12px; color: #fff; border: 3px solid var(--ink); border-radius: 10px; background: rgba(10,6,30,.45); cursor: pointer; text-align: left; }
+.ct-row span { flex: none; width: 52px; color: #ffe36a; }
+.ct-row b { flex: 1; font-weight: normal; font-size: 17px; user-select: all; }
+.ct-row small { flex: none; font-size: 11px; color: #c8c0e8; }
+.ct-tip { font-size: 12px; }
