@@ -1187,3 +1187,8 @@ body.mining .b-skill .cdt, body.mining .b-ult .cdt { inset: auto -4px -4px auto;
 .rc.SR .rc-front { background: #d6b4ff; }
 .rc.SSR .rc-front { background: #ffd24a; }
 .rc-front .rr { align-self: stretch; margin: 0 -1vmin; border-radius: 0; padding: .5vmin 0; border-bottom: 3px solid var(--ink); background: var(--c); }
+/* card rarity: a bigger pill at the top, no divider line */
+.rc-front .rr { align-self: center; margin: 0; border: 0; border-radius: 999px; padding: .2vmin 2.2vmin; font-size: 3.6vmin; box-shadow: 0 0 0 3px var(--ink); }
+.pv-cards:not(.ten) .rc-front .rr { font-size: 4.4vmin; }
+.pv-cards.ten .rc-front .rr { font-size: 2.8vmin; padding: .1vmin 1.6vmin; }
+.pvm-card .rc-front .rr { font-size: 4.4vmin; }
