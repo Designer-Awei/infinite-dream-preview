@@ -620,7 +620,8 @@ function cleanKit(k) {
     const lv = Math.max(0, Math.min(it.max, Math.floor(+((it.eq ? k.eq : k.tal) || {})[it.id] || 0)));
     if (lv) (it.eq ? out.eq : out.tal)[it.id] = lv;
   }
-  if (Object.keys(out.eq).length > LOADOUT_SLOTS) out.eq = {};
+  out.core = k.core ? 1 : 0;
+  if (Object.keys(out.eq).length > LOADOUT_SLOTS + out.core) out.eq = {};
   out.cards = Array.isArray(k.cards) ? k.cards.filter((c) => typeof c === "string").slice(0, 40) : [];
   return out;
 }

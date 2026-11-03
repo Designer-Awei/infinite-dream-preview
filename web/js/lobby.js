@@ -1,7 +1,7 @@
 // Lobby (Brawl Stars-style home: hero on a stage in the middle, info on the left, play button bottom-right)
 // and the capsule gacha with a staged pull sequence (crank → capsule → open → card flips → summary).
 import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS } from "./data.js";
-import { load, save, unlockProgress, pull, checkUnlocks, loadoutOf, setLoadout, exportSave, parseSave, importSave } from "./save.js";
+import { load, save, unlockProgress, pull, checkUnlocks, loadoutOf, setLoadout, exportSave, parseSave, importSave, mineState } from "./save.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
@@ -131,6 +131,8 @@ export function showLobby() {
     tiles.appendChild(t);
   };
   tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 ? Math.min(99, pulls) : "");
+  const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au;
+  tile("⛏", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "");
   tile("👥", "联机对战", "t-net", () => showNet());
   tile("📖", "玩法说明", "t-help", () => showHelp());
   const play = q(".lb-play", s);
@@ -230,7 +232,7 @@ function renderHero(s, id, swap) {
   info.classList.add("refresh");
   info.innerHTML = `
     <div class="li-head"><div class="li-name outline">${c.name}</div><div class="li-title o1"><span>「${c.title}」</span><button class="li-kit" title="天赋装配">${loadoutOf(id).map((t) => `<i class="ks${t ? " on" : ""}">${t ? `<img src="${iconURL(t, 1)}" alt="">` : "+"}</i>`).join("")}<span class="o1">天赋</span></button></div>
-      <div class="li-chips o1"><span class="chip el-chip" style="background:${e.color}"><img src="${iconURL("elem_" + c.elem, 1)}" alt="">${e.name}元素</span><span class="chip role">${c.role}</span><button class="li-more">详情</button></div></div>
+      <div class="li-chips o1"><span class="chip el-chip" style="background:${e.color}"><img src="${iconURL("elem_" + c.elem, 1)}" alt="">${e.name}元素</span><span class="chip role">${c.role}</span>${(load().cores || {})[id] ? `<span class="chip core-chip">梦核</span>` : ""}<button class="li-more">详情</button></div></div>
     <div class="li-bars o1">
       ${bar("生命", c.hp, 7, "linear-gradient(90deg,#ff8a9a,#ff3a5a)")}
       ${bar("护盾", c.shield, 6, "linear-gradient(90deg,#e0ecff,#8aa8ff)")}
@@ -278,7 +280,7 @@ export function showLoadout(cid, onClose) {
   const passive = GACHA.pool.filter((it) => !it.eq && !it.card && m.talents[it.id]);
   // built once; taps only update the slots and the card states in place (no re-render, no flicker)
   md.innerHTML = `<div class="panel kit-panel">
-    <div class="kit-head"><img class="kit-face" src="assets/head_${cid}.png" alt=""><div><h2 class="outline">天赋装配 · ${c.short}</h2><div class="kit-sub o1">每个角色一页 · ${LOADOUT_SLOTS} 个 SSR 槽位 · PVE 与 PVP 都生效</div></div><button class="btn gray small x-btn">完成</button></div>
+    <div class="kit-head"><img class="kit-face" src="assets/head_${cid}.png" alt=""><div><h2 class="outline">天赋装配 · ${c.short}</h2><div class="kit-sub o1">每个角色一页 · ${page.length} 个 SSR 槽位${page.length > LOADOUT_SLOTS ? "（梦核）" : " · 梦核可开第 3 槽"} · PVE 与 PVP 都生效</div></div><button class="btn gray small x-btn">完成</button></div>
     <div class="kit-body">
       <div class="kit-l">
         <div class="kit-slots">${page.map((_, i) => `<button class="kslot" data-i="${i}"><span class="kn o1">槽位 ${i + 1}</span><span class="ks-in"></span></button>`).join("")}</div>
@@ -649,6 +651,13 @@ export function showGacha() {
     feat.appendChild(fc);
   }
   q(".gp-poolbtn", s).onclick = () => (sfx("click"), showPool());
+  // 兑换卡 from 梦境工坊: pick any SSR that isn't maxed
+  const exc = mineState().cards;
+  if (exc) {
+    const eb = el("button", "gp-poolbtn gp-exbtn o1", `<img src="${iconURL("cardgold", 2)}" alt=""><span>兑换卡 ×${exc}</span>`);
+    eb.onclick = () => (sfx("click"), import("./mineui.js").then((M) => M.showExchange(() => showGacha())));
+    q(".gp-head", s).appendChild(eb);
+  }
   const pity = q(".gp-pity", s);
   pity.innerHTML = `<div class="pb"><span>SSR 保底</span><div class="st"><i style="width:${(m.pity / GACHA.pity) * 100}%;background:linear-gradient(90deg,#ffe36a,#ff9a2e)"></i></div><span>${m.pity}/${GACHA.pity}</span></div>
     <div class="pb"><span>SR 保底</span><div class="st"><i style="width:${Math.min(10, m.pity10) * 10}%;background:linear-gradient(90deg,#e0b0ff,#a060ff)"></i></div><span>${Math.min(10, m.pity10)}/10</span></div>

@@ -6,7 +6,10 @@ import { Renderer } from "./render.js";
 import { Game } from "./game.js";
 import { input, initInput, consume } from "./input.js";
 import { initAudio, playMusic, sfx, setSound, setMusic } from "./audio.js";
-import { load, save, checkUnlocks, makeKit } from "./save.js";
+import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
+import { Dive } from "./mine.js";
+import * as MUI from "./mineui.js";
+import { SHOVELS } from "./minedata.js";
 import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
@@ -30,6 +33,7 @@ function resize() {
       renderer.cam = old.cam;
     }
     if (app.game) app.game.fx = fx;
+    if (app.dive) app.dive.fx = fx;
   }
   const s = Math.min(W / vw, H / VIEW_H);
   // prefer integer scaling when it costs little space
@@ -162,6 +166,12 @@ export const app = {
     if (rs.boss) m.stats.bossKills++;
     save();
     const unl = checkUnlocks();
+    // 梦境矿场 shovels: a boss always drops one; a decent run sometimes gives a copper one
+    const drop = rollShovel(rs);
+    if (drop) {
+      mineState().shovels[drop]++;
+      save();
+    }
     sfx(win ? "win" : "lose");
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const extras = [];
@@ -173,6 +183,7 @@ export const app = {
     if (endless && rs.rooms > prevBest) extras.push(["无尽新纪录", rs.rooms + " 层"]);
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
+    if (drop) extras.push(["⛏ 梦境矿场", "获得" + SHOVELS[drop].name]);
     const title = endless ? `无尽回廊 · 第 ${rs.rooms} 层` : win ? "通关！幻觉已破除" : "倒下了…";
     const sub = endless ? (rs.rooms > prevBest ? "刷新了最佳纪录！" : `最佳纪录 ${Math.max(prevBest, rs.rooms)} 层`) : win ? `${CHARS[this.me.cid].name} 击败了${md.name}的幻觉之眼` : "再接再厉，构筑会更强！";
     UI.showResult({ title, sub, rows, extras, tokens, win: win || (endless && rs.rooms > prevBest), cid: this.me.cid },
@@ -192,6 +203,36 @@ export const app = {
     const unit = g.pvpRule.koScore ? " 击倒" : " 分";
     UI.showResult({ title: mine ? "胜利！" : `${w ? w.name : "对手"} 获胜`, sub: "竞技场 · " + g.pvpRule.name, rows: g.players.map((p) => [p.name + "（" + CHARS[p.cid].short + "）", (g.pvpScore[p.id] || 0) + unit]), tokens, win: mine, cid: (w || this.me).cid }, null, () => this.toLobby());
   },
+  // ---------------------------------------------------------- 梦境矿场
+  startDive({ shovel }) {
+    const m = load(), ms = mineState();
+    if (!ms.shovels[shovel]) return;
+    ms.shovels[shovel]--;
+    ms.dives++;
+    save();
+    fx.clearAll();
+    const d = new Dive({ cid: m.chars.includes(m.sel) ? m.sel : "deepseek", shovel, up: { ...ms.up }, fx, talents: m.talents });
+    d.onEnd = (res) => setTimeout(() => this.endDive(d, res), res.how === "dead" ? 1100 : 500);
+    this.dive = d;
+    this.diveShovel = shovel;
+    this.paused = false;
+    MUI.showMineHud(d);
+    playMusic("battle");
+  },
+  endDive(d, res) {
+    if (this.dive !== d) return;
+    const m = load(), ms = mineState();
+    m.tokens += res.value;
+    ms.mats += res.mats;
+    ms.stars += res.stars;
+    res.record = res.depth > ms.best;
+    ms.best = Math.max(ms.best, res.depth);
+    save();
+    this.dive = null;
+    MUI.hideMineHud();
+    const sh = this.diveShovel, again = ms.shovels[sh] ? () => this.startDive({ shovel: sh }) : null;
+    MUI.showMineResult(res, again, () => MUI.showMineHub());
+  },
   toLobby() {
     this.game = null;
     this.me = null;
@@ -199,6 +240,19 @@ export const app = {
     showLobby();
   },
   pause() {
+    if (this.dive && !this.pauseMd) {
+      this.paused = true;
+      this.pauseMd = UI.showPause(null, {
+        resume: () => ((this.paused = false), (this.pauseMd = null)),
+        quit: () => {
+          this.paused = false;
+          this.pauseMd = null;
+          this.dive && this.dive.finish("dead");
+        },
+        quitLabel: "放弃下潜（只带回 30%）",
+      });
+      return;
+    }
     if (!this.game || this.pauseMd) return;
     if (!this.net) this.paused = true;
     this.pauseMd = UI.showPause(this.game, {
@@ -266,6 +320,7 @@ function frame(now) {
   requestAnimationFrame(frame);
   let dt = Math.min(0.05, (now - last) / 1000);
   last = now;
+  if (app.dive) return diveFrame(dt);
   const g = app.game;
   if (!g) {
     renderer.g.setTransform(RS, 0, 0, RS, 0, 0);
@@ -317,6 +372,30 @@ function frame(now) {
     app.hudT = 0.06;
     UI.updateHud(g, me);
   }
+}
+
+function diveFrame(dt) {
+  const d = app.dive;
+  if (consume("pause")) app.pauseMd ? null : app.pause();
+  const bomb = consume("skill"), beacon = consume("ult");
+  consume("dash");
+  if (!app.paused) {
+    d.update(dt, { mx: input.mx, my: input.my, atk: input.atk, bomb, beacon });
+    fx.update(dt);
+  }
+  d.draw(renderer.g, RS);
+  app.hudT -= dt;
+  if (app.hudT <= 0) {
+    app.hudT = 0.08;
+    MUI.updateMineHud(d);
+  }
+}
+/** shovel drop at the end of a run */
+function rollShovel(rs) {
+  const r = Math.random();
+  if (rs.boss) return r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu";
+  if (rs.rooms >= 3 && r < 0.4) return "cu";
+  return null;
 }
 
 // ------------------------------------------------------------ boot

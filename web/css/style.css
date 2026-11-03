@@ -1026,3 +1026,85 @@ body.touchmode .c-key { display: none; }
 .pv-cap.open .top { transform: translateY(-85%); }
 .pv-cap.open .bot { transform: translateY(85%); }
 .pv-cap .top, .pv-cap .bot { transition: transform .35s cubic-bezier(.2,1.3,.4,1), background .3s; }
+
+/* ================= 梦境矿场 ================= */
+.lb-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; }
+.lb-tile .tl { font-size: clamp(9px, 1.3vw, 14px) !important; }
+.t-mine { background: linear-gradient(180deg, #ffc27a, #c8642a); }
+/* hub */
+.mine-hub { background: radial-gradient(110% 90% at 30% 30%, #8a5a3a 0%, #4a2e2a 45%, #1e1426 100%); overflow: hidden; }
+.mine-hub .pill .pi { width: 18px; height: 18px; image-rendering: pixelated; }
+.mine-hub .cardpill { cursor: pointer; }
+.mh-l, .mh-r { position: absolute; top: calc(max(8px, env(safe-area-inset-top)) + 58px); bottom: max(10px, env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: 8px; z-index: 2; }
+.mh-l { left: max(14px, env(safe-area-inset-left)); width: 44%; }
+.mh-r { right: max(14px, env(safe-area-inset-right)); width: 50%; }
+.mh-h { font-size: 13px; color: var(--y1); }
+.mh-shovels { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.mshv { position: relative; font: inherit; color: var(--ink); cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 4px; border: 3px solid var(--ink); border-radius: 12px; background: linear-gradient(180deg, #fff6e0, #e8c890); box-shadow: 0 4px 0 var(--ink); }
+.mshv img { width: 42px; height: 42px; image-rendering: pixelated; }
+.mshv b { font-weight: normal; font-size: 14px; }
+.mshv small { font-size: 10px; line-height: 1.3; text-align: center; opacity: .8; }
+.mshv .n { position: absolute; top: -8px; right: -6px; font-size: 12px; padding: 0 6px; border-radius: 8px; background: #ff7a2a; color: #fff; border: 2px solid var(--ink); }
+.mshv.on { outline: 3px solid #7dffb0; outline-offset: 2px; background: linear-gradient(180deg, #fffbe8, #ffd88a); }
+.mshv.none { filter: grayscale(.8) brightness(.75); }
+.mshv:active { transform: translateY(2px); }
+.mh-free { font-size: 11px; color: #f0e0d0; }
+.mh-go { margin-top: auto; font-size: clamp(20px, 2.8vw, 32px) !important; padding: 10px !important; }
+.mh-go:disabled { filter: grayscale(.7) brightness(.8); }
+.mh-rec { font-size: 11px; text-align: center; color: #e8d8c8; }
+.mh-ups { display: flex; flex-direction: column; gap: 5px; overflow: auto; min-height: 0; padding-right: 2px; }
+.mup { display: flex; align-items: center; gap: 8px; padding: 5px 8px; border: 3px solid var(--ink); border-radius: 10px; background: rgba(20,10,30,.6); }
+.mu-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.mu-t b { font-weight: normal; font-size: 13px; color: #fff; } .mu-t b small { color: var(--y1); font-size: 11px; }
+.mu-t span { font-size: 10.5px; color: #d8c8e8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mu-b { flex: none; display: flex; flex-direction: column; gap: 0 !important; padding: 2px 10px 4px !important; line-height: 1.1; }
+.mu-b small { font-size: 10px; }
+.mu-max { font-size: 11px; color: #7dffb0; flex: none; }
+@media (max-height: 420px) {
+  .mh-l, .mh-r { top: calc(max(6px, env(safe-area-inset-top)) + 46px); }
+  .mshv img { width: 32px; height: 32px; } .mshv small { display: none; } .mshv b { font-size: 12px; }
+  .mup { padding: 3px 6px; } .mu-t b { font-size: 12px; }
+}
+/* dive HUD */
+body.mining .b-dash, body.mining .s-dash { display: none !important; }
+.mhud .bars .bar.en i { background: linear-gradient(90deg, #ffe36a, #ffb020); }
+.mhud .bars .bar.ox i { background: linear-gradient(90deg, #a8f0ff, #3ab8ff); }
+.mhud .bars .bar.low { animation: pulse .6s infinite; }
+.mhud .bars { display: flex; flex-direction: column; gap: 3px; }
+.mhud .bar.hp i { background: linear-gradient(90deg, #ff8a9a, #ff3a5a); }
+.mhud .face { width: 44px; height: 44px; border: 3px solid var(--ink); border-radius: 10px; overflow: hidden; background: #3a4ac0; }
+.mhud .face img { width: 100%; height: 100%; object-fit: cover; }
+.mhud .tc .depth { font-size: 15px; padding: 2px 12px; border-radius: 10px; background: rgba(10,6,24,.6); border: 2px solid var(--ink); }
+.mhud .tc .lite { font-size: 12px; color: #ff9a8a; }
+.mhud .bag { font-size: 13px; padding: 3px 10px; border-radius: 10px; background: rgba(10,6,24,.65); border: 2px solid var(--ink); display: flex; gap: 6px; align-items: baseline; }
+.mhud .bag small { font-size: 11px; color: #9affff; } .mhud .bag .fr { color: #ffd84a; }
+.mhud .bag.full { border-color: #ff5a5a; color: #ffb0b0; }
+.mhud .gauge { position: absolute; right: max(10px, env(safe-area-inset-right)); top: 60px; height: 34%; width: 10px; border: 2px solid var(--ink); border-radius: 5px; background: #1a1020; overflow: visible; }
+.mhud .gauge .band { position: absolute; left: 0; right: 0; }
+.mhud .gauge .band.pit { background: #a8743e; } .mhud .gauge .band.cave { background: #6a5a9a; } .mhud .gauge .band.sea { background: #2a7ab0; } .mhud .gauge .band.ruin { background: #b08a4a; }
+.mhud .gauge .seal { position: absolute; left: -4px; right: -4px; height: 3px; background: #c8a0ff; box-shadow: 0 0 4px #c8a0ff; }
+.mhud .gauge .lift { position: absolute; left: -5px; width: 4px; height: 4px; background: #7dffb0; }
+.mhud .gauge .me { position: absolute; left: -6px; width: 18px; height: 4px; margin-top: -2px; background: #fff; border: 1px solid var(--ink); transition: top .1s; }
+.mhud .pcs .cnt { position: absolute; top: -4px; left: -4px; font-size: 11px; font-weight: normal; background: #1a1020; color: #fff; border-radius: 6px; padding: 0 4px; }
+.b-skill.empty, .b-ult.empty, .s-skill.empty, .s-ult.empty { filter: grayscale(.9) brightness(.7); }
+body.mining .b-skill .cdt, body.mining .b-ult .cdt { display: block !important; position: absolute; bottom: -2px; right: -2px; font-size: 12px; color: #fff; background: #1a1020; border-radius: 6px; padding: 0 4px; }
+body.mining .hud .keys { font-size: 10.5px; }
+@media (max-height: 420px) { .mhud .bar { width: 120px; height: 12px; } .mhud .bar span { font-size: 9px; line-height: 9px; } .mhud .face { width: 36px; height: 36px; } }
+/* results */
+.mres-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 5px; overflow: auto; max-height: 40vh; }
+.mri { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 8px; background: rgba(10,6,30,.4); font-size: 12px; }
+.mri img { width: 16px; height: 16px; image-rendering: pixelated; } .mri b { margin-left: auto; color: var(--y1); font-weight: normal; }
+.ex-panel { width: min(820px, 96vw); max-height: 94vh; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; }
+.ex-panel .kit-list { overflow: auto; }
+body.mining .tbtn .cd, body.mining .tbtn .ring { display: none !important; }
+.core-chip { background: linear-gradient(90deg, #ffd84a, #ff7cc8) !important; color: #3a1a40; flex: none; }
+.mh-tabs { display: flex; gap: 6px; }
+.mh-tab { font: inherit; font-size: 13px; padding: 4px 12px; border-radius: 10px 10px 0 0; border: 3px solid var(--ink); border-bottom: 0; background: #3a2a4a; color: #d8c8e8; cursor: pointer; position: relative; }
+.mh-tab.on { background: linear-gradient(180deg, #ffe680, #ffb43a); color: #3a2400; }
+.mh-tab i { font-style: normal; font-size: 10px; margin-left: 4px; padding: 0 4px; border-radius: 5px; background: #ff7cc8; color: #fff; }
+.ws-i { width: 34px; height: 34px; image-rendering: pixelated; flex: none; }
+.ws-i.core { border-radius: 50%; border: 2px solid #ffd84a; box-shadow: 0 0 10px #ffd84a; image-rendering: auto; object-fit: cover; background: #3a4ac0; }
+.mup.ws.ws-core { border-color: #ffd84a; background: linear-gradient(90deg, rgba(90,40,90,.75), rgba(20,10,30,.6)); }
+.ws-note { font-size: 11px; color: #e8d8c8; padding: 2px 2px; }
+.ws-note .ws-use { color: #7dffb0; cursor: pointer; font-weight: normal; }
+.kit-slots { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)) !important; } .gp-exbtn { background: linear-gradient(180deg, #a8ffcc, #3ad07a) !important; }

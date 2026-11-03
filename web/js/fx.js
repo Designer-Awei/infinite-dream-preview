@@ -16,7 +16,7 @@ export const FX_IDS = [
   "pickups/collect-burst", "pickups/loot-beam", "pickups/chest-open",
   "ui/confetti", "impacts/hit-spark", "impacts/crit-hit", "impacts/shield-block",
   "status/burning", "status/slowed", "status/stunned", "status/haste", "status/frozen", "status/poisoned",
-  "ice/frost-nova", "scifi/force-field", "explosions/cartoon-pow",
+  "ice/frost-nova", "scifi/force-field", "explosions/cartoon-pow", "explosions/dirt-explosion",
 ];
 
 const mods = {};

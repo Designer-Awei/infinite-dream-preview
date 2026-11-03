@@ -1,0 +1,14 @@
+import { createRequire } from "module"; const require = createRequire(import.meta.url); const { chromium } = require("playwright");
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 1280, height: 720 } }); const errs = [];
+p.on("pageerror", (e) => errs.push(e.message)); p.on("console", (m) => m.type() === "error" && !/404/.test(m.text()) && errs.push(m.text()));
+await p.goto("http://localhost:" + (process.argv[2] || 8775) + "/index.html"); await p.waitForTimeout(200);
+await p.evaluate(() => localStorage.setItem("ai-girls-dungeon-v1", JSON.stringify({ tutorialSeen: true, chars: ["deepseek", "gpt"] })));
+await p.reload(); await p.waitForTimeout(1800);
+await p.click(".play-btn"); await p.waitForTimeout(3000);
+await p.keyboard.down("KeyJ"); await p.keyboard.down("KeyD"); await p.waitForTimeout(3000); await p.keyboard.up("KeyD"); await p.keyboard.up("KeyJ");
+const r = await p.evaluate(() => { const g = __app.game; g.runStats.boss = true; g.runStats.rooms = 7; __app.endRun(true); return true; });
+await p.waitForTimeout(800);
+console.log("result rows:", await p.evaluate(() => [...document.querySelectorAll(".res-chip")].map((n) => n.textContent).join(" | ")));
+console.log("shovels:", await p.evaluate(() => JSON.stringify(JSON.parse(localStorage.getItem("ai-girls-dungeon-v1")).mine.shovels)));
+console.log("ERR", errs.join(" | "));
+await b.close();

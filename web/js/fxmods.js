@@ -47,6 +47,7 @@ import * as m44 from "../pixelfx/fx/status/poisoned.js";
 import * as m45 from "../pixelfx/fx/ice/frost-nova.js";
 import * as m46 from "../pixelfx/fx/scifi/force-field.js";
 import * as m47 from "../pixelfx/fx/explosions/cartoon-pow.js";
+import * as m48 from "../pixelfx/fx/explosions/dirt-explosion.js";
 export const FX_MODS = {
   "water/splash": m0,
   "water/wave-crash": m1,
@@ -96,4 +97,5 @@ export const FX_MODS = {
   "ice/frost-nova": m45,
   "scifi/force-field": m46,
   "explosions/cartoon-pow": m47,
+  "explosions/dirt-explosion": m48,
 };

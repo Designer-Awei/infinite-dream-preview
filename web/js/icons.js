@@ -137,6 +137,13 @@ function flame(p, c) {
   p.poly([[10, 1], [15, 8], [16, 13], [13, 18], [7, 18], [4, 13], [5, 8], [7, 10], [8, 5]], (x, y) => (y > 13 ? c.dark : x > 11 ? c.base : c.light));
   p.poly([[10, 8], [13, 13], [11, 17], [9, 17], [7, 13]], c.hi);
 }
+function shovel(p, c) {
+  p.line(5, 15, 13, 4, "#8a5a30", 2);
+  p.rect(12, 2, 4, 2, "#5a3a1a");
+  p.poly([[1, 14], [6, 10], [10, 14], [6, 19], [2, 18]], c.base);
+  p.poly([[2, 14], [6, 11], [8, 13], [4, 15]], c.light);
+  p.poly([[6, 19], [10, 14], [9, 17]], c.dark);
+}
 function card(p, c, inner) {
   p.rect(4, 2, 12, 16, c.light);
   p.rect(5, 3, 10, 14, c.base);
@@ -483,6 +490,27 @@ const DRAW = {
     p.ring(6, 10, 5, 2, GOLD.light);
     p.ring(14, 10, 5, 2, GOLD.base);
     p.rect(9, 9, 2, 2, GOLD.hi);
+  },
+  shovel_cu(p) { shovel(p, { light: "#ffb878", base: "#e08a4a", dark: "#a85428" }); },
+  shovel_ag(p) { shovel(p, { light: "#ffffff", base: "#c8d4e8", dark: "#7a8aa8" }); },
+  shovel_au(p) { shovel(p, { light: "#fff3a0", base: "#ffd84a", dark: "#c08a10" }); },
+  beacon(p) {
+    p.rect(9, 8, 2, 11, "#8a8a9a");
+    p.rect(6, 17, 8, 2, "#5a5a6a");
+    p.disc(10, 6, 3.4, "#7dffb0");
+    p.rect(9, 5, 1, 1, "#ffffff");
+    for (let t = -2.4; t < -0.7; t += 0.1) p.set(10 + Math.cos(t) * 7, 6 + Math.sin(t) * 7, "#7dffb0"), p.set(10 + Math.cos(t + Math.PI * 0) * 0, 6, "#7dffb0");
+    for (let t = -2.4; t < -0.7; t += 0.08) p.set(10 + Math.cos(t) * 9.5, 6 + Math.sin(t) * 9.5, "#3ad07a");
+  },
+  pick(p) {
+    p.line(4, 17, 13, 6, "#a8642e", 2);
+    p.poly([[7, 2], [13, 3], [18, 8], [17, 10], [12, 6], [6, 4]], "#c8d0e0");
+    p.poly([[12, 6], [17, 10], [16, 11], [11, 7]], "#7a8aa8");
+  },
+  ore(p) {
+    p.poly([[4, 12], [8, 5], [14, 4], [17, 10], [13, 16], [6, 16]], "#7d7a82");
+    p.poly([[7, 9], [10, 6], [13, 8], [11, 12]], "#e08a4a");
+    p.poly([[11, 12], [14, 10], [15, 13]], "#b46aff");
   },
   revive(p) {
     heart(p, RED, 2, 2, 0.8);

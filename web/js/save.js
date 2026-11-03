@@ -54,14 +54,17 @@ export const talent = (id) => load().talents[id] || 0;
 /** the loadout page of one character (always LOADOUT_SLOTS long; unowned entries are dropped) */
 export function loadoutOf(cid) {
   const m = load();
+  const n = slotsOf(cid);
   const page = ((m.loadout && m.loadout[cid]) || []).map((id) => (id && m.talents[id] ? id : null));
-  while (page.length < LOADOUT_SLOTS) page.push(null);
-  return page.slice(0, LOADOUT_SLOTS);
+  while (page.length < n) page.push(null);
+  return page.slice(0, n);
 }
+/** 2 SSR slots, 3 with that girl's 梦核 */
+export const slotsOf = (cid) => LOADOUT_SLOTS + ((load().cores || {})[cid] ? 1 : 0);
 export function setLoadout(cid, page) {
   const m = load();
   m.loadout = m.loadout || {};
-  m.loadout[cid] = page.slice(0, LOADOUT_SLOTS);
+  m.loadout[cid] = page.slice(0, slotsOf(cid));
   save();
 }
 /**
@@ -77,7 +80,7 @@ export function makeKit(cid) {
     tal[it.id] = lv;
   }
   for (const id of loadoutOf(cid)) if (id) eq[id] = m.talents[id] || 1;
-  return { tal, eq, cards: [...m.cards] };
+  return { tal, eq, cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
 }
 
 /** Check unlock conditions; returns newly unlocked char ids. */
@@ -159,4 +162,35 @@ export function importSave(code) {
   localStorage.setItem(KEY, JSON.stringify(s));
   mem = null;
   return load();
+}
+
+// ---------------------------------------------------------------- 梦境矿场 (mine) meta
+export function mineState() {
+  const m = load();
+  if (!m.mine) m.mine = {};
+  const s = m.mine;
+  s.shovels = Object.assign({ cu: 1, ag: 0, au: 0 }, s.shovels || {});
+  s.up = Object.assign({ drill: 0, battery: 0, bag: 0, armor: 0, radar: 0, beacon: 0, tank: 0 }, s.up || {});
+  s.mats = s.mats || 0;
+  s.stars = s.stars || 0;
+  s.cards = s.cards || 0;
+  s.best = s.best || 0;
+  s.dives = s.dives || 0;
+  if (s.freeAt == null) s.freeAt = Date.now();
+  return s;
+}
+/** free copper shovel every FREE_SHOVEL_HOURS (stored up to the cap). returns ms until the next one (0 if capped) */
+export function refreshFreeShovels(hours, cap) {
+  const s = mineState(), per = hours * 3600e3, now = Date.now();
+  if (s.freeCu == null) s.freeCu = 0; // how many of the copper shovels are free ones (only those count for the cap)
+  while (now - s.freeAt >= per) {
+    if (s.shovels.cu >= cap) {
+      s.freeAt = now;
+      break;
+    }
+    s.shovels.cu++;
+    s.freeAt += per;
+  }
+  save();
+  return s.shovels.cu >= cap ? 0 : per - (now - s.freeAt);
 }
