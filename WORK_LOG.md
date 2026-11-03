@@ -8,6 +8,20 @@
 
 ## 更新记录
 
+### 2026-11-03 · 矿场地表视差背景
+
+- 更新内容：矿场地面背景改为多层视差：远处雪山、青色丘陵、松林山脊、近处灌木与栅栏、缓慢飘动的云、太阳和飞鸟。各层随镜头左右/上下移动的速度不同。营地新增竖井井架（挖矿时滑轮转动）、帐篷、冒烟的篝火和装满矿石的矿车。
+- 更新内容：键盘操作提示在下潜 15 秒后淡出，并改为单行显示（在 804 宽时原本折成两行压在地面上）。该提示的 CSS 改动包含在 [4005cae](https://github.com/Designer-Awei/infinite-dream-preview/commit/4005cae2f58b8f1f85ae09a2a3232468a015377a) 中。
+- 对应 commit：[7632a1b](https://github.com/Designer-Awei/infinite-dream-preview/commit/7632a1b72525da804da444b98684976b9f42b86f)、[4005cae](https://github.com/Designer-Awei/infinite-dream-preview/commit/4005cae2f58b8f1f85ae09a2a3232468a015377a)。
+- 验证：`sh tools/build.sh` 通过。Playwright 在 804×360 和 1280×720 下进入矿场截图：站在地面、向右移动、向下挖 2 格后，各背景层错位移动正常，挖下去后天空被地面遮住，无页面错误。
+
+### 2026-11-03 · 抽卡牌面稀有度标签放大，去掉牌内线条
+
+- 更新内容：稀有度标签由顶部色条改为放大的圆角标签，牌面内不再有横线，也不再有黑色描边。
+- 更新内容：同一改动已同步到正式版仓库（Designer-Awei/infinite-dream 5db68ec、00ae663）。
+- 对应 commit：[19daf45](https://github.com/Designer-Awei/infinite-dream-preview/commit/19daf452862f0e20564c3a8b453a77364a4f976f)、[4005cae](https://github.com/Designer-Awei/infinite-dream-preview/commit/4005cae2f58b8f1f85ae09a2a3232468a015377a)。
+- 验证：Playwright 804×360 触屏视口单抽与十连结果截图，标签放大且牌内无横线；去掉描边后正式版构建通过，无页面错误。
+
 ### 2026-11-03 · 胶囊上盖上移、抽卡牌面改纯色
 
 - 更新内容：胶囊开启后上盖整体上移，不再压住下半球的发光开口。
