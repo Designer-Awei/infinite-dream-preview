@@ -1530,3 +1530,4 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .ct-row b { flex: 1; font-weight: normal; font-size: 17px; user-select: all; }
 .ct-row small { flex: none; font-size: 11px; color: #c8c0e8; }
 .ct-tip { font-size: 12px; }
+@media (max-height: 340px) { .mshop { padding: 8px 12px; gap: 5px; } .ms-it { padding: 2px 6px; } .ms-it img { width: 24px; height: 24px; } .ms-it .btn.small { padding: 3px 8px 4px !important; } .ms-h h2 { font-size: 18px; } }

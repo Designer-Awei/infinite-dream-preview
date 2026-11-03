@@ -114,7 +114,7 @@ export const RELICS = {
   gill: { name: "人鱼之鳃", icon: "elem_bubble", desc: "水下氧气消耗 -60%", max: 1 },
   rock: { name: "坚岩之肤", icon: "shield", desc: "免疫落石、瓦斯与炸药伤害", max: 1 },
   beacon: { name: "应急信标", icon: "beacon", desc: "撤离信标 +1", max: 2 },
-  greed: { name: "贪婪契约", icon: "coin", desc: "带出的 💎 +30%，但受到的伤害 +1", max: 1, curse: true },
+  greed: { name: "贪婪契约", icon: "coin", desc: "带出的晶石 +30%，但受到的伤害 +1", max: 1, curse: true },
 };
 
 // 补给: bought with 💎 in the hub, applied at the start of every dive while selected
