@@ -70,7 +70,8 @@ const PAGES = [
       blank(d);
       air(d, C - 6, C + 6, 2, 5);
       put(d, C - 4, 6);
-      d.mobs.push(d.mkMob("bat", (C + 4) * MT, 3 * MT), d.mkMob("slime", (C + 2) * MT, 5 * MT + 12));
+      // tougher than usual so they stay on screen for the whole loop
+      for (const m of [d.mkMob("bat", (C + 4) * MT, 3 * MT), d.mkMob("slime", (C + 2) * MT, 5 * MT + 12)]) (m.hp = m.maxHp = 70), (m.awake = true), d.mobs.push(m);
     },
     input: () => ({ ...idle, atk: true }),
   },
