@@ -8,6 +8,19 @@
 
 ## 更新记录
 
+### 2026-11-03 · 梦境裂隙（Boss 后的限时迷你矿场）
+
+- 更新内容：单人闯关击败首领后有 25% 概率出现「梦境裂隙」，可选择进入一个 60 秒的浅层富矿（矿脉与宝箱更密集），时间到或撤离后所得 💎/矿石/星砂并入本局结算；无尽模式在裂隙结束后继续原来的冒险。
+- 对应 commit：[f286079](https://github.com/Designer-Awei/infinite-dream-preview/commit/f286079360a8ae26e4310afb1e57f452e2f2404f)、[b53aae6](https://github.com/Designer-Awei/infinite-dream-preview/commit/b53aae6e0896250adadbf3d4bb04bfbb0e8647d2)（构建产物）。
+- 验证：`sh tools/build.sh` 通过；Playwright 804×360 触屏视口 `test/rift.mjs` 走完「进入关卡→触发裂隙→进入→下挖→计时结束→结算」，结算出现「梦境裂隙」条目，无页面错误。该次随机地形下挖未采到矿（显示 💎0），上一次运行为 💎2·矿石2。
+
+### 2026-11-03 · 扭蛋胶囊改为精灵球式翻盖开启，去掉彩带
+
+- 更新内容：胶囊开启改为正视透视下上半壳绕中缝向后翻起（类似精灵球），开口处发光并向上透出光柱；去掉抽卡过程中的彩带/飞屑粒子（开球与 SSR/SR 翻牌时均不再喷出）。
+- 更新内容：同一改动已同步到正式版仓库（Designer-Awei/infinite-dream 55df9f7）。
+- 对应 commit：[f4fbbf7](https://github.com/Designer-Awei/infinite-dream-preview/commit/f4fbbf7400257dc1a1c1ee794a0b73d1774d839d)、[b53aae6](https://github.com/Designer-Awei/infinite-dream-preview/commit/b53aae6e0896250adadbf3d4bb04bfbb0e8647d2)（构建产物）。
+- 验证：Playwright 804×360 触屏视口单抽（保底第 50 抽必出 SSR）逐帧截图，上盖翻起后仍可见、开口发光、无彩带粒子，颜色全程为 SSR 橙色 #ffc93a；正式版与预览版构建通过。
+
 ### 2026-11-03 · 梦境矿场（挖宝玩法第一版）
 
 - 更新内容：大厅新增「梦境矿场」：横屏竖向切面下挖玩法（搜·打·撤）。A/D 移动、S 下挖、顶墙横挖、W 喷气上升（耗电）、J 攻击、K 炸药、L 撤离信标；手机复用摇杆与技能按钮。
