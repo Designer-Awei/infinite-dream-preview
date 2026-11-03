@@ -1504,3 +1504,9 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .doors .dr-plate .el-t { font-size: 22px; }
 .doors .ld-bar { height: 12px; }
 .doors .dr-half { top: 34%; width: 15vmin; height: 30vmin; }
+/* help text: no inherited outline (it smeared dark text on chips and the selected tab); light text gets a soft 1px shadow */
+.help-p .hp-main, .help-p .hp-tab { text-shadow: 0 1px 0 rgba(10,4,24,.7); letter-spacing: .3px; }
+.help-p .hp-tab.on, .help-p .hp-main .chip[style], .help-p .hp-cur .cur-star { text-shadow: none; }
+.help-p .hp-main .chip { font-size: 12px; padding: 1px 8px; line-height: 1.6; white-space: nowrap; }
+.help-p .hp-main .chip:not([style]):not(.cur-star) { color: #fff; }
+.help-p .hp-t, .help-p .hp-h { text-shadow: 0 1px 0 rgba(10,4,24,.8); }

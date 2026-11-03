@@ -92,7 +92,7 @@ export function showHelp() {
       ${H("天赋")}N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、2 个槽位，PVE 和 PVP 都生效。
       ${H("角色")}达成条件解锁新角色。`],
   ];
-  md.innerHTML = `<div class="panel help-p"><h2 class="outline">玩法说明</h2><div class="hp-body"><div class="hp-nav"></div><div class="hp-main o1"></div></div></div>`;
+  md.innerHTML = `<div class="panel help-p"><h2 class="outline">玩法说明</h2><div class="hp-body"><div class="hp-nav"></div><div class="hp-main"></div></div></div>`;
   const nav = $(".hp-nav", md), main = $(".hp-main", md);
   const open = (i) => {
     nav.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === i));
@@ -100,7 +100,7 @@ export function showHelp() {
     main.scrollTop = 0;
   };
   SECS.forEach(([t], i) => {
-    const b = el("button", "hp-tab o1", t);
+    const b = el("button", "hp-tab", t);
     b.onclick = () => (sfx("click"), open(i));
     nav.appendChild(b);
   });
