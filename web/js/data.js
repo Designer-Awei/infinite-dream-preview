@@ -60,7 +60,7 @@ export function reactionKey(a, b) {
 // atk: dmg per bullet, rate shots/s, spd bullet speed, range lock-on radius
 export const CHARS = {
   deepseek: {
-    name: "DeepSeek 鲸鱼娘", short: "鲸鱼娘", title: "潮汐侍者", role: "潮汐法师 / 护盾辅助", elem: "water", color: "#3a8cff",
+    name: "大肥鱼", short: "大肥鱼", title: "潮汐侍者", role: "潮汐法师 / 护盾辅助", elem: "water", color: "#3a8cff",
     hp: 6, shield: 5, speed: 112,
     atk: { name: "潮汐水弹", dmg: 4.2, rate: 3.6, spd: 300, range: 215, size: 4 },
     skill: { name: "深海回响", cd: 7, desc: "向前释放穿透水波：伤害、减速、击退，并为自身与附近队友回复2点护盾" },
@@ -69,7 +69,7 @@ export const CHARS = {
     lore: "温柔勤快，喜欢照顾同伴，偶尔一本正经地犯迷糊。",
   },
   gpt: {
-    name: "GPT 小龙娘", short: "小龙娘", title: "白龙术士", role: "龙语法师 / 范围输出", elem: "dragon", color: "#a98cff",
+    name: "吉普缇", short: "吉普缇", title: "白龙术士", role: "龙语法师 / 范围输出", elem: "dragon", color: "#a98cff",
     hp: 5, shield: 4, speed: 110,
     atk: { name: "灵光龙弹", dmg: 5.2, rate: 2.9, spd: 270, range: 205, size: 5, splash: 22, splashDmg: 2.2 },
     skill: { name: "灵感龙息", cd: 6, desc: "可移动施放的扇形龙息，多段伤害并附加灼印" },
@@ -78,7 +78,7 @@ export const CHARS = {
     lore: "好奇博学，喜欢收集冒险故事，遇到新事物会主动探索。",
   },
   grok: {
-    name: "Grok 娘", short: "Grok娘", title: "叛逆游侠", role: "游侠 / 机动射手", elem: "thunder", color: "#ffd84a",
+    name: "格洛克", short: "格洛克", title: "叛逆游侠", role: "游侠 / 机动射手", elem: "thunder", color: "#ffd84a",
     hp: 5, shield: 3, speed: 124,
     atk: { name: "叛逆连射", dmg: 2.5, rate: 6, spd: 360, range: 225, size: 3, ramp: 0.7 },
     skill: { name: "离轨弹幕", cd: 5, desc: "向移动方向冲刺（短暂无敌），并射出5枚弹射能量弹" },
@@ -87,7 +87,7 @@ export const CHARS = {
     lore: "胆大敏捷，爱吐槽，面对危险时习惯先行动。",
   },
   claude: {
-    name: "Claude 娘", short: "Claude娘", title: "日葵书记", role: "圣光法师 / 防御辅助", elem: "sun", color: "#ff9a2e",
+    name: "克劳德", short: "克劳德", title: "日葵书记", role: "圣光法师 / 防御辅助", elem: "sun", color: "#ff9a2e",
     hp: 6, shield: 6, speed: 106,
     atk: { name: "日葵书签", dmg: 4.6, rate: 3.1, spd: 280, range: 215, size: 4 },
     skill: { name: "日光书页", cd: 8, desc: "为自身与附近队友展开屏障抵挡一次伤害，破裂或到期时射出光弹" },
@@ -96,7 +96,7 @@ export const CHARS = {
     lore: "耐心温和、讲究礼仪，珍惜藏书，喜欢认真听完同伴的故事。",
   },
   doubao: {
-    name: "豆包", short: "豆包", title: "元气助手", role: "气泡术师 / 治疗辅助", elem: "bubble", color: "#ff7cc8",
+    name: "奶糖包", short: "奶糖包", title: "元气助手", role: "气泡术师 / 治疗辅助", elem: "bubble", color: "#ff7cc8",
     hp: 7, shield: 3, speed: 112,
     atk: { name: "元气泡泡", dmg: 3.6, rate: 3.6, spd: 250, range: 205, size: 5, pop: 6 },
     skill: { name: "补给气泡", cd: 8, desc: "投出补给气泡造成范围伤害，并留下可拾取的回复球（满血时转为护盾）" },
@@ -105,7 +105,7 @@ export const CHARS = {
     lore: "亲切活泼，善于发现队友的需要，是队伍中的日常补给担当。",
   },
   glm: {
-    name: "GLM 娘", short: "GLM娘", title: "玄墨学者", role: "阵法师 / 控制法师", elem: "ink", color: "#7b6cff",
+    name: "吉拉", short: "吉拉", title: "玄墨学者", role: "阵法师 / 控制法师", elem: "ink", color: "#7b6cff",
     hp: 5, shield: 5, speed: 108,
     atk: { name: "玄墨飞符", dmg: 4.2, rate: 3, spd: 290, range: 220, size: 4, pierce: 2 },
     skill: { name: "墨阵推演", cd: 7, desc: "在目标处布下墨阵：持续伤害、减速并标记敌人，自身短暂加速" },
@@ -212,7 +212,7 @@ export function endlessRoom(i, seed) {
 
 // ---------------------------------------------------------------- map items and hazards
 export const ITEMS = {
-  cube: { name: "算力方块", desc: "本局伤害 +6%，每 2 个生命上限 +1", color: "#7dffb0", icon: "◆" },
+  cube: { name: "算力方块", desc: "本局伤害 +6%，每 5 个生命上限 +1", color: "#7dffb0", icon: "◆" },
   speed: { name: "极速饮料", desc: "6秒内移速+40%", color: "#4ae0ff", icon: "»", dur: 6 },
   rage: { name: "狂暴芯片", desc: "6秒内攻速+60%", color: "#ff5a4a", icon: "!", dur: 6 },
   shield: { name: "护盾泡", desc: "护盾立即回满", color: "#a8c8ff", icon: "◎" },

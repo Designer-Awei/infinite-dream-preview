@@ -33,6 +33,9 @@ export function fireAttack(g, p, a, target) {
       if (BLOCKS_SHOT(tileAt(g.map, x, y))) {
         x1 = x;
         y1 = y;
+        // the beam stops at the first blocking tile: a crate or barrel there takes the hit
+        const ti = Math.floor(y / 32) * g.map.W + Math.floor(x / 32);
+        if (g.host && g.map.crates[ti]) g.damageTile(ti, c.atk.dmg * 1.6 * k, p);
         break;
       }
     }
@@ -199,6 +202,7 @@ export function castSkill(g, p, cid, a, target, pw = 1) {
             e.burnDps = 2.5 * pw;
           }
           if (g.pvp) for (const o of g.players) if (o !== p && !o.downed && dist(p.x, p.y, o.x, o.y) < 110 && Math.abs(((angTo(p.x, p.y, o.x, o.y) - aa + Math.PI * 3) % TAU) - Math.PI) < 0.5) g.hit(o, 3 * pw, { p });
+          g.hitTilesIn(p.x, p.y, 110, 6 * pw, p, [aa, 0.5]); // crates and barrels in the breath
         },
       });
       break;
@@ -310,6 +314,7 @@ export function castUlt(g, p, a, target) {
       g.vfx("explosions/plasma-explosion", p.x, p.y - 16, { palette: ELEM.dragon.ramp.slice(1) });
       g.vfx("holy/divine-shield", p.x, p.y, { palette: pal, follow: p, life: 6 });
       for (const e of g.enemiesNear(p.x, p.y, p.core ? 130 : 90)) (g.hit(e, 10, { p, elem: "dragon" })), g.knock(e, p.x, p.y, 320);
+      g.hitTilesIn(p.x, p.y, p.core ? 130 : 90, 30, p);
       break;
     }
     case "grok": {

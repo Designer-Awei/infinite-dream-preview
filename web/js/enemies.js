@@ -18,6 +18,7 @@ function nearestPlayer(g, e) {
 function shoot(g, e, a, o = {}) {
   const hh = o.h ?? e.r + 6;
   const b = g.mkBullet(null, { side: "e", x: e.x, y: e.y - hh, h: hh, a, spd: o.spd || 120, dmg: o.dmg || 1, kind: o.kind || "orb", r: o.r || 6, life: o.life || 3.5, elem: null });
+  b.src = e; // who fired it (endless damage scaling)
   b.slow = o.slow;
   b.burn = o.burn;
   b.big = o.big;

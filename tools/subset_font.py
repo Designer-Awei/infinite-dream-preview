@@ -11,6 +11,34 @@ for p in glob.glob("web/**/*", recursive=True):
 chars = {c for c in chars if ord(c) >= 0x20}
 font = TTFont(src)
 cmap = font.getBestCmap()
+
+# characters the font lacks but the game needs (a character name): built from the halves of two glyphs it has,
+# pixel by pixel. char: (left source, first column taken from the right source, right source)
+COMPOSE = {"缇": ("给", 5, "提")}
+def compose(font, cmap):
+    from fontTools.pens.pointInsidePen import PointInsidePen
+    from fontTools.pens.ttGlyphPen import TTGlyphPen
+    gs, P = font.getGlyphSet(), 100  # Cubic 11: 100-unit pixels
+    def on(ch, x, y):
+        pen = PointInsidePen(gs, (x * P + P // 2, y * P + P // 2)); gs[cmap[ord(ch)]].draw(pen); return pen.getResult()
+    for ch, (l, split, r) in COMPOSE.items():
+        if ord(ch) in cmap or ord(l) not in cmap or ord(r) not in cmap: continue
+        adv = font["hmtx"][cmap[ord(r)]][0] // P
+        pen = TTGlyphPen(None)
+        for y in range(-3, 12):
+            row = [on(l if x < split else r, x, y) for x in range(adv)] + [False]
+            x0 = None
+            for x, v in enumerate(row):
+                if v and x0 is None: x0 = x
+                if not v and x0 is not None:  # one rectangle per horizontal run, clockwise
+                    pen.moveTo((x0 * P, y * P)); pen.lineTo((x0 * P, (y + 1) * P)); pen.lineTo((x * P, (y + 1) * P)); pen.lineTo((x * P, y * P)); pen.closePath(); x0 = None
+        name = "uni%04X" % ord(ch)
+        font["glyf"][name] = pen.glyph(); font.getGlyphOrder().append(name) if name not in font.getGlyphOrder() else None
+        font["hmtx"][name] = font["hmtx"][cmap[ord(r)]]
+        for t in font["cmap"].tables:
+            if t.isUnicode(): t.cmap[ord(ch)] = name
+        cmap[ord(ch)] = name
+compose(font, cmap)
 have = sorted(c for c in chars if ord(c) in cmap)
 miss = sorted(c for c in chars if ord(c) not in cmap and ord(c) > 0x7F)
 opt = subset.Options(); opt.flavor = "woff"; opt.layout_features = ["*"]

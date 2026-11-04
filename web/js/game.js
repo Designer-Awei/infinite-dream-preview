@@ -555,6 +555,20 @@ export class Game {
         if (m.crates[i] && dist(x, y, tx * T + 16, ty * T + 16) < r + 12) this.damageTile(i, 40, p);
       }
   }
+  /** area attacks that are not bullets (breath cones, shock rings) also hit crates and barrels.
+   *  cone: optional [angle, halfWidth] — only tiles whose centre lies inside that cone count */
+  hitTilesIn(x, y, r, dmg, p, cone) {
+    if (!this.host) return;
+    const m = this.map;
+    for (let ty = Math.floor((y - r) / T); ty <= Math.floor((y + r) / T); ty++)
+      for (let tx = Math.floor((x - r) / T); tx <= Math.floor((x + r) / T); tx++) {
+        if (tx < 0 || ty < 0 || tx >= m.W || ty >= m.H) continue;
+        const i = ty * m.W + tx, cx = tx * T + 16, cy = ty * T + 16;
+        if (!m.crates[i] || dist(x, y, cx, cy) > r + 12) continue;
+        if (cone && Math.abs(((angTo(x, y, cx, cy) - cone[0] + Math.PI * 3) % TAU) - Math.PI) > cone[1]) continue;
+        this.damageTile(i, dmg, p);
+      }
+  }
   damageTile(i, dmg, p) {
     const m = this.map, c = m.crates[i];
     if (!c || c.dead) return;
@@ -577,6 +591,20 @@ export class Game {
     this.flowT = 0;
   }
 
+  /**
+   * 无尽回廊: enemies hit harder the deeper you go. Floor L (1-based): minions ×(1 + 0.05·(L-1)), elites another
+   * +3%/floor, bosses another +4%/floor (their base hits are already big). Damage stays whole hearts: the fraction
+   * is rolled (×1.6 on a 1-damage hit = 2 with 60% chance). Floor 20: minion ≈ ×1.95, elite ≈ ×2.5, boss ≈ ×2.7.
+   */
+  scaleHurt(n, src) {
+    if (!this.endless || this.pvp) return n;
+    const e = src && (src.kind === "enemy" ? src : src.src && src.src.kind === "enemy" ? src.src : null);
+    if (!e) return n;
+    const L = Math.max(0, this.roomIdx);
+    const k = 1 + 0.05 * L + (e.elite ? 0.03 * L : 0) + (e.boss ? 0.04 * L : 0);
+    const v = n * k, w = Math.floor(v);
+    return w + (Math.random() < v - w ? 1 : 0);
+  }
   /** hurt a player by n points */
   hurt(p, n, src = {}) {
     if (!p || p.dead || p.downed) return false;
@@ -593,6 +621,7 @@ export class Game {
       p.invuln = 0.3;
       return false;
     }
+    n = this.scaleHurt(n, src);
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
     p.invuln = BAL.hurtInvuln;
@@ -1387,7 +1416,7 @@ export class Game {
     switch (item) {
       case "cube":
         p.cubes++;
-        if (p.cubes % 2 === 0) (p.maxHp++), p.hp++;
+        if (p.cubes % 5 === 0) (p.maxHp++), p.hp++;
         break;
       case "speed":
         p.buff.speed = 6;
