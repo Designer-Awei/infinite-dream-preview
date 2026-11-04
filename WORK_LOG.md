@@ -8,6 +8,22 @@
 
 ## 更新记录
 
+### 2026-11-05 · 同步正式版；矿场演示帧序号越界修复
+
+- 用户确认同步正式版：把 823bd66 之后预览版的更新合入正式仓库，提交 [11c7736](https://github.com/Designer-Awei/infinite-dream/commit/11c77368f5d71a15ac1a113b7a8c6eacbdb3acaf)。包括：
+  - 待机眨眼、吉普缇翅膀补全、矿场演示清晰度和鼹鼠受击、吉拉姆改名。
+  - 梦核流彩名字、天赋按钮和详情按钮、详情页一屏显示、天赋装配对齐、弹窗遮罩渐变。
+  - 同步方式同前：`updater.js`、`ui.js` 分享地址和 `build.sh` 保留正式版；测试默认端口改为 8765。
+- 修复：同步后在正式版跑 `mineguide2`，出现一次 `Cannot read properties of undefined (reading '__s')`。
+  - 原因：角色动画帧序号由动画时钟算出，时钟为负时取模得到负数，取不到帧。
+  - 现在序号总落在 0 到帧数之间，取不到帧时退回静止立绘。
+  - 预览版连跑 3 次没有复现，修复是按代码推断的防护。
+- 对应 commit：[030f150](https://github.com/Designer-Awei/infinite-dream-preview/commit/030f15016b15c24fa3abdc33cc61430c29942a46)，[6993a71](https://github.com/Designer-Awei/infinite-dream-preview/commit/6993a718f1e30742ed8ff5da98f012b65b03bf15)（打包）。
+- 验证：
+  - 正式版修复后 `mineguide2` 连跑 3 次无页面错误。
+  - 正式版 `runsmoke`、`lbdetail`、`corename`、`batch1104` 无页面错误，`itemdemo` 30 张卡 0 失败。
+  - 正式版打包产物（docs/）能进大厅、能开局，无页面错误。
+
 ### 2026-11-04 · 详情按钮尺寸、详情页两栏平衡、天赋装配对齐
 
 - 更新内容：
