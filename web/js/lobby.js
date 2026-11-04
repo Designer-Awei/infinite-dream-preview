@@ -244,7 +244,6 @@ function fx(stage, cls, ms, html = "") {
 /** the hero appears: magic circle on the island, a light pillar, she forms inside it from the feet up */
 function heroSummon(s, quick) {
   const stage = q(".lb-center", s), h = q(".lb-hero", s);
-  fx(stage, "lb-circle" + (quick ? " q" : ""), 1500);
   fx(stage, "lb-pillar" + (quick ? " q" : ""), 1300);
   setTimeout(() => burst(stage, quick ? 10 : 16, "mote", 50, 62, 0.8), quick ? 160 : 420);
   h.classList.add("ready"); // past the pre-entrance hide
@@ -318,11 +317,22 @@ function renderHero(s, id, swap) {
     q(".lb-name", s).innerHTML = `${c.short}<small>${c.title}</small>`;
   };
   if (swap) {
-    // the current girl dissolves upward into motes, the new one is summoned in a light pillar
-    const stage = q(".lb-center", s);
-    playAnim(hero, "swap", 200);
+    // the current girl dissolves upward into motes and stays hidden until the new girl's art and animation
+    // sheet are both loaded, so the old picture (or a half-loaded one) never shows; then she is summoned
+    const stage = q(".lb-center", s), token = (hero.__swap = {});
+    playAnim(hero, "swap", 4000);
     burst(stage, 10, "mote", 50, 45, 0.7);
-    setTimeout(() => (apply(), heroSummon(s, true)), 180);
+    const art = new Promise((res) => {
+      const im = new Image();
+      im.onload = im.onerror = res;
+      im.src = `assets/hero_${id}.png`;
+    });
+    const ready = Promise.all([art, lbSheet(id), new Promise((r) => setTimeout(r, 180))]);
+    Promise.race([ready, new Promise((r) => setTimeout(r, 2500))]).then(() => {
+      if (hero.__swap !== token || !hero.isConnected) return;
+      apply();
+      heroSummon(s, true);
+    });
     sfx("card");
   } else apply();
   const dps = c.atk.dmg * c.atk.rate;
@@ -801,8 +811,9 @@ export function showGacha() {
   }
   q(".gp-poolbtn", s).onclick = () => (sfx("click"), showPool());
   // 兑换卡 from 梦境工坊: pick any SSR that isn't maxed
-  const exc = mineState().cards;
-  if (exc) {
+  // SSR 兑换卡: always shown (×0 when used up), next to 卡池预览
+  const exc = mineState().cards || 0;
+  {
     const eb = el("button", "gp-poolbtn gp-exbtn o1", `<img src="${iconURL("cardgold", 2)}" alt=""><span><i class="lbl">兑换卡 </i>×${exc}</span>`);
     eb.onclick = () => (sfx("click"), showExchange(() => showGacha()));
     q(".gp-head", s).insertBefore(eb, q(".gp-poolbtn", s));
@@ -887,8 +898,7 @@ export function showExchange(after) {
         save();
         sfx("ssr");
         toast(`兑换成功：${it.name}${it.max > 1 ? " Lv" + (lv + 1) : ""}`, 2400);
-        if (ms.cards) draw();
-        else close();
+        draw(); // stays open (and the entry stays) even when the last card is used
       } });
     }));
   };
@@ -911,7 +921,7 @@ function previewScene(it) {
     case "t_startcard":
       return `<div class="sc sc-deal">${["atk_up", "multishot", "crit"].map((c, i) => `<div class="sc-card" style="--i:${i}">${ic(c)}</div>`).join("")}<div class="sc-card gold" style="--i:3">${ic("cardgold")}<b class="outline">+1</b></div><div class="sc-cap o1">开局：额外多选 1 张技能卡（满级 +2）</div></div>`;
     case "u_links":
-      return `<div class="sc sc-link"><div class="sc-who">${hero(me)}${ic(skillIcon(me, "skill"), "sk")}</div><div class="sc-beam"><i></i></div><div class="sc-who b">${hero(mate)}${ic(skillIcon(mate, "skill"), "sk")}</div><div class="sc-pop outline">联动！</div><div class="sc-cap o1">放小技能时，同时放出另一位 AI 娘的小技能（70% 效果）</div></div>`;
+      return `<div class="sc sc-link"><div class="sc-who">${hero(me)}${ic(skillIcon(me, "skill"), "sk")}</div><div class="sc-beam"><i></i></div><div class="sc-who b">${hero(mate)}${ic(skillIcon(mate, "skill"), "sk")}</div><div class="sc-pop outline">联动！</div><div class="sc-cap o1">放小技能时，同时放出另一位角色的小技能（70% 效果）</div></div>`;
     case "u_echo":
       return `<div class="sc sc-echo">${ic(skillIcon(me, "skill"), "big")}${ic(skillIcon(me, "skill"), "big ghost")}<div class="sc-pop outline">×2</div><div class="sc-cap o1">小技能有 35% 概率自动再释放一次</div></div>`;
     case "u_second_ult":
