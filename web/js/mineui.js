@@ -1,6 +1,6 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
 import { CHARS, VIEW_H, CORE_FX } from "./data.js";
-import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
+import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP, oreIcon } from "./minedata.js";
 import { load, save, mineState, refreshFreeShovels, claimFreeShovels } from "./save.js";
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
@@ -12,32 +12,7 @@ import { todayQuests, questText, claimQuest, claimable } from "./minequests.js";
 
 const q = (s, r) => r.querySelector(s);
 
-/** a little pixel nugget icon for an ore (cached data URL) */
-const oreIcons = {};
-export function oreIcon(id) {
-  if (oreIcons[id]) return oreIcons[id];
-  const o = id === "star" ? STAR : ORES[id];
-  const c = document.createElement("canvas");
-  c.width = c.height = 16;
-  const g = c.getContext("2d");
-  const P = [[3, 8], [7, 3], [12, 4], [14, 9], [10, 14], [4, 13]];
-  g.fillStyle = "#1a1020";
-  g.beginPath();
-  P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
-  g.closePath();
-  g.fill();
-  g.fillStyle = o.col[0];
-  g.beginPath();
-  P.forEach(([x, y], i) => (i ? g.lineTo(x + (8 - x) * 0.18, y + (9 - y) * 0.18) : g.moveTo(x + (8 - x) * 0.18, y + (9 - y) * 0.18)));
-  g.closePath();
-  g.fill();
-  g.fillStyle = o.col[1];
-  g.fillRect(6, 5, 3, 2);
-  g.fillRect(5, 7, 2, 2);
-  g.fillStyle = o.col[2];
-  g.fillRect(9, 11, 3, 2);
-  return (oreIcons[id] = c.toDataURL());
-}
+export { oreIcon };
 /** one look for each currency everywhere in the mine UI */
 export const CUR = {
   gem: () => `<i class="cur gem"></i>`,
@@ -91,7 +66,6 @@ export function showMineHub() {
   s.querySelectorAll(".curpill").forEach((b) => (b.onclick = () => showCurInfo(b.dataset.cur)));
   // SSR 兑换卡: shown left of 晶石 as icon + count while you hold any
   q(".expill", s).onclick = () => (sfx("click"), showExchange(() => showMineHub()));
-  q(".expill", s).style.display = ms.cards ? "" : "none";
   // shovels
   let pick = ["au", "ag", "cu"].find((k) => ms.shovels[k] > 0) || "cu";
   const sh = q(".mh-shovels", s);
@@ -156,14 +130,13 @@ export function showMineHub() {
     q(".mats", s).textContent = ms.mats;
     q(".stars", s).textContent = ms.stars;
     q(".exn", s).textContent = ms.cards;
-    q(".expill", s).style.display = ms.cards ? "" : "none";
   };
   const drawUps = () => {
     ups.innerHTML = Object.entries(UPGRADES).map(([k, u]) => {
       const l = ms.up[k], max = l >= u.max, c = max ? null : u.cost(l);
       const ok = c && ms.mats >= c.m && m.tokens >= c.v;
       return `<div class="mup"><div class="mu-t"><b class="o1">${u.name} <small>Lv${l}/${u.max}</small></b><span>${u.line(l)}</span></div>
-        ${max ? `<span class="mu-max o1">已满级</span>` : `<button class="btn small ${ok ? "" : "gray"} mu-b" data-k="${k}"><span>升级</span><small>${CUR.ore()}${c.m} ${CUR.gem()}${c.v}</small></button>`}</div>`;
+        ${max ? `<button class="btn small mu-b mu-done" disabled tabindex="-1"><span>已满级</span><small>${CUR.ore()}0</small></button>` : `<button class="btn small ${ok ? "" : "gray"} mu-b" data-k="${k}"><span>升级</span><small>${CUR.ore()}${c.m} ${CUR.gem()}${c.v}</small></button>`}</div>`;
     }).join("");
     ups.querySelectorAll(".mu-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, c = UPGRADES[k].cost(ms.up[k]);
@@ -252,7 +225,7 @@ export function showMineHub() {
       const ok = x.prog >= x.n, pct = Math.round((x.prog / x.n) * 100);
       const rw = [x.stars ? `${CUR.star()}${x.stars}` : "", x.tokens ? `${CUR.gem()}${x.tokens}` : ""].filter(Boolean).join(" ");
       return `<div class="mup mq${x.claimed ? " claimed" : ""}"><div class="mu-t"><b class="o1">${questText(x)}</b><span class="mq-bar"><i style="width:${pct}%"></i><em class="o1">${x.k === "haul" ? (ok ? "完成" : "未完成") : `${x.prog}/${x.n}`}</em></span></div>
-        ${x.claimed ? `<span class="mu-max o1">已领取</span>` : `<button class="btn small ${ok ? "" : "gray"} mq-b" data-i="${i}"><span>${ok ? "领取" : "进行中"}</span><small>${rw}</small></button>`}</div>`;
+        ${x.claimed ? `<button class="btn small mq-b mu-done" disabled tabindex="-1"><span>已领取</span><small>${CUR.gem()}0</small></button>` : `<button class="btn small ${ok ? "" : "gray"} mq-b" data-i="${i}"><span>${ok ? "领取" : "进行中"}</span><small>${rw}</small></button>`}</div>`;
     }).join("");
     ups.querySelectorAll(".mq-b").forEach((b) => (b.onclick = () => {
       const x = claimQuest(+b.dataset.i);

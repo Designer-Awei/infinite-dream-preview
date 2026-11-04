@@ -142,3 +142,52 @@ export const QUESTS = {
   haul: { w: 2 }, // 单次带出 💎 ≥ V
   extract: { w: 2 }, // 安全撤离（累计）
 };
+
+// ---------------------------------------------------------------- small icons (UI only; need a DOM)
+/** a little pixel nugget icon for an ore (cached data URL) */
+const oreIcons = {};
+export function oreIcon(id) {
+  if (oreIcons[id]) return oreIcons[id];
+  const o = id === "star" ? STAR : ORES[id];
+  const c = document.createElement("canvas");
+  c.width = c.height = 16;
+  const g = c.getContext("2d");
+  const P = [[3, 8], [7, 3], [12, 4], [14, 9], [10, 14], [4, 13]];
+  g.fillStyle = "#1a1020";
+  g.beginPath();
+  P.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y)));
+  g.closePath();
+  g.fill();
+  g.fillStyle = o.col[0];
+  g.beginPath();
+  P.forEach(([x, y], i) => (i ? g.lineTo(x + (8 - x) * 0.18, y + (9 - y) * 0.18) : g.moveTo(x + (8 - x) * 0.18, y + (9 - y) * 0.18)));
+  g.closePath();
+  g.fill();
+  g.fillStyle = o.col[1];
+  g.fillRect(6, 5, 3, 2);
+  g.fillRect(5, 7, 2, 2);
+  g.fillStyle = o.col[2];
+  g.fillRect(9, 11, 3, 2);
+  return (oreIcons[id] = c.toDataURL());
+}
+/** a little pixel chest: plain (wood), star (gold), relic (violet) */
+const chestIcons = {};
+export function chestIcon(kind) {
+  if (chestIcons[kind]) return chestIcons[kind];
+  const col = { plain: ["#a8743e", "#e0a860", "#6a4420"], star: ["#ffd84a", "#fff3a0", "#c08a10"], relic: ["#9a5ae8", "#d8b0ff", "#5a2aa0"] }[kind];
+  const c = document.createElement("canvas");
+  c.width = c.height = 16;
+  const g = c.getContext("2d");
+  // 12 px tall box centred in the 16 px icon (rows 2..13), so it lines up with text beside it
+  g.fillStyle = "#1a1020";
+  g.fillRect(1, 2, 14, 12);
+  g.fillStyle = col[0];
+  g.fillRect(2, 3, 12, 10);
+  g.fillStyle = col[1];
+  g.fillRect(2, 3, 12, 3);
+  g.fillStyle = col[2];
+  g.fillRect(2, 6, 12, 1);
+  g.fillStyle = kind === "plain" ? "#ffd84a" : "#ffffff";
+  g.fillRect(7, 6, 2, 3);
+  return (chestIcons[kind] = c.toDataURL());
+}

@@ -1526,12 +1526,6 @@ export class Dive {
           if (!SOLID(this.get(c - 1, r))) (g.fillStyle = "rgba(0,0,0,.25)"), g.fillRect(X, Y, 2, MT);
           if (!SOLID(this.get(c + 1, r))) (g.fillStyle = "rgba(0,0,0,.25)"), g.fillRect(X + MT - 2, Y, 2, MT);
         }
-        if (radar >= 2 && t === T.ORE && !this.revealed[i]) {
-          g.strokeStyle = ORES[this.ore[i]].col[0];
-          g.globalAlpha = 0.5;
-          g.strokeRect(X + 3.5, Y + 3.5, MT - 7, MT - 7);
-          g.globalAlpha = 1;
-        }
       }
     }
     // water
@@ -1659,6 +1653,25 @@ export class Dive {
     this.drawDark(g, cx, cy, rs);
     g.setTransform(rs, 0, 0, rs, 0, 0);
     g.translate(-cx, -cy);
+    // 雷达 Lv2 透视矿物: unexplored ores ping through the darkness as small blinking diamonds in the ore colour
+    // (drawn above the fog; it used to be a square outline under the fog, visible only where something lit it)
+    if ((this.up.radar || 0) >= 2) {
+      const r0 = Math.max(0, Math.floor(cy / MT)), r1 = Math.min(this.rows - 1, r0 + Math.ceil(vh() / MT) + 1);
+      const c0 = Math.max(0, Math.floor(cx / MT)), c1 = Math.min(MW - 1, c0 + Math.ceil(vw() / MT) + 1);
+      for (let r = r0; r <= r1; r++)
+        for (let c = c0; c <= c1; c++) {
+          const i = r * MW + c;
+          if (this.t[i] !== T.ORE || this.revealed[i]) continue;
+          const a = 0.35 + 0.35 * Math.sin(this.time * 3 + c * 1.7 + r * 2.3);
+          if (a < 0.08) continue;
+          const X = c * MT + MT / 2, Y = r * MT + MT / 2;
+          g.globalAlpha = a;
+          g.fillStyle = ORES[this.ore[i]].col[0];
+          g.fillRect(X - 1, Y - 3, 2, 6);
+          g.fillRect(X - 3, Y - 1, 6, 2);
+          g.globalAlpha = 1;
+        }
+    }
     for (const t of this.texts) this.label(g, t.s, t.x, t.y, t.col, 10 * t.size, Math.min(1, t.t * 2));
     // extraction ring
     if (this.extractHint && this.extractT <= 0) this.label(g, "站着别动 1 秒即可撤离", p.x, p.y - PH - 18, "#7dffb0", 9);

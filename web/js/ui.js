@@ -5,6 +5,7 @@ import { A } from "./assets.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
+import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
 
 let root, app;
 export const $ = (s, r = root) => r.querySelector(s);
@@ -78,18 +79,20 @@ export function showHelp() {
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
       ${H("首领")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），然后开出传送门；捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限。`],
-    ["技能混搭", `每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他 AI 娘的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
+    ["技能混搭", `每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他角色的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
     ["地图道具", `走过去自动拾取：${Object.values(ITEMS).map((i) => `<div class="hp-cur"><span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span><span>${i.desc}</span></div>`).join("")}
       ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，持续到本局结束。打碎箱子、击败敌人会刷出。
       ${H("地块")}草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。`],
     ["模式与地图", `在大厅「开始冒险」上方左右滑动地图卡切换（全部支持离线单机）：${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `${H(`主线 ${i + 1} · ${d.name}`)}${d.desc} 敌人血量 ×${d.hp}，晶石奖励 ×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200 晶石。`; }).join("")}
-      ${H("无尽回廊")}一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层换一张地图，敌人越来越多越来越强；倒下时按层数结算。完成任意一局后解锁。`],
+      ${H("无尽回廊")}一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层换一张地图，敌人越来越多越来越强，伤害也随层数提高（精英和首领涨得更快）；倒下时按层数结算。完成任意一局后解锁。`],
     ["梦境矿场", `${H("下潜")}用一把铲子下潜一次：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。从 4 格以上高处直接掉下来才会摔伤。
       ${H("分层")}越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。铜铲到 60m，银铲到 90m，金铲全层。
       ${H("撤离")}在地面或撤离电梯里站定 1 秒、或用信标才算安全撤离；倒下只带回 30%，电量耗尽只带回 50%。
       ${H("遭遇")}每层有一个紫色遗物箱（三选一本次增益）；洞穴里的地下商人用背包矿物换东西；宝藏鼹鼠会逃跑，追上打倒掉一堆好矿；金铲能挖到遗迹最深处的砖室，打倒遗迹守护者才能开星图宝箱。
       ${H("铲子")}首领掉落；免费铜铲每 4 小时 1 把、最多攒 5 把（点矿场标题旁领取）；梦境工坊里 3 铜合 1 银、3 银合 1 金。
       ${H("货币")}${cur("cur-gem", "晶石", "通用货币：闯关和矿场带出的矿物换来；用于扭蛋、矿场装备升级。")}${cur("cur-ore", "矿石", "矿场材料：矿物带出时附带；和晶石一起升级矿场装备。")}${cur("cur-star", "星砂", "稀有货币：宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊换最终减伤、SSR 兑换卡和梦核。")}
+      ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
+      ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉失落钱袋，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
     ["养成", `${H("扭蛋机")}通关获得晶石，扭蛋机抽取永久天赋与稀有技能卡。SSR 不会重复，全部集齐后再抽到 SSR 会变成积攒点。
       ${H("天赋")}N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、2 个槽位，PVE 和 PVP 都生效。
