@@ -48,6 +48,11 @@ export function resolveOptions(meta, o = {}) {
  * o: { x, y, flip, angle, seed, palette, light (glow strength), actor, ...the effect's own options }.
  * draw(frame, "back") draws what goes behind a character, "front" what goes in front, nothing both.
  */
+/** simulation sub-step rate (lowered on slow devices: halves the particle work of every live effect) */
+let SIM_HZ = 120;
+export function setSimHz(hz) {
+  SIM_HZ = hz;
+}
 export function createFx(mod, o = {}) {
   const meta = mod.meta ?? {};
   const opts = resolveOptions(meta, o);
@@ -64,7 +69,7 @@ export function createFx(mod, o = {}) {
       t += dt;
       if (!impl.update) return;
       // simulations step at 120 Hz or finer whatever the caller's frame rate, so they look the same everywhere
-      const n = Math.max(1, Math.ceil(dt * 120 - 1e-9));
+      const n = Math.max(1, Math.ceil(dt * SIM_HZ - 1e-9));
       for (let i = 0; i < n; i++) impl.update(dt / n, opts);
     },
     draw(frame, layer) {

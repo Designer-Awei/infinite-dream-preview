@@ -22,6 +22,8 @@ export class Painter {
   reset() {
     const f = this.frame;
     this.w = f.w; this.h = f.h; this.ox = f.ox | 0; this.oy = f.oy | 0; this.C = f.color; this.L = f.light;
+    // dirty rectangle of everything written this frame (lets the host composite only that, not the screen)
+    this.D = f.dirty || (f.dirty = [f.w, f.h, -1, -1]);
     this.tx = 0; this.ty = 0; this.fx = 1; this.cs = 1; this.sn = 0;
     this.fade = 1; this.lightK = 1; this.layer = "front";
     return this;
@@ -49,6 +51,11 @@ export class Painter {
     if (a < 1 && a <= BAYER[((sy & 3) << 2) | (sx & 3)]) return;
     const x = sx - this.ox, y = sy - this.oy;
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+    const D = this.D;
+    if (x < D[0]) D[0] = x;
+    if (x > D[2]) D[2] = x;
+    if (y < D[1]) D[1] = y;
+    if (y > D[3]) D[3] = y;
     this.C[y * this.w + x] = c;
   }
   add(sx, sy, c, k = 1) {
@@ -56,6 +63,12 @@ export class Painter {
     if (k <= 0.004) return;
     const x = sx - this.ox, y = sy - this.oy;
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+    const D = this.D;
+    if (x < D[0]) D[0] = x;
+    if (x > D[2]) D[2] = x;
+    if (y < D[1]) D[1] = y;
+    if (y > D[3]) D[3] = y;
+    this.frame.lit = true;
     const i = y * this.w + x, d = this.L[i];
     const r = Math.min(255, (d & 255) + (c & 255) * k) | 0;
     const g = Math.min(255, ((d >>> 8) & 255) + ((c >>> 8) & 255) * k) | 0;
@@ -71,6 +84,11 @@ export class Painter {
     if (!c || a <= 0.004) return;
     const x = sx - this.ox, y = sy - this.oy;
     if (x < 0 || y < 0 || x >= this.w || y >= this.h) return;
+    const D = this.D;
+    if (x < D[0]) D[0] = x;
+    if (x > D[2]) D[2] = x;
+    if (y < D[1]) D[1] = y;
+    if (y > D[3]) D[3] = y;
     const i = y * this.w + x, d = this.C[i], da = (d >>> 24) / 255, oa = a + da * (1 - a), k = a / oa;
     const ch = (s) => ((((c >>> s) & 255) * k + ((d >>> s) & 255) * (1 - k)) & 255);
     this.C[i] = (((oa * 255) & 255) << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0);

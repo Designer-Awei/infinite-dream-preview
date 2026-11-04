@@ -27,7 +27,9 @@ function resize() {
     setViewW(vw);
     canvas.width = vw * RS;
     canvas.height = VIEW_H * RS;
+    const lite = fx && fx.lite;
     fx = new FxLayer(vw, VIEW_H);
+    if (lite) fx.setLite(true);
     if (renderer) {
       const old = renderer;
       renderer = new Renderer(canvas, fx);
@@ -364,7 +366,7 @@ window.__app = app;
 import { flowField, flowDir } from "./map.js";
 window.__dbg = { input, flowField, flowDir, UI, get renderer() { return renderer; } };
 
-const TIPS = ["小提示：护盾受击后几秒会自动回满，生命不会", "小提示：躲进草丛，敌人就找不到你", "小提示：不同元素先后命中同一敌人会触发元素反应", "小提示：炸药桶会伤到所有人，包括敌人", "小提示：大招靠造成伤害充能，蓄满会发光", "小提示：融合卡能借用其他 AI 娘的子弹"];
+const TIPS = ["小提示：护盾受击后几秒会自动回满，生命不会", "小提示：躲进草丛，敌人就找不到你", "小提示：不同元素先后命中同一敌人会触发元素反应", "小提示：炸药桶会伤到所有人，包括敌人", "小提示：大招靠造成伤害充能，蓄满会发光", "小提示：融合卡能借用其他角色的子弹"];
 let fadeEl = null;
 function fade() {
   if (!fadeEl) {
@@ -424,10 +426,13 @@ function frame(now) {
   // adaptive quality: slow devices drop to 1x canvas resolution
   app.ft = (app.ft ?? 16) * 0.97 + (now - (app.lastNow ?? now)) * 0.03;
   app.lastNow = now;
-  app.slowT = app.ft > 24 ? (app.slowT || 0) + dt : 0;
+  app.slowT = app.ft > 24 && !app.fixedQ ? (app.slowT || 0) + dt : 0;
   if (RS > 1 && app.slowT > 3) {
     setRS(1);
     resize();
+    app.slowT = 0;
+  } else if (RS <= 1 && !fx.lite && app.slowT > 2) {
+    fx.setLite(true); // still slow at 1x: lighter effects for the rest of the session
     app.slowT = 0;
   }
   app.hudT -= dt;
