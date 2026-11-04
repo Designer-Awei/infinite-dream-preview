@@ -1614,3 +1614,12 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 @keyframes fcGlow { 0%, 100% { filter: drop-shadow(0 0 1px rgba(255,210,90,.35)); } 50% { filter: drop-shadow(0 0 7px rgba(255,210,90,.95)); } }
 @media (prefers-reduced-motion: reduce) { .mine-hub .mh-freecu.ready, .mine-hub .mh-freecu.ready img { animation: none !important; } }
 .st-sub .st-prog { font-weight: normal; color: #ffd84a; }
+/* live item demo inside the effect preview */
+.sc-live { background: #1c2a1a; }
+.sc-live .sc-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.sc-live .sc-cap { z-index: 2; }
+/* 积攒 bar centred between the machine's visible right edge (the dome, 92% of the machine box) and the panel */
+.gacha2 { --sg: calc(13px + var(--gw) * .04); }
+.gacha2 .stashbar { left: calc(6% + var(--gw) * .92 + var(--sg)); }
+.gacha2.has-stash .gp { left: calc(6% + var(--gw) * .92 + var(--sg) * 2 + 58px); }
+@media (max-width: 760px) { .gacha2 { --sg: calc(12px + var(--gw) * .04); } .gacha2.has-stash .gp { left: calc(6% + var(--gw) * .92 + var(--sg) * 2 + 46px); } }
