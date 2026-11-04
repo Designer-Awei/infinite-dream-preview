@@ -1,37 +1,35 @@
 // Live effect demos for gacha items (pool preview / exchange): a tiny real fight — the real Game, Renderer and
 // effects — where the selected girl uses the item, like the mine guide's demos. Muted, looping, stops by itself
 // when its canvas leaves the page.
-import { VIEW_W, VIEW_H, RS, CHAR_ORDER, ELEM_KEYS, CHARS } from "./data.js";
+import { VIEW_W, VIEW_H, RS, ELEM, ELEM_KEYS, CHARS } from "./data.js";
+import { iconURL, skillIcon } from "./icons.js";
 import { Game, applyCard } from "./game.js";
 import { Renderer } from "./render.js";
 import { FxLayer } from "./fx.js";
 import { setSfxMute } from "./audio.js";
 
-const ZOOM = 2.1; // the visible canvas shows the middle of the view, closer than in a run
 
 // how each item is shown. kit: talents/equips given to the demo girl; foes: enemy setup; tick: per-frame input/actions
 const near = (p, dx, dy) => ({ x: p.x + dx, y: p.y + dy });
-// hud: which in-run numbers to show over the demo; base: what they would be without the card (drawn as a grey ghost)
 const DEMO = {
   t_speed: { tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.6)), (inp.my = Math.sin(t * 1.6) * 0.7)) },
   t_range: { foes: { dx: 230, spread: 60 } },
-  t_coin: { hud: ["coin"], foes: { hp: 4, n: 4 }, respawn: 0.8 },
-  t_magnet: { hud: ["coin"], foes: { hp: 4, n: 4, dx: 150 }, respawn: 0.8 },
-  t_start_coin: { hud: ["coin"] },
-  t_hp: { hud: ["hp"], foes: { n: 3, hp: 300 } },
-  t_shield: { hud: ["shield"], foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
-  t_shield2: { hud: ["shield"], foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
-  t_ult: { hud: ["ult"], autoUlt: true },
-  t_overclock: { hud: ["ult"], autoUlt: true },
-  u_second_ult: { hud: ["ult"], autoUlt: true, ult: 1 },
+  t_coin: { foes: { hp: 4, n: 4 }, respawn: 0.8 },
+  t_magnet: { foes: { hp: 4, n: 4, dx: 150 }, respawn: 0.8 },
+  t_start_coin: {},
+  t_hp: { realHp: true, foes: { n: 3, hp: 300 } },
+  t_shield: { foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
+  t_shield2: { foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
+  t_ult: { autoUlt: true },
+  t_overclock: { autoUlt: true },
+  u_second_ult: { autoUlt: true, ult: 1 },
   t_revive: {
-    hud: ["hp"],
+    realHp: true,
     hp: 3,
     foes: { n: 3, hp: 300 },
     start: (g, p) => g.after(1.4, () => g.hurt(p, 99, { x: p.x + 20, y: p.y })),
   },
   t_firewall: {
-    hud: ["shield"],
     foes: { n: 4, hp: 300, dx: 60, spread: 40 },
     start: (g, p) => {
       for (const k of [1.1, 3.6]) g.after(k, () => { p.lastHit = 0; g.hurt(p, p.shield, { x: p.x + 20, y: p.y }); });
@@ -46,15 +44,14 @@ const DEMO = {
     }),
     tick: (g, p, t, inp) => t > 1.3 && t < 2.4 && ((inp.mx = 0.9), (inp.my = 0.4), (inp.atk = false)),
   },
-  t_moe: { hud: ["hp"], hp: 12, start: (g, p) => ((p.hp = Math.floor(p.maxHp / 2))), tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.2) * 0.6), (inp.my = Math.sin(t * 1.2) * 0.5)) },
+  t_moe: { realHp: true, start: (g, p) => ((p.hp = Math.floor(p.maxHp / 2))), tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.2) * 0.6), (inp.my = Math.sin(t * 1.2) * 0.5)) },
   t_elite: { foes: { n: 2, elite: true, hp: 300 } },
-  t_replay: { hud: ["ult"], foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7 },
+  t_replay: { foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7 },
   t_cd: { autoSkill: true },
   u_echo: { autoSkill: true, cd: 0.3 },
   u_links: { autoSkill: true, cd: 0.4 },
   u_kill_boom: { foes: { n: 5, hp: 5, dx: 140, spread: 50, step: 22 }, respawn: 0.9 },
   u_shield_nova: {
-    hud: ["shield"],
     foes: { n: 4, hp: 300, dx: 60, spread: 40 },
     start: (g, p) => {
       for (const k of [1.1, 3.6]) g.after(k, () => { p.lastHit = 0; g.hurt(p, p.shield, { x: p.x + 20, y: p.y }); });
@@ -64,54 +61,55 @@ const DEMO = {
   u_element_spread: { infuse: true, foes: { n: 5, hp: 300, spread: 80, step: 30 } },
 };
 
-/** one-line caption under each demo (the card itself keeps the full text) */
-const CAPS = {
-  t_dmg: "全角色伤害 +4%/级（满级 +20%）",
-  t_hp: "全角色生命上限 +1/级（满级 +3）",
-  t_shield: "护盾回复速度 +10%/级（满级 +50%）",
-  t_speed: "移速 +3%/级（满级 +9%）",
-  t_coin: "局内金币 +12%/级（满级 +60%）",
-  t_start_coin: "开局金币 +15/级（满级 +75）",
-  t_crit: "暴击率 +3%/级（满级 +15%）",
-  t_ult: "开局大招充能 +30%/级（满级 60%）",
-  t_revive: "每局一次：倒下时原地满血复活",
-  t_overclock: "大招充能 +30%，开局大招 50%",
-  t_firewall: "护盾破碎时放冲击波（8 秒冷却）",
-  t_ensemble: "每第 4 次普攻追加 3 发散射弹",
-  t_rate: "攻速 +2%/级（满级 +10%）",
-  t_range: "射程 +3%/级（满级 +15%）",
-  t_magnet: "金币吸取范围 +15%/级（满级 +45%）",
-  t_cd: "小技能冷却 -4%/级（满级 -20%）",
-  t_elite: "对精英和首领伤害 +5%/级（满级 +25%）",
-  t_shield2: "护盾上限 +1/级（满级 +2）",
-  t_replay: "击败精英或首领时大招 +10%/级",
-  t_chain: "每第 5 次普攻放闪电，弹跳 4 个敌人",
-  t_rag: "每进一个战斗房间，身边掉 1 个道具",
-  t_moe: "半血以下：伤害 +30%，移速 +15%",
-  u_kill_boom: "敌人死亡时爆炸，炸伤周围敌人",
-  u_reaction_amp: "元素反应伤害 +60%",
-  u_element_spread: "元素印记 25% 概率传给附近敌人",
-  u_shield_nova: "护盾破碎时放冲击波并击退敌人",
-  u_echo: "小技能 35% 概率再放一次",
-  u_second_ult: "放完大招立即返还 40% 充能",
-  u_links: "放小技能时附带另一位角色的小技能",
-};
-export const demoCaption = (it) => CAPS[it.id] || it.desc;
-
 /** every item gets a live demo except 先验知识 (a card deal before the run — the card scene shows it better) */
 export const hasLiveDemo = (it) => it.id !== "t_startcard";
 
-export function mountItemDemo(cvs, it, cid) {
+/**
+ * box: an element to fill. Inside it goes a miniature of the real in-run screen — the game canvas at its real view,
+ * the real HUD (portrait, health/shield bars, coins) and the real touch controls (joystick, attack / skill / ult /
+ * dash buttons with their cooldowns and charge ring) — laid out at phone size and scaled down to fit.
+ */
+export function mountItemDemo(box, it, cid) {
   const D = DEMO[it.id] || {};
+  const SW = 860, SH = Math.round((SW * VIEW_H) / VIEW_W); // the phone-sized screen we lay out, then scale down
+  box.style.setProperty("--va", String(VIEW_W / VIEW_H));
+  const scr = document.createElement("div");
+  scr.className = "demo-scr";
+  scr.style.width = SW + "px";
+  scr.style.height = SH + "px";
+  const ec = ELEM[CHARS[cid].elem];
+  scr.style.setProperty("--ec", ec.color);
+  scr.style.setProperty("--eg", ec.glow);
+  scr.innerHTML = `<canvas class="demo-cv"></canvas>
+    <div class="hud"><div class="tl"><div class="face"><img src="assets/portrait_${cid}.png" alt=""></div>
+      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar sh"><i></i><span class="o1"></span></div>
+      <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div></div></div></div>
+      <div class="tr"><button class="btn small gray pausebtn" tabindex="-1">Ⅱ</button></div></div>
+    <div class="touchpad">
+      <div class="joy"><div class="joyknob"></div></div>
+      <div class="tbtn b-atk"><i class="bface"></i><img class="ico" alt=""><span class="lb">${CHARS[cid].atk.name}</span></div>
+      <div class="tbtn b-skill"><i class="ring"></i><i class="bface"></i><img class="ico" alt=""><i class="cd"></i><b class="cdt"></b><span class="lb">${CHARS[cid].skill.name}</span></div>
+      <div class="tbtn b-ult"><i class="ring"></i><i class="bface"></i><img class="ico" alt=""><i class="cd"></i><b class="cdt"></b><span class="lb">${CHARS[cid].ult.name}</span></div>
+      <div class="tbtn b-dash"><i class="bface"></i><img class="ico" alt=""><i class="cd"></i><b class="cdt"></b><span class="lb">闪避</span></div>
+    </div>`;
+  box.appendChild(scr);
+  for (const slot of ["atk", "skill", "ult", "dash"]) scr.querySelector(`.b-${slot} .ico`).src = iconURL(skillIcon(cid, slot), 4);
+  const fit = () => (scr.style.transform = `scale(${box.clientWidth / SW})`);
+  fit();
+  const cvs = scr.querySelector(".demo-cv");
+  cvs.width = VIEW_W * RS;
+  cvs.height = VIEW_H * RS;
   const fxl = new FxLayer(VIEW_W, VIEW_H);
-  const off = document.createElement("canvas");
-  off.width = VIEW_W * RS;
-  off.height = VIEW_H * RS;
-  const rnd = new Renderer(off, fxl);
-  const vis = cvs.getContext("2d");
+  const rnd = new Renderer(cvs, fxl);
+  const q = (s) => scr.querySelector(s);
+  const ui = {
+    hpI: q(".bar.hp i"), hpT: q(".bar.hp span"), shI: q(".bar.sh i"), shT: q(".bar.sh span"), coins: q(".coins"), cubes: q(".cubes"),
+    knob: q(".joyknob"), joy: q(".joy"), atk: q(".b-atk"), skill: q(".b-skill"), ult: q(".b-ult"), dash: q(".b-dash"),
+  };
+  const cache = {};
+  const put = (k, v, fn) => cache[k] !== v && ((cache[k] = v), fn(v));
+  const press = (n) => (n.classList.add("down"), setTimeout(() => n.classList.remove("down"), 140));
   let g = null, p = null, t = 0, last = performance.now(), dur = D.dur || 6.5, respawnT = 0;
-  // the same numbers without this card, for the grey comparison bars in the hud
-  const base = { ult: null, coins: null, prevUlt: 0, prevCoins: 0 };
   const kitFor = () => {
     const kit = { tal: {}, eq: {}, cards: [] };
     if (it.eq) kit.eq[it.id] = it.max;
@@ -119,11 +117,11 @@ export function mountItemDemo(cvs, it, cid) {
     return kit;
   };
   const foes = () => {
-    const f = { type: "slime", n: 3, hp: 60, dx: 95, spread: 55, step: 26, elite: false, ...(D.foes || {}) };
+    const f = { type: "slime", n: 3, hp: 60, dx: 120, spread: 60, step: 26, elite: false, ...(D.foes || {}) };
     for (let i = 0; i < f.n; i++) {
       const a = (i - (f.n - 1) / 2) / Math.max(1, f.n - 1);
-      const q = near(p, f.dx + (i % 2) * f.step, a * f.spread * 2);
-      const e = g.spawnEnemy(f.type, q.x, q.y, f.elite, 0.25);
+      const qq = near(p, f.dx + (i % 2) * f.step, a * f.spread * 2);
+      const e = g.spawnEnemy(f.type, qq.x, qq.y, f.elite, 0.25);
       e.hp = e.maxHp = f.hp * (f.elite ? 2 : 1);
     }
   };
@@ -136,14 +134,12 @@ export function mountItemDemo(cvs, it, cid) {
     g.phase = "demo";
     g.banner = null;
     g.enemies.length = 0;
-    // stand a little left of the centre, facing the dummies
     const c = g.map.center;
-    p.x = c.x - 90;
+    p.x = c.x - 110;
     p.y = c.y;
     p.invuln = 0;
-    // a little extra health keeps the girl standing through the loop, except where the health bar itself is the point
-    const showsHp = D.hud && D.hud.includes("hp");
-    if (!showsHp) p.hp = p.maxHp = Math.max(p.maxHp, D.hp || 10);
+    // a little extra health keeps the girl standing through the loop, except where her health is the point
+    if (!D.realHp) p.hp = p.maxHp = Math.max(p.maxHp, D.hp || 10);
     if (D.hp && D.hp < p.maxHp) p.hp = D.hp;
     if (it.eq || it.card) g.applyLoadouts();
     if (it.card && !it.eq) applyCard(g, p, it.card);
@@ -155,93 +151,43 @@ export function mountItemDemo(cvs, it, cid) {
     }
     foes();
     if (D.start) D.start(g, p);
-    base.ult = it.id === "t_ult" || it.id === "t_overclock" ? 0 : ["u_second_ult", "t_replay"].includes(it.id) ? p.ult : null;
-    base.coins = it.id === "t_start_coin" ? 0 : it.id === "t_coin" ? p.coins : null;
-    base.prevUlt = p.ult;
-    base.prevCoins = p.coins;
     t = 0;
     respawnT = 0;
     rnd.follow(g, p, 0, true);
   };
-  const trackBase = () => {
-    const d = p.ult - base.prevUlt;
-    if (base.ult != null) {
-      if (d < -0.25) base.ult = base.ult >= 0.999 ? 0 : base.ult; // she cast: the card-less girl casts too if she could
-      else if (d > 0) {
-        let gain = d;
-        if (it.id === "t_overclock") gain /= 1.3;
-        if (it.id === "t_replay" && d >= p.st.replay - 1e-6) gain -= p.st.replay;
-        base.ult = Math.min(1, base.ult + Math.max(0, gain));
-      }
-    }
-    const dc = p.coins - base.prevCoins;
-    if (base.coins != null && dc > 0) base.coins += it.id === "t_coin" ? dc / p.st.coin : dc;
-    base.prevUlt = p.ult;
-    base.prevCoins = p.coins;
-  };
-  // in-run numbers the card changes, drawn like a tiny HUD in the top-left corner (the card face already has the text)
-  const drawHud = () => {
-    const k = cvs.width / 430, x0 = 8 * k;
-    let y = 8 * k;
-    const font = (px) => `${Math.round(px * k)}px Cubic, sans-serif`;
-    const rows = D.hud.reduce((n, h) => n + (h === "ult" || h === "coin" ? (base[h === "ult" ? "ult" : "coins"] != null ? 2 : 1) : 1), 0);
-    vis.fillStyle = "rgba(14,10,30,.72)";
-    vis.beginPath();
-    vis.roundRect(4 * k, 4 * k, 168 * k, (rows * 17 + 8) * k, 7 * k);
-    vis.fill();
-    vis.textBaseline = "middle";
-    const label = (txt, col, yy) => ((vis.font = font(11)), (vis.fillStyle = col), vis.fillText(txt, x0, yy + 6 * k));
-    const cells = (n, fill, bonus, on, off, yy) => {
-      for (let i = 0; i < n; i++) {
-        const cx = x0 + 34 * k + i * 10 * k;
-        vis.fillStyle = i < fill ? on : off;
-        vis.fillRect(cx, yy + 1 * k, 8 * k, 10 * k);
-        if (i >= n - bonus) ((vis.strokeStyle = "#ffd84a"), (vis.lineWidth = 1.6 * k), vis.strokeRect(cx - 0.5 * k, yy + 0.5 * k, 9 * k, 11 * k));
-      }
-    };
-    const bar = (frac, col, yy, h = 10) => {
-      vis.fillStyle = "rgba(255,255,255,.14)";
-      vis.fillRect(x0 + 34 * k, yy + 1 * k, 92 * k, h * k);
-      vis.fillStyle = col;
-      vis.fillRect(x0 + 34 * k, yy + 1 * k, 92 * k * Math.max(0, Math.min(1, frac)), h * k);
-    };
-    const num = (txt, col, yy, dx = 132) => ((vis.font = font(11)), (vis.fillStyle = col), vis.fillText(txt, x0 + dx * k, yy + 6 * k));
-    for (const h of D.hud) {
-      if (h === "hp") {
-        const bonus = it.id === "t_hp" ? it.max : 0;
-        label("生命", "#ff9aa8", y);
-        cells(Math.min(12, p.maxHp), Math.max(0, p.hp), bonus, "#ff4a5e", "rgba(255,255,255,.16)", y);
-        y += 17 * k;
-      } else if (h === "shield") {
-        const bonus = it.id === "t_shield2" ? it.max : 0;
-        label("护盾", "#9ac8ff", y);
-        cells(p.maxShield, Math.floor(p.shield), bonus, "#5aa8ff", "rgba(255,255,255,.16)", y);
-        y += 17 * k;
-      } else if (h === "ult") {
-        label("大招", "#ffd84a", y);
-        bar(p.ult, "#ffc23a", y);
-        num(Math.floor(p.ult * 100) + "%", "#ffd84a", y);
-        y += 17 * k;
-        if (base.ult != null) {
-          label("无此卡", "#a8a0c0", y);
-          bar(base.ult, "#8a84a0", y);
-          num(Math.floor(base.ult * 100) + "%", "#a8a0c0", y);
-          y += 17 * k;
-        }
-      } else if (h === "coin") {
-        label("金币", "#ffd84a", y);
-        num(String(Math.round(p.coins)), "#ffd84a", y, 46);
-        y += 17 * k;
-        if (base.coins != null) {
-          label("无此卡", "#a8a0c0", y);
-          num(String(Math.round(base.coins)), "#a8a0c0", y, 46);
-          y += 17 * k;
-        }
-      }
-    }
+  // the real HUD and buttons, fed from the demo girl (same rules as the in-run HUD)
+  const hud = () => {
+    put("hp", p.hp + "/" + p.maxHp, (v) => ((ui.hpI.style.width = (100 * Math.max(0, p.hp)) / p.maxHp + "%"), (ui.hpT.textContent = "❤ " + v)));
+    put("sh", p.shield + "/" + p.maxShield, (v) => ((ui.shI.style.width = (100 * p.shield) / Math.max(1, p.maxShield) + "%"), (ui.shT.textContent = "🛡 " + v)));
+    put("coins", p.coins, (v) => (ui.coins.textContent = v));
+    put("cubes", p.cubes, (v) => (ui.cubes.textContent = v));
+    const c = CHARS[cid], sk = Math.max(0, p.skillCd) / (c.skill.cd * p.st.cd), dk = Math.max(0, p.dashCd) / 1.6, uk = Math.min(1, p.ult);
+    const t1 = (v) => (Math.ceil(v * 10) / 10 || 0.1).toFixed(1);
+    const skT = sk > 0 ? (sk * c.skill.cd * p.st.cd >= 1 ? String(Math.ceil(sk * c.skill.cd * p.st.cd)) : t1(sk * c.skill.cd * p.st.cd)) : "";
+    put("sk", skT + (sk <= 0), () => {
+      ui.skill.querySelector(".cd").style.setProperty("--p", Math.round(sk * 100) + "%");
+      ui.skill.querySelector(".cdt").textContent = skT;
+      ui.skill.classList.toggle("ready", sk <= 0);
+    });
+    put("dk", Math.round(dk * 20), () => {
+      ui.dash.querySelector(".cd").style.setProperty("--p", Math.round(dk * 100) + "%");
+      ui.dash.querySelector(".cdt").textContent = dk > 0 ? t1(dk * 1.6) : "";
+      ui.dash.classList.toggle("ready", dk <= 0);
+    });
+    put("uk", Math.floor(uk * 100), () => {
+      ui.ult.style.setProperty("--chg", Math.round(uk * 100) + "%");
+      ui.ult.querySelector(".cdt").textContent = uk < 1 ? Math.floor(uk * 100) + "%" : "";
+      ui.ult.classList.toggle("ready", uk >= 1);
+    });
+    const m = Math.hypot(p.input.mx, p.input.my) > 0.1;
+    put("joy", `${p.input.mx.toFixed(2)},${p.input.my.toFixed(2)}`, () => {
+      ui.knob.style.transform = `translate(${p.input.mx * 46}px,${p.input.my * 46}px)`;
+      ui.joy.classList.toggle("on", m);
+    });
+    ui.atk.classList.toggle("firing", !!p.input.atk);
   };
   const frame = (now) => {
-    if (!cvs.isConnected) return;
+    if (!box.isConnected) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
     setSfxMute(true);
@@ -254,30 +200,19 @@ export function mountItemDemo(cvs, it, cid) {
       inp.atk = D.atk !== false && t > 0.4;
       inp.aim = null;
       if (D.tick) D.tick(g, p, t, inp);
-      if (D.autoSkill && p.skillCd <= 0 && t > 0.6) inp.skill = true;
-      if (D.autoUlt && p.ult >= 1 && t > 0.6) {
-        inp.ult = true;
-        if (D.onUlt) D.onUlt(g, p);
-      }
+      if (D.autoSkill && p.skillCd <= 0 && t > 0.6) (inp.skill = true), press(ui.skill);
+      if (D.autoUlt && p.ult >= 1 && t > 0.6) (inp.ult = true), press(ui.ult);
       // keep the fight going: refill the dummies a moment after they all fall
       if (g.enemies.every((e) => e.dead)) {
         respawnT += dt;
-        if (respawnT > (D.respawn || 0.9) && t < dur - 1) {
-          if (D.onKill) D.onKill(g, p);
-          respawnT = 0;
-          foes();
-        }
+        if (respawnT > (D.respawn || 0.9) && t < dur - 1) (respawnT = 0), foes();
       }
       g.update(dt);
       fxl.update(dt);
-      trackBase();
       rnd.follow(g, p, dt);
       rnd.draw(g, p, dt);
-      // show the middle of the view, a bit closer
-      const sw = (VIEW_W * RS) / ZOOM, sh = Math.min(VIEW_H * RS, (sw * cvs.height) / cvs.width);
-      vis.imageSmoothingEnabled = false;
-      vis.drawImage(off, (VIEW_W * RS - sw) / 2, (VIEW_H * RS - sh) / 2 + 12 * RS, sw, sh, 0, 0, cvs.width, cvs.height);
-      if (D.hud) drawHud();
+      hud();
+      if (box.clientWidth && cache.w !== box.clientWidth) (cache.w = box.clientWidth), fit();
     } catch (e) {
       console.warn("item demo", it.id, e);
       return;

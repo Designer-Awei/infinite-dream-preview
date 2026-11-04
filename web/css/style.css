@@ -1624,3 +1624,9 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .gacha2.has-stash .gp { left: calc(6% + var(--gw) * .92 + var(--sg) * 2 + 58px); }
 @media (max-width: 760px) { .gacha2 { --sg: calc(12px + var(--gw) * .04); } .gacha2.has-stash .gp { left: calc(6% + var(--gw) * .92 + var(--sg) * 2 + 46px); } }
 .sc-live .sc-cap { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; left: 6px; right: 6px; }
+/* live item demo = a scaled-down copy of the real in-run screen (canvas + HUD + touch controls) */
+.sc-live { height: auto !important; aspect-ratio: var(--va, 2.1); background: #1c2a1a; }
+.demo-scr { position: absolute; left: 0; top: 0; transform-origin: 0 0; overflow: hidden; pointer-events: none; }
+.demo-scr .demo-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
+.demo-scr .touchpad { display: block !important; }
+.demo-scr .hud, .demo-scr .touchpad { z-index: 1; }

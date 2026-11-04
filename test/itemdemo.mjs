@@ -16,7 +16,7 @@ for (const id of ids) {
   const e0 = errs.length;
   await p.evaluate((id) => document.querySelector(`.pool-modal [data-id="${id}"]`).click(), id);
   await p.waitForTimeout(900);
-  const sig = () => p.evaluate(() => { const c = document.querySelector(".sc-cv"); if (!c) return null; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let h = 0, v = 0; for (let i = 0; i < d.length; i += 97) (h = (h * 31 + d[i]) | 0), (v += d[i]); return [h, v]; });
+  const sig = () => p.evaluate(() => { const c = document.querySelector(".demo-cv"); if (!c) return null; const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data; let h = 0, v = 0; for (let i = 0; i < d.length; i += 97) (h = (h * 31 + d[i]) | 0), (v += d[i]); return [h, v]; });
   const a = await sig(); await p.waitForTimeout(1500); const z = await sig();
   const box = await p.evaluate(() => { const n = document.querySelector(".sc"); const r = n.getBoundingClientRect(); return { x: r.left, y: r.top, width: r.width, height: r.height }; });
   await p.screenshot({ path: `/home/claude/infinite-dream-preview/tmp/demo/${id}.png`, clip: box });
