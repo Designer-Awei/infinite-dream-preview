@@ -135,10 +135,17 @@ var Hm=Object.defineProperty;var X=(a,t,e)=>()=>{if(e)throw e[0];try{return a&&(
     <div class="gp-pity o1"></div>
     <div class="gp-btns"></div>
   </div>`,a.appendChild(e),ut(".back-btn",e).onclick=()=>(Z("click"),_i()),c1(e);let s=ut(".gm-dome",e);s.classList.add("phys"),My(s,ut(".gm",e));let n=(h,u,p,m)=>{let x=[],g=[];for(let y=0;y<=24;y++){let M=y/24,v=(u+(p-u)*M)*Math.PI/180,b=m/2*Math.sin(Math.PI*M)**.6;x.push([50+(h+b)*Math.cos(v),50+(h+b)*Math.sin(v)]),g.unshift([50+(h-b)*Math.cos(v),50+(h-b)*Math.sin(v)])}return"M"+[...x,...g].map(([y,M])=>y.toFixed(2)+" "+M.toFixed(2)).join(" L")+" Z"};s.insertAdjacentHTML("beforeend",`<svg class="gm-gloss" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="${n(40.5,192,256,7)}" fill="#fff" fill-opacity=".82"/>
-    <path d="${n(40.5,262,274,4)}" fill="#fff" fill-opacity=".82"/>
-    <path d="${n(34,204,238,2.6)}" fill="#fff" fill-opacity=".35"/>
-    <path d="${n(44,14,66,2.6)}" fill="#fff" fill-opacity=".32"/>
+    <defs>
+      <filter id="glsB" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
+      <filter id="glsS" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0.7"/></filter>
+      <radialGradient id="glsG" cx="30%" cy="26%" r="34%"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="49" fill="url(#glsG)"/>
+    <path d="${n(40,190,258,9)}" fill="#fff" fill-opacity=".55" filter="url(#glsB)"/>
+    <path d="${n(40.5,198,250,4.2)}" fill="#fff" fill-opacity=".6" filter="url(#glsS)"/>
+    <path d="${n(40.5,262,274,4)}" fill="#fff" fill-opacity=".55" filter="url(#glsS)"/>
+    <path d="${n(33.5,204,238,3)}" fill="#fff" fill-opacity=".28" filter="url(#glsB)"/>
+    <path d="${n(44,14,66,3.2)}" fill="#fff" fill-opacity=".3" filter="url(#glsB)"/>
   </svg>`);let o=ut(".gp-feat",e);for(let h of py){let u=vt.pool.find(m=>m.id===h),p=t.talents[h]||0;o.insertAdjacentHTML("beforeend",l1(u,{sub:vm(u,p),cls:"feat"})),o.lastElementChild.onclick=()=>(Z("card"),d1(u))}ut(".gp-poolbtn",e).onclick=()=>(Z("click"),my());let r=je().cards;if(r){let h=ot("button","gp-poolbtn gp-exbtn o1",`<img src="${It("cardgold",2)}" alt=""><span><i class="lbl">\u5151\u6362\u5361 </i>\xD7${r}</span>`);h.onclick=()=>(Z("click"),km(()=>qc())),ut(".gp-head",e).insertBefore(h,ut(".gp-poolbtn",e))}if(H5()){let h=t.stash||0,u=h<=10?h/10*.3:h<=20?.3+(h-10)/10*.25:Math.min(1,.55+(h-20)/30*.45),p=ot("button","stashbar",`<div class="sb-h outline">\u79EF\u6512</div><div class="sb-tube"><i class="sb-fill" style="height:${u*100}%"></i>
       <b class="sb-t ur" style="bottom:30%"><em>10</em></b><b class="sb-t hur" style="bottom:55%"><em>20</em></b><b class="sb-t" style="bottom:100%"><em>50</em></b></div><div class="sb-n outline">${h}<small>/\u221E</small></div>`);p.onclick=()=>(Z("click"),by()),e.appendChild(p),e.classList.add("has-stash")}let i=ut(".gp-pity",e);i.innerHTML=`<div class="pb"><span>SSR \u4FDD\u5E95</span><div class="st"><i style="width:${t.pity/vt.pity*100}%;background:linear-gradient(90deg,#ffe36a,#ff9a2e)"></i></div><span>${t.pity}/${vt.pity}</span></div>
     <div class="pb"><span>SR \u4FDD\u5E95</span><div class="st"><i style="width:${Math.min(10,t.pity10)*10}%;background:linear-gradient(90deg,#e0b0ff,#a060ff)"></i></div><span>${Math.min(10,t.pity10)}/10</span></div>
