@@ -1675,3 +1675,30 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .lb-hero.anim canvas.lb-anim { display: block; }
 .lb-hero.anim img { visibility: hidden; }
 .lb-hero.dark canvas.lb-anim { filter: brightness(0) opacity(.55) drop-shadow(0 0 2px #fff4); }
+/* the hero box no longer follows the picture's width (it changed with every girl and while a new picture was
+   still loading, which shifted her off the island centre for a moment): a fixed square, art centred inside */
+.lb-hero { aspect-ratio: 1; }
+.lb-hero > img { position: absolute; bottom: 0; left: 0; right: 0; margin: 0 auto; height: 100%; width: auto; }
+/* a maxed / claimed row keeps a button-sized slot (transparent, green text) so every row has the same height */
+.btn.mu-done, .btn.mu-done:active { background: none !important; box-shadow: none !important; border-color: transparent !important; transform: none !important; cursor: default; }
+.btn.mu-done span { color: #7dffb0; }
+.btn.mu-done small { visibility: hidden; }
+/* help: mine ores and chests as tiles */
+.hp-ores { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 5px; margin: 4px 0 8px; }
+.hp-ore { display: grid; grid-template-columns: 26px 1fr; column-gap: 6px; align-items: center; padding: 4px 6px; border: 2px solid var(--ink); border-radius: 8px; background: rgba(255,255,255,.08); }
+.hp-ore.wide { grid-column: 1 / -1; }
+.hp-ore img { grid-row: 1 / 4; width: 24px; height: 24px; image-rendering: pixelated; }
+.hp-ore b { font-weight: normal; color: #ffe36a; font-size: 13px; }
+.hp-ore span { font-size: 12px; white-space: nowrap; } .hp-ore.wide span { white-space: normal; } .hp-ore img.cur { grid-row: auto; width: 1em; height: 1em; vertical-align: -0.15em; margin: 0 1px 0 3px; } .hp-ore small { font-size: 10.5px; color: #c8c0e8; }
+.hp-ore .cur.gem { width: .9em; height: .9em; margin: 0 1px; }
+
+/* mine help: one ore / chest per line, like the map-item list */
+.hp-orow { display: flex; gap: 8px; align-items: center; margin: 3px 0; }
+.hp-orow > img { flex: none; width: 22px; height: 22px; image-rendering: pixelated; }
+.hp-orow > b { flex: none; width: 6.2em; white-space: nowrap; font-weight: normal; color: #ffe36a; }
+.hp-orow > span { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hp-orow > em { flex: none; width: 2.6em; font-style: normal; white-space: nowrap; }
+.hp-orow img.cur { width: 1em; height: 1em; vertical-align: -0.15em; margin: 0 1px 0 4px; image-rendering: pixelated; }
+.hp-orow .cur.gem { width: .9em; height: .9em; margin: 0 1px; }
+/* Cubic's glyphs sit ~2px above the centre of their line box: nudge the text so it centres on the icon */
+.hp-orow > b, .hp-orow > em, .hp-orow > span { position: relative; top: 2px; }
