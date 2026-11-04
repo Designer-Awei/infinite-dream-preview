@@ -1621,7 +1621,7 @@ export class Dive {
       g.fillRect(b.x + 2, b.y - 8, 2, 3);
     }
     // player
-    this.drawPlayer(g);
+    this.drawPlayer(g, rs);
     // bullets
     for (const b of this.bullets) {
       if (b.rock) {
@@ -1971,7 +1971,9 @@ export class Dive {
   }
   drawMole(g, m) {
     const x = Math.round(m.x), y = Math.round(m.y + m.d.r), f = m.face || 1, step = m.awake ? Math.round(Math.sin(m.anim * 18)) : 0;
-    const R = (dx, dy, w, h, c) => ((g.fillStyle = c), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
+    // hit flash: her own shape turns near-white (outline kept), not a white box over her
+    const hit = m.flash > 0, lit = (c) => (hit && c !== "#1a1020" ? "#" + [1, 3, 5].map((i) => Math.round(parseInt(c.slice(i, i + 2), 16) * 0.3 + 255 * 0.7).toString(16).padStart(2, "0")).join("") : c);
+    const R = (dx, dy, w, h, c) => ((g.fillStyle = lit(c)), g.fillRect(f > 0 ? x + dx : x - dx - w, y + dy, w, h));
     R(-9, -12, 15, 11, "#1a1020"); // outline
     R(-8, -11, 13, 9, "#7a5034"); // body
     R(-8, -11, 13, 3, "#9a6a44");
@@ -1987,7 +1989,6 @@ export class Dive {
     R(-12, -12, 2, 2, "#ffe36a");
     R(-6 + step, -2, 3, 2, "#1a1020"); // feet
     R(1 - step, -2, 3, 2, "#1a1020");
-    if (m.flash > 0) (g.globalAlpha = 0.6), R(-9, -15, 18, 15, "#ffffff"), (g.globalAlpha = 1);
     if (m.awake) {
       const w = 16;
       g.fillStyle = "#14101c";
@@ -2024,7 +2025,7 @@ export class Dive {
     this.label(g, "地下商人", x, y - 62, "#e0c8ff", 9);
     if (this.nearShop) this.label(g, "站定交易", x, y - 74, "#7dffb0", 9, 0.6 + 0.4 * Math.sin(t * 6));
   }
-  drawPlayer(g) {
+  drawPlayer(g, rs = 1) {
     const p = this.p, set = A.girls[this.o.cid];
     if (!set) return;
     const L = p.face > 0 ? "" : "L", side = p.face > 0 ? "side" : "sideL";
@@ -2037,28 +2038,29 @@ export class Dive {
     if (!p.dig && walking && C["run_e" + L]) clip = C["run_e" + L];
     else if (!p.dig && C["idle_e" + L]) (clip = C["idle_e" + L]), (fps = 5);
     const frame = clip ? clip[Math.floor(p.anim * fps) % clip.length] : set.views[side];
-    // the figure is about 32 world px tall: frames are pre-shrunk once with smoothing so the small sprite stays clean
-    const fig = set.foot - set.top, k = 32 / fig;
+    // the figure is about 32 world px tall: frames are pre-shrunk once (with smoothing) straight to the size they
+    // cover on screen, so she stays crisp at any zoom (shrinking to 32 px and then scaling that up blurred her)
+    const fig = set.foot - set.top, k = 32 / fig, kd = Math.min(1, k * rs);
     const small = (c) => {
-      if (c.__s && c.__sk === k) return c.__s;
+      if (c.__s && c.__sk === kd) return c.__s;
       const o = document.createElement("canvas");
-      o.width = Math.max(1, Math.round(c.width * k));
-      o.height = Math.max(1, Math.round(c.height * k));
+      o.width = Math.max(1, Math.round(c.width * kd));
+      o.height = Math.max(1, Math.round(c.height * kd));
       const og = o.getContext("2d");
       og.imageSmoothingEnabled = true;
       og.imageSmoothingQuality = "high";
       og.drawImage(c, 0, 0, o.width, o.height);
       c.__s = o;
-      c.__sk = k;
+      c.__sk = kd;
       return o;
     };
-    const img = small(frame), W = img.width, Hh = img.height;
+    const img = small(frame), W = (img.width * k) / kd, Hh = (img.height * k) / kd;
     const bob = !clip && walking ? -Math.abs(Math.sin(p.anim * 12)) * 1.5 : p.jet ? Math.sin(p.anim * 30) * 0.5 : 0;
     const digShake = p.dig ? Math.sin(this.time * 70) * 1 : 0, digJit = p.dig ? Math.round(Math.sin(this.time * 53)) * 0.5 : 0;
     const x = Math.round(p.x - W / 2 + digShake), y = Math.round(p.y - set.foot * k + bob + digJit);
     g.save();
     g.globalAlpha = blink ? 0.45 : 1;
-    g.drawImage(img, x, y);
+    g.drawImage(img, x, y, W, Hh);
     // the drill she holds: pointing ahead, or down / up while digging that way; the tip spins while digging
     const dx = p.dig ? (p.dig.dir === "side" ? p.face * 10 : 0) : p.face * 9, dy = p.dig && p.dig.dir === "down" ? 2 : p.dig && p.dig.dir === "up" ? -34 : -PH / 2; // up: above her head (the figure is ~32 px)
     g.save();
