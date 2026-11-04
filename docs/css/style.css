@@ -1702,3 +1702,11 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .hp-orow .cur.gem { width: .9em; height: .9em; margin: 0 1px; }
 /* Cubic's glyphs sit ~2px above the centre of their line box: nudge the text so it centres on the icon */
 .hp-orow > b, .hp-orow > em, .hp-orow > span { position: relative; top: 2px; }
+
+/* 梦核 owners: the name shimmers in flowing colours (the text-shadow outline would paint over a clipped gradient,
+   so the outline comes from drop-shadows instead) */
+.core-name { background: linear-gradient(90deg, #ffe36a, #ff8ad8, #8ad8ff, #8affc0, #ffe36a) 0 0 / 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent !important; text-shadow: none !important;
+  filter: drop-shadow(2px 0 0 var(--ink)) drop-shadow(-2px 0 0 var(--ink)) drop-shadow(0 2px 0 var(--ink)) drop-shadow(0 -2px 0 var(--ink)); animation: coreflow 3s linear infinite; }
+.lb-name .core-name { display: inline-block; }
+.cd-h .core-name { font-size: .85em; filter: none; }
+@keyframes coreflow { to { background-position: -200% 0; } }
