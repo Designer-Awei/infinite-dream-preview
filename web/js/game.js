@@ -51,10 +51,10 @@ export class Game {
     const p = {
       id, cid, name, local, kind: "player",
       x: 0, y: 0, r: 12, vx: 0, vy: 0, face: 0, moving: false, animT: Math.random() * 3,
-      hp: c.hp + talent("t_hp"), maxHp: c.hp + talent("t_hp"), core: kit.core ? 1 : 0, shield: c.shield, maxShield: c.shield,
+      hp: c.hp + talent("t_hp"), maxHp: c.hp + talent("t_hp"), core: kit.core ? 1 : 0, shield: c.shield + talent("t_shield2"), maxShield: c.shield + talent("t_shield2"),
       atkCd: 0, atkCount: 0, rampT: 0, idleFire: 1, skillCd: 0, ult: 0.3 * talent("t_ult"), dashCd: 0, dashT: 0, dashDx: 0, dashDy: 0,
       invuln: 0, hurtT: 0, lastHit: 99, shieldT: 0, recoil: 0, castT: 0,
-      st: { dmg: 1 + 0.04 * talent("t_dmg"), rate: 1, crit: 0.05 + 0.03 * talent("t_crit"), multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1, bspd: 1, size: 1, cd: 1, ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield") },
+      st: { dmg: 1 + 0.04 * talent("t_dmg"), rate: 1 + 0.02 * talent("t_rate"), crit: 0.05 + 0.03 * talent("t_crit"), multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1 + 0.03 * talent("t_range"), bspd: 1, size: 1, cd: 1 - 0.04 * talent("t_cd"), ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield"), mag: 1 + 0.15 * talent("t_magnet"), elite: 1 + 0.05 * talent("t_elite"), replay: 0.1 * talent("t_replay") },
       cards: {}, fusions: [], links: [],
       buff: {}, // name -> seconds left
       coins: 15 * talent("t_start_coin"), cubes: 0,
@@ -188,6 +188,12 @@ export class Game {
         }
       }
     }
+    // SSR 检索增强: a random map item lands next to each player who equipped it (combat rooms, not the arena)
+    if (this.host && !this.pvp && kind === "combat")
+      for (const p of this.players) if (p.kit && p.kit.eq.t_rag) {
+        const s = this.map.itemSpots.reduce((b, q) => (dist(q.x, q.y, p.x, p.y) > 40 && (!b || dist(q.x, q.y, p.x, p.y) < dist(b.x, b.y, p.x, p.y)) ? q : b), null);
+        if (s) this.spawnItem(rr.weighted(Object.keys(ITEM_WEIGHTS), (k) => ITEM_WEIGHTS[k]), s.x, s.y, true);
+      }
     if (kind === "shop") this.setupShop();
     this.phase = kind === "shop" ? "shop" : "fight";
     if (this.pvp) this.phase = "pvp";
@@ -334,6 +340,7 @@ export class Game {
     let m = p.st.dmg * (1 + 0.06 * p.cubes);
     if (p.buff.star > 0) m *= 1.3;
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
+    if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
     return m;
   }
   /** damage an enemy (or a PVP player). src: {p, elem, crit?, noReact, kind, noCrit} */
@@ -347,6 +354,7 @@ export class Game {
       const c = p.dodgeCrit > 0 ? 1 : p.st.crit;
       if (Math.random() < c) (crit = true), (dmg *= BAL.critMul);
     }
+    if (p && (e.elite || e.boss)) dmg *= p.st.elite || 1; // 对抗训练
     if (e.vulnT > 0) dmg *= 1.25;
     if (e.freezeT > 0) dmg *= 1.15;
     dmg = Math.max(0.5, dmg);
@@ -487,6 +495,7 @@ export class Game {
     this.runStats.kills++;
     if (e.elite) this.runStats.elites++;
     if (p) p.kills++;
+    if (p && (e.elite || e.boss) && p.st.replay) p.ult = Math.min(1, p.ult + p.st.replay); // 经验回放
     const col = { slime: ["#061412", "#12594a", "#47c752", "#a6f06a", "#f0ffd2"], slime_purple: ["#140a1e", "#4d1f6e", "#b05be0", "#e0a6ff", "#fff0ff"] }[e.type];
     this.vfx("spawn/poof", e.x, e.y + 2, col ? { palette: col } : {});
     this.sound("kill", 0.05);
@@ -1110,6 +1119,7 @@ export class Game {
     const c = CHARS[p.cid];
     // movement
     let spd = c.speed * p.st.speed;
+    if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) spd *= 1.15; // SSR 混合专家
     if (p.buff.speed > 0) spd *= 1.4;
     if (p.buff.ultOn > 0 && p.cid === "grok") spd *= 1.4;
     if (p.buff.inkHaste > 0) spd *= 1.3;
@@ -1318,7 +1328,7 @@ export class Game {
       }
       if (!best) continue;
       if (q.kind === "coin") {
-        const mag = (best.cards.coin_up ? 110 : 76) + (q.magnet ? 2000 : 0);
+        const mag = (best.cards.coin_up ? 110 : 76) * (best.st.mag || 1) + (q.magnet ? 2000 : 0);
         if (bd < mag && q.t > 0.4) {
           const a = angTo(q.x, q.y, best.x, best.y - 10);
           q.x += Math.cos(a) * 320 * dt;

@@ -57,6 +57,25 @@ export function fireAttack(g, p, a, target) {
   // SSR 模型集成: every 4th attack adds a 3-bullet spread
   if (p.kit && p.kit.eq && p.kit.eq.t_ensemble && p.atkCount % 4 === 0)
     for (const d of [-0.32, 0, 0.32]) g.bullets.push(atkBullet(g, p, p.cid, a + d, { dmgK: 0.4, elem }));
+  // SSR 思维链: every 5th attack a lightning arc jumps between up to 4 enemies (60% damage each)
+  if (g.host && p.kit && p.kit.eq && p.kit.eq.t_chain && p.atkCount % 5 === 0) {
+    const hitSet = new Set();
+    let fx = p.x, fy = p.y - MUZZLE, reach = 230;
+    for (let j = 0; j < 4; j++) {
+      let best = null, bd = reach;
+      for (const e of g.enemies) {
+        if (e.dead || e.spawnT > 0 || hitSet.has(e)) continue;
+        const d = Math.hypot(e.x - fx, e.y - e.r - fy);
+        if (d < bd) (bd = d), (best = e);
+      }
+      if (!best) break;
+      hitSet.add(best);
+      const tx = best.x, ty = best.y - best.r;
+      g.line(fx, fy, tx, ty, "#bfe8ff", 2, 0.22, "zap");
+      g.hit(best, c.atk.dmg * 0.6 * k, { p, elem: "thunder", noReact: true });
+      (fx = tx), (fy = ty), (reach = 150);
+    }
+  }
   // fusion: every 3rd attack fires the other girls' bullets
   if (p.fusions.length && p.atkCount % 3 === 0)
     for (const fid of p.fusions) {

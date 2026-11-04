@@ -556,6 +556,67 @@ const DRAW = {
     p.rect(9, 3, 7, 12, "#fff3b0");
     star(p, { light: "#ffb04a", base: "#ff7a2e", hi: "#fff" }, 12.5, 9, 3.8, 1.6, 4);
   },
+  // ---- 11/04 new gacha cards
+  magnet(p) {
+    // horseshoe magnet pulling a coin
+    p.ring(8, 9, 7, 3, (x, y) => (y > 9 ? null : RED.base));
+    p.rect(1, 9, 3, 6, RED.base);
+    p.rect(12, 9, 3, 6, RED.base);
+    p.rect(1, 13, 3, 3, STEEL.light);
+    p.rect(12, 13, 3, 3, STEEL.light);
+    p.rect(2, 5, 2, 2, RED.light);
+    coin(p, GOLD, 16, 16, 3.5);
+  },
+  elite(p) {
+    // a crowned skull in a red crosshair
+    p.ring(10, 11, 8.5, 1.6, RED.base);
+    p.disc(10, 11, 5, PX.shade(5, STEEL.base, STEEL.light, STEEL.dark));
+    p.rect(7, 10, 2, 2, "#1a1020");
+    p.rect(11, 10, 2, 2, "#1a1020");
+    p.rect(8, 14, 4, 1, STEEL.dark);
+    p.poly([[5, 6], [7, 2], [10, 5], [13, 2], [15, 6]], GOLD.light);
+    p.rect(5, 5, 10, 2, GOLD.base);
+  },
+  shield2(p) {
+    shield(p, BLUE, -2, 1);
+    p.poly([[9, 2], [19, 2], [19, 8], [14, 14], [9, 8]], (x) => (x < 14 ? VIOLET.light : VIOLET.base));
+    p.rect(13, 4, 2, 6, "#ffffff");
+    p.rect(11, 6, 6, 2, "#ffffff");
+  },
+  replay(p) {
+    // circular arrow around a small bolt (charge gained back)
+    for (let t = 0.3; t < 5.4; t += 0.1) p.set(10 + Math.cos(t) * 8, 10 + Math.sin(t) * 8, GREEN.light), p.set(10 + Math.cos(t) * 7, 10 + Math.sin(t) * 7, GREEN.base);
+    p.poly([[13, 0], [19, 4], [13, 7]], GREEN.light);
+    bolt(p, GOLD, 0.55, 0, 0);
+  },
+  chain(p) {
+    // a zig-zag bolt touching three nodes
+    p.line(2, 4, 9, 10, "#bfe8ff", 2);
+    p.line(9, 10, 14, 5, "#bfe8ff", 2);
+    p.line(14, 5, 17, 16, "#bfe8ff", 2);
+    for (const [x, y] of [[2, 4], [9, 10], [14, 5], [17, 16]]) p.disc(x, y, 2.4, PX.shade(2.4, VIOLET.base, VIOLET.light, VIOLET.dark));
+    p.line(3, 4, 8, 9, "#ffffff");
+  },
+  rag(p) {
+    // an open book under a magnifying glass
+    p.poly([[1, 8], [10, 10], [10, 19], [1, 17]], "#f6eed6");
+    p.poly([[19, 8], [10, 10], [10, 19], [19, 17]], "#e0d4b8");
+    for (let i = 0; i < 3; i++) p.line(3, 11 + i * 2, 8, 12 + i * 2, "#a08060");
+    p.ring(12, 6, 5, 2, STEEL.dark);
+    p.disc(12, 6, 3, "#c8f0ff");
+    p.rect(10, 4, 2, 2, "#ffffff");
+    p.line(15.5, 9.5, 18.5, 12.5, "#8a5a30", 2);
+  },
+  moe(p) {
+    // four expert blocks, one lit, around a router dot
+    const cs = [BLUE, GREEN, GOLD, RED];
+    [[2, 2], [11, 2], [2, 11], [11, 11]].forEach(([x, y], i) => {
+      p.rect(x, y, 7, 7, i === 3 ? cs[i].light : cs[i].base);
+      p.rect(x, y, 7, 2, cs[i].light);
+    });
+    p.disc(10, 10, 2.6, "#ffffff");
+    p.rect(13, 13, 3, 3, "#ffffff");
+  },
   links(p) {
     p.ring(7, 10, 5.5, 2, GOLD.light);
     p.ring(13, 10, 5.5, 2, VIOLET.light);
@@ -569,6 +630,7 @@ const MAP = {
   multishot: "multishot", pierce: "pierce", bounce: "bounce", crit: "crit", cd_down: "hourglass", ult_charge: "battery", vamp: "vamp", dodge_crit: "wing", low_rage: "flame",
   kill_boom: "bomb", reaction_amp: "atom", element_spread: "spread", shield_nova: "nova", echo: "echo", second_ult: "infinity",
   t_dmg: "sword", t_hp: "heart", t_shield: "shield", t_speed: "boot", t_coin: "coin", t_start_coin: "bag", t_crit: "crit", t_ult: "battery", t_revive: "revive", t_startcard: "scroll", t_overclock: "overclock", t_firewall: "firewall", t_ensemble: "ensemble",
+  t_rate: "rate", t_range: "target", t_magnet: "magnet", t_cd: "hourglass", t_elite: "elite", t_shield2: "shield2", t_replay: "replay", t_chain: "chain", t_rag: "rag", t_moe: "moe",
   u_kill_boom: "bomb", u_reaction_amp: "atom", u_element_spread: "spread", u_shield_nova: "nova", u_echo: "echo", u_second_ult: "infinity", u_links: "links",
 };
 
