@@ -328,7 +328,7 @@ export class Renderer {
         g.beginPath();
         g.arc(p.x, p.y - 20, 16, -Math.PI / 2, -Math.PI / 2 + TAU * (p.reviveT / 2));
         g.stroke();
-        this.text(g, "等待救援", p.x, p.y - 44, "#ffe0e0", 11);
+        this.text(g, p.rebootT > 0 ? "读取断点…" : "等待救援", p.x, p.y - 44, p.rebootT > 0 ? "#ffe36a" : "#ffe0e0", 11);
       } else this.text(g, Math.ceil(p.respawnT) + "", p.x, p.y - 44, "#fff", 14);
       return;
     }

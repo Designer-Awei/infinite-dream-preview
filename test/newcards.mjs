@@ -51,6 +51,15 @@ await start({ tal: {}, eq: { t_moe: 1 }, cards: [] });
 await p.waitForTimeout(800);
 const moe = await p.evaluate(() => { const g = __app.game, me = __app.me; me.hp = me.maxHp; const full = g.dmgMul(me); me.hp = Math.floor(me.maxHp / 2); return [full, g.dmgMul(me)]; });
 check("混合专家：半血时伤害 ×1.3", Math.abs(moe[1] / moe[0] - 1.3) < 1e-9, moe.map((x) => x.toFixed(2)).join(" → "));
+// SSR 断点续训: goes down first (lying, ring filling), then gets up at full health
+await start({ tal: {}, eq: { t_revive: 1 }, cards: [] });
+await p.waitForTimeout(800);
+const rv0 = await p.evaluate(() => { const g = __app.game, me = __app.me; me.invuln = 0; g.hurt(me, 99, { x: me.x + 10, y: me.y }); return { downed: me.downed, hp: me.hp }; });
+await p.waitForTimeout(600);
+const rv1 = await p.evaluate(() => ({ downed: __app.me.downed, ring: +__app.me.reviveT.toFixed(2) }));
+await p.waitForTimeout(1100);
+const rv2 = await p.evaluate(() => ({ downed: __app.me.downed, hp: __app.me.hp, max: __app.me.maxHp, phase: __app.game.phase }));
+check("断点续训：先倒地读条，约 1.3 秒后满血站起", rv0.downed && rv1.downed && rv1.ring > 0.5 && !rv2.downed && rv2.hp === rv2.max && rv2.phase !== "over", `${JSON.stringify(rv0)} → ${JSON.stringify(rv1)} → ${JSON.stringify(rv2)}`);
 console.log("errors:", JSON.stringify(errs));
 await b.close();
 process.exit(ok && !errs.length ? 0 : 1);

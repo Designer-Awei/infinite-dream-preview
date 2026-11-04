@@ -661,14 +661,15 @@ export class Game {
   }
   down(p) {
     if (p.revives > 0) {
+      // SSR 断点续训: she really goes down first (lying, ring filling), then reloads the checkpoint at full health
       p.revives--;
       if (this.pvp) p.koFlag = true; // the knock-out still counts for the opponent
-      p.hp = p.maxHp;
-      p.shield = p.maxShield;
-      p.invuln = 2;
-      this.vfx("arcane/magic-circle-cast", p.x, p.y + 4, { palette: ELEM[CHARS[p.cid].elem].ramp, speed2: 1.8 });
-      this.text(p.x, p.y - 70, "断点续训！", "#ffe14a", 1.4);
-      this.sound("heal");
+      p.hp = 0;
+      p.downed = true;
+      p.reviveT = 0;
+      p.rebootT = BAL.rebootTime || 1.3;
+      this.vfx("spawn/poof", p.x, p.y, { palette: ELEM[CHARS[p.cid].elem].ramp.slice(1, 7) });
+      this.sound("lose");
       return;
     }
     p.hp = 0;
@@ -897,6 +898,23 @@ export class Game {
     for (const p of this.players) {
       if (!p.downed) continue;
       p.downT = (p.downT || 0) + dt;
+      if (p.rebootT > 0) {
+        const T0 = BAL.rebootTime || 1.3;
+        p.rebootT -= dt;
+        p.reviveT = Math.min(2, ((T0 - p.rebootT) / T0) * 2); // the green ring fills while the checkpoint loads
+        if (p.rebootT <= 0) {
+          p.rebootT = 0;
+          p.downed = false;
+          p.hp = p.maxHp;
+          p.shield = p.maxShield;
+          p.invuln = 2;
+          this.vfx("spawn/respawn-beam", p.x, p.y, { life: 1.2 });
+          this.vfx("arcane/magic-circle-cast", p.x, p.y + 4, { palette: ELEM[CHARS[p.cid].elem].ramp, speed2: 1.8 });
+          this.text(p.x, p.y - 70, "断点续训！满血复活", "#ffe14a", 1.4);
+          this.sound("heal");
+        }
+        continue;
+      }
       if (this.pvp) {
         p.respawnT -= dt;
         if (p.respawnT <= 0) {
