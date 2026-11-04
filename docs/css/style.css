@@ -1010,7 +1010,7 @@ body.touchmode .c-key { display: none; }
 .kslot .ks-in { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; width: 100%; padding: 14px 6px 4px; }
 .kslot.full .ks-in b { color: #3a2200; text-shadow: none; font-size: 14px; line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 100%; }
 .kslot.full .ks-in small { color: #6a4a10; }
-.kit-list { padding-top: 10px; }
+.kit-list { padding: 10px 5px 4px 5px; } /* room for the equipped card's outline (it was clipped on the left) */
 @media (max-height: 420px) { .kslot.full .ks-in b { font-size: 12px; } .kslot .ks-in { padding-top: 12px; } }
 .kit-head h2 { text-align: left; }
 
@@ -1710,3 +1710,26 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .lb-name .core-name { display: inline-block; }
 .cd-h .core-name { font-size: .85em; filter: none; }
 @keyframes coreflow { to { background-position: -200% 0; } }
+
+/* lobby card: the 天赋 button sits in the name row (right side), clear of the chips below */
+.lb .li-nrow { display: flex; align-items: center; gap: 8px; }
+.lb .li-nrow .li-name { flex: 0 1 auto; min-width: 0; white-space: nowrap; }
+.lb .li-nrow .li-kit { position: static; margin: 0 0 0 auto; flex: none; padding: 3px 8px 3px 4px; border-width: 3px; gap: 4px; }
+.lb .li-nrow .li-kit .ks { width: 24px; height: 24px; } .lb .li-nrow .li-kit .ks img { width: 19px; height: 19px; }
+.lb .li-nrow .li-kit span { font-size: 14px; }
+@media (max-height: 420px) { .lb .li-nrow .li-kit { padding: 2px 6px 2px 3px; border-width: 2px; } .lb .li-nrow .li-kit .ks { width: 21px; height: 21px; } .lb .li-nrow .li-kit .ks img { width: 16px; height: 16px; } .lb .li-nrow .li-kit span { font-size: 13px; } }
+/* modals dim the screen by fading the backdrop colour rather than the whole layer's opacity: fading a
+   full-screen layer over the animated lobby made some phones flash for a frame */
+.modal { animation: dimIn .2s; }
+@keyframes dimIn { from { background-color: rgba(8,4,20,0); } }
+/* character detail: everything on one screen (no scrolling) on phones in landscape */
+@media (max-height: 420px) {
+  .cd-panel { gap: 4px; padding: 8px 12px; }
+  .cd-body { gap: 10px; }
+  .cd-sec { gap: 4px; }
+  .cd-sk { padding: 3px 6px; gap: 6px; }
+  .cd-sk b { font-size: 13px; }
+  .cd-sk p, .cd-lore { line-height: 1.4; }
+  .cd-re { font-size: 11px; } .cd-re .chip { padding-top: 1px; padding-bottom: 1px; }
+  .cd-panel .kit-head h2 { font-size: 20px; margin-bottom: 0; }
+}
