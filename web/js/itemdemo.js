@@ -61,6 +61,40 @@ const DEMO = {
   u_element_spread: { infuse: true, foes: { n: 5, hp: 300, spread: 80, step: 30 } },
 };
 
+/** one-line caption under each demo (the card itself keeps the full text) */
+const CAPS = {
+  t_dmg: "全角色伤害 +4%/级（满级 +20%）",
+  t_hp: "全角色生命上限 +1/级（满级 +3）",
+  t_shield: "护盾回复速度 +10%/级（满级 +50%）",
+  t_speed: "移速 +3%/级（满级 +9%）",
+  t_coin: "局内金币 +12%/级（满级 +60%）",
+  t_start_coin: "开局金币 +15/级（满级 +75）",
+  t_crit: "暴击率 +3%/级（满级 +15%）",
+  t_ult: "开局大招充能 +30%/级（满级 60%）",
+  t_revive: "每局一次：倒下时原地满血复活",
+  t_overclock: "大招充能 +30%，开局大招 50%",
+  t_firewall: "护盾破碎时放冲击波（8 秒冷却）",
+  t_ensemble: "每第 4 次普攻追加 3 发散射弹",
+  t_rate: "攻速 +2%/级（满级 +10%）",
+  t_range: "射程 +3%/级（满级 +15%）",
+  t_magnet: "金币吸取范围 +15%/级（满级 +45%）",
+  t_cd: "小技能冷却 -4%/级（满级 -20%）",
+  t_elite: "对精英和首领伤害 +5%/级（满级 +25%）",
+  t_shield2: "护盾上限 +1/级（满级 +2）",
+  t_replay: "击败精英或首领时大招 +10%/级",
+  t_chain: "每第 5 次普攻放闪电，弹跳 4 个敌人",
+  t_rag: "每进一个战斗房间，身边掉 1 个道具",
+  t_moe: "半血以下：伤害 +30%，移速 +15%",
+  u_kill_boom: "敌人死亡时爆炸，炸伤周围敌人",
+  u_reaction_amp: "元素反应伤害 +60%",
+  u_element_spread: "元素印记 25% 概率传给附近敌人",
+  u_shield_nova: "护盾破碎时放冲击波并击退敌人",
+  u_echo: "小技能 35% 概率再放一次",
+  u_second_ult: "放完大招立即返还 40% 充能",
+  u_links: "放小技能时附带另一位角色的小技能",
+};
+export const demoCaption = (it) => CAPS[it.id] || it.desc;
+
 /** every item gets a live demo except 先验知识 (a card deal before the run — the card scene shows it better) */
 export const hasLiveDemo = (it) => it.id !== "t_startcard";
 
