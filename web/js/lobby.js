@@ -874,19 +874,20 @@ function particles(canvas) {
 /**
  * Capsules floating inside the dome, computed live every frame (no loop, no gravity). Units: the dome's inner width = 1,
  * origin at its centre. Each capsule drifts slowly in a straight line; capsule-capsule and capsule-glass collisions are
- * elastic reflections. A collision also passes on spin the way two touching disks would (from the sliding speed at the
- * contact), then the spin slowly fades; it never goes past 10°/s. A soft speed regulator keeps every capsule drifting
+ * elastic reflections. Every capsule turns at a steady 10°/s; a collision decides which way, from the sliding direction
+ * at the contact (two touching disks rub each other the same way round, the glass rolls them). A soft speed regulator keeps every capsule drifting
  * at a calm pace so the motion neither dies out nor builds up. Turning the crank (.gm.crank) briefly speeds them up.
  */
 function capsulePhysics(dome, machine) {
-  const N = 15, r = 0.078, R = 0.5 - 0.012, m2 = 4 * r * r, lim = R - r;
-  const CRUISE = 0.075, WMAX = (10 * Math.PI) / 180, SPIN_K = 0.12, SPIN_FADE = 0.2;
+  const N = 18, r = 0.078, R = 0.5 - 0.012, m2 = 4 * r * r, lim = R - r;
+  const CRUISE = 0.075, SPIN = (10 * Math.PI) / 180;
+  // all capsules are drawn on one canvas: moving 18 DOM elements cost a style recalculation every frame
+  const cv = el("canvas", "gm-caps");
+  dome.appendChild(cv);
+  const g = cv.getContext("2d");
   const balls = [];
   for (let i = 0; i < N; i++) {
-    const c = el("div", "capsule");
-    c.style.setProperty("--c", CAP_COLORS[i % CAP_COLORS.length]);
-    c.style.width = r * 200 + "%";
-    dome.appendChild(c);
+    const col = CAP_COLORS[i % CAP_COLORS.length];
     // a free spot that overlaps nothing
     let x = 0, y = 0;
     for (let k = 0; k < 200; k++) {
@@ -895,11 +896,11 @@ function capsulePhysics(dome, machine) {
       if (balls.every((o) => (o.x - x) ** 2 + (o.y - y) ** 2 > m2 * 1.05)) break;
     }
     const dir = Math.random() * Math.PI * 2, sp = CRUISE * (0.7 + Math.random() * 0.6);
-    balls.push({ el: c, x, y, vx: Math.cos(dir) * sp, vy: Math.sin(dir) * sp, cruise: sp, a: Math.random() * Math.PI * 2, w: 0 });
+    balls.push({ col, x, y, vx: Math.cos(dir) * sp, vy: Math.sin(dir) * sp, cruise: sp, a: Math.random() * Math.PI * 2, w: Math.random() < 0.5 ? SPIN : -SPIN });
   }
   dome.__balls = balls;
   let boost = 1, last = performance.now();
-  const clampW = (w) => Math.max(-WMAX, Math.min(WMAX, w));
+  const turn = (slide, w) => (Math.abs(slide) < 0.03 ? w : slide > 0 ? SPIN : -SPIN); // glancing touches keep the current direction
   const step = (dt) => {
     // cranking: everything speeds up for a moment, then eases back to the cruise speed
     boost += ((machine.classList.contains("crank") ? 4 : 1) - boost) * Math.min(1, dt * 3);
@@ -909,7 +910,6 @@ function capsulePhysics(dome, machine) {
       b.vy *= k;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      b.w *= 1 - SPIN_FADE * dt;
       b.a += b.w * dt;
     }
     for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
@@ -922,10 +922,9 @@ function capsulePhysics(dome, machine) {
       // equal masses, elastic: swap the normal components
       a.vx += vn * nx, a.vy += vn * ny, b.vx -= vn * nx, b.vy -= vn * ny;
       // sliding speed at the contact point (tangent), including the spins → equal and opposite spin kick
-      const tx = -ny, ty = nx, slide = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty + r * (a.w + b.w);
-      const dw = (SPIN_K * slide) / r;
-      a.w = clampW(a.w + dw);
-      b.w = clampW(b.w + dw);
+      const tx = -ny, ty = nx, slide = (b.vx - a.vx) * tx + (b.vy - a.vy) * ty;
+      a.w = turn(slide, a.w);
+      b.w = turn(slide, b.w);
     }
     for (const b of balls) {
       const d = Math.hypot(b.x, b.y);
@@ -935,8 +934,34 @@ function capsulePhysics(dome, machine) {
       const vn = b.vx * nx + b.vy * ny;
       if (vn <= 0) continue;
       b.vx -= 2 * vn * nx, b.vy -= 2 * vn * ny; // mirror off the glass
-      const slide = b.vx * -ny + b.vy * nx - r * b.w; // the glass grips a little and sets it rolling
-      b.w = clampW(b.w + (SPIN_K * slide) / r);
+      b.w = turn(b.vx * -ny + b.vy * nx, b.w); // rolls along the glass the way it is moving
+    }
+  };
+  const ink = getComputedStyle(document.documentElement).getPropertyValue("--ink").trim() || "#1a1020";
+  const draw = () => {
+    const W = dome.clientWidth, dpr = Math.min(3, window.devicePixelRatio || 1), px = Math.round(W * dpr);
+    if (cv.width !== px) (cv.width = cv.height = px), (cv.style.width = cv.style.height = W + "px");
+    const s = W * dpr, lw = 3 * dpr, rad = r * s;
+    g.clearRect(0, 0, px, px);
+    for (const b of balls) {
+      g.save();
+      g.translate((b.x + 0.5) * s, (b.y + 0.5) * s);
+      g.rotate(b.a);
+      g.beginPath();
+      g.arc(0, 0, rad - lw / 2, 0, Math.PI * 2);
+      g.fillStyle = "#fff";
+      g.fill();
+      g.beginPath();
+      g.arc(0, 0, rad - lw / 2, Math.PI, Math.PI * 2);
+      g.closePath();
+      g.fillStyle = b.col;
+      g.fill();
+      g.beginPath();
+      g.arc(0, 0, rad - lw / 2, 0, Math.PI * 2);
+      g.lineWidth = lw;
+      g.strokeStyle = ink;
+      g.stroke();
+      g.restore();
     }
   };
   const frame = (now) => {
@@ -945,8 +970,7 @@ function capsulePhysics(dome, machine) {
     last = now;
     step(dt / 2);
     step(dt / 2);
-    const W = dome.clientWidth;
-    for (const b of balls) b.el.style.transform = `translate(${((b.x + 0.5 - r) * W).toFixed(1)}px, ${((b.y + 0.5 - r) * W).toFixed(1)}px) rotate(${b.a.toFixed(3)}rad)`;
+    draw();
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);

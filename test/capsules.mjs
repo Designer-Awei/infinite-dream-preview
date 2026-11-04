@@ -7,14 +7,14 @@ await p.evaluate(() => localStorage.setItem("ai-girls-dungeon-v1", JSON.stringif
 await p.reload(); await p.waitForTimeout(1500);
 await p.evaluate(async () => { const L = await import("./js/lobby.js"); L.showGacha(); }); await p.waitForTimeout(100);
 const run = (ms, crank) => p.evaluate(([ms, crank]) => new Promise((res) => {
-  const d = document.querySelector(".gm-dome"), g = document.querySelector(".gm"), rr = 0.078, out = { maxW: 0, maxOut: -1, maxOverlap: 0, speeds: [], spinKicks: 0, spinning: 0, frames: 0 };
+  const d = document.querySelector(".gm-dome"), g = document.querySelector(".gm"), rr = 0.078, out = { minW: 99, maxW: 0, maxOut: -1, maxOverlap: 0, speeds: [], spinKicks: 0, spinning: 0, frames: 0 };
   if (crank) g.classList.add("crank");
   let prev = null, prevT = 0, prevW = null;
   const t0 = performance.now();
   const f = (now) => {
     const B = d.__balls;
     out.frames++;
-    for (const x of B) out.maxW = Math.max(out.maxW, Math.abs(x.w) * 180 / Math.PI), out.maxOut = Math.max(out.maxOut, Math.hypot(x.x, x.y) + rr - 0.5);
+    for (const x of B) out.minW = Math.min(out.minW, Math.abs(x.w) * 180 / Math.PI), out.maxW = Math.max(out.maxW, Math.abs(x.w) * 180 / Math.PI), out.maxOut = Math.max(out.maxOut, Math.hypot(x.x, x.y) + rr - 0.5);
     for (let i = 0; i < B.length; i++) for (let j = i + 1; j < B.length; j++) out.maxOverlap = Math.max(out.maxOverlap, 2 * rr - Math.hypot(B[i].x - B[j].x, B[i].y - B[j].y));
     if (prev) { const dt = (now - prevT) / 1000; out.speeds.push(B.reduce((m, x, i) => m + Math.hypot(x.x - prev[i][0], x.y - prev[i][1]), 0) / B.length / dt); }
     if (prevW) B.forEach((x, i) => { if (Math.abs(x.w - prevW[i]) > 0.005) out.spinKicks++; });
@@ -28,10 +28,10 @@ const avg = (a) => a.reduce((m, x) => m + x, 0) / Math.max(1, a.length);
 const Wd = await p.evaluate(() => document.querySelector(".gm-dome").clientWidth);
 const r = await run(10000, false);
 const sp = r.speeds.map((x) => x * Wd).sort((a, b) => a - b);
-console.log(`${W}x${H} idle 10 s | speed px/s: mean ${avg(sp).toFixed(1)}, 5% ${sp[Math.floor(sp.length * 0.05)].toFixed(1)}, 95% ${sp[Math.floor(sp.length * 0.95)].toFixed(1)} | spin kicks ${r.spinKicks}, avg share spinning ${(r.spinning / r.frames * 100).toFixed(0)}%, max spin ${r.maxW.toFixed(2)}°/s`);
+console.log(`${W}x${H} idle 10 s | speed px/s: mean ${avg(sp).toFixed(1)}, 5% ${sp[Math.floor(sp.length * 0.05)].toFixed(1)}, 95% ${sp[Math.floor(sp.length * 0.95)].toFixed(1)} | capsules ${await p.evaluate(() => document.querySelector(".gm-dome").__balls.length)} | spin direction changes ${r.spinKicks} | spin ${r.minW.toFixed(2)}～${r.maxW.toFixed(2)}°/s`);
 console.log(`  max past the glass ${(r.maxOut * Wd).toFixed(2)}px | max overlap ${(r.maxOverlap * Wd).toFixed(2)}px`);
 const c = await run(1500, true);
 console.log(`  cranking: mean speed ${(avg(c.speeds) * Wd).toFixed(1)} px/s | max spin ${c.maxW.toFixed(2)}°/s`);
 console.log("errors:", JSON.stringify(errs));
 await b.close();
-process.exit(r.maxW <= 10.001 && c.maxW <= 10.001 && r.maxOut <= 0.001 && !errs.length ? 0 : 1);
+process.exit(r.maxW <= 10.001 && r.minW >= 9.999 && c.maxW <= 10.001 && r.maxOut <= 0.001 && !errs.length ? 0 : 1);
