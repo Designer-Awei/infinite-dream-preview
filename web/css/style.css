@@ -1749,3 +1749,13 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .kp-it em { font-style: normal; color: var(--y1); }
 /* no one-character last lines in the detail texts */
 .cd-lore, .cd-sk p { text-wrap: pretty; }
+/* player name pill: tap to rename */
+button.name-pill { font: inherit; color: #fff; cursor: pointer; }
+button.name-pill:active { transform: translateY(1px); }
+.rn-p { width: min(380px, 92vw); display: flex; flex-direction: column; gap: 8px; text-align: center; }
+.rn-p .rn-in { font: inherit; font-size: 18px; padding: 6px 10px; border: 3px solid var(--ink); border-radius: 10px; text-align: center; user-select: text; -webkit-user-select: text; }
+.rn-p .rn-cost { font-size: 13px; color: #e8e4ff; }
+.rn-p .rn-cost .cur.gem { width: .9em; height: .9em; margin: 0 2px; vertical-align: -0.1em; }
+.rn-p .rn-free { color: #7dffb0; font-weight: normal; margin-left: 4px; }
+.rn-p .rn-err { min-height: 1.2em; font-size: 12px; color: #ff9aa8; }
+.rn-p .rn-acts { justify-content: center; gap: 10px; }

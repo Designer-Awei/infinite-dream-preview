@@ -93,7 +93,7 @@ export function showLobby() {
   <div class="topbar">
     <div class="logo outline">无限梦境<span>INFINITE DREAM</span></div>
     <div class="spacer"></div>
-    <div class="pill o1"><span>👤</span><span class="pname"></span></div>
+    <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
     <button class="btn small tb-ico help-btn t-help" title="玩法说明"><span>📖</span></button>
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
@@ -109,6 +109,7 @@ export function showLobby() {
   </div>`;
   root.appendChild(s);
   q(".pname", s).textContent = m.name;
+  q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
   wireCurrency(s);
   const fs = q(".fs-btn", s);
@@ -653,6 +654,57 @@ function showSettings() {
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
   md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);
+}
+
+/** rename: the first change is free, every later one costs RENAME_COST 晶石 */
+export const RENAME_COST = 500, NAME_MAX = 12;
+export function showRename(lobby) {
+  const m = load(), free = !m.renamed;
+  const md = el("div", "modal");
+  md.innerHTML = `<div class="panel rn-p"><h2 class="outline">修改名称</h2>
+    <input class="rn-in" maxlength="${NAME_MAX * 2}" autocomplete="off" spellcheck="false">
+    <div class="rn-cost o1"></div><div class="rn-err"></div>
+    <div class="row rn-acts"></div></div>`;
+  const inp = q(".rn-in", md), err = q(".rn-err", md), cost = q(".rn-cost", md), acts = q(".rn-acts", md);
+  inp.value = m.name;
+  cost.innerHTML = free ? `首次改名<b class="rn-free">免费</b>` : `本次改名消耗 <i class="cur gem"></i>${RENAME_COST}（当前 ${m.tokens}）`;
+  const check = () => {
+    const v = inp.value.trim(), n = [...v].length;
+    if (!n) return "名字不能为空";
+    if (n > NAME_MAX) return `最多 ${NAME_MAX} 个字`;
+    if (/[<>&"'`\\]/.test(v)) return "不能包含 < > & 引号 反斜杠";
+    if (v === m.name) return "和现在的名字一样";
+    if (!free && m.tokens < RENAME_COST) return `晶石不足：需要 ${RENAME_COST}`;
+    return "";
+  };
+  const ok = btn("确认", "", () => {
+    const e = check();
+    if (e) return (err.textContent = e), sfx("click");
+    if (!free) m.tokens -= RENAME_COST;
+    m.name = inp.value.trim();
+    m.renamed = (m.renamed || 0) + 1;
+    save();
+    sfx("card");
+    md.remove();
+    toast(free ? `已改名为「${m.name}」` : `已改名为「${m.name}」，消耗 ${RENAME_COST} 晶石`);
+    if (lobby) {
+      q(".pname", lobby).textContent = m.name;
+      const t = q(".tok", lobby);
+      if (t) t.textContent = m.tokens;
+    }
+  });
+  const refresh = () => {
+    const e = check();
+    err.textContent = inp.value.trim() === m.name ? "" : e;
+    ok.classList.toggle("gray", !!e);
+  };
+  inp.oninput = refresh;
+  inp.onkeydown = (e) => e.key === "Enter" && ok.click();
+  acts.append(btn("取消", "gray", () => md.remove()), ok);
+  refresh();
+  md.onclick = (e) => e.target === md && md.remove();
+  uiRoot().appendChild(md);
+  setTimeout(() => (inp.focus(), inp.select()), 50);
 }
 
 /** the author's contact details (tap a line to copy it) */
