@@ -11,24 +11,27 @@ const ZOOM = 2.1; // the visible canvas shows the middle of the view, closer tha
 
 // how each item is shown. kit: talents/equips given to the demo girl; foes: enemy setup; tick: per-frame input/actions
 const near = (p, dx, dy) => ({ x: p.x + dx, y: p.y + dy });
+// hud: which in-run numbers to show over the demo; base: what they would be without the card (drawn as a grey ghost)
 const DEMO = {
   t_speed: { tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.6)), (inp.my = Math.sin(t * 1.6) * 0.7)) },
   t_range: { foes: { dx: 230, spread: 60 } },
-  t_coin: { foes: { hp: 4, n: 4 }, respawn: 0.8 },
-  t_magnet: { foes: { hp: 4, n: 4, dx: 150 }, respawn: 0.8 },
-  t_start_coin: { start: (g, p) => g.after(0.5, () => g.text(p.x, p.y - 64, "开局金币 +75", "#ffd84a", 1.4, 1.6)) },
-  t_hp: { foes: { type: "eyeball", n: 3 }, hp: 99, start: (g, p) => g.after(0.4, () => g.text(p.x, p.y - 64, "生命上限 +3", "#ff8a9a", 1.3, 1.6)) },
-  t_shield: { foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
-  t_shield2: { foes: { type: "eyeball", n: 3, hp: 400 }, atk: false, start: (g, p) => g.after(0.4, () => g.text(p.x, p.y - 64, "护盾上限 +2", "#a8c8ff", 1.3, 1.6)) },
-  t_ult: { start: (g, p) => g.after(0.4, () => g.text(p.x, p.y - 64, "开局大招 60%", "#ffd84a", 1.3, 1.6)), autoUlt: true },
-  t_overclock: { autoUlt: true },
-  u_second_ult: { autoUlt: true, ult: 1, onUlt: (g, p) => g.after(0.15, () => g.text(p.x, p.y - 70, "返还 40% 充能", "#ffd84a", 1.3, 1.4)) },
+  t_coin: { hud: ["coin"], foes: { hp: 4, n: 4 }, respawn: 0.8 },
+  t_magnet: { hud: ["coin"], foes: { hp: 4, n: 4, dx: 150 }, respawn: 0.8 },
+  t_start_coin: { hud: ["coin"] },
+  t_hp: { hud: ["hp"], foes: { n: 3, hp: 300 } },
+  t_shield: { hud: ["shield"], foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
+  t_shield2: { hud: ["shield"], foes: { type: "eyeball", n: 3, hp: 400 }, atk: false },
+  t_ult: { hud: ["ult"], autoUlt: true },
+  t_overclock: { hud: ["ult"], autoUlt: true },
+  u_second_ult: { hud: ["ult"], autoUlt: true, ult: 1 },
   t_revive: {
+    hud: ["hp"],
     hp: 3,
     foes: { n: 3, hp: 300 },
     start: (g, p) => g.after(1.4, () => g.hurt(p, 99, { x: p.x + 20, y: p.y })),
   },
   t_firewall: {
+    hud: ["shield"],
     foes: { n: 4, hp: 300, dx: 60, spread: 40 },
     start: (g, p) => {
       for (const k of [1.1, 3.6]) g.after(k, () => { p.lastHit = 0; g.hurt(p, p.shield, { x: p.x + 20, y: p.y }); });
@@ -40,18 +43,18 @@ const DEMO = {
     foes: { n: 2, hp: 300, dx: 210 },
     start: (g, p) => g.after(0.5, () => {
       g.spawnItem("cube", p.x + 70, p.y + 30, true);
-      g.text(p.x + 70, p.y - 10, "检索增强：掉落道具", "#7dffb0", 1.1, 1.6);
     }),
     tick: (g, p, t, inp) => t > 1.3 && t < 2.4 && ((inp.mx = 0.9), (inp.my = 0.4), (inp.atk = false)),
   },
-  t_moe: { hp: 12, start: (g, p) => ((p.hp = Math.floor(p.maxHp / 2)), g.after(0.4, () => g.text(p.x, p.y - 64, "半血：伤害 +30%  移速 +15%", "#ffb04a", 1.1, 1.8))), tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.2) * 0.6), (inp.my = Math.sin(t * 1.2) * 0.5)) },
+  t_moe: { hud: ["hp"], hp: 12, start: (g, p) => ((p.hp = Math.floor(p.maxHp / 2))), tick: (g, p, t, inp) => ((inp.mx = Math.cos(t * 1.2) * 0.6), (inp.my = Math.sin(t * 1.2) * 0.5)) },
   t_elite: { foes: { n: 2, elite: true, hp: 300 } },
-  t_replay: { foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7, onKill: (g, p) => g.text(p.x, p.y - 64, "大招充能 +30%", "#ffd84a", 1.2, 1.2) },
+  t_replay: { hud: ["ult"], foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7 },
   t_cd: { autoSkill: true },
   u_echo: { autoSkill: true, cd: 0.3 },
   u_links: { autoSkill: true, cd: 0.4 },
   u_kill_boom: { foes: { n: 5, hp: 5, dx: 140, spread: 50, step: 22 }, respawn: 0.9 },
   u_shield_nova: {
+    hud: ["shield"],
     foes: { n: 4, hp: 300, dx: 60, spread: 40 },
     start: (g, p) => {
       for (const k of [1.1, 3.6]) g.after(k, () => { p.lastHit = 0; g.hurt(p, p.shield, { x: p.x + 20, y: p.y }); });
@@ -107,6 +110,8 @@ export function mountItemDemo(cvs, it, cid) {
   const rnd = new Renderer(off, fxl);
   const vis = cvs.getContext("2d");
   let g = null, p = null, t = 0, last = performance.now(), dur = D.dur || 6.5, respawnT = 0;
+  // the same numbers without this card, for the grey comparison bars in the hud
+  const base = { ult: null, coins: null, prevUlt: 0, prevCoins: 0 };
   const kitFor = () => {
     const kit = { tal: {}, eq: {}, cards: [] };
     if (it.eq) kit.eq[it.id] = it.max;
@@ -136,7 +141,9 @@ export function mountItemDemo(cvs, it, cid) {
     p.x = c.x - 90;
     p.y = c.y;
     p.invuln = 0;
-    p.hp = p.maxHp = Math.max(p.maxHp, D.hp || 10);
+    // a little extra health keeps the girl standing through the loop, except where the health bar itself is the point
+    const showsHp = D.hud && D.hud.includes("hp");
+    if (!showsHp) p.hp = p.maxHp = Math.max(p.maxHp, D.hp || 10);
     if (D.hp && D.hp < p.maxHp) p.hp = D.hp;
     if (it.eq || it.card) g.applyLoadouts();
     if (it.card && !it.eq) applyCard(g, p, it.card);
@@ -148,9 +155,90 @@ export function mountItemDemo(cvs, it, cid) {
     }
     foes();
     if (D.start) D.start(g, p);
+    base.ult = it.id === "t_ult" || it.id === "t_overclock" ? 0 : ["u_second_ult", "t_replay"].includes(it.id) ? p.ult : null;
+    base.coins = it.id === "t_start_coin" ? 0 : it.id === "t_coin" ? p.coins : null;
+    base.prevUlt = p.ult;
+    base.prevCoins = p.coins;
     t = 0;
     respawnT = 0;
     rnd.follow(g, p, 0, true);
+  };
+  const trackBase = () => {
+    const d = p.ult - base.prevUlt;
+    if (base.ult != null) {
+      if (d < -0.25) base.ult = base.ult >= 0.999 ? 0 : base.ult; // she cast: the card-less girl casts too if she could
+      else if (d > 0) {
+        let gain = d;
+        if (it.id === "t_overclock") gain /= 1.3;
+        if (it.id === "t_replay" && d >= p.st.replay - 1e-6) gain -= p.st.replay;
+        base.ult = Math.min(1, base.ult + Math.max(0, gain));
+      }
+    }
+    const dc = p.coins - base.prevCoins;
+    if (base.coins != null && dc > 0) base.coins += it.id === "t_coin" ? dc / p.st.coin : dc;
+    base.prevUlt = p.ult;
+    base.prevCoins = p.coins;
+  };
+  // in-run numbers the card changes, drawn like a tiny HUD in the top-left corner (the card face already has the text)
+  const drawHud = () => {
+    const k = cvs.width / 430, x0 = 8 * k;
+    let y = 8 * k;
+    const font = (px) => `${Math.round(px * k)}px Cubic, sans-serif`;
+    const rows = D.hud.reduce((n, h) => n + (h === "ult" || h === "coin" ? (base[h === "ult" ? "ult" : "coins"] != null ? 2 : 1) : 1), 0);
+    vis.fillStyle = "rgba(14,10,30,.72)";
+    vis.beginPath();
+    vis.roundRect(4 * k, 4 * k, 168 * k, (rows * 17 + 8) * k, 7 * k);
+    vis.fill();
+    vis.textBaseline = "middle";
+    const label = (txt, col, yy) => ((vis.font = font(11)), (vis.fillStyle = col), vis.fillText(txt, x0, yy + 6 * k));
+    const cells = (n, fill, bonus, on, off, yy) => {
+      for (let i = 0; i < n; i++) {
+        const cx = x0 + 34 * k + i * 10 * k;
+        vis.fillStyle = i < fill ? on : off;
+        vis.fillRect(cx, yy + 1 * k, 8 * k, 10 * k);
+        if (i >= n - bonus) ((vis.strokeStyle = "#ffd84a"), (vis.lineWidth = 1.6 * k), vis.strokeRect(cx - 0.5 * k, yy + 0.5 * k, 9 * k, 11 * k));
+      }
+    };
+    const bar = (frac, col, yy, h = 10) => {
+      vis.fillStyle = "rgba(255,255,255,.14)";
+      vis.fillRect(x0 + 34 * k, yy + 1 * k, 92 * k, h * k);
+      vis.fillStyle = col;
+      vis.fillRect(x0 + 34 * k, yy + 1 * k, 92 * k * Math.max(0, Math.min(1, frac)), h * k);
+    };
+    const num = (txt, col, yy, dx = 132) => ((vis.font = font(11)), (vis.fillStyle = col), vis.fillText(txt, x0 + dx * k, yy + 6 * k));
+    for (const h of D.hud) {
+      if (h === "hp") {
+        const bonus = it.id === "t_hp" ? it.max : 0;
+        label("生命", "#ff9aa8", y);
+        cells(Math.min(12, p.maxHp), Math.max(0, p.hp), bonus, "#ff4a5e", "rgba(255,255,255,.16)", y);
+        y += 17 * k;
+      } else if (h === "shield") {
+        const bonus = it.id === "t_shield2" ? it.max : 0;
+        label("护盾", "#9ac8ff", y);
+        cells(p.maxShield, Math.floor(p.shield), bonus, "#5aa8ff", "rgba(255,255,255,.16)", y);
+        y += 17 * k;
+      } else if (h === "ult") {
+        label("大招", "#ffd84a", y);
+        bar(p.ult, "#ffc23a", y);
+        num(Math.floor(p.ult * 100) + "%", "#ffd84a", y);
+        y += 17 * k;
+        if (base.ult != null) {
+          label("无此卡", "#a8a0c0", y);
+          bar(base.ult, "#8a84a0", y);
+          num(Math.floor(base.ult * 100) + "%", "#a8a0c0", y);
+          y += 17 * k;
+        }
+      } else if (h === "coin") {
+        label("金币", "#ffd84a", y);
+        num(String(Math.round(p.coins)), "#ffd84a", y, 46);
+        y += 17 * k;
+        if (base.coins != null) {
+          label("无此卡", "#a8a0c0", y);
+          num(String(Math.round(base.coins)), "#a8a0c0", y, 46);
+          y += 17 * k;
+        }
+      }
+    }
   };
   const frame = (now) => {
     if (!cvs.isConnected) return;
@@ -182,12 +270,14 @@ export function mountItemDemo(cvs, it, cid) {
       }
       g.update(dt);
       fxl.update(dt);
+      trackBase();
       rnd.follow(g, p, dt);
       rnd.draw(g, p, dt);
       // show the middle of the view, a bit closer
       const sw = (VIEW_W * RS) / ZOOM, sh = Math.min(VIEW_H * RS, (sw * cvs.height) / cvs.width);
       vis.imageSmoothingEnabled = false;
       vis.drawImage(off, (VIEW_W * RS - sw) / 2, (VIEW_H * RS - sh) / 2 + 12 * RS, sw, sh, 0, 0, cvs.width, cvs.height);
+      if (D.hud) drawHud();
     } catch (e) {
       console.warn("item demo", it.id, e);
       return;
