@@ -2,7 +2,7 @@
   "name": "infinite-dream-preview",
   "version": "1.0.0",
   "private": true,
-  "description": "无限梦境 Infinite Dream — pixel roguelike (web + Android + iOS)",
+  "description": "无限梦境 Infinite Dream — pixel roguelike (web + Android)",
   "scripts": {
     "build": "sh tools/build.sh"
   },
@@ -10,7 +10,6 @@
     "@capacitor/android": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/filesystem": "^7.0.0",
-    "@capacitor/ios": "^7.0.0",
     "@capacitor/app": "^7.0.0"
   },
   "devDependencies": {
