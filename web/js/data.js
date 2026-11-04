@@ -105,7 +105,7 @@ export const CHARS = {
     lore: "亲切活泼，善于发现队友的需要，是队伍中的日常补给担当。",
   },
   glm: {
-    name: "吉拉", short: "吉拉", title: "玄墨学者", role: "阵法师 / 控制法师", elem: "ink", color: "#7b6cff",
+    name: "吉拉姆", short: "吉拉姆", title: "玄墨学者", role: "阵法师 / 控制法师", elem: "ink", color: "#7b6cff",
     hp: 5, shield: 5, speed: 108,
     atk: { name: "玄墨飞符", dmg: 4.2, rate: 3, spd: 290, range: 220, size: 4, pierce: 2 },
     skill: { name: "墨阵推演", cd: 7, desc: "在目标处布下墨阵：持续伤害、减速并标记敌人，自身短暂加速" },
