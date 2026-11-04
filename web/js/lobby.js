@@ -634,12 +634,12 @@ export function showSaveImport() {
 export function wireCurrency(root) {
   root.querySelectorAll("[data-cur]").forEach((b) => (b.onclick = () => import("./mineui.js").then((M) => M.showCurInfo(b.dataset.cur))));
 }
-const FEATURED = ["t_revive", "t_startcard", "t_overclock", "u_links", "u_second_ult"];
+const FEATURED = ["t_chain", "t_rag", "t_moe", "t_revive", "u_links"]; // the three new SSRs first
 const shortName = (n) => n.replace(/^卡牌·/, "");
 const lvText = (it, lv) => (lv ? (it.max > 1 ? `Lv${lv}/${it.max}` : "已拥有") : "未拥有");
 /** vertical mini card (banner, pool preview, exchange list): rarity tag, icon, short name, one status line */
 function vcard(it, o = {}) {
-  return `<div class="vc ${it.r}${o.dim ? " no" : ""}${o.cls ? " " + o.cls : ""}" data-id="${it.id}"><span class="vc-r">${it.r}</span>${o.tag ? `<i class="vc-tag">${o.tag}</i>` : ""}<span class="vc-i">${ICON(it, 2)}</span><b class="vc-n">${shortName(it.name)}</b>${o.sub ? `<small class="vc-s">${o.sub}</small>` : ""}${o.rate ? `<em class="vc-p">${o.rate}</em>` : ""}</div>`;
+  return `<div class="vc ${it.r}${o.dim ? " no" : ""}${o.cls ? " " + o.cls : ""}" data-id="${it.id}"><span class="vc-r">${it.r}</span>${o.tag ? `<i class="vc-tag">${o.tag}</i>` : ""}<span class="vc-i">${ICON(it, 2)}</span><b class="vc-n${shortName(it.name).length >= 6 ? " ln" : ""}">${shortName(it.name)}</b>${o.sub ? `<small class="vc-s">${o.sub}</small>` : ""}${o.rate ? `<em class="vc-p">${o.rate}</em>` : ""}</div>`;
 }
 const ICON = (it, s = 3) => `<img class="pxi" src="${iconURL(it.id, s)}" alt="">`;
 const CAP_COLORS = ["#ffd84a", "#5fb4ff", "#c27bff", "#5dff7a", "#ff7cc8", "#ff8a5a"];
@@ -669,6 +669,23 @@ export function showGacha() {
   const dome = q(".gm-dome", s);
   dome.classList.add("phys");
   capsulePhysics(dome, q(".gm", s));
+  // glass highlights on top of the capsules: a tapered crescent along the upper-left rim with a short dash after it,
+  // a thin inner reflection and a faint rim light on the lower right (cartoon glass, no blurry blob)
+  const cres = (r, a0, a1, w) => {
+    const out = [], inn = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24, a = ((a0 + (a1 - a0) * t) * Math.PI) / 180, h = (w / 2) * Math.sin(Math.PI * t) ** 0.6;
+      out.push([50 + (r + h) * Math.cos(a), 50 + (r + h) * Math.sin(a)]);
+      inn.unshift([50 + (r - h) * Math.cos(a), 50 + (r - h) * Math.sin(a)]);
+    }
+    return "M" + [...out, ...inn].map(([x, y]) => x.toFixed(2) + " " + y.toFixed(2)).join(" L") + " Z";
+  };
+  dome.insertAdjacentHTML("beforeend", `<svg class="gm-gloss" viewBox="0 0 100 100" aria-hidden="true">
+    <path d="${cres(40.5, 192, 256, 7)}" fill="#fff" fill-opacity=".82"/>
+    <path d="${cres(40.5, 262, 274, 4)}" fill="#fff" fill-opacity=".82"/>
+    <path d="${cres(34, 204, 238, 2.6)}" fill="#fff" fill-opacity=".35"/>
+    <path d="${cres(44, 14, 66, 2.6)}" fill="#fff" fill-opacity=".32"/>
+  </svg>`);
   // featured SSR items
   const feat = q(".gp-feat", s);
   for (const id of FEATURED) {
