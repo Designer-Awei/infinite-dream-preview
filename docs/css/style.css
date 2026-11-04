@@ -1596,3 +1596,14 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 /* no white highlight blob in the dome: plain glass tint */
 .gm-shine { display: none; }
 .gm-dome { background: radial-gradient(circle at 50% 40%, rgba(210,240,255,.18), rgba(140,180,255,.28) 100%); }
+/* --- 11/04 c: dome gloss (crisp crescent highlights above the capsules); card grids 8 per row --- */
+.gm-gloss { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 4; pointer-events: none; }
+.vgrid { grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 5px; }
+.vgrid .vc { padding: 14px 2px 4px; border-width: 2.5px; }
+.vgrid .vc-i .pxi { width: 28px; height: 28px; }
+.vgrid .vc-n { font-size: 11px; }
+.vgrid .vc-s, .vgrid .vc-p { font-size: 9.5px; }
+.vgrid .vc-r, .vgrid .vc-tag { font-size: 9px; }
+@media (max-width: 700px) { .vgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .vgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
+.vgrid .vc-n.ln { font-size: 9.5px; letter-spacing: -.3px; white-space: nowrap; }
