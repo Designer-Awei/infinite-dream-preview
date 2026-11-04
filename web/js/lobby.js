@@ -159,16 +159,98 @@ export function showLobby() {
   renderModes(s);
   renderRoster(s);
   renderHero(s, m.sel, false);
-  // click the hero: a little hop
-  q(".lb-hero", s).onclick = () => {
+  setTimeout(() => s.isConnected && heroSummon(s, s.classList.contains("quick")), s.classList.contains("quick") ? 0 : 300);
+  // tap the hero: one of three reactions, picked at random but never the same twice in a row
+  q(".lb-hero", s).onclick = () => heroReact(s);
+  // now and then, if left alone, she fidgets on her own (a light look-around)
+  clearInterval(fidgetT);
+  fidgetT = setInterval(() => {
+    if (!s.isConnected) return clearInterval(fidgetT);
     const h = q(".lb-hero", s);
-    h.classList.remove("hop");
-    void h.offsetWidth;
-    h.classList.add("hop");
-    sfx("pickup");
-  };
+    if (h && !h.dataset.busy && !document.querySelector(".modal") && Math.random() < 0.5) playAnim(h, "fidget", 1400);
+  }, 7000);
   const fresh = m.chars.filter((c) => !["deepseek", "gpt"].includes(c) && !m.seenUnlock.includes(c));
   if (fresh.length) setTimeout(() => showUnlock(fresh[0]), 900);
+}
+
+// ------------------------------------------------------------------ lobby hero: summon entrance + tap reactions
+let fidgetT = 0, lastReact = -1;
+const LINES = {
+  deepseek: ["深度思考中……", "潮水会替我回答。", "要一起潜得更深吗？"],
+  gpt: ["灵感来了！", "龙息，准备就绪～", "下一个回答会更好。"],
+  grok: ["规则？那是什么？", "越界才有意思！", "跟紧我，别掉队。"],
+  claude: ["今天也请多指教。", "书页翻到哪里了？", "阳光正好，出发吧。"],
+  doubao: ["元气满满！", "补给交给我～", "有什么都可以问我！"],
+  glm: ["墨阵已布好。", "万象皆可推演。", "这一卷，读完了吗？"],
+};
+/** restart a CSS animation class on an element; data-busy keeps reactions from overlapping */
+function playAnim(n, cls, ms) {
+  n.classList.remove("hop", "r-spin", "r-burst", "r-greet", "fidget", "summon", "summonq", "swap");
+  void n.offsetWidth;
+  n.classList.add(cls);
+  n.dataset.busy = "1";
+  clearTimeout(n.__t);
+  n.__t = setTimeout(() => (n.classList.remove(cls), delete n.dataset.busy), ms);
+}
+/** element-coloured bits flying out from (x%, y%) of the stage */
+function burst(stage, n, cls, x = 50, y = 55, spread = 1) {
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2 + Math.random() * 0.5, d = (60 + Math.random() * 70) * spread;
+    const p = el("i", "lbp " + cls);
+    p.style.left = x + "%";
+    p.style.top = y + "%";
+    p.style.setProperty("--dx", Math.cos(a) * d + "px");
+    p.style.setProperty("--dy", Math.sin(a) * d * 0.7 - 20 + "px");
+    p.style.animationDelay = Math.random() * 0.12 + "s";
+    stage.appendChild(p);
+    setTimeout(() => p.remove(), 1300);
+  }
+}
+function fx(stage, cls, ms, html = "") {
+  const n = el("div", cls, html);
+  stage.appendChild(n);
+  setTimeout(() => n.remove(), ms);
+  return n;
+}
+/** the hero appears: magic circle on the island, a light pillar, she forms inside it from the feet up */
+function heroSummon(s, quick) {
+  const stage = q(".lb-center", s), h = q(".lb-hero", s);
+  fx(stage, "lb-circle" + (quick ? " q" : ""), 1500);
+  fx(stage, "lb-pillar" + (quick ? " q" : ""), 1300);
+  setTimeout(() => burst(stage, quick ? 10 : 16, "mote", 50, 62, 0.8), quick ? 160 : 420);
+  h.classList.add("ready"); // past the pre-entrance hide
+  playAnim(h, "summon" + (quick ? "q" : ""), quick ? 700 : 1300);
+}
+function heroReact(s) {
+  const h = q(".lb-hero", s), stage = q(".lb-center", s);
+  if (h.dataset.busy && !h.classList.contains("fidget")) return;
+  const m = load(), id = m.sel, c = CHARS[id];
+  let k;
+  do k = Math.floor(Math.random() * 3);
+  while (k === lastReact);
+  lastReact = k;
+  if (k === 0) {
+    // 1. jump and spin, landing with a dust ring
+    playAnim(h, "r-spin", 1000);
+    sfx("dash");
+    setTimeout(() => (fx(stage, "lb-land", 700), burst(stage, 8, "dust", 50, 82, 0.6), sfx("pickup")), 720);
+  } else if (k === 1) {
+    // 2. power up: charges, then her element bursts out around her with her skill icon
+    playAnim(h, "r-burst", 1100);
+    setTimeout(() => {
+      fx(stage, "lb-wave", 800);
+      fx(stage, "lb-skill", 1100, `<img src="${iconURL(skillIcon(id, "ult"), 4)}" alt="">`);
+      burst(stage, 18, "spark", 50, 50, 1.2);
+      sfx("skill");
+    }, 380);
+  } else {
+    // 3. greet: a little sway and wave, a speech bubble with one of her lines, a few hearts
+    playAnim(h, "r-greet", 1600);
+    const lines = LINES[id] || ["你好！"];
+    fx(stage, "lb-say", 2200, lines[Math.floor(Math.random() * lines.length)]);
+    for (let i = 0; i < 4; i++) setTimeout(() => burst(stage, 1, "heart", 44 + Math.random() * 14, 34, 0.3), 200 + i * 220);
+    sfx("card");
+  }
 }
 
 function renderRoster(s) {
@@ -223,10 +305,11 @@ function renderHero(s, id, swap) {
     q(".lb-name", s).innerHTML = `${c.short}<small>${c.title}</small>`;
   };
   if (swap) {
-    hero.classList.remove("swap");
-    void hero.offsetWidth;
-    hero.classList.add("swap");
-    setTimeout(apply, 160);
+    // the current girl dissolves upward into motes, the new one is summoned in a light pillar
+    const stage = q(".lb-center", s);
+    playAnim(hero, "swap", 200);
+    burst(stage, 10, "mote", 50, 45, 0.7);
+    setTimeout(() => (apply(), heroSummon(s, true)), 180);
     sfx("card");
   } else apply();
   const dps = c.atk.dmg * c.atk.rate;
