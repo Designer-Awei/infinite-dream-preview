@@ -680,11 +680,19 @@ export function showGacha() {
     }
     return "M" + [...out, ...inn].map(([x, y]) => x.toFixed(2) + " " + y.toFixed(2)).join(" L") + " Z";
   };
+  // feathered: every highlight is blurred so its edges melt into the glass (no hard cut-out shapes)
   dome.insertAdjacentHTML("beforeend", `<svg class="gm-gloss" viewBox="0 0 100 100" aria-hidden="true">
-    <path d="${cres(40.5, 192, 256, 7)}" fill="#fff" fill-opacity=".82"/>
-    <path d="${cres(40.5, 262, 274, 4)}" fill="#fff" fill-opacity=".82"/>
-    <path d="${cres(34, 204, 238, 2.6)}" fill="#fff" fill-opacity=".35"/>
-    <path d="${cres(44, 14, 66, 2.6)}" fill="#fff" fill-opacity=".32"/>
+    <defs>
+      <filter id="glsB" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.6"/></filter>
+      <filter id="glsS" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="0.7"/></filter>
+      <radialGradient id="glsG" cx="30%" cy="26%" r="34%"><stop offset="0" stop-color="#fff" stop-opacity=".26"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+    </defs>
+    <circle cx="50" cy="50" r="49" fill="url(#glsG)"/>
+    <path d="${cres(40, 190, 258, 9)}" fill="#fff" fill-opacity=".55" filter="url(#glsB)"/>
+    <path d="${cres(40.5, 198, 250, 4.2)}" fill="#fff" fill-opacity=".6" filter="url(#glsS)"/>
+    <path d="${cres(40.5, 262, 274, 4)}" fill="#fff" fill-opacity=".55" filter="url(#glsS)"/>
+    <path d="${cres(33.5, 204, 238, 3)}" fill="#fff" fill-opacity=".28" filter="url(#glsB)"/>
+    <path d="${cres(44, 14, 66, 3.2)}" fill="#fff" fill-opacity=".3" filter="url(#glsB)"/>
   </svg>`);
   // featured SSR items
   const feat = q(".gp-feat", s);
