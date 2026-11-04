@@ -665,18 +665,10 @@ export function showGacha() {
   root.appendChild(s);
   q(".back-btn", s).onclick = () => (sfx("click"), showLobby());
   wireCurrency(s);
-  // capsules inside the dome
+  // capsules inside the dome: a little physics loop (gravity, ball-ball and ball-dome collisions, air puffs from below)
   const dome = q(".gm-dome", s);
-  for (let i = 0; i < 18; i++) {
-    const c = el("div", "capsule");
-    c.style.setProperty("--c", CAP_COLORS[i % CAP_COLORS.length]);
-    const row = Math.floor(i / 6), col = i % 6;
-    c.style.left = 8 + col * 14 + (row % 2) * 6 + "%";
-    c.style.top = 50 + row * 13 - Math.abs(col - 2.5) * 2 + "%";
-    c.style.transform = `rotate(${(i * 47) % 360}deg)`;
-    c.style.animationDelay = (i % 5) * 0.13 + "s";
-    dome.appendChild(c);
-  }
+  dome.classList.add("phys");
+  capsulePhysics(dome, q(".gm", s));
   // featured SSR items
   const feat = q(".gp-feat", s);
   for (const id of FEATURED) {
@@ -877,6 +869,94 @@ function particles(canvas) {
       cancelAnimationFrame(raf);
     },
   };
+}
+
+/**
+ * Capsules bouncing inside the dome. Units: the dome's inner width = 1, origin at its centre.
+ * Gravity pulls them into a pile, collisions are resolved with restitution, and every second or so an
+ * "air puff" kicks a few from the bottom so the pile keeps moving. While the crank turns (.gm.crank) the puffs
+ * get much stronger. The loop ends by itself once the dome leaves the page.
+ */
+function capsulePhysics(dome, machine) {
+  const N = 18, r = 0.085, R = 0.5 - 0.012, G = 1.7, EB = 0.72, EW = 0.5;
+  const balls = [];
+  for (let i = 0; i < N; i++) {
+    const c = el("div", "capsule");
+    c.style.setProperty("--c", CAP_COLORS[i % CAP_COLORS.length]);
+    dome.appendChild(c);
+    const row = Math.floor(i / 6), col = i % 6;
+    balls.push({ el: c, x: -0.36 + col * 0.14 + (row % 2) * 0.06, y: 0.33 - row * 0.15, vx: 0, vy: 0, a: (i * 47 * Math.PI) / 180, w: 0 });
+  }
+  let puff = 0.4, last = performance.now();
+  const step = (dt) => {
+    const crank = machine.classList.contains("crank");
+    puff -= dt;
+    if (puff <= 0 || crank) {
+      // air from the bottom: kick a few of the lowest capsules up (all of them while cranking)
+      const low = [...balls].sort((a, b) => b.y - a.y);
+      const n = crank ? N : 3 + Math.floor(Math.random() * 3);
+      for (let k = 0; k < n; k++) {
+        const b = low[crank ? k : Math.floor(Math.random() * Math.min(N, 8))];
+        const f = crank ? 0.5 + Math.random() * 0.6 : 1.1 + Math.random() * 0.9;
+        b.vy -= f;
+        b.vx += (Math.random() - 0.5) * (crank ? 1.4 : 0.9);
+        b.w += (Math.random() - 0.5) * 14;
+      }
+      puff = 0.9 + Math.random() * 1.1;
+    }
+    for (const b of balls) {
+      b.vy += G * dt;
+      b.x += b.vx * dt;
+      b.y += b.vy * dt;
+      b.a += b.w * dt;
+      b.w *= 1 - 0.8 * dt;
+      // dome wall
+      const d = Math.hypot(b.x, b.y), lim = R - r;
+      if (d > lim) {
+        const nx = b.x / d, ny = b.y / d;
+        b.x = nx * lim;
+        b.y = ny * lim;
+        const vn = b.vx * nx + b.vy * ny;
+        if (vn > 0) {
+          const tx = -ny, ty = nx, vt = (b.vx * tx + b.vy * ty) * 0.985;
+          b.vx = tx * vt - nx * vn * EW;
+          b.vy = ty * vt - ny * vn * EW;
+          b.w = vt / r; // roll along the glass
+        }
+      }
+    }
+    // capsule vs capsule
+    for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+      const a = balls[i], b = balls[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy, m = 2 * r;
+      if (d2 >= m * m || d2 < 1e-9) continue;
+      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, o = (m - d) / 2;
+      a.x -= nx * o;
+      a.y -= ny * o;
+      b.x += nx * o;
+      b.y += ny * o;
+      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (rv < 0) {
+        const jn = (-(1 + EB) * rv) / 2;
+        a.vx -= jn * nx;
+        a.vy -= jn * ny;
+        b.vx += jn * nx;
+        b.vy += jn * ny;
+        const spin = ((b.vx - a.vx) * -ny + (b.vy - a.vy) * nx) * 3;
+        a.w -= spin;
+        b.w += spin;
+      }
+    }
+  };
+  const frame = (now) => {
+    if (!dome.isConnected) return;
+    const dt = Math.min(0.05, (now - last) / 1000);
+    last = now;
+    for (let k = 0; k < 3; k++) step(dt / 3);
+    const W = dome.clientWidth;
+    for (const b of balls) b.el.style.transform = `translate(${((b.x + 0.5 - r) * W).toFixed(1)}px, ${((b.y + 0.5 - r) * W).toFixed(1)}px) rotate(${b.a.toFixed(2)}rad)`;
+    requestAnimationFrame(frame);
+  };
+  requestAnimationFrame(frame);
 }
 
 /** crank → capsule drops and rolls to center → tap to open → cards fly out and flip → summary */

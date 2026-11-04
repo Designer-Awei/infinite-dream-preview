@@ -1585,3 +1585,10 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .gp-exbtn .lbl { font-style: normal; }
 @media (max-width: 600px) { .gacha2 .gp-exbtn .lbl { display: none; } }
 @media (max-height: 340px) { .gacha2 .pull-btn { padding: 4px 8px 7px !important; font-size: 18px !important; } .gacha2 .gp-pity { padding: 4px 8px; gap: 2px; } }
+/* --- 11/04 b: capsules move by a small physics loop (JS sets transform); card grids 7 per row --- */
+.gm-dome.phys .capsule, .gm.crank .gm-dome.phys .capsule { left: 0; top: 0; margin: 0; animation: none; will-change: transform; }
+.vgrid { grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+.vgrid .vc { padding: 14px 2px 4px; }
+.vgrid .vc-i .pxi { width: 30px; height: 30px; }
+.vgrid .vc-n { font-size: 11.5px; }
+@media (max-width: 600px) { .vgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
