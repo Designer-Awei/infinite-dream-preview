@@ -2037,7 +2037,7 @@ export class Dive {
     let clip = null, fps = 12;
     if (!p.dig && walking && C["run_e" + L]) clip = C["run_e" + L];
     else if (!p.dig && C["idle_e" + L]) (clip = C["idle_e" + L]), (fps = 5);
-    const frame = clip ? clip[Math.floor(p.anim * fps) % clip.length] : set.views[side];
+    const fi = Math.floor(p.anim * fps) || 0, frame = (clip && clip[((fi % clip.length) + clip.length) % clip.length]) || set.views[side];
     // the figure is about 32 world px tall: frames are pre-shrunk once (with smoothing) straight to the size they
     // cover on screen, so she stays crisp at any zoom (shrinking to 32 px and then scaling that up blurred her)
     const fig = set.foot - set.top, k = 32 / fig, kd = Math.min(1, k * rs);
