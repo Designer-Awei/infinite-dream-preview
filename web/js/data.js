@@ -342,3 +342,12 @@ export const CORE_FX = {
   doubao: "补给站射速与回血更快",
   glm: "大招持续 5 秒、牵引更强",
 };
+/** the same, with the numbers (character detail) */
+export const CORE_DETAIL = {
+  deepseek: "鲸落潮域持续 5 → 8 秒，范围半径 72 → 90。",
+  gpt: "白龙觉醒持续 6 → 9 秒，击退冲击半径 90 → 130。",
+  grok: "大招期间两侧副弹从大角度散射收拢到准星附近，伤害 50% → 80%。",
+  claude: "日光领域不再固定在原地，会自动追向 400 范围内最近的敌人（每秒移动 70）。",
+  doubao: "补给站射击间隔 0.5 → 0.35 秒，回血间隔 1.4 → 1 秒。",
+  glm: "大招持续 3.5 → 5 秒，牵引力提高 50%。",
+};
