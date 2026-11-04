@@ -189,7 +189,7 @@ export const app = {
     sfx(win ? "win" : "lose");
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const extras = [];
-    if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + "💎"]);
+    if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {
       const nx = MAP_ORDER.find((id) => MAPS[id].need === o.map);
       if (nx) extras.push(["🔓 新地图", MAPS[nx].name]);
@@ -200,7 +200,7 @@ export const app = {
     if (drop) extras.push(["⛏ 梦境矿场", "获得" + SHOVELS[drop].name]);
     if (this.riftLoot) {
       const r = this.riftLoot;
-      extras.push(["梦境裂隙", `💎${r.value} · 矿石${r.mats}${r.stars ? " · 星砂" + r.stars : ""}`]);
+      extras.push(["梦境裂隙", `<i class="cur gem"></i>${r.value} · 矿石${r.mats}${r.stars ? " · 星砂" + r.stars : ""}`]);
       this.riftLoot = null;
     }
     const title = endless ? `无尽回廊 · 第 ${rs.rooms} 层` : win ? "通关！幻觉已破除" : "倒下了…";
@@ -276,7 +276,7 @@ export const app = {
       // back to the corridor: the haul also feeds this run (coins and a power cube)
       if (this.me) (this.me.coins += res.value), (this.me.cubes += 1);
       UI.showHud(g, this.me);
-      UI.toast(`裂隙收获：💎${res.value} · 矿石 ${res.mats}${res.stars ? " · 星砂 " + res.stars : ""}`, 2600);
+      UI.toast(`裂隙收获：<i class="cur gem"></i>${res.value} · 矿石 ${res.mats}${res.stars ? " · 星砂 " + res.stars : ""}`, 2600);
       return;
     }
     g.victory();

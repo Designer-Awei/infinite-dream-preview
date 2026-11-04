@@ -1,5 +1,5 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
-import { CHARS, GACHA, VIEW_H, CORE_FX } from "./data.js";
+import { CHARS, VIEW_H, CORE_FX } from "./data.js";
 import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP } from "./minedata.js";
 import { load, save, mineState, refreshFreeShovels, claimFreeShovels } from "./save.js";
 import { el } from "./util.js";
@@ -45,9 +45,9 @@ export const CUR = {
   star: () => `<img class="cur" src="${oreIcon("star")}" alt="">`,
 };
 const CUR_INFO = {
-  gem: ["晶石", "通用货币。从闯关、矿场带出的矿物换来；用于扭蛋、矿场装备升级和下潜补给。"],
+  gem: ["晶石", "通用货币。闯关结算和矿场带出的矿物都会换成晶石；用于扭蛋和矿场装备升级。"],
   ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备。"],
-  star: ["星砂", "稀有货币。来自宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊兑换金铲、SSR 兑换卡和梦核。"],
+  star: ["星砂", "稀有货币。来自宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊升级最终减伤、兑换 SSR 兑换卡和梦核。"],
 };
 export function showCurInfo(k) {
   const [name, text] = CUR_INFO[k];
@@ -72,6 +72,7 @@ export function showMineHub() {
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
   <div class="topbar"><div class="mh-tl"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-v"></b></button></div><div class="spacer"></div>
+    <button class="pill o1 expill" title="SSR 兑换卡：点击使用"><img class="cur" src="${iconURL("cardgold", 2)}" alt=""><span class="exn">${ms.cards}</span></button>
     <button class="pill o1 curpill" data-cur="gem">${CUR.gem()}<span class="tok">${m.tokens}</span></button>
     <button class="pill o1 curpill" data-cur="ore">${CUR.ore()}<span class="mats">${ms.mats}</span></button>
     <button class="pill o1 curpill" data-cur="star">${CUR.star()}<span class="stars">${ms.stars}</span></button></div>
@@ -88,6 +89,9 @@ export function showMineHub() {
   q(".back-btn", s).onclick = () => (sfx("click"), import("./lobby.js").then((L) => L.showLobby()));
   q(".mh-help", s).onclick = () => showMineGuide();
   s.querySelectorAll(".curpill").forEach((b) => (b.onclick = () => showCurInfo(b.dataset.cur)));
+  // SSR 兑换卡: shown left of 晶石 as icon + count while you hold any
+  q(".expill", s).onclick = () => (sfx("click"), showExchange(() => showMineHub()));
+  q(".expill", s).style.display = ms.cards ? "" : "none";
   // shovels
   let pick = ["au", "ag", "cu"].find((k) => ms.shovels[k] > 0) || "cu";
   const sh = q(".mh-shovels", s);
@@ -112,7 +116,7 @@ export function showMineHub() {
     const u = ms.up, U = UPGRADES;
     const rows = [
       ["heart", "生命", 5 + 2 * u.armor], ["battery", "电量", U.battery.val(u.battery)], ["bag", "背包", U.bag.val(u.bag)], ["pick", "挖速", U.drill.val(u.drill)],
-      ["target", "视野", U.radar.val(u.radar)], ["elem_bubble", "氧气", U.tank.val(u.tank)], ["beacon", "信标", U.beacon.val(u.beacon)], ["shield", "减伤", u.dr ? `-${u.dr}` : "0"],
+      ["target", "视野", U.radar.val(u.radar)], ["elem_bubble", "氧气", U.tank.val(u.tank)], ["beacon", "信标", U.beacon.val(u.beacon)], ["shield", "减伤", String(u.dr || 0)],
     ];
     buff.innerHTML = `<div class="mb-h o1">当前增益</div><div class="mb-g">${rows.map(([ic, n, v]) => `<div class="mb-i"><img src="${iconURL(ic, 2)}" alt=""><span>${n}</span><b>${v}</b></div>`).join("")}</div>`;
   };
@@ -151,6 +155,8 @@ export function showMineHub() {
     q(".tok", s).textContent = m.tokens;
     q(".mats", s).textContent = ms.mats;
     q(".stars", s).textContent = ms.stars;
+    q(".exn", s).textContent = ms.cards;
+    q(".expill", s).style.display = ms.cards ? "" : "none";
   };
   const drawUps = () => {
     ups.innerHTML = Object.entries(UPGRADES).map(([k, u]) => {
@@ -200,7 +206,7 @@ export function showMineHub() {
       return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${k === "core" ? CORE_FX[cid] : w.desc}</span></div>
         <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${label}</span>${price ? `<small>${price}</small>` : ""}</button></div>`;
     }).join("");
-    ups.innerHTML = rows + (ms.cards ? `<div class="ws-note o1"><b class="ws-use">使用兑换卡 ›</b></div>` : "");
+    ups.innerHTML = rows;
     ups.querySelectorAll(".ws-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, w = WORKSHOP[k];
       if (w.trade) {
@@ -235,8 +241,6 @@ export function showMineHub() {
       updGo();
       drawShop();
     }));
-    const use = q(".ws-use", ups);
-    if (use) use.onclick = () => showExchange(() => showMineHub());
   };
   const qdot = () => {
     // a small red dot in the tab's top-right corner when something can be claimed (no number, so the tab keeps its width)
@@ -274,31 +278,9 @@ export function showMineHub() {
 }
 
 // ------------------------------------------------------------------ exchange card: pick any SSR that isn't maxed
+/** SSR 兑换卡 list lives with the gacha (same card grid as the pool preview) */
 export function showExchange(after) {
-  const m = load(), ms = mineState();
-  const list = GACHA.pool.filter((it) => it.r === "SSR");
-  const md = el("div", "modal ex-modal");
-  md.innerHTML = `<div class="panel ex-panel"><div class="kit-head"><img class="kit-face" src="${iconURL("cardgold", 3)}" alt=""><div><h2 class="outline">兑换卡 ×${ms.cards}</h2><div class="kit-sub o1">每张可直接兑换 1 个未满级的 SSR · 兑换卡在梦境工坊用星砂换</div></div><button class="btn gray small x-btn">关闭</button></div>
-    <div class="kit-list">${list.map((it) => {
-      const lv = m.talents[it.id] || 0, full = lv >= it.max;
-      return `<button class="kcard${full ? " no" : ""}" data-id="${it.id}"><img src="${iconURL(it.id, 2)}" alt=""><span class="kt"><b>${it.name}${it.max > 1 ? ` Lv${lv}/${it.max}` : ""}</b><small>${it.desc}</small></span><i class="ktag o1">${full ? "已满级" : ms.cards ? "兑换" : "缺兑换卡"}</i></button>`;
-    }).join("")}</div></div>`;
-  uiRoot().appendChild(md);
-  const close = () => (md.remove(), after && after());
-  q(".x-btn", md).onclick = close;
-  md.addEventListener("click", (e) => e.target === md && close());
-  md.querySelectorAll(".kcard").forEach((b) => (b.onclick = () => {
-    const it = GACHA.pool.find((p) => p.id === b.dataset.id), lv = m.talents[it.id] || 0;
-    if (lv >= it.max) return toast("已经满级了");
-    if (!ms.cards) return toast("没有兑换卡：在梦境工坊用星砂兑换");
-    ms.cards--;
-    m.talents[it.id] = lv + 1;
-    if (it.card && !m.cards.includes(it.card)) m.cards.push(it.card);
-    save();
-    sfx("ssr");
-    toast(`兑换成功：${it.name}${it.max > 1 ? " Lv" + (lv + 1) : ""}`, 2400);
-    close();
-  }));
+  import("./lobby.js").then((L) => L.showExchange(after));
 }
 
 // ------------------------------------------------------------------ HUD during a dive
@@ -419,7 +401,7 @@ export function showMineResult(res, again, back) {
   const md = el("div", "modal result mres");
   md.innerHTML = `<div class="panel res2 ${res.how === "dead" ? "lose" : "win"}">
     <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
-      <div class="res-gain"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
+      <div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
       <div class="res-chip o1"><span>${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1"><span>${CUR.star()} 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
       ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
@@ -432,6 +414,7 @@ export function showMineResult(res, again, back) {
   if (again) a.appendChild(btn("再次下潜", "", again));
   a.appendChild(btn(again ? "返回矿场" : "继续", "blue", back));
   uiRoot().appendChild(md);
+  md.querySelectorAll("[data-cur]").forEach((b) => (b.onclick = () => showCurInfo(b.dataset.cur)));
   void m;
 }
 
