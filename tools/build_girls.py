@@ -105,6 +105,5 @@ for r, n in enumerate(NAMES):
 atlas.save(f'{OUT}/girls.png', optimize=True)
 json.dump(meta, open(f'{OUT}/girls.json', 'w'))
 print('atlas', atlas.size, {n: list(meta['clips'][n]) for n in NAMES})
-Image.fromarray(tool, 'RGBA').save(f'{OUT}/girls_tool.png', optimize=True)
 json.dump(meta, open(f'{OUT}/girls.json', 'w'))
 print('atlas', atlas.size, {n: list(meta['clips'][n]) for n in NAMES})

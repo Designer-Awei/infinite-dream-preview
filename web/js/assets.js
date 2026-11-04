@@ -37,23 +37,6 @@ function crop(src, sx, sy, w, h, flip = false) {
   g.drawImage(src, sx, sy, w, h, 0, 0, w, h);
   return c;
 }
-// shovel metals: dark → light ramps the golden blade is re-shaded into
-const METAL = {
-  cu: [[90, 40, 22], [150, 74, 38], [206, 116, 66], [240, 170, 120], [255, 222, 190]],
-  ag: [[70, 78, 96], [128, 138, 158], [184, 194, 210], [226, 232, 242], [255, 255, 255]],
-};
-function metalize(src, mask, sx, sy, w, h, ramp) {
-  const c = crop(src, sx, sy, w, h), g = c.getContext("2d"), d = g.getImageData(0, 0, w, h);
-  const m = crop(mask, sx, sy, w, h).getContext("2d").getImageData(0, 0, w, h).data, px = d.data;
-  for (let i = 0; i < px.length; i += 4) {
-    if (m[i + 3] < 128 || px[i + 3] < 128) continue;
-    const l = Math.min(0.999, (0.3 * px[i] + 0.55 * px[i + 1] + 0.15 * px[i + 2]) / 255) * (ramp.length - 1);
-    const a = ramp[Math.floor(l)], b = ramp[Math.floor(l) + 1], t = l - Math.floor(l);
-    for (let k = 0; k < 3; k++) px[i + k] = Math.round(a[k] + (b[k] - a[k]) * t);
-  }
-  g.putImageData(d, 0, 0);
-  return c;
-}
 // tight vertical bounds so feet sit on the anchor
 function bounds(c) {
   const d = c.getContext("2d").getImageData(0, 0, c.width, c.height).data;
@@ -71,7 +54,7 @@ function bounds(c) {
 
 export async function loadAll(progress = () => {}) {
   const base = "assets/";
-  const [gj, gi, cj, tool] = await Promise.all([json(base + "girls.json"), img(base + "girls.png"), json(base + "critters/critters.json"), img(base + "girls_tool.png").catch(() => null)]);
+  const [gj, gi, cj] = await Promise.all([json(base + "girls.json"), img(base + "girls.png"), json(base + "critters/critters.json")]);
   progress(0.3);
   for (const id of CHAR_ORDER) {
     const fr = gj.frames[id], views = {};
@@ -86,7 +69,7 @@ export async function loadAll(progress = () => {}) {
       set.white[v] = silhouette(views[v], "#ffffff");
       set.tint[v] = silhouette(views[v], ELEM[CHARS[id].elem].glow);
     }
-    // animation clips (PixelLab frames): run in 3 directions (+ mirrored west), digging in the mine
+    // animation clips (PixelLab frames): idle / run / attack in 3 directions (+ mirrored west)
     for (const [name, cells] of Object.entries((gj.clips && gj.clips[id]) || {})) {
       const list = [], flip = [];
       for (const [cx, cy] of cells) {
@@ -95,17 +78,6 @@ export async function loadAll(progress = () => {}) {
       }
       set.clips[name] = list;
       set.clips[name + "L"] = flip;
-      // shovel clips: copper / silver copies (the golden blade pixels from girls_tool.png, re-shaded by brightness)
-      if (tool && name.startsWith("dig")) for (const metal of ["cu", "ag"]) {
-        const vs = [], vf = [];
-        for (const [cx, cy] of cells) {
-          const c = metalize(gi, tool, cx, cy, gj.cw, gj.ch, METAL[metal]);
-          vs.push(c);
-          vf.push(crop(c, 0, 0, gj.cw, gj.ch, true));
-        }
-        set.clips[name + "@" + metal] = vs;
-        set.clips[name + "@" + metal + "L"] = vf;
-      }
     }
     A.girls[id] = set;
   }

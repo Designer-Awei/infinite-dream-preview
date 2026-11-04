@@ -2018,15 +2018,10 @@ export class Dive {
     const blink = p.inv > 0 && Math.floor(this.time * 20) % 2 === 0;
     const walking = Math.abs(p.vx) > 10 && p.ground;
     const C = set.clips || {};
-    // drawn clips: shovel strikes for side / down digging, the run cycle for walking; the still side pose otherwise
+    // drawn clips: the run cycle for walking, breathing when idle; digging uses the still side pose, shaking,
+    // with the drill in front of her (as before the shovel clips)
     let clip = null, fps = 12;
-    // the shovel in her hands matches the one she dives with (gold as drawn, copper / silver recoloured)
-    const sh = this.o.shovel && this.o.shovel !== "au" ? "@" + this.o.shovel : "";
-    const dc = (n) => C[n + sh + L] || C[n + L];
-    if (p.dig && p.dig.dir === "side" && dc("dig_side")) (clip = dc("dig_side")), (fps = 14);
-    else if (p.dig && p.dig.dir === "down" && dc("dig_down")) (clip = dc("dig_down")), (fps = 14);
-    else if (p.dig && p.dig.dir === "up" && dc("dig_up")) (clip = dc("dig_up")), (fps = 14);
-    else if (walking && C["run_e" + L]) clip = C["run_e" + L];
+    if (!p.dig && walking && C["run_e" + L]) clip = C["run_e" + L];
     else if (!p.dig && C["idle_e" + L]) (clip = C["idle_e" + L]), (fps = 5);
     const frame = clip ? clip[Math.floor(p.anim * fps) % clip.length] : set.views[side];
     // the figure is about 32 world px tall: frames are pre-shrunk once with smoothing so the small sprite stays clean
@@ -2046,29 +2041,31 @@ export class Dive {
     };
     const img = small(frame), W = img.width, Hh = img.height;
     const bob = !clip && walking ? -Math.abs(Math.sin(p.anim * 12)) * 1.5 : p.jet ? Math.sin(p.anim * 30) * 0.5 : 0;
-    const digShake = p.dig && !clip ? Math.sin(this.time * 70) * 1 : 0;
-    const x = Math.round(p.x - W / 2 + digShake), y = Math.round(p.y - set.foot * k + bob);
+    const digShake = p.dig ? Math.sin(this.time * 70) * 1 : 0, digJit = p.dig ? Math.round(Math.sin(this.time * 53)) * 0.5 : 0;
+    const x = Math.round(p.x - W / 2 + digShake), y = Math.round(p.y - set.foot * k + bob + digJit);
     g.save();
     g.globalAlpha = blink ? 0.45 : 1;
-    // the drill only when there is no drawn shovel clip (digging up, or an old sprite set)
-    if (!clip || !p.dig) {
-      const dx = p.dig ? (p.dig.dir === "side" ? p.face * 10 : 0) : p.face * 9, dy = p.dig && p.dig.dir === "down" ? 2 : p.dig && p.dig.dir === "up" ? -PH - 2 : -PH / 2;
-      if (p.dig) {
-        g.save();
-        g.translate(p.x + dx + digShake, p.y + dy);
-        g.rotate(p.dig.dir === "down" ? Math.PI / 2 : p.dig.dir === "up" ? -Math.PI / 2 : p.face > 0 ? 0 : Math.PI);
-        g.fillStyle = "#5a5a6a";
-        g.fillRect(-4, -3, 6, 6);
-        g.fillStyle = "#e8e8f0";
-        g.beginPath();
-        g.moveTo(2, -4);
-        g.lineTo(10 + Math.sin(this.time * 80), 0);
-        g.lineTo(2, 4);
-        g.fill();
-        g.restore();
-      }
-    }
     g.drawImage(img, x, y);
+    // the drill she holds: pointing ahead, or down / up while digging that way; the tip spins while digging
+    const dx = p.dig ? (p.dig.dir === "side" ? p.face * 10 : 0) : p.face * 9, dy = p.dig && p.dig.dir === "down" ? 2 : p.dig && p.dig.dir === "up" ? -34 : -PH / 2; // up: above her head (the figure is ~32 px)
+    g.save();
+    g.translate(p.x + dx + digShake, p.y + dy);
+    g.rotate(p.dig && p.dig.dir === "down" ? Math.PI / 2 : p.dig && p.dig.dir === "up" ? -Math.PI / 2 : p.face > 0 ? 0 : Math.PI);
+    g.fillStyle = "#5a5a6a";
+    g.fillRect(-4, -3, 6, 6);
+    g.fillStyle = "#e8e8f0";
+    g.beginPath();
+    g.moveTo(2, -4);
+    g.lineTo(10 + (p.dig ? Math.sin(this.time * 80) : 0), 0);
+    g.lineTo(2, 4);
+    g.fill();
+    if (p.dig) {
+      // spinning grooves on the bit
+      g.fillStyle = "#8a8a9a";
+      const o = (this.time * 40) % 3;
+      for (let i = 0; i < 3; i++) g.fillRect(3 + ((i * 3 + o) % 7), -2 + (i % 2), 1, 3 - (i % 2) * 2);
+    }
+    g.restore();
     if (p.hurtT > 0) {
       const wsrc = frame.__w || (frame.__w = silhouette(frame, "#ffffff"));
       (g.globalCompositeOperation = "lighter"), (g.globalAlpha = 0.6), g.drawImage(wsrc, x, y, W, Hh);
