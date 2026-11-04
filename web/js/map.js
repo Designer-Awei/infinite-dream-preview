@@ -1,6 +1,7 @@
 // Arena generation (Brawl Stars style symmetric maps), tile art, collision and enemy flow fields.
 import { T } from "./data.js";
 import { rng } from "./util.js";
+import { applyRoomRules, isCalmTile } from "./roomrules.js";
 
 export const F = 0, WALL = 1, WATER = 2, BUSH = 3, CRATE = 4, BARREL = 5;
 export const SOLID = (t) => t === WALL || t === WATER || t === CRATE || t === BARREL;
@@ -118,6 +119,10 @@ export function generateRoom(kind, seed, themeIdx = 0, gopt = {}) {
     clear(W - 1 - spawn.x, spawn.y, 1);
     clear(center.x, center.y, kind === "boss" || gopt.koth ? 3 : 2);
     m.spikes = m.spikes.filter((s) => m.t[s.y * W + s.x] === F);
+    // layout rules (hazards vs river, barrels, spikes, a safe path): fix what can be fixed, otherwise roll again
+    m.spawnT = spawn;
+    m.centerT = center;
+    if (!applyRoomRules(m) && attempt < 29) continue;
     // connectivity
     const seen = flood(m, spawn.x, spawn.y);
     let open = 0, reached = 0;
@@ -144,7 +149,7 @@ export function generateRoom(kind, seed, themeIdx = 0, gopt = {}) {
       if (m.t[i] === F && !m.mud[i] && Math.abs(x - spawn.x) + Math.abs(y - spawn.y) > 9) m.spots.push({ x: x * T + T / 2, y: y * T + T / 2 });
     }
     m.itemSpots = [];
-    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (m.t[y * W + x] === F && !m.mud[y * W + x]) m.itemSpots.push({ x: x * T + T / 2, y: y * T + T / 2 });
+    for (let y = 2; y < H - 2; y++) for (let x = 2; x < W - 2; x++) if (isCalmTile(m, x, y)) m.itemSpots.push({ x: x * T + T / 2, y: y * T + T / 2 });
     return m;
   }
 }
