@@ -21,7 +21,7 @@
 - 对应 commit：[d7aa756](https://github.com/Designer-Awei/infinite-dream-preview/commit/d7aa756951abdb4b367f756eeed0231ec70dfa67)，[5e0ab2d](https://github.com/Designer-Awei/infinite-dream-preview/commit/5e0ab2d7fc8cf7de50bfae126289910542bd1f00)（打包）。
 - 验证：
   - `test/itemdemo.mjs` 在 904×405 和 568×320 下逐张打开 30 张卡，0 失败，29 张实战演示的画面都在变化，无页面错误。
-  - 截图确认：超频推理的大招按钮圆环显示 76%；冗余备份生命条显示 10/10（基础 7 加 3）；断点续训倒地时生命 0、读条；移速演示摇杆跟着推；持续学习放完大招后按钮回到 40% 附近。
+  - 截图确认：超频推理的大招按钮圆环显示 76%；冗余备份生命条显示 10/10（基础 7 加 3）；断点续训倒地时生命 0、读条；移速演示摇杆跟着推；持续学习截图时（开局满充能放过一次大招后）大招按钮显示 68%。
   - `gacha2` 无页面错误。`sh tools/build.sh` 通过，打包后页面加载无页面错误。
 
 ### 2026-11-04 · 断点续训倒地复活动画；效果预览去掉文字、加局内数值
