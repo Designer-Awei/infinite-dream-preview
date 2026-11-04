@@ -1733,3 +1733,19 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
   .cd-re { font-size: 11px; } .cd-re .chip { padding-top: 1px; padding-bottom: 1px; }
   .cd-panel .kit-head h2 { font-size: 20px; margin-bottom: 0; }
 }
+
+/* lobby card: 详情 matches the role chip beside it (same height, border, type size) */
+.lb .li-chips .li-more { font-size: 12px; line-height: inherit; padding: 2px 8px; border: 2px solid var(--ink); border-radius: 6px; box-shadow: none; background: #3a2a6a; }
+/* character detail: the reactions spread to the height of the left column so both columns end together */
+.cd-res { display: flex; flex-direction: column; justify-content: space-between; gap: 6px; flex: 1 1 auto; padding-bottom: 4px; }
+/* loadout: slot cards start level with the first talent card (the list keeps 10px above for its tags); passive
+   talents as an aligned two-column list: icon, name, level */
+.kit-l { padding-top: 10px; }
+.kit-pass { display: block; }
+.kp-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 3px; margin-top: 4px; }
+.kp-it { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; min-width: 0; }
+.kp-it img { width: 16px; height: 16px; image-rendering: pixelated; }
+.kp-it b { font-weight: normal; overflow: hidden; text-overflow: ellipsis; }
+.kp-it em { font-style: normal; color: var(--y1); }
+/* no one-character last lines in the detail texts */
+.cd-lore, .cd-sk p { text-wrap: pretty; }
