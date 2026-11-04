@@ -710,8 +710,8 @@ export function showGacha() {
     eb.onclick = () => (sfx("click"), showExchange(() => showGacha()));
     q(".gp-head", s).insertBefore(eb, q(".gp-poolbtn", s));
   }
-  // 积攒条: once every SSR is maxed, SSR pulls fill this (ticks at 10 / 20 / 50; past 50 only the number grows)
-  if (ssrDone()) {
+  // 积攒条: always shown; once every SSR is maxed, SSR pulls fill it (ticks at 10 / 20 / 50; past 50 only the number grows)
+  {
     const n = m.stash || 0, f = n <= 10 ? (n / 10) * 0.3 : n <= 20 ? 0.3 + ((n - 10) / 10) * 0.25 : Math.min(1, 0.55 + ((n - 20) / 30) * 0.45);
     const sb = el("button", "stashbar", `<div class="sb-h outline">积攒</div><div class="sb-tube"><i class="sb-fill" style="height:${f * 100}%"></i>
       <b class="sb-t ur" style="bottom:30%"><em>10</em></b><b class="sb-t hur" style="bottom:55%"><em>20</em></b><b class="sb-t" style="bottom:100%"><em>50</em></b></div><div class="sb-n outline">${n}<small>/∞</small></div>`);
@@ -1108,11 +1108,15 @@ function pullSequence(screen, res) {
 }
 
 /** 积攒点 exchange: UR (red) for 10 points, HUR (rainbow) for 20 — the items themselves are still to be decided */
+const ssrOwned = () => {
+  const m = load(), list = GACHA.pool.filter((it) => it.r === "SSR");
+  return `${list.filter((it) => (m.talents[it.id] || 0) >= it.max).length} / ${list.length}`;
+};
 function showStash() {
   const m = load(), n = m.stash || 0;
   const md = el("div", "modal stash-md");
   md.innerHTML = `<div class="panel stash-p"><h2 class="outline">积攒兑换</h2>
-    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换更稀有的天赋或限时活动道具。</div>
+    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换更稀有的天赋或限时活动道具。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
     <div class="st-list">
       <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">UR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 10</small></button></div>
       <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">HUR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 20</small></button></div>
