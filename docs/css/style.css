@@ -1637,7 +1637,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .pvm-r.plain { width: min(320px, 44vw); }
 .pvm-desc { font-size: 15px; line-height: 1.5; text-align: center; padding: 6px 4px; }
 .pvm-desc small { font-size: 12px; color: #c8c0e8; }
-/* --- 11/04: lobby hero summon entrance + three tap reactions (random, never the same twice) + idle fidget --- */
+/* --- 11/04: lobby hero summon entrance / swap (the body motion itself comes from the PixelLab sheet) --- */
 .lb:not(.quick) .lb-hero:not(.ready) { animation: preHide 10s backwards; }
 .lb .lb-hero.ready { animation: none; }
 .lb.quick .lb-hero { animation: none; }
@@ -1653,33 +1653,8 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 }
 .lb .lb-hero.swap { animation: dissolve .2s ease-in both; }
 @keyframes dissolve { to { clip-path: inset(-10% -20% 100% -20%); filter: brightness(4) saturate(0); transform: translateX(-50%) translateY(-6%); opacity: .4; } }
-.lb .lb-hero.r-spin { animation: rSpin 1s cubic-bezier(.35,.1,.3,1); }
-/* hop and a forward somersault around her middle, then a squashy landing */
-@keyframes rSpin {
-  12% { transform: translateX(-50%) scale(1.08, .9); }
-  30% { transform: translateX(-50%) translateY(-26%) rotate(0deg) scale(.96, 1.05); }
-  62% { transform: translateX(-50%) translateY(-26%) rotate(360deg); }
-  76% { transform: translateX(-50%) translateY(0) rotate(360deg) scale(1.1, .9); }
-  88% { transform: translateX(-50%) rotate(360deg) scale(.97, 1.03); }
-  100% { transform: translateX(-50%) rotate(360deg); }
-}
-.lb .lb-hero.r-spin { transform-origin: 50% 55%; }
-.lb .lb-hero.r-burst { animation: rBurst 1.1s ease-out; }
-@keyframes rBurst {
-  10%, 30% { transform: translateX(-50%) translateY(1.5%) scale(1.03, .95); filter: brightness(1.15); }
-  14% { transform: translateX(-51%) translateY(1.5%) scale(1.03, .95); } 22% { transform: translateX(-49%) translateY(1.5%) scale(1.03, .95); }
-  36% { transform: translateX(-50%) translateY(-4%) scale(.96, 1.08); filter: brightness(2.2) drop-shadow(0 0 18px var(--eg)); }
-  60% { transform: translateX(-50%) scale(1.02); filter: brightness(1.2) drop-shadow(0 0 10px var(--eg)); }
-}
-.lb .lb-hero.r-greet { animation: rGreet 1.6s ease-in-out; }
-@keyframes rGreet {
-  10% { transform: translateX(-50%) translateY(-3%); } 20% { transform: translateX(-50%) rotate(-5deg); } 38% { transform: translateX(-50%) rotate(4deg); }
-  56% { transform: translateX(-50%) rotate(-3deg); } 74% { transform: translateX(-50%) rotate(2deg); }
-}
-.lb .lb-hero.fidget { animation: fidget 1.4s ease-in-out; }
-@keyframes fidget { 30% { transform: translateX(-51%) rotate(-2.2deg); } 62% { transform: translateX(-49.5%) rotate(1.6deg); } }
 /* effect layers on the stage (never catch taps) */
-.lb-center > .lb-circle, .lb-center > .lb-pillar, .lb-center > .lb-land, .lb-center > .lb-wave, .lb-center > .lb-skill, .lb-center > .lb-say, .lb-center > .lbp { position: absolute; pointer-events: none; z-index: 3; }
+.lb-center > .lb-circle, .lb-center > .lb-pillar, .lb-center > .lb-wave, .lb-center > .lbp { position: absolute; pointer-events: none; z-index: 3; }
 .lb-circle { left: 50%; bottom: 12.5%; width: min(62%, 40vh); aspect-ratio: 3.2; transform: translateX(-50%); border-radius: 50%; border: 3px solid var(--eg); box-shadow: 0 0 14px var(--eg), inset 0 0 14px var(--eg); background: radial-gradient(closest-side, color-mix(in srgb, var(--eg) 35%, transparent), transparent); animation: circleIn 1.5s ease-out both; z-index: 1 !important; }
 .lb-circle::before { content: ""; position: absolute; inset: 14%; border-radius: 50%; border: 2px dashed #fff; opacity: .8; animation: spin 2s linear infinite; }
 .lb-circle.q { animation-duration: .9s; }
@@ -1687,22 +1662,16 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .lb-pillar { left: 50%; bottom: 14%; width: min(40%, 26vh); height: 92%; transform: translateX(-50%); background: linear-gradient(0deg, #fff 0%, color-mix(in srgb, var(--eg) 80%, #fff) 30%, transparent 100%); filter: blur(2px); mix-blend-mode: screen; animation: pillar 1.3s ease-out both; transform-origin: 50% 100%; }
 .lb-pillar.q { animation-duration: .7s; }
 @keyframes pillar { 0% { transform: translateX(-50%) scaleX(0); opacity: 0; } 20% { transform: translateX(-50%) scaleX(1); opacity: .95; } 55% { transform: translateX(-50%) scaleX(.7); opacity: .7; } 100% { transform: translateX(-50%) scaleX(0); opacity: 0; } }
-.lb-land { left: 50%; bottom: 13%; width: 40%; aspect-ratio: 3.4; transform: translateX(-50%); border-radius: 50%; border: 3px solid rgba(255,255,255,.85); animation: land .7s ease-out both; }
-@keyframes land { from { transform: translateX(-50%) scale(.3); opacity: 1; } to { transform: translateX(-50%) scale(1.5); opacity: 0; } }
 .lb-wave { left: 50%; top: 48%; width: 30%; aspect-ratio: 1; transform: translate(-50%, -50%); border-radius: 50%; border: 5px solid var(--eg); box-shadow: 0 0 20px var(--eg), inset 0 0 20px var(--eg); animation: wave .8s ease-out both; }
 @keyframes wave { from { transform: translate(-50%, -50%) scale(.2); opacity: 1; } to { transform: translate(-50%, -50%) scale(3.2); opacity: 0; } }
-.lb-skill { left: 50%; top: 2%; width: min(16%, 10vh); transform: translateX(-50%); animation: skillPop 1.1s cubic-bezier(.2,1.5,.4,1) both; filter: drop-shadow(0 0 10px var(--eg)); }
-.lb-skill img { width: 100%; display: block; image-rendering: pixelated; }
-@keyframes skillPop { 0% { transform: translateX(-50%) scale(0); } 30% { transform: translateX(-50%) scale(1.2); } 45%, 75% { transform: translateX(-50%) scale(1); opacity: 1; } 100% { transform: translateX(-50%) translateY(-40%); opacity: 0; } }
-.lb-say { left: 62%; top: 4%; max-width: 70%; padding: 6px 12px; background: #fff; color: var(--ink); border: 3px solid var(--ink); border-radius: 14px; font-size: clamp(12px, 1.5vw, 16px); white-space: nowrap; box-shadow: 0 4px 0 rgba(0,0,0,.3); animation: say 2.2s ease-out both; transform-origin: 0 100%; }
-.lb-say::after { content: ""; position: absolute; left: 10px; bottom: -10px; border: 7px solid transparent; border-top: 8px solid var(--ink); border-left-width: 2px; }
-@keyframes say { 0% { transform: scale(0); } 10% { transform: scale(1.1); } 16%, 85% { transform: scale(1); opacity: 1; } 100% { transform: scale(1) translateY(-10px); opacity: 0; } }
 .lbp { width: 7px; height: 7px; margin: -3px; animation: lbp 1s ease-out both; }
 .lbp.mote { background: var(--eg); box-shadow: 0 0 6px var(--eg); border-radius: 50%; }
 .lbp.spark { background: #fff; box-shadow: 0 0 8px var(--eg); width: 5px; height: 5px; }
 .lbp.dust { background: #e8dcc0; border-radius: 50%; animation-duration: .6s; }
-.lbp.heart { width: auto; height: auto; margin: 0; font-style: normal; animation: heartUp 1.2s ease-out both; }
-.lbp.heart::before { content: "❤"; color: #ff6a9a; font-size: 24px; text-shadow: 0 0 2px #1a1020, 0 0 2px #1a1020; }
 @keyframes lbp { from { transform: translate(0, 0) scale(1); opacity: 1; } to { transform: translate(var(--dx), var(--dy)) scale(.3); opacity: 0; } }
-@keyframes heartUp { from { transform: translateY(0) scale(.4); opacity: 0; } 25% { transform: translateY(-14px) scale(1.1); opacity: 1; } to { transform: translate(var(--dx), -70px) scale(.8); opacity: 0; } }
-@media (prefers-reduced-motion: reduce) { .lb .lb-hero.fidget { animation: none; } }
+/* lobby hero drawn frames (PixelLab sheet): the static art stays underneath for layout / until the sheet loads */
+.lb-hero { position: absolute; }
+.lb-hero canvas.lb-anim { position: absolute; left: 50%; bottom: -2.4%; height: 104.9%; aspect-ratio: 1; transform: translateX(-50%); image-rendering: pixelated; display: none; pointer-events: none; filter: drop-shadow(0 0 2px #1a1020) drop-shadow(0 8px 10px rgba(0,0,0,.35)); }
+.lb-hero.anim canvas.lb-anim { display: block; }
+.lb-hero.anim img { visibility: hidden; }
+.lb-hero.dark canvas.lb-anim { filter: brightness(0) opacity(.55) drop-shadow(0 0 2px #fff4); }
