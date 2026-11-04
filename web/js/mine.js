@@ -2020,9 +2020,14 @@ export class Dive {
     const C = set.clips || {};
     // drawn clips: shovel strikes for side / down digging, the run cycle for walking; the still side pose otherwise
     let clip = null, fps = 12;
-    if (p.dig && p.dig.dir === "side" && C["dig_side" + L]) (clip = C["dig_side" + L]), (fps = 14);
-    else if (p.dig && p.dig.dir === "down" && C["dig_down" + L]) (clip = C["dig_down" + L]), (fps = 14);
+    // the shovel in her hands matches the one she dives with (gold as drawn, copper / silver recoloured)
+    const sh = this.o.shovel && this.o.shovel !== "au" ? "@" + this.o.shovel : "";
+    const dc = (n) => C[n + sh + L] || C[n + L];
+    if (p.dig && p.dig.dir === "side" && dc("dig_side")) (clip = dc("dig_side")), (fps = 14);
+    else if (p.dig && p.dig.dir === "down" && dc("dig_down")) (clip = dc("dig_down")), (fps = 14);
+    else if (p.dig && p.dig.dir === "up" && dc("dig_up")) (clip = dc("dig_up")), (fps = 14);
     else if (walking && C["run_e" + L]) clip = C["run_e" + L];
+    else if (!p.dig && C["idle_e" + L]) (clip = C["idle_e" + L]), (fps = 5);
     const frame = clip ? clip[Math.floor(p.anim * fps) % clip.length] : set.views[side];
     // the figure is about 32 world px tall: frames are pre-shrunk once with smoothing so the small sprite stays clean
     const fig = set.foot - set.top, k = 32 / fig;

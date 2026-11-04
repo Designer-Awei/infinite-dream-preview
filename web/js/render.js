@@ -299,10 +299,17 @@ export class Renderer {
     if (!p.moving && p.castT <= 0 && !(p.target && p.input && p.input.atk)) v = p.idleView || "front";
     if (p.moving || p.castT > 0) p.idleView = v;
     const k = set.k || 1, W = set.w / k, H = set.foot / k, SW = set.w, SH = set.h / k;
-    // drawn running frames (PixelLab) when she moves; the still pose otherwise
-    const clipName = { front: "run_s", back: "run_n", side: "run_e", sideL: "run_eL" }[v];
-    const clip = p.moving && !p.downed && set.clips && set.clips[clipName];
-    const runF = clip ? clip[Math.floor(p.animT * 13) % clip.length] : null;
+    // drawn frames (PixelLab): run while moving (faster while dashing), the cast pose while shooting or casting in
+    // place, breathing when idle; the sliced procedural sway is only a fallback for missing clips
+    const dk = { front: "_s", back: "_n", side: "_e", sideL: "_eL" }[v], CL = set.clips || {};
+    const firing = (p.input && p.input.atk && p.target) || p.castT > 0;
+    let clip = null, fps = 13;
+    if (!p.downed) {
+      if (p.moving && CL["run" + dk]) (clip = CL["run" + dk]), (fps = p.dashT > 0 ? 24 : 13);
+      else if (firing && CL["atk" + dk]) (clip = CL["atk" + dk]), (fps = 16);
+      else if (CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
+    }
+    const runF = clip ? clip[Math.floor(p.animT * fps) % clip.length] : null;
     const img = runF || set.views[v];
     const wht = (c) => c.__w || (c.__w = silhouette(c, "#ffffff")), tnt = (c) => c.__t || (c.__t = silhouette(c, ELEM[CHARS[p.cid].elem].glow));
     const silW = runF ? wht(runF) : set.white[v], silT = runF ? tnt(runF) : set.tint[v];
