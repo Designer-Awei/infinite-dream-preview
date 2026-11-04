@@ -105,8 +105,11 @@ const SFX = {
   lose: () => [392, 330, 262, 196].forEach((f, i) => tone(f, 0.25, "triangle", 0.15, 1, i * 0.18)),
   win: () => [523, 659, 784, 1046, 1318, 1568, 2093].forEach((f, i) => tone(f, 0.2, "square", 0.1, 1, i * 0.1)),
 };
+let sfxMute = false;
+/** silence game sounds while a muted preview (item demo) simulates a fight */
+export const setSfxMute = (v) => (sfxMute = v);
 export function sfx(name, minGap = 0.03) {
-  if (!ctx || !soundOn || !SFX[name]) return;
+  if (!ctx || !soundOn || sfxMute || !SFX[name]) return;
   const t = ctx.currentTime;
   if (last[name] && t - last[name] < minGap) return;
   last[name] = t;
