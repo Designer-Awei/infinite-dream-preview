@@ -4,6 +4,7 @@
 import { VIEW_W, VIEW_H, RS, ELEM, ELEM_KEYS, CHARS } from "./data.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { Game, applyCard } from "./game.js";
+import { castSkill } from "./skills.js";
 import { Renderer } from "./render.js";
 import { FxLayer } from "./fx.js";
 import { setSfxMute } from "./audio.js";
@@ -48,7 +49,22 @@ const DEMO = {
   t_elite: { foes: { n: 2, elite: true, hp: 300 } },
   t_replay: { foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7 },
   t_cd: { autoSkill: true },
-  u_echo: { autoSkill: true, cd: 0.3 },
+  // 自洽回声 with Grok: her skill is a dash, so the echo reads as a second dash right after the first.
+  // The demo shows the echo every time (in a run it is a 35% chance).
+  u_echo: {
+    cid: "grok",
+    noCard: true,
+    foes: { n: 3, hp: 300, dx: 150, spread: 70 },
+    tick: (g, p, t, inp, ui) => {
+      const k = Math.floor((t - 0.5) / 2.2), ph = (t - 0.5) - k * 2.2;
+      if (t < 0.5) return;
+      const dir = k % 2 ? -1 : 1;
+      if (ph < 1.1) (inp.mx = dir), (inp.my = 0.25 * dir);
+      const ang = Math.atan2(0.25 * dir, dir);
+      if (ph >= 0.15 && p.__e1 !== k) (p.__e1 = k), castSkill(g, p, "grok", ang, p.target, 1), ui.press(ui.skill), (p.skillCd = CHARS.grok.skill.cd);
+      if (ph >= 0.6 && p.__e1 === k && p.__e2 !== k) (p.__e2 = k), castSkill(g, p, "grok", ang, p.target, 1); // the echo
+    },
+  },
   u_links: { autoSkill: true, cd: 0.4 },
   u_kill_boom: { foes: { n: 5, hp: 5, dx: 140, spread: 50, step: 22 }, respawn: 0.9 },
   u_shield_nova: {
@@ -61,8 +77,8 @@ const DEMO = {
   u_element_spread: { infuse: true, foes: { n: 5, hp: 300, spread: 80, step: 30 } },
 };
 
-/** every item gets a live demo except 先验知识 (a card deal before the run — the card scene shows it better) */
-export const hasLiveDemo = (it) => it.id !== "t_startcard";
+/** SSR cards get a live demo (先验知识 keeps its card-deal scene); N/R/SR are plain stat or unlock cards — the card face is enough */
+export const hasLiveDemo = (it) => it.r === "SSR" && it.id !== "t_startcard";
 
 /**
  * box: an element to fill. Inside it goes a miniature of the real in-run screen — the game canvas at its real view,
@@ -71,6 +87,7 @@ export const hasLiveDemo = (it) => it.id !== "t_startcard";
  */
 export function mountItemDemo(box, it, cid) {
   const D = DEMO[it.id] || {};
+  if (D.cid) cid = D.cid;
   const SW = 860, SH = Math.round((SW * VIEW_H) / VIEW_W); // the phone-sized screen we lay out, then scale down
   box.style.setProperty("--va", String(VIEW_W / VIEW_H));
   const scr = document.createElement("div");
@@ -94,6 +111,7 @@ export function mountItemDemo(box, it, cid) {
     </div>`;
   box.appendChild(scr);
   for (const slot of ["atk", "skill", "ult", "dash"]) scr.querySelector(`.b-${slot} .ico`).src = iconURL(skillIcon(cid, slot), 4);
+  box.__demo = () => ({ g, p }); // for tests
   const fit = () => (scr.style.transform = `scale(${box.clientWidth / SW})`);
   fit();
   const cvs = scr.querySelector(".demo-cv");
@@ -141,8 +159,8 @@ export function mountItemDemo(box, it, cid) {
     // a little extra health keeps the girl standing through the loop, except where her health is the point
     if (!D.realHp) p.hp = p.maxHp = Math.max(p.maxHp, D.hp || 10);
     if (D.hp && D.hp < p.maxHp) p.hp = D.hp;
-    if (it.eq || it.card) g.applyLoadouts();
-    if (it.card && !it.eq) applyCard(g, p, it.card);
+    if ((it.eq || it.card) && !D.noCard) g.applyLoadouts();
+    if (it.card && !it.eq && !D.noCard) applyCard(g, p, it.card);
     if (D.cd) p.st.cd = D.cd;
     if (D.ult != null) p.ult = D.ult;
     if (D.infuse) {
@@ -199,7 +217,7 @@ export function mountItemDemo(box, it, cid) {
       inp.my = 0;
       inp.atk = D.atk !== false && t > 0.4;
       inp.aim = null;
-      if (D.tick) D.tick(g, p, t, inp);
+      if (D.tick) D.tick(g, p, t, inp, { press, skill: ui.skill, ult: ui.ult });
       if (D.autoSkill && p.skillCd <= 0 && t > 0.6) (inp.skill = true), press(ui.skill);
       if (D.autoUlt && p.ult >= 1 && t > 0.6) (inp.ult = true), press(ui.ult);
       // keep the fight going: refill the dummies a moment after they all fall

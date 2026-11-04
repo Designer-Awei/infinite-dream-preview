@@ -1633,3 +1633,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 /* in the small preview the top-left HUD is enlarged to read as clearly as the touch buttons */
 .demo-scr .hud .tl { transform: scale(1.7); transform-origin: 0 0; }
 .demo-scr .hud .tr { transform: scale(1.4); transform-origin: 100% 0; }
+/* N / R / SR: no demo, just the effect in words next to the card */
+.pvm-r.plain { width: min(320px, 44vw); }
+.pvm-desc { font-size: 15px; line-height: 1.5; text-align: center; padding: 6px 4px; }
+.pvm-desc small { font-size: 12px; color: #c8c0e8; }

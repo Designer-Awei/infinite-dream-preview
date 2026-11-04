@@ -829,7 +829,7 @@ function showItemPreview(it, act) {
   const m = load(), lv = m.talents[it.id] || 0;
   const md = el("div", "modal pv-modal");
   md.innerHTML = `<div class="pvm ${it.r}"><div class="pvm-card rc ${it.r}" style="--c:${RCOL[it.r]}"><div class="rc-front"><div class="rr o1">${it.r}</div><div class="ri">${ICON(it, 4)}</div><div class="rn">${it.name}</div><div class="rd">${it.desc}</div><div class="rl">${lv ? (it.max > 1 ? `已拥有 Lv${lv}/${it.max}` : "已拥有") : "未拥有"}</div></div></div>
-    <div class="pvm-r"><div class="pvm-h outline">效果预览</div>${hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
+    <div class="pvm-r${it.r === "SSR" ? "" : " plain"}">${it.r === "SSR" ? `<div class="pvm-h outline">效果预览</div>${hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}` : `<div class="pvm-h outline">${it.name}</div><div class="pvm-desc o1">${it.desc}${it.max > 1 ? `<br><small>最高 Lv${it.max}，可叠加</small>` : ""}</div>`}<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
   uiRoot().appendChild(md);
   // live demo: the selected girl actually using the item in a small real fight
   const live = md.querySelector(".sc-live");
