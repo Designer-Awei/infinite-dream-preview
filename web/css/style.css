@@ -1630,3 +1630,6 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .demo-scr .demo-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 .demo-scr .touchpad { display: block !important; }
 .demo-scr .hud, .demo-scr .touchpad { z-index: 1; }
+/* in the small preview the top-left HUD is enlarged to read as clearly as the touch buttons */
+.demo-scr .hud .tl { transform: scale(1.7); transform-origin: 0 0; }
+.demo-scr .hud .tr { transform: scale(1.4); transform-origin: 100% 0; }
