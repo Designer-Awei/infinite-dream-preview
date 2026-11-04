@@ -1,6 +1,6 @@
 // Draws the world: ground, y-sorted blocks/bushes/characters, pixelfx layers, bullets, overlays.
 import { T, VIEW_W, VIEW_H, CHARS, ELEM, ITEMS, ENEMIES, RS } from "./data.js";
-import { A } from "./assets.js";
+import { A, silhouette } from "./assets.js";
 import { WALL, WATER, BUSH, CRATE, BARREL, wallSprite, wallMask, crateSprite, bushSprite, drawSpikes, tileAt, THEMES, LIFT } from "./map.js";
 import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
@@ -298,7 +298,14 @@ export class Renderer {
     let v = Math.abs(sn) > Math.abs(cs) * 1.25 ? (sn > 0 ? "front" : "back") : cs >= 0 ? "side" : "sideL";
     if (!p.moving && p.castT <= 0 && !(p.target && p.input && p.input.atk)) v = p.idleView || "front";
     if (p.moving || p.castT > 0) p.idleView = v;
-    const k = set.k || 1, img = set.views[v], W = set.w / k, H = set.foot / k, SW = set.w, SH = set.h / k;
+    const k = set.k || 1, W = set.w / k, H = set.foot / k, SW = set.w, SH = set.h / k;
+    // drawn running frames (PixelLab) when she moves; the still pose otherwise
+    const clipName = { front: "run_s", back: "run_n", side: "run_e", sideL: "run_eL" }[v];
+    const clip = p.moving && !p.downed && set.clips && set.clips[clipName];
+    const runF = clip ? clip[Math.floor(p.animT * 13) % clip.length] : null;
+    const img = runF || set.views[v];
+    const wht = (c) => c.__w || (c.__w = silhouette(c, "#ffffff")), tnt = (c) => c.__t || (c.__t = silhouette(c, ELEM[CHARS[p.cid].elem].glow));
+    const silW = runF ? wht(runF) : set.white[v], silT = runF ? tnt(runF) : set.tint[v];
     const half = (q) => Math.round(q * k) / k;
     const x0 = half(p.x - W / 2), y0 = half(p.y - H + 1);
     // shadow
@@ -309,17 +316,19 @@ export class Renderer {
     // dash afterimages
     if (p.trail) for (const q of p.trail) if (q.t > 0) {
       g.globalAlpha = q.t * 2;
-      g.drawImage(set.tint[v], half(q.x - W / 2), half(q.y - H + 1), W, SH);
+      g.drawImage(silT, half(q.x - W / 2), half(q.y - H + 1), W, SH);
     }
     g.globalAlpha = 1;
     if (p.downed) {
       g.save();
       g.globalAlpha = 0.6;
-      g.translate(p.x, p.y);
+      // lying on her side: only the figure rows (top..feet), rotated a quarter turn and centred on her spot
+      const tp = set.top || 0, fh = (set.foot - tp) / k;
+      g.translate(p.x, p.y - 6);
       g.rotate(-Math.PI / 2);
-      g.drawImage(set.white[v], -H + 6, -W / 2, W, SH);
+      g.drawImage(set.white[v], 0, tp, SW, set.foot - tp, -fh / 2, -W / 2, W, fh);
       g.globalAlpha = 0.45;
-      g.drawImage(img, -H + 6, -W / 2, W, SH);
+      g.drawImage(set.views[v], 0, tp, SW, set.foot - tp, -fh / 2, -W / 2, W, fh);
       g.restore();
       // revive progress
       if (!game.pvp) {
@@ -338,15 +347,19 @@ export class Renderer {
     const t = p.animT, mv = p.moving;
     const bob = half(mv ? -Math.abs(Math.sin(t * 9)) * 2 : Math.sin(t * 2.2) * 0.6);
     const rec = p.recoil ? -Math.cos(p.face) * p.recoil : 0;
-    const legH = 9, body = H - legH;
+    if (runF) {
+      // a real run cycle: draw the frame whole (no sliced bob / sway / legs)
+      g.drawImage(runF, 0, 0, SW, set.h, x0 + half(rec), y0, W, SH);
+    } else {
+    const legH = 9, body = H - legH, top0 = Math.floor((set.top || 0) / k), fig = body - top0;
     const swayA = mv ? 1.6 : 0.7, swayDir = mv ? -(p.input?.mx || 0) : 0;
     // rows near the head barely move: draw them as one slice, then 2-row strips for hair/skirt
-    const still = Math.floor(body * 0.35);
+    const still = top0 + Math.floor(fig * 0.35);
     const dx0 = half(rec);
     g.drawImage(img, 0, 0, SW, still * k, x0 + dx0, y0 + bob, W, still);
     for (let y = still; y < body; y += 2) {
       const hgt = Math.min(2, body - y);
-      const kk = Math.max(0, (y - body * 0.35) / (body * 0.65));
+      const kk = Math.max(0, (y - still) / Math.max(1, body - still));
       const dx = half(Math.sin(t * (mv ? 9 : 2.4) - y * 0.12) * swayA * kk * 0.6 + swayDir * kk * 2 + rec);
       g.drawImage(img, 0, y * k, SW, hgt * k, x0 + dx, y0 + y + bob, W, hgt);
     }
@@ -356,16 +369,17 @@ export class Renderer {
       g.drawImage(img, 0, body * k, SW / 2, legH * k, x0 + rx, y0 + body - l, W / 2, legH);
       g.drawImage(img, SW / 2, body * k, SW / 2, legH * k, x0 + W / 2 + rx, y0 + body - r2, W / 2, legH);
     } else g.drawImage(img, 0, body * k, SW, legH * k, x0 + rx, y0 + body, W, legH);
+    }
     // flashes
     const flashA = p.hurtT > 0 ? p.hurtT * 2.5 : p.buff && p.buff.star > 0 ? 0.25 + 0.2 * Math.sin(this.t * 20) : 0;
     if (flashA > 0) {
       g.globalAlpha = Math.min(1, flashA);
-      g.drawImage(p.buff.star > 0 ? set.tint[v] : set.white[v], x0, y0 + bob, W, SH);
+      g.drawImage(p.buff.star > 0 ? silT : silW, x0, y0 + (runF ? 0 : bob), W, SH);
     }
     if (p.buff && p.buff.ultOn > 0) {
       g.globalAlpha = 0.18 + 0.12 * Math.sin(this.t * 10);
       g.globalCompositeOperation = "lighter";
-      g.drawImage(set.tint[v], x0, y0 + bob, W, SH);
+      g.drawImage(silT, x0, y0 + (runF ? 0 : bob), W, SH);
       g.globalCompositeOperation = "source-over";
     }
     g.globalAlpha = 1;
@@ -385,7 +399,7 @@ export class Renderer {
     if (p.dead || p.downed) return;
     const set = A.girls[p.cid];
     if (tileAt(game.map, p.x, p.y) === BUSH && p !== me && p.pvpEnemy) return;
-    const y = p.y - set.foot / (set.k || 1) - 8, w = 34, x = p.x - w / 2;
+    const y = p.y - (set.foot - (set.top || 0)) / (set.k || 1) - 8, w = 34, x = p.x - w / 2;
     const col = p === me ? "#5dff7a" : p.pvpEnemy ? "#ff4a5a" : "#4ab8ff";
     // name
     if (game.players.length > 1 || p !== me) this.text(g, p.name, p.x, y - 9, col, 10);

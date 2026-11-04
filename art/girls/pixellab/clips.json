@@ -1,0 +1,7 @@
+{
+ "run_s": {"default": ["a_run-s", [0,1,2,3,4,5,6,7]]},
+ "run_e": {"default": ["a_run-e", [0,1,2,3,4,5,6,7]], "glm": ["a_run2-e", [0,1,2,3,4,5,6,7]]},
+ "run_n": {"default": ["a_run-n", [0,1,2,3,4,5,6,7]]},
+ "dig_side": {"default": ["b_digside", [0,1,2,3,4,5,6,7]], "grok": ["b_digside", [0,1,2,3,4,5,7]], "claude": ["c_digside", [0,1,2,3,4,5,6,7]], "glm": ["c_digside", [0,1,2,3,4,5,6,7]]},
+ "dig_down": {"default": ["b_digdown", [0,1,2,3,4,5,6,7]]}
+}

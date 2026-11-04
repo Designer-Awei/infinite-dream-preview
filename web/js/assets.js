@@ -64,10 +64,21 @@ export async function loadAll(progress = () => {}) {
       if (v === "side") views.sideL = crop(gi, x, y, w, h, true);
     }
     const b = bounds(views.front);
-    const set = { w: gj.cw, h: gj.ch, foot: b.y1 + 1, top: b.y0, k: SPR_K, views, white: {}, tint: {} };
+    const set = { w: gj.cw, h: gj.ch, foot: b.y1 + 1, top: b.y0, k: gj.k || SPR_K, views, white: {}, tint: {}, clips: {} };
     for (const v of ["front", "back", "side", "sideL"]) {
       set.white[v] = silhouette(views[v], "#ffffff");
       set.tint[v] = silhouette(views[v], ELEM[CHARS[id].elem].glow);
+    }
+    // animation clips (PixelLab frames): run in 3 directions (+ mirrored west), digging in the mine
+    const row = fr.front[1];
+    for (const [name, [i0, n]] of Object.entries((gj.clips && gj.clips[id]) || {})) {
+      const list = [], flip = [];
+      for (let i = 0; i < n; i++) {
+        list.push(crop(gi, (i0 + i) * gj.cw, row, gj.cw, gj.ch));
+        flip.push(crop(gi, (i0 + i) * gj.cw, row, gj.cw, gj.ch, true));
+      }
+      set.clips[name] = list;
+      set.clips[name + "L"] = flip;
     }
     A.girls[id] = set;
   }

@@ -3,7 +3,7 @@
 // Dying keeps 30% of the bag, running out of power keeps 50%.
 import { RELICS, SHOP, MT, MW, MH, T, SOLID, HARD, ZONES, zoneAt, ORES, SHOVELS, MOBS, CHEST_STARS, DEPTH_STARS } from "./minedata.js";
 import { CHARS, ELEM, VIEW_W, VIEW_H } from "./data.js";
-import { A } from "./assets.js";
+import { A, silhouette } from "./assets.js";
 import { rng, clamp, TAU } from "./util.js";
 import { sfx } from "./audio.js";
 
@@ -2014,31 +2014,60 @@ export class Dive {
   drawPlayer(g) {
     const p = this.p, set = A.girls[this.o.cid];
     if (!set) return;
-    const img = p.face > 0 ? set.views.side : set.views.sideL;
-    const H = 32, k = H / set.foot, W = set.w * k;
+    const L = p.face > 0 ? "" : "L", side = p.face > 0 ? "side" : "sideL";
     const blink = p.inv > 0 && Math.floor(this.time * 20) % 2 === 0;
     const walking = Math.abs(p.vx) > 10 && p.ground;
-    const bob = walking ? -Math.abs(Math.sin(p.anim * 12)) * 1.5 : p.jet ? Math.sin(p.anim * 30) * 0.5 : 0;
-    const digShake = p.dig ? Math.sin(this.time * 70) * 1 : 0;
+    const C = set.clips || {};
+    // drawn clips: shovel strikes for side / down digging, the run cycle for walking; the still side pose otherwise
+    let clip = null, fps = 12;
+    if (p.dig && p.dig.dir === "side" && C["dig_side" + L]) (clip = C["dig_side" + L]), (fps = 14);
+    else if (p.dig && p.dig.dir === "down" && C["dig_down" + L]) (clip = C["dig_down" + L]), (fps = 14);
+    else if (walking && C["run_e" + L]) clip = C["run_e" + L];
+    const frame = clip ? clip[Math.floor(p.anim * fps) % clip.length] : set.views[side];
+    // the figure is about 32 world px tall: frames are pre-shrunk once with smoothing so the small sprite stays clean
+    const fig = set.foot - set.top, k = 32 / fig;
+    const small = (c) => {
+      if (c.__s && c.__sk === k) return c.__s;
+      const o = document.createElement("canvas");
+      o.width = Math.max(1, Math.round(c.width * k));
+      o.height = Math.max(1, Math.round(c.height * k));
+      const og = o.getContext("2d");
+      og.imageSmoothingEnabled = true;
+      og.imageSmoothingQuality = "high";
+      og.drawImage(c, 0, 0, o.width, o.height);
+      c.__s = o;
+      c.__sk = k;
+      return o;
+    };
+    const img = small(frame), W = img.width, Hh = img.height;
+    const bob = !clip && walking ? -Math.abs(Math.sin(p.anim * 12)) * 1.5 : p.jet ? Math.sin(p.anim * 30) * 0.5 : 0;
+    const digShake = p.dig && !clip ? Math.sin(this.time * 70) * 1 : 0;
+    const x = Math.round(p.x - W / 2 + digShake), y = Math.round(p.y - set.foot * k + bob);
     g.save();
     g.globalAlpha = blink ? 0.45 : 1;
-    // the drill in front of her
-    const dx = p.dig ? (p.dig.dir === "side" ? p.face * 10 : 0) : p.face * 9, dy = p.dig && p.dig.dir === "down" ? 2 : p.dig && p.dig.dir === "up" ? -PH - 2 : -PH / 2;
-    g.fillStyle = "#c8c8d8";
-    g.save();
-    g.translate(p.x + dx + digShake, p.y + dy);
-    g.rotate(p.dig && p.dig.dir === "down" ? Math.PI / 2 : p.dig && p.dig.dir === "up" ? -Math.PI / 2 : p.face > 0 ? 0 : Math.PI);
-    g.fillStyle = "#5a5a6a";
-    g.fillRect(-4, -3, 6, 6);
-    g.fillStyle = "#e8e8f0";
-    g.beginPath();
-    g.moveTo(2, -4);
-    g.lineTo(10 + (p.dig ? Math.sin(this.time * 80) : 0), 0);
-    g.lineTo(2, 4);
-    g.fill();
-    g.restore();
-    g.drawImage(img, Math.round(p.x - W / 2 + digShake), Math.round(p.y - set.h * k + (set.h - set.foot) * k + bob), W, set.h * k);
-    if (p.hurtT > 0) (g.globalCompositeOperation = "lighter"), (g.globalAlpha = 0.6), g.drawImage(set.white[p.face > 0 ? "side" : "sideL"], Math.round(p.x - W / 2), Math.round(p.y - set.h * k + (set.h - set.foot) * k + bob), W, set.h * k);
+    // the drill only when there is no drawn shovel clip (digging up, or an old sprite set)
+    if (!clip || !p.dig) {
+      const dx = p.dig ? (p.dig.dir === "side" ? p.face * 10 : 0) : p.face * 9, dy = p.dig && p.dig.dir === "down" ? 2 : p.dig && p.dig.dir === "up" ? -PH - 2 : -PH / 2;
+      if (p.dig) {
+        g.save();
+        g.translate(p.x + dx + digShake, p.y + dy);
+        g.rotate(p.dig.dir === "down" ? Math.PI / 2 : p.dig.dir === "up" ? -Math.PI / 2 : p.face > 0 ? 0 : Math.PI);
+        g.fillStyle = "#5a5a6a";
+        g.fillRect(-4, -3, 6, 6);
+        g.fillStyle = "#e8e8f0";
+        g.beginPath();
+        g.moveTo(2, -4);
+        g.lineTo(10 + Math.sin(this.time * 80), 0);
+        g.lineTo(2, 4);
+        g.fill();
+        g.restore();
+      }
+    }
+    g.drawImage(img, x, y);
+    if (p.hurtT > 0) {
+      const wsrc = frame.__w || (frame.__w = silhouette(frame, "#ffffff"));
+      (g.globalCompositeOperation = "lighter"), (g.globalAlpha = 0.6), g.drawImage(wsrc, x, y, W, Hh);
+    }
     g.restore();
     // jetpack flame
     if (p.jet) {

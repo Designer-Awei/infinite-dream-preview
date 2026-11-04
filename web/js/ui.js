@@ -24,9 +24,10 @@ export function toast(msg, ms = 1800) {
 const cardById = (id, cid) => CARDS.find((c) => c.id === id) || fusionCards(cid).find((c) => c.id === id);
 export function spriteCanvas(cid, view = "front") {
   const s = A.girls[cid], c = document.createElement("canvas");
+  const top = s.top || 0;
   c.width = s.w;
-  c.height = s.foot;
-  c.getContext("2d").drawImage(s.views[view], 0, 0);
+  c.height = s.foot - top;
+  c.getContext("2d").drawImage(s.views[view], 0, -top);
   return c;
 }
 export function btn(label, cls, fn) {
@@ -46,8 +47,10 @@ export function showUnlock(id) {
   const md = el("div", "modal");
   md.innerHTML = `<div class="panel unlock-pop" style="text-align:center"><h2 class="outline">新角色解锁！</h2></div>`;
   const p = $(".panel", md);
-  const cv = spriteCanvas(id);
-  cv.style.cssText = "height:150px;image-rendering:pixelated;display:block;margin:6px auto;animation:bob 2s infinite";
+  const cv = document.createElement("img");
+  cv.src = `assets/hero_${id}.png`;
+  cv.alt = "";
+  cv.style.cssText = "height:150px;display:block;margin:6px auto;animation:bob 2s infinite";
   p.appendChild(cv);
   p.appendChild(el("div", "outline", `<div style="font-size:22px">${c.name}</div><div style="color:#ffe36a">「${c.title}」</div>`));
   p.appendChild(btn("太好了！", "", () => md.remove()));
