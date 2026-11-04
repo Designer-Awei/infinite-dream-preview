@@ -1607,3 +1607,9 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 @media (max-width: 700px) { .vgrid { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
 @media (max-width: 600px) { .vgrid { grid-template-columns: repeat(5, minmax(0, 1fr)); } }
 .vgrid .vc-n.ln { font-size: 9.5px; letter-spacing: -.3px; white-space: nowrap; }
+/* free copper shovel ready to claim: the whole control breathes (scale) and the shovel glows, so it reads as "tap me" */
+.mine-hub .mh-freecu.ready { animation: fcBreathe 1.3s ease-in-out infinite !important; transform-origin: 50% 50%; }
+.mine-hub .mh-freecu.ready img { animation: none; filter: drop-shadow(0 0 0 rgba(255,210,90,0)); animation: fcGlow 1.3s ease-in-out infinite; }
+@keyframes fcBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
+@keyframes fcGlow { 0%, 100% { filter: drop-shadow(0 0 1px rgba(255,210,90,.35)); } 50% { filter: drop-shadow(0 0 7px rgba(255,210,90,.95)); } }
+@media (prefers-reduced-motion: reduce) { .mine-hub .mh-freecu.ready, .mine-hub .mh-freecu.ready img { animation: none !important; } }
