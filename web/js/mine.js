@@ -946,7 +946,7 @@ export class Dive {
       p.vy = clamp(p.vy, -95, 90);
     } else {
       p.vy += G * dt;
-      if (up && p.energy > 0 && !(p.dig && p.dig.dir === "up")) {
+      if (up && p.energy > 0) {
         p.vy -= 1500 * dt;
         p.jet = true;
         p.energy = Math.max(0, p.energy - 3.2 * dt * (this.rel.feather ? 0.5 : 1));
@@ -967,11 +967,11 @@ export class Dive {
       }
       if (Math.random() < dt * 3) this.parts.push({ x: p.x + p.face * 4, y: p.y - PH, vx: 0, vy: -30, t: 0.8, col: "#c8f8ff", s: 2, bubble: true });
     } else p.o2 = Math.min(p.maxO2, p.o2 + dt * 6);
-    // ---- digging (push into a wall, down while standing, up against a ceiling)
+    // ---- digging (push into a wall, down while standing, up against a ceiling — also while the jetpack is firing)
     let tgt = null;
     if (down && p.ground) tgt = { c: cx, r: Math.floor((p.y + 2) / MT), dir: "down" };
     else if (mx && this.solidAt(p.x + mx * (PW / 2 + 2), p.y - PH / 2)) tgt = { c: Math.floor((p.x + mx * (PW / 2 + 2)) / MT), r: Math.floor((p.y - PH / 2) / MT), dir: "side" };
-    else if (up && this.solidAt(p.x, p.y - PH - 2) && (p.ground || inWater || p.energy <= 0)) tgt = { c: cx, r: Math.floor((p.y - PH - 2) / MT), dir: "up" };
+    else if (up && this.solidAt(p.x, p.y - PH - 2)) tgt = { c: cx, r: Math.floor((p.y - PH - 2) / MT), dir: "up" };
     if (tgt && this.get(tgt.c, tgt.r) !== T.LIFT) {
       const t = this.get(tgt.c, tgt.r), hd = HARD[t];
       if (!hd) {
