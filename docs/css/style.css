@@ -1531,3 +1531,57 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .ct-row small { flex: none; font-size: 11px; color: #c8c0e8; }
 .ct-tip { font-size: 12px; }
 @media (max-height: 340px) { .mshop { padding: 8px 12px; gap: 5px; } .ms-it { padding: 2px 6px; } .ms-it img { width: 24px; height: 24px; } .ms-it .btn.small { padding: 3px 8px 4px !important; } .ms-h h2 { font-size: 18px; } }
+/* --- 11/04: currency pills everywhere, SSR 兑换卡 pill in the mine hub --- */
+.expill { font: inherit; color: #fff; cursor: pointer; border: 3px solid var(--ink); }
+.expill .cur { width: 20px; height: 20px; margin-right: 4px; }
+.res-gain[data-cur] { cursor: pointer; }
+/* --- 11/04: gacha layout — machine, 积攒 bar and the right panel share one top/bottom line, clear of the top bar --- */
+.gacha2 { --gt: max(58px, 15vh); --gw: min(38vw, calc((100vh - var(--gt) - 10px) * .78)); }
+.gacha2 .gm { top: var(--gt); width: var(--gw); }
+.gacha2 .stashbar { top: var(--gt); bottom: auto; height: calc(var(--gw) / .78); left: calc(6% + var(--gw) + 12px); }
+.gacha2 .gp { top: var(--gt); bottom: auto; height: calc(var(--gw) / .78); width: auto; left: calc(6% + var(--gw) + 16px); gap: 8px; }
+.gacha2.has-stash .gp { left: calc(6% + var(--gw) + 84px); }
+.gacha2 .gp-title { white-space: nowrap; }
+.gacha2 .gp-feat { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+.pull-btn small .cur.gem, .pv-foot .cur.gem, .res-chip .cur.gem, .pl-rule .cur.gem { width: .9em; height: .9em; margin: 0 2px; }
+/* vertical mini cards: banner / pool preview / exchange */
+.vc { position: relative; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; padding: 15px 3px 5px; border: 3px solid var(--ink); border-radius: 10px; color: var(--ink); cursor: pointer; box-shadow: 0 3px 0 var(--ink); background: #e8e4f0; overflow: hidden; }
+.vc.R { background: linear-gradient(180deg, #eef6ff, #bcdcff); } .vc.SR { background: linear-gradient(180deg, #f6ecff, #d8b8ff); } .vc.SSR { background: linear-gradient(180deg, #fff6c0, #ffd04a); }
+.vc.no { filter: saturate(.45) brightness(.82); }
+.vc:active { transform: translateY(2px); box-shadow: 0 1px 0 var(--ink); }
+.vc-r { position: absolute; top: 2px; left: 3px; font-size: 10px; line-height: 13px; color: #fff; padding: 0 4px; border-radius: 5px; background: #8a96aa; }
+.vc.R .vc-r { background: #3a8ae0; } .vc.SR .vc-r { background: #9a50e0; } .vc.SSR .vc-r { background: #e09a10; }
+.vc-tag { position: absolute; top: 2px; right: 3px; font-style: normal; font-size: 9.5px; line-height: 13px; color: #fff; padding: 0 3px; border-radius: 5px; background: #6a6a7a; }
+.vc-i .pxi { display: block; width: 34px; height: 34px; image-rendering: pixelated; }
+.vc-n { font-weight: normal; font-size: 12px; line-height: 1.2; text-align: center; overflow-wrap: anywhere; }
+.vc-s { font-size: 10px; line-height: 1.2; opacity: .8; white-space: nowrap; }
+.vc-p { font-style: normal; font-size: 11px; line-height: 1.2; color: #c03a70; }
+.vc.feat { box-shadow: 0 0 12px rgba(255,210,80,.45), 0 3px 0 var(--ink); }
+.vc.feat .vc-i .pxi { width: clamp(28px, 4vw, 46px); height: auto; animation: icoFloat 2.4s ease-in-out infinite; }
+.vc.feat .vc-n { font-size: clamp(11px, 1.35vw, 14px); }
+.vgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; padding-bottom: 4px; }
+.ex-face { width: 34px; height: 34px; image-rendering: pixelated; margin-right: 6px; }
+.pvm-act { margin-top: 2px; } .pvm-act span { font-size: 15px; }
+@media (max-height: 340px) { .gacha2 .gp { gap: 5px; } .vc { padding-top: 13px; } .vc.feat .vc-s { display: none; } }
+@media (max-width: 760px) {
+  .gacha2 { --gw: min(33vw, calc((100vh - var(--gt) - 10px) * .78)); }
+  .gacha2 .stashbar { width: 46px; } .gacha2.has-stash .gp { left: calc(6% + var(--gw) + 70px); }
+  .gacha2 .gp .rates .rf { display: none; }
+  .gacha2 .gp-poolbtn { font-size: 11px; padding: 2px 6px 2px 3px; } .gacha2 .gp-poolbtn img { width: 20px; height: 20px; }
+  .gacha2 .gp-title { font-size: 13px; }
+  .vc.feat .vc-n { font-size: 11px; white-space: nowrap; }
+  .gacha2 .pull-btn small { white-space: nowrap; }
+}
+@media (max-width: 600px) { .vc.feat .vc-n { font-size: 10px; white-space: normal; } .vc.feat .vc-r { display: none; } .vc.feat { padding-top: 5px; } }
+/* narrow phones: compact currency pills, let the title row use the freed space so the free-shovel timer is never clipped */
+@media (max-width: 700px) {
+  .mine-hub .topbar .pill { gap: 3px; padding: 3px 8px 3px 4px; font-size: 14px; }
+  .mine-hub .topbar .pill .cur { width: 16px; height: 16px; margin-right: 1px; }
+  .mine-hub .mh-tl { width: auto; flex: 1 1 auto; gap: 6px; }
+  .mine-hub .topbar .spacer { display: none; }
+  .mine-hub .mh-freecu img { width: 22px; height: 22px; } .mine-hub .mh-freecu b { font-size: 13px; }
+}
+@media (max-width: 600px) { .mine-hub .topbar { gap: 6px; } .mine-hub .topbar .logo { font-size: 19px; } .mine-hub .topbar .pill { padding-right: 6px; } }
+.gp-exbtn .lbl { font-style: normal; }
+@media (max-width: 600px) { .gacha2 .gp-exbtn .lbl { display: none; } }
+@media (max-height: 340px) { .gacha2 .pull-btn { padding: 4px 8px 7px !important; font-size: 18px !important; } .gacha2 .gp-pity { padding: 4px 8px; gap: 2px; } }
