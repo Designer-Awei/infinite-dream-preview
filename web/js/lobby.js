@@ -352,7 +352,7 @@ function renderHero(s, id, swap) {
   void info.offsetWidth;
   info.classList.add("refresh");
   info.innerHTML = `
-    <div class="li-head"><div class="li-name outline${core ? " core-name" : ""}"${core ? ` title="梦核：${CORE_FX[id]}"` : ""}>${c.name}</div><div class="li-title o1"><span>「${c.title}」</span><button class="li-kit" title="天赋装配">${loadoutOf(id).map((t) => `<i class="ks${t ? " on" : ""}">${t ? `<img src="${iconURL(t, 1)}" alt="">` : "+"}</i>`).join("")}<span class="o1">天赋</span></button></div>
+    <div class="li-head"><div class="li-nrow"><div class="li-name outline${core ? " core-name" : ""}"${core ? ` title="梦核：${CORE_FX[id]}"` : ""}>${c.name}</div><button class="li-kit" title="天赋装配">${loadoutOf(id).map((t) => `<i class="ks${t ? " on" : ""}">${t ? `<img src="${iconURL(t, 1)}" alt="">` : "+"}</i>`).join("")}<span class="o1">天赋</span></button></div><div class="li-title o1"><span>「${c.title}」</span></div>
       <div class="li-chips o1"><span class="chip el-chip" style="background:${e.color}"><img src="${iconURL("elem_" + c.elem, 1)}" alt="">${e.name}元素</span><span class="chip role">${c.role}</span><button class="li-more">详情</button></div></div>
     <div class="li-bars o1">
       ${bar("生命", c.hp, 7, "linear-gradient(90deg,#ff8a9a,#ff3a5a)")}
@@ -373,7 +373,7 @@ function renderHero(s, id, swap) {
 }
 
 // ------------------------------------------------------------------ character detail (everything that doesn't fit the card)
-function showCharDetail(id) {
+export function showCharDetail(id) {
   const m = load(), c = CHARS[id], e = ELEM[c.elem], open = m.chars.includes(id), core = !!(m.cores || {})[id];
   const reacts = Object.entries(REACTIONS).filter(([k]) => k === "bubble" || k.split("+").includes(c.elem));
   const md = el("div", "modal cd-modal");
@@ -381,12 +381,12 @@ function showCharDetail(id) {
     <div class="kit-head"><img class="kit-face" src="assets/head_${id}.png" alt=""><div><h2 class="outline${core ? " core-name" : ""}">${c.name}</h2><div class="kit-sub o1">「${c.title}」 · ${e.name}元素 · ${c.role}</div></div><button class="btn gray small x-btn">关闭</button></div>
     <div class="cd-body">
       <div class="cd-sec">${[["普攻 J", "atk", c.atk.name, c.passive], ["小技能 K", "skill", c.skill.name, c.skill.desc + `（冷却 ${c.skill.cd} 秒）`], ["大招 L", "ult", c.ult.name, c.ult.desc]]
-        .map(([k, slot, n, d]) => `<div class="cd-sk"><img src="${iconURL(skillIcon(id, slot), 2)}" alt=""><div><b class="o1">${n} <small>${k}</small></b><p>${d}</p></div></div>`).join("")}</div>
+        .map(([k, slot, n, d]) => `<div class="cd-sk"><img src="${iconURL(skillIcon(id, slot), 2)}" alt=""><div><b class="o1">${n} <small>${k}</small></b><p>${d}</p></div></div>`).join("")}
+        <div class="cd-h o1" style="margin-top:2px">梦核${core ? ` <span class="core-name">已激活</span>` : "（未获得）"}</div><p class="cd-lore">${CORE_FX[id]}：${CORE_DETAIL[id]}${core ? "名字显示为流彩表示梦核已生效。" : "可在梦境工坊用星砂兑换，获得后名字变为流彩。"}</p></div>
       <div class="cd-sec"><div class="cd-h o1">元素反应（${e.name}元素参与）</div>${reacts
         .map(([k, r]) => `<div class="cd-re"><span class="chip">${k === "bubble" ? (c.elem === "bubble" ? "泡 + 任意元素" : "泡 + " + e.name) : k.split("+").map((x) => ELEM[x].name).join(" + ")}</span><b>${r.name}</b><span>${r.desc}</span></div>`).join("")}
-        <div class="cd-h o1" style="margin-top:8px">梦核${core ? ` <span class="core-name">已激活</span>` : "（未获得）"}</div><p class="cd-lore">${CORE_FX[id]}：${CORE_DETAIL[id]}${core ? "名字显示为流彩表示梦核已生效。" : "在梦境矿场的「梦境工坊」用星砂兑换，给当时选中的角色；获得后名字会变成流彩。"}</p>
         <div class="cd-h o1" style="margin-top:8px">设定</div><p class="cd-lore">${c.lore}</p>
-        ${open ? "" : `<div class="cd-h o1" style="margin-top:8px">解锁条件</div><p class="cd-lore">${UNLOCKS[id].text}（进度 ${Math.round(unlockProgress(id) * 100)}%）</p>`}</div>
+        ${open || !UNLOCKS[id] ? "" : `<div class="cd-h o1" style="margin-top:8px">解锁条件</div><p class="cd-lore">${UNLOCKS[id].text}（进度 ${Math.round(unlockProgress(id) * 100)}%）</p>`}</div>
     </div></div>`;
   uiRoot().appendChild(md);
   q(".x-btn", md).onclick = () => md.remove();
