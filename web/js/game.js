@@ -685,7 +685,10 @@ export class Game {
     this.emit({ t: "over" });
   }
   victory() {
+    if (this.phase === "win") return;
     this.phase = "win";
+    // the run is over: drop the portal so standing in it can't re-trigger the leave fade every 0.7 s
+    this.portal = null;
     this.onUi("win");
     this.emit({ t: "win" });
   }
@@ -922,7 +925,7 @@ export class Game {
       this.cardsT = (this.cardsT || 0) + dt;
       if (this.cardsT > 30) for (const pid of Object.keys(this.cardOffers)) this.pickCard(+pid, this.cardOffers[pid][0]);
     } else this.cardsT = 0;
-    if (this.portal && this.phase !== "cards") {
+    if (this.portal && this.phase !== "cards" && this.phase !== "win" && this.phase !== "over") {
       this.portal.t += dt;
       const ps = this.alivePlayers();
       const inside = ps.filter((p) => dist(p.x, p.y, this.portal.x, this.portal.y) < 24);

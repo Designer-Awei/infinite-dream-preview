@@ -276,8 +276,12 @@ export function updateHud(game, me) {
   const dk = me.dashCdFrac ?? Math.max(0, me.dashCd) / 1.6;
   const uk = Math.min(1, me.ult);
   const q = (x) => Math.round(x * 50) / 50;
-  set("cds", q(sk) + "," + q(dk) + "," + q(uk) + "," + (me.input.atk ? 1 : 0), () => {
-    const skCd = sk * c.skill.cd * me.st.cd, dkCd = dk * 1.6;
+  const skCd = sk * c.skill.cd * me.st.cd, dkCd = dk * 1.6;
+  const t1 = (v) => (Math.ceil(v * 10) / 10 || 0.1).toFixed(1); // never shows "0.0" while still cooling down
+  const skT = sk > 0 ? (skCd >= 1 ? String(Math.ceil(skCd)) : t1(skCd)) : "", dkT = dk > 0 ? t1(dkCd) : "";
+  // the key holds what is actually shown (ready state + countdown text): rounding alone could hide the
+  // last step from "0.0" to ready and leave the button grey
+  set("cds", q(sk) + "," + q(dk) + "," + q(uk) + "," + (me.input.atk ? 1 : 0) + "," + skT + "," + dkT + "," + (sk <= 0 ? 1 : 0) + (dk <= 0 ? 1 : 0) + (uk >= 1 ? 1 : 0), () => {
     const upd = (key, frac, ready, secs, ring) => {
       const nodes = [hud.querySelector(".s-" + key), document.querySelector(".b-" + key)];
       for (const n of nodes) {
@@ -296,8 +300,8 @@ export function updateHud(game, me) {
         if (ring != null) n.style.setProperty("--chg", Math.round(ring * 100) + "%");
       }
     };
-    upd("skill", sk, sk <= 0, sk > 0 ? (skCd >= 1 ? Math.ceil(skCd) : skCd.toFixed(1)) : "");
-    upd("dash", dk, dk <= 0, dk > 0 ? dkCd.toFixed(1) : "");
+    upd("skill", sk, sk <= 0, skT);
+    upd("dash", dk, dk <= 0, dkT);
     upd("ult", 0, uk >= 1, uk < 1 ? Math.floor(uk * 100) + "%" : "", uk);
     const firing = !!me.input.atk;
     for (const n of [hud.querySelector(".s-atk"), document.querySelector(".b-atk")]) n && n.classList.toggle("firing", firing);
@@ -424,7 +428,7 @@ export function showResult(r, onAgain, onLobby) {
       <h2 class="outline">${r.title}</h2>
       <div class="res-sub o1">${r.sub || ""}</div>
       ${hero}
-      <div class="res-gain"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div>
+      <div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div>
       ${(r.extras || []).map(([a, b]) => `<div class="res-chip o1"><span>${a}</span><b>${b}</b></div>`).join("")}
     </div>
     <div class="res-r">
@@ -435,6 +439,7 @@ export function showResult(r, onAgain, onLobby) {
   if (onAgain) a.appendChild(btn("再来一局", "", onAgain));
   a.appendChild(btn("返回大厅", "blue", onLobby));
   root.appendChild(md);
+  md.querySelectorAll("[data-cur]").forEach((b) => (b.onclick = () => import("./mineui.js").then((M) => M.showCurInfo(b.dataset.cur))));
 }
 export function showMsg(title, text, okLabel = "好的", ok) {
   const md = el("div", "modal");
