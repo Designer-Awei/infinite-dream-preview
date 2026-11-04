@@ -1613,3 +1613,4 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 @keyframes fcBreathe { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.14); } }
 @keyframes fcGlow { 0%, 100% { filter: drop-shadow(0 0 1px rgba(255,210,90,.35)); } 50% { filter: drop-shadow(0 0 7px rgba(255,210,90,.95)); } }
 @media (prefers-reduced-motion: reduce) { .mine-hub .mh-freecu.ready, .mine-hub .mh-freecu.ready img { animation: none !important; } }
+.st-sub .st-prog { font-weight: normal; color: #ffd84a; }
