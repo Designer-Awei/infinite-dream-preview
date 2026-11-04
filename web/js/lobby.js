@@ -872,88 +872,131 @@ function particles(canvas) {
 }
 
 /**
- * Capsules bouncing inside the dome. Units: the dome's inner width = 1, origin at its centre.
- * Gravity pulls them into a pile, collisions are resolved with restitution, and every second or so an
- * "air puff" kicks a few from the bottom so the pile keeps moving. While the crank turns (.gm.crank) the puffs
- * get much stronger. The loop ends by itself once the dome leaves the page.
+ * Capsules inside the dome — a small air-mix simulation on a loop (units: dome inner width = 1, origin at its centre, y down).
+ *  · calm (~3.6 s): no air, the capsules settle into a resting pile; a faint breeze at the bottom makes the pile breathe.
+ *  · burst (~1.7 s): an air jet from the bottom centre ramps up, lifts the capsules up the middle so they tumble back down
+ *    the sides, then ramps down and they fall back into the pile.
+ * Turning the crank (.gm.crank) starts a stronger burst at once. Stability: contacts below a small approach speed don't
+ * bounce (no resting jitter), three position passes per substep, air drag, and a speed cap. Spin follows rolling but is
+ * eased and capped at 10°/s. The loop ends by itself once the dome leaves the page.
  */
 function capsulePhysics(dome, machine) {
-  const N = 18, r = 0.085, R = 0.5 - 0.012, G = 1.7, EB = 0.72, EW = 0.5;
+  const N = 15, r = 0.078, R = 0.5 - 0.012, G = 1.6;
+  const E_BALL = 0.45, E_WALL = 0.35, REST_V = 0.22, VMAX = 2.0, WMAX = (10 * Math.PI) / 180;
+  const CALM = 3.6, RAMP = 0.35, HOLD = 1.0;
   const balls = [];
   for (let i = 0; i < N; i++) {
     const c = el("div", "capsule");
     c.style.setProperty("--c", CAP_COLORS[i % CAP_COLORS.length]);
+    c.style.width = r * 200 + "%";
     dome.appendChild(c);
-    const row = Math.floor(i / 6), col = i % 6;
-    balls.push({ el: c, x: -0.36 + col * 0.14 + (row % 2) * 0.06, y: 0.33 - row * 0.15, vx: 0, vy: 0, a: (i * 47 * Math.PI) / 180, w: 0 });
+    const row = Math.floor(i / 5), col = i % 5;
+    balls.push({ el: c, x: -0.3 + col * 0.16 + (row % 2) * 0.05, y: 0.3 - row * 0.17, vx: 0, vy: 0, a: (i * 47 * Math.PI) / 180, w: 0, ph: Math.random() * 6.28 });
   }
-  let puff = 0.4, last = performance.now();
+  dome.__balls = balls;
+  let t = 0, burstAt = 0.7, strength = 1, spin = 1, wasCrank = false, last = performance.now();
+  const smooth = (u) => u * u * (3 - 2 * u);
+  // air envelope 0..1 for the current time
+  const air = () => {
+    const k = t - burstAt;
+    if (k < 0) return 0;
+    if (k < RAMP) return smooth(k / RAMP);
+    if (k < RAMP + HOLD) return 1;
+    if (k < 2 * RAMP + HOLD) return 1 - smooth((k - RAMP - HOLD) / RAMP);
+    burstAt = t + CALM + Math.random() * 1.2; // schedule the next burst
+    strength = 1;
+    spin = -spin;
+    return 0;
+  };
   const step = (dt) => {
+    t += dt;
     const crank = machine.classList.contains("crank");
-    puff -= dt;
-    if (puff <= 0 || crank) {
-      // air from the bottom: kick a few of the lowest capsules up (all of them while cranking)
-      const low = [...balls].sort((a, b) => b.y - a.y);
-      const n = crank ? N : 3 + Math.floor(Math.random() * 3);
-      for (let k = 0; k < n; k++) {
-        const b = low[crank ? k : Math.floor(Math.random() * Math.min(N, 8))];
-        const f = crank ? 0.5 + Math.random() * 0.6 : 1.1 + Math.random() * 0.9;
-        b.vy -= f;
-        b.vx += (Math.random() - 0.5) * (crank ? 1.4 : 0.9);
-        b.w += (Math.random() - 0.5) * 14;
-      }
-      puff = 0.9 + Math.random() * 1.1;
-    }
+    if (crank && !wasCrank) (burstAt = t), (strength = 1.35);
+    wasCrank = crank;
+    const env = air() * strength;
+    dome.__env = env;
     for (const b of balls) {
-      b.vy += G * dt;
+      let fx = 0, fy = G;
+      // the jet: strongest at the bottom centre, fading with height and with distance from the axis
+      if (env > 0) {
+        // the jet only pushes in the bottom zone: capsules get launched, coast up and fall back (a fountain), never hover
+        const h = Math.min(1, Math.max(0, (b.y - 0.02) / 0.25)), col = Math.exp(-((b.x / 0.3) ** 2)), core = Math.exp(-((b.x / 0.15) ** 2));
+        const gust = 1 + 0.45 * Math.sin(t * 3.3 + b.ph * 1.7); // each capsule catches a different amount of air
+        fy -= env * (4 * col + 13 * core) * h * h * gust;
+        // swirl along the glass (direction alternates per burst) so the outer ring circulates
+        const d = Math.hypot(b.x, b.y);
+        if (d > 0.18) (fx += (env * 0.9 * spin * -b.y) / d), (fy += (env * 0.9 * spin * b.x) / d);
+        fx += env * 1.1 * Math.sin(t * 2.4 + b.ph); // slow, smooth turbulence (no per-frame noise)
+        fx -= env * 0.8 * b.x * core; // keep the jet centred
+      } else if (b.y > 0.2) {
+        fx += 0.05 * Math.sin(t * 0.9 + b.ph); // calm: a faint breeze under the pile
+      }
+      const drag = env > 0 ? 0.8 : 0.6;
+      b.vx += (fx - b.vx * drag) * dt;
+      b.vy += (fy - b.vy * drag) * dt;
+      const sp = Math.hypot(b.vx, b.vy);
+      if (sp > VMAX) (b.vx *= VMAX / sp), (b.vy *= VMAX / sp);
+      b.px = b.x, b.py = b.y, b.ox = b.vx, b.oy = b.vy;
       b.x += b.vx * dt;
       b.y += b.vy * dt;
-      b.a += b.w * dt;
-      b.w *= 1 - 0.8 * dt;
-      // dome wall
-      const d = Math.hypot(b.x, b.y), lim = R - r;
-      if (d > lim) {
-        const nx = b.x / d, ny = b.y / d;
-        b.x = nx * lim;
-        b.y = ny * lim;
-        const vn = b.vx * nx + b.vy * ny;
-        if (vn > 0) {
-          const tx = -ny, ty = nx, vt = (b.vx * tx + b.vy * ty) * 0.985;
-          b.vx = tx * vt - nx * vn * EW;
-          b.vy = ty * vt - ny * vn * EW;
-          b.w = vt / r; // roll along the glass
-        }
+    }
+    // position-based contacts (stable piles, no resting jitter): push overlaps apart, then take velocity from the motion
+    const lim = R - r, m = 2 * r;
+    for (let pass = 0; pass < 4; pass++) {
+      for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
+        const a = balls[i], b = balls[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy;
+        if (d2 >= m * m || d2 < 1e-12) continue;
+        const d = Math.sqrt(d2), o = (m - d) / 2 / d;
+        a.x -= dx * o, a.y -= dy * o, b.x += dx * o, b.y += dy * o;
+      }
+      for (const b of balls) {
+        const d = Math.hypot(b.x, b.y);
+        if (d > lim) (b.x *= lim / d), (b.y *= lim / d);
       }
     }
-    // capsule vs capsule
+    for (const b of balls) (b.vx = (b.x - b.px) / dt), (b.vy = (b.y - b.py) / dt);
+    // velocity pass: real impacts (faster than REST_V) bounce back a little; slow contacts just rest
     for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) {
-      const a = balls[i], b = balls[j], dx = b.x - a.x, dy = b.y - a.y, d2 = dx * dx + dy * dy, m = 2 * r;
-      if (d2 >= m * m || d2 < 1e-9) continue;
-      const d = Math.sqrt(d2), nx = dx / d, ny = dy / d, o = (m - d) / 2;
-      a.x -= nx * o;
-      a.y -= ny * o;
-      b.x += nx * o;
-      b.y += ny * o;
-      const rv = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
-      if (rv < 0) {
-        const jn = (-(1 + EB) * rv) / 2;
-        a.vx -= jn * nx;
-        a.vy -= jn * ny;
-        b.vx += jn * nx;
-        b.vy += jn * ny;
-        const spin = ((b.vx - a.vx) * -ny + (b.vy - a.vy) * nx) * 3;
-        a.w -= spin;
-        b.w += spin;
+      const a = balls[i], b = balls[j], dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+      if (d > m + 1e-4) continue;
+      const nx = dx / d, ny = dy / d, vOld = (b.ox - a.ox) * nx + (b.oy - a.oy) * ny;
+      const vNew = (b.vx - a.vx) * nx + (b.vy - a.vy) * ny;
+      if (vOld < -REST_V) {
+        const k = (-E_BALL * vOld - vNew) / 2;
+        a.vx -= k * nx, a.vy -= k * ny, b.vx += k * nx, b.vy += k * ny;
       }
+      // a touch of contact friction
+      const tx = -ny, ty = nx, vt = ((b.vx - a.vx) * tx + (b.vy - a.vy) * ty) * 0.05;
+      a.vx += vt * tx, a.vy += vt * ty, b.vx -= vt * tx, b.vy -= vt * ty;
+    }
+    for (const b of balls) {
+      const d = Math.hypot(b.x, b.y);
+      if (d < lim - 1e-4) continue;
+      const nx = b.x / d, ny = b.y / d, vOld = b.ox * nx + b.oy * ny;
+      if (vOld > REST_V) {
+        const vNew = b.vx * nx + b.vy * ny, k = -E_WALL * vOld - vNew;
+        b.vx += k * nx, b.vy += k * ny;
+      }
+    }
+    // spin: eases toward a rolling-like target, never faster than 10°/s
+    for (const b of balls) {
+      const target = Math.max(-WMAX, Math.min(WMAX, b.vx * 0.6));
+      b.w += (target - b.w) * Math.min(1, dt * 2);
+      b.a += b.w * dt;
     }
   };
+  // settle the pile before the first frame (no air yet), so the page opens on capsules at rest
+  burstAt = Infinity;
+  for (let k = 0; k < 600; k++) step(1 / 240);
+  t = 0;
+  burstAt = 0.7;
   const frame = (now) => {
     if (!dome.isConnected) return;
     const dt = Math.min(0.05, (now - last) / 1000);
     last = now;
-    for (let k = 0; k < 3; k++) step(dt / 3);
+    for (let k = 0; k < 4; k++) step(dt / 4);
     const W = dome.clientWidth;
-    for (const b of balls) b.el.style.transform = `translate(${((b.x + 0.5 - r) * W).toFixed(1)}px, ${((b.y + 0.5 - r) * W).toFixed(1)}px) rotate(${b.a.toFixed(2)}rad)`;
+    for (const b of balls) b.el.style.transform = `translate(${((b.x + 0.5 - r) * W).toFixed(1)}px, ${((b.y + 0.5 - r) * W).toFixed(1)}px) rotate(${b.a.toFixed(3)}rad)`;
     requestAnimationFrame(frame);
   };
   requestAnimationFrame(frame);
