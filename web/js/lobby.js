@@ -170,6 +170,15 @@ export function showLobby() {
 let lastReact = -1;
 // lobby hero animation sheets (PixelLab): 256 px cells, one row per clip, 8 frames each
 const LB_CLIPS = ["idle", "wave", "joy", "cast"], LB_FPS = { idle: 6, wave: 10, joy: 10, cast: 10 };
+// PixelLab's idle loops keep the eyes shut for half the clip: play only the open-eyed frames back and forth
+// (breathing / hair sway) and blink with one shut frame every few seconds. id: [open frames in order, blink frame]
+const IDLE_EYES = { deepseek: [[0, 1, 2], 3], grok: [[7, 0, 1, 2], 3], claude: [[7, 0, 1, 2], 3], gpt: [[7, 0, 1, 2], 3], doubao: [[7, 0, 1], 2], glm: [[7, 0, 1, 2], 3] };
+function idleSeq(id) {
+  const e = IDLE_EYES[id];
+  if (!e) return [0, 1, 2, 3, 4, 5, 6, 7];
+  const [o, b] = e, back = o.slice(1, -1).reverse(), cyc = [...o, ...back];
+  return [...cyc, ...cyc, ...cyc, ...o, b, o[o.length - 1], ...back];
+}
 const lbSheets = {};
 function lbSheet(id) {
   if (!lbSheets[id]) {
@@ -193,7 +202,7 @@ function heroAnim(s, id) {
     h.appendChild(cv);
   }
   const g = cv.getContext("2d");
-  const st = (h.__anim = { id, clip: "idle", t0: performance.now(), sheet: null });
+  const st = (h.__anim = { id, clip: "idle", t0: performance.now(), sheet: null, seq: idleSeq(id), last: "" });
   h.classList.remove("anim");
   lbSheet(id).then((sheet) => {
     if (h.__anim !== st || !sheet) return;
@@ -203,11 +212,13 @@ function heroAnim(s, id) {
       if (h.__anim !== st || !cv.isConnected) return;
       const fps = LB_FPS[st.clip], k = Math.floor(((now - st.t0) / 1000) * fps);
       if (st.clip !== "idle" && k >= 8) (st.clip = "idle"), (st.t0 = now);
-      const f = st.clip === "idle" ? k % 8 : Math.min(7, k), row = LB_CLIPS.indexOf(st.clip);
+      const f = st.clip === "idle" ? st.seq[k % st.seq.length] : Math.min(7, k), row = LB_CLIPS.indexOf(st.clip), key = row * 8 + f;
+      requestAnimationFrame(frame);
+      if (key === st.last) return; // the canvas only changes 6-10 times a second
+      st.last = key;
       g.clearRect(0, 0, 256, 256);
       g.imageSmoothingEnabled = false;
       g.drawImage(sheet, f * 256, row * 256, 256, 256, 0, 0, 256, 256);
-      requestAnimationFrame(frame);
     };
     requestAnimationFrame(frame);
   });
