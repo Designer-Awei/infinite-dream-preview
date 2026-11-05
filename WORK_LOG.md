@@ -8,6 +8,21 @@
 
 ## 更新记录
 
+### 2026-11-05 · 宝藏鼹鼠改名宝藏地鼠；同步正式版
+
+- 更新内容：
+  - 用户要求字体里没有的字直接改成意思相近的名字。宝藏鼹鼠改名宝藏地鼠，涉及矿场、玩法说明、矿场演示、每日委托、图鉴和测试里的所有文字。
+  - 上一版手绘的「鼹」字形删掉，`subset_font.py` 里保留手绘字形的功能，但目前不用。
+  - 正文里不再有字体缺字。剩下的缺字只用作图标：按钮箭头、表情、代码注释。
+- 对应 commit：[01c746c](https://github.com/Designer-Awei/infinite-dream-preview/commit/01c746c7af3870c1dde92d5db73e40e550133a7a)，[ccc03ce](https://github.com/Designer-Awei/infinite-dream-preview/commit/ccc03ce9e36591cbc92739e0d13e4869067cf3ed)（打包）。
+- 同步正式版：把 235c3a4 之后预览版的更新合入正式仓库，提交 [602d4f7](https://github.com/Designer-Awei/infinite-dream/commit/602d4f74f39efba6923cadc53f11896b0b702eb3)。
+  - 包括：矿场修正与背包、新怪物与稀有怪、梦境藏品、怪物图鉴、天赋装配、联机面板（去掉了能免费改名的昵称框）、火力整数、图鉴对齐，以及本次改名。
+  - 同步方式同前。
+- 验证：
+  - 预览版：`mineguide2`、`uibatch1105`、`runsmoke`、`mine1`、`merchant` 无页面错误；图鉴截图里「宝藏地鼠」和旁边卡片的名字在同一高度。
+  - 正式版：`uibatch1105`、`minefix`、`monsters`、`rename`、`runsmoke`、`mineguide2`、`lbdetail` 无页面错误，`itemdemo` 30 张卡 0 失败。
+  - 正式版打包产物能进大厅、能开局，无页面错误。
+
 ### 2026-11-05 · 图鉴卡片名称对齐、标签文字重影
 
 - 用户反馈：怪物图鉴「梦境矿场」页，「宝藏鼹鼠」的名字比旁边低；详情栏的「稀有」标签文字重影。
