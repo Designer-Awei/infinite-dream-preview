@@ -1,0 +1,24 @@
+# One-off clean-up (runs once when this file is pushed, then the file is removed again):
+# delete the iOS release and its tag (IPA builds were dropped), and the outdated APK asset left from before the rename.
+name: Clean up releases
+
+on:
+  push:
+    branches: [main]
+    paths: [".github/workflows/cleanup-releases.yml"]
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete the iOS release and tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete ios-latest --repo "$GITHUB_REPOSITORY" --cleanup-tag --yes || echo "no ios-latest release"
+      - name: Delete the old APK asset (ai-girls-dungeon.apk)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release delete-asset latest ai-girls-dungeon.apk --repo "$GITHUB_REPOSITORY" --yes || echo "no old asset"
