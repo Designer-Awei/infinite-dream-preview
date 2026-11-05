@@ -38,6 +38,8 @@ export function load() {
     if (mem.stats.bossKills) mem.maps.grass = mem.maps.grass || mem.stats.bossKills;
     save();
   }
+  // the starters are always owned (they have no unlock condition)
+  if (Array.isArray(mem.chars) && START_CHARS.some((id) => !mem.chars.includes(id))) mem.chars = [...new Set([...START_CHARS, ...mem.chars])];
   if (!mem.name) {
     mem.name = "玩家" + Math.floor(1000 + Math.random() * 9000);
     save();
