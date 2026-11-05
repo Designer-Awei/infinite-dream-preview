@@ -95,6 +95,7 @@ export function showLobby() {
     <div class="spacer"></div>
     <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
+    <button class="btn small tb-ico codex-btn t-codex" title="怪物图鉴"><span>👾</span></button>
     <button class="btn small tb-ico help-btn t-help" title="玩法说明"><span>📖</span></button>
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
     <button class="btn gray small set-btn" title="设置">⚙</button>
@@ -141,6 +142,7 @@ export function showLobby() {
   if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
   tile("👥", "联机模式", "t-net", () => showNet());
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
+  q(".codex-btn", s).onclick = () => (sfx("click"), import("./codex.js").then((C) => C.showCodex()));
   const play = q(".lb-play", s);
   const pb = btn(`<span class="pt">开始冒险</span>`, "big play-btn", () => {
     // launch: the hero leaps off the island while two doors slide shut, then the run starts behind them
@@ -306,7 +308,7 @@ function renderRoster(s) {
 
 function bar(label, v, max, col) {
   const pct = Math.max(6, Math.min(100, (v / max) * 100));
-  return `<div class="sb"><span class="sl">${label}</span><div class="st"><i style="width:${pct}%;background:${col}"></i></div><span class="sv">${typeof v === "number" ? Math.round(v * 10) / 10 : v}</span></div>`;
+  return `<div class="sb"><span class="sl">${label}</span><div class="st"><i style="width:${pct}%;background:${col}"></i></div><span class="sv">${typeof v === "number" ? Math.round(v) : v}</span></div>`;
 }
 function renderHero(s, id, swap) {
   const m = load(), c = CHARS[id], open = m.chars.includes(id), e = ELEM[c.elem];

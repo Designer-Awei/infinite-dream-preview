@@ -1,5 +1,5 @@
 // Boot, the frame loop, and the app controller tying UI, game and network together.
-import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES } from "./data.js";
+import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES, ENEMIES } from "./data.js";
 import { loadAll, A } from "./assets.js";
 import { loadFx, FxLayer } from "./fx.js";
 import { Renderer } from "./render.js";
@@ -9,6 +9,7 @@ import { initAudio, playMusic, sfx, setSound, setMusic } from "./audio.js";
 import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
 import { Dive } from "./mine.js";
 import { progressQuests, questText } from "./minequests.js";
+import { recordCodex, recordCurios, CURIOS } from "./codex.js";
 import * as MUI from "./mineui.js";
 import { SHOVELS } from "./minedata.js";
 import * as UI from "./ui.js";
@@ -200,6 +201,14 @@ export const app = {
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
     if (drop) extras.push(["⛏ 梦境矿场", "获得" + SHOVELS[drop].name]);
+    // 怪物图鉴 + 梦境藏品
+    const met = recordCodex(g.seen, g.killedTypes);
+    if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);
+    if (g.curiosFound.length) {
+      const cr = recordCurios(g.curiosFound);
+      for (const id of cr.fresh) extras.push(["✦ 梦境藏品", CURIOS[id].name]);
+      if (cr.gems) extras.push(["重复藏品", `+${cr.gems}<i class="cur gem"></i>`]);
+    }
     if (this.riftLoot) {
       const r = this.riftLoot;
       extras.push(["梦境裂隙", `<i class="cur gem"></i>${r.value} · 矿石${r.mats}${r.stars ? " · 星砂" + r.stars : ""}`]);
@@ -293,6 +302,7 @@ export const app = {
     ms.best = Math.max(ms.best, res.depth);
     save();
     res.questsDone = progressQuests(res).map(questText);
+    res.codexNew = recordCodex(res.seenTypes, res.killTypes);
     this.dive = null;
     MUI.hideMineHud();
     const sh = this.diveShovel, again = ms.shovels[sh] ? () => this.startDive({ shovel: sh }) : null;

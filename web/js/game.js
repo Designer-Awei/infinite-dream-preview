@@ -5,6 +5,7 @@ import { generateRoom, renderGround, tileAt, mudAt, moveCircle, los, flowField, 
 import { sfx } from "./audio.js";
 import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
+import { rollCurio, rareOf, CURIOS } from "./codex.js";
 
 export const RIFT_CHANCE = 0.25;
 export class Game {
@@ -32,6 +33,11 @@ export class Game {
     this.time = 0;
     this.shake = 0;
     this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0 };
+    // 怪物图鉴: what this run met and beat; 藏品 dropped by rare monsters (saved at the end of the run)
+    this.seen = {};
+    this.killedTypes = {};
+    this.curiosFound = [];
+    this.raresSeen = 0;
     this.flowT = 0;
     this.banner = null;
     this.cardOffers = {}; // pid -> [cards]
@@ -125,7 +131,10 @@ export class Game {
       const base = k.replace("*", ""), star = k.endsWith("*") ? "*" : "";
       // elites: half of them are this map's own elite monster
       if (star && el.length && rr() < 0.5) return el[Math.floor(rr() * el.length)] + star;
-      return sw[base] && rr() < sw[base][1] ? sw[base][0] + star : k;
+      const opts = sw[base] ? (Array.isArray(sw[base][0]) ? sw[base] : [sw[base]]) : [];
+      let x = rr();
+      for (const [t, c] of opts) if ((x -= c) < 0) return t + star;
+      return k;
     })) };
   }
   /** which map's look / hazard a room uses (endless walks through all of them, 10 floors each) */
@@ -237,6 +246,15 @@ export class Game {
       const s = spots[i % spots.length];
       this.spawnEnemy(k.replace("*", ""), s.x, s.y, elite, 0.6 + i * 0.12);
     });
+    // now and then the map's rare monster joins the first wave of a combat room (twice a run at most)
+    const rare = !this.pvp && this.host && this.wave === 0 && this.room.kind === "combat" && this.raresSeen < 2 && rareOf(this.roomMap(this.roomIdx).id);
+    if (rare && rr() < (this.endless ? 0.05 : 0.08)) {
+      const s = spots[list.length % spots.length] || this.map.center;
+      this.spawnEnemy(rare, s.x, s.y, false, 1);
+      this.raresSeen++;
+      this.banner = { text: `稀有怪物：${ENEMIES[rare].name}`, sub: "打倒它能拿到梦境藏品", t: 2.4 };
+      this.sound("ssr");
+    }
     sfx("spawn");
     return true;
   }
@@ -252,6 +270,7 @@ export class Game {
       spawnT: delay, wob: Math.random() * 6, lastBy: null,
     };
     e.maxHp = e.hp;
+    this.seen[type] = 1;
     this.enemies.push(e);
     if (delay > 0) this.fx.spawn("spawn/spawn-portal", x, y + 4, { layer: "back", speed2: 1.6, life: delay + 0.4, palette: elite ? ["#1a0800", "#4a1a00", "#8a3a00", "#c86a10", "#ffa030", "#ffd070", "#fff0c0", "#ffffff"] : undefined });
     return e;
@@ -523,6 +542,15 @@ export class Game {
     if (e.def.split && !e.boss) for (const s of [-1, 1]) this.spawnEnemy(e.def.split, e.x + s * 16, e.y + 4, false, 0.15);
     if (e.type === "wisp" && e.st !== "boom") this.explodeAt(e.x, e.y, 34, 0, 12, null);
     if (e.boss) this.bossDown(e);
+    this.killedTypes[e.type] = (this.killedTypes[e.type] || 0) + 1;
+    // a rare monster's 藏品 (one of its map's set not owned yet, when there is one)
+    if (e.def.rare && this.host) {
+      const id = rollCurio(e.def.rare);
+      this.curiosFound.push(id);
+      this.text(e.x, e.y - 40, `获得藏品：${CURIOS[id].name}`, "#ffd84a", 1.3, 2.2);
+      this.vfx("pickups/loot-beam", e.x, e.y + 4, { life: 1.6 });
+      this.sound("ssr");
+    }
   }
   spawnCoin(x, y) {
     const a = Math.random() * TAU, s = 40 + Math.random() * 70;

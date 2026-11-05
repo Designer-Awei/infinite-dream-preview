@@ -488,6 +488,7 @@ function applySnapshot(app, s) {
   g.enemies = s.E.map((a) => {
     let e = old.get(a[0]);
     const def = ENEMIES[a[1]];
+    if (!e && g.seen) g.seen[a[1]] = 1; // 怪物图鉴: clients record what they met too
     if (!e) e = { id: a[0], kind: "enemy", type: a[1], def, x: a[2], y: a[3], anim: Math.random() * 3, marks: {}, r: def.r * (a[6] & 1 ? 1.2 : 1) * (def.scale || 1), boss: !!def.boss, z: 0, flash: 0 };
     e.tx = a[2]; e.ty = a[3]; e.hp = a[4]; e.maxHp = a[5]; e.elite = !!(a[6] & 1); e.flash = a[6] & 4 ? 0.1 : e.flash;
     e.freezeT = a[6] & 8 ? 1 : 0; e.slowT = a[6] & 16 ? 1 : 0; e.burnT = a[6] & 32 ? 1 : 0; e.st = a[7]; e.z = a[8]; e.face = a[9];

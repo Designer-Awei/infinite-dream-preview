@@ -117,6 +117,13 @@ const VARIANTS = {
   slime_lava: ["slime", LAVA],
   bat_fire: ["bat", LAVA],
   skull_core: ["skull", ["#1a0400", "#8a1a0a", "#ff4a1a", "#ffb040", "#ffffe0"]],
+  snake_lava: ["snake", ["#1a0804", "#5a1e10", "#9a3a1e", "#d8702e", "#ffd090"]], // red-brown, not the grass green
+  snake_ice: ["snake", ICE],
+  jelly_ice: ["jelly", ["#0a1a30", "#2a5a9a", "#6ab8f0", "#c8f0ff", "#ffffff"]],
+  // the rare ones
+  slime_gold: ["slime", ["#2a1600", "#8a5a00", "#e0a820", "#ffe070", "#ffffff"]],
+  jelly_aurora: ["jelly", ["#0a1030", "#3a3ab0", "#5ad8e0", "#d0a0ff", "#ffffff"]],
+  skull_obsidian: ["skull", ["#08040e", "#2a1640", "#6a3aa0", "#ffb040", "#fff0c0"]],
 };
 function recolor(src, ramp) {
   const c = document.createElement("canvas");

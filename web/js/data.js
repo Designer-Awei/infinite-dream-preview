@@ -151,6 +151,20 @@ export const ENEMIES = {
   slime_lava: { name: "熔岩史莱姆", hp: 30, spd: 44, r: 12, ai: "hop", sprite: "slime_lava", coin: [1, 2], touch: 1, lavaPuddle: true },
   bat_fire: { name: "炎蝠", hp: 14, spd: 108, r: 9, ai: "flit", sprite: "bat_fire", coin: [0, 1], touch: 1, fly: true, burnTouch: true },
   skull_core: { name: "熔核骷髅", hp: 80, spd: 30, r: 14, ai: "caster", sprite: "skull_core", coin: [3, 5], fly: true, scale: 1.3, shot: { cd: 2.1, spd: 140, n: 14, ring: true, burn: true } },
+  snake_lava: { name: "熔岩环蛇", hp: 26, spd: 74, r: 10, ai: "snake", sprite: "snake_lava", coin: [1, 2], touch: 1, burnTouch: true },
+  salamander: { name: "熔岩蜥蜴", sprScale: 0.8, hp: 34, spd: 66, r: 11, ai: "snake", sprite: "salamander", coin: [1, 3], touch: 1, burnTouch: true, lavaPuddle: true },
+  imp: { name: "余烬小鬼", sprScale: 0.8, hp: 22, spd: 96, r: 10, ai: "flit", sprite: "imp", coin: [1, 2], touch: 1, fly: true, burnTouch: true },
+  // 数据草原 newcomers / 显存冰原 newcomers (PixelLab)
+  mushroom: { name: "孢子节点", sprScale: 0.8, hp: 28, spd: 40, r: 12, ai: "hop", sprite: "mushroom", coin: [1, 2], touch: 1, puddle: true },
+  beetle: { name: "漏洞甲虫", sprScale: 0.8, hp: 36, spd: 70, r: 11, ai: "snake", sprite: "beetle", coin: [1, 3], touch: 1 },
+  hedgehog: { name: "冻结刺猬", sprScale: 0.8, hp: 34, spd: 42, r: 12, ai: "leap", sprite: "hedgehog", coin: [1, 3], touch: 1, chill: true },
+  frostling: { name: "霜灵进程", sprScale: 0.8, hp: 26, spd: 44, r: 11, ai: "shooter", sprite: "frostling", coin: [1, 2], fly: true, shot: { cd: 1.7, spd: 150, n: 2, spread: 0.2, slow: true } },
+  snake_ice: { name: "冰链蛇", hp: 24, spd: 70, r: 10, ai: "snake", sprite: "snake_ice", coin: [1, 2], touch: 1, chill: true },
+  jelly_ice: { name: "冰晶水母", hp: 36, spd: 34, r: 12, ai: "pulse", sprite: "jelly_ice", coin: [1, 3], fly: true },
+  // rare: one per map, sometimes appears in a combat room; drops a 梦境藏品 of its map
+  slime_gold: { name: "黄金缓存史莱姆", hp: 90, spd: 58, r: 13, ai: "hop", sprite: "slime_gold", coin: [8, 12], touch: 1, rare: "grass", scale: 1.2 },
+  jelly_aurora: { name: "极光水母", hp: 110, spd: 40, r: 13, ai: "pulse", sprite: "jelly_aurora", coin: [8, 12], fly: true, rare: "ice", scale: 1.2 },
+  skull_obsidian: { name: "黑曜骷髅", hp: 130, spd: 32, r: 13, ai: "caster", sprite: "skull_obsidian", coin: [8, 12], fly: true, rare: "lava", scale: 1.2, shot: { cd: 2.4, spd: 130, n: 12, ring: true, burn: true } },
   // bosses of the other two maps
   boss_frost: { name: "冰封史莱姆王", hp: 3300, spd: 50, r: 22, ai: "boss_frost", sprite: "slime_frost", coin: [30, 30], boss: true, scale: 3 },
   boss_core: { name: "过热核心", hp: 3600, spd: 36, r: 18, ai: "boss_core", sprite: "skull_core", coin: [30, 30], fly: true, boss: true, scale: 2.4 },
@@ -170,16 +184,18 @@ export const ROOM_NAMES = { combat: "战斗", shop: "补给站", boss: "首领" 
 
 // ---------------------------------------------------------------- maps (chapters), endless, PVP rules
 // theme: index into map.js THEMES. hazard: what the scattered floor patches do (mud slows / ice slides / lava burns)
-// swap: some enemies of the base run are replaced by the map's residents [type, chance]
+// swap: some enemies of the base run are replaced by the map's residents: [type, chance] or a list of them (chances add up)
+// rare: each map's rare monster (ENEMIES[*].rare) shows up in a combat room now and then
 export const MAPS = {
   grass: { name: "数据草原", theme: 0, hazard: "mud", hazardText: "泥沼会减速 · 清除所有敌人", hp: 1, reward: 1, desc: "入门地图：泥沼减速，藤蔓蛇碰到会减速，首领是幻觉之眼。", need: null,
-    swap: { snake: ["snake_vine", 0.7], bat: ["snake_vine", 0.15] }, elites: ["frog_big"], boss: "boss_eye" },
+    swap: { snake: [["snake_vine", 0.5], ["beetle", 0.35]], bat: ["snake_vine", 0.15], slime: ["mushroom", 0.3], frog: ["beetle", 0.25] }, elites: ["frog_big"], boss: "boss_eye" },
   ice: { name: "显存冰原", theme: 2, hazard: "ice", hazardText: "冰面会打滑 · 清除所有敌人", hp: 1.3, reward: 1.35, desc: "冰面会打滑；霜冻爬虫、冰晶眼球会让你减速，首领是冰封史莱姆王。", need: "grass",
-    swap: { slime: ["slime_blue", 0.8], frog: ["ghost", 0.5], bat: ["bat_ice", 0.7], eyeball: ["eye_ice", 0.6], snake: ["bat_ice", 0.5] }, elites: ["slime_frost"], boss: "boss_frost" },
+    swap: { slime: [["slime_blue", 0.6], ["hedgehog", 0.25]], slime_purple: ["hedgehog", 0.4], frog: [["hedgehog", 0.4], ["ghost", 0.3]], bat: ["bat_ice", 0.7], eyeball: [["eye_ice", 0.5], ["frostling", 0.35]], snake: [["snake_ice", 0.6], ["bat_ice", 0.3]], jelly: ["jelly_ice", 0.7], wisp: ["frostling", 0.5] }, elites: ["slime_frost"], boss: "boss_frost" },
   lava: { name: "算力熔炉", theme: 3, hazard: "lava", hazardText: "熔岩会灼烧 · 清除所有敌人", hp: 1.6, reward: 1.7, desc: "熔岩地块持续灼烧（敌人也会）；熔岩史莱姆死后留下火池，炎蝠碰到会着火，首领是过热核心。", need: "ice",
-    swap: { slime: ["slime_lava", 0.75], slime_purple: ["slime_lava", 0.6], eyeball: ["skull", 0.3], bat: ["bat_fire", 0.7], jelly: ["skull", 0.4], frog: ["slime_lava", 0.4] }, elites: ["skull_core"], boss: "boss_core" },
+    swap: { slime: ["slime_lava", 0.75], slime_purple: ["slime_lava", 0.6], eyeball: [["imp", 0.35], ["skull", 0.3]], bat: [["bat_fire", 0.6], ["imp", 0.25]], jelly: ["skull", 0.4], frog: [["salamander", 0.45], ["slime_lava", 0.3]], snake: [["salamander", 0.5], ["snake_lava", 0.5]], wisp: ["imp", 0.5] }, elites: ["skull_core"], boss: "boss_core" },
 };
 export const MAP_ORDER = ["grass", "ice", "lava"];
+for (const k in MAPS) MAPS[k].id = k;
 export const PVP_MODES = {
   brawl: { name: "自由混战", goal: 5, koScore: true, goalText: "先拿到 5 次击倒者获胜", desc: "击倒对手得 1 分，先到 5 分获胜。" },
   koth: { name: "算力据点", goal: 45, koScore: false, zone: 52, goalText: "独占中心据点每秒 +1 分，先到 45 分获胜", desc: "独自站在中心据点里每秒得 1 分；多人在里面时谁都不得分。" },

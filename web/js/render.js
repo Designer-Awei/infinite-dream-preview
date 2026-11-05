@@ -488,7 +488,8 @@ export class Renderer {
   drawEnemy(g, e, game) {
     const d = e.def, s = A.critters[d.sprite];
     if (!s) return;
-    const sc = d.scale || 1;
+    // sprScale: the PixelLab monsters are drawn a bit larger than the original critters; shrink the picture only
+    const sc = (d.scale || 1) * (d.sprScale || 1);
     const fr = Math.floor(e.anim * s.fps * (e.slowT > 0 ? 0.5 : 1)) % s.n;
     const fade = e.spawnT > 0 ? 1 - e.spawnT / 0.25 : 1;
     // shadow (fliers' strips include their own)
@@ -500,6 +501,20 @@ export class Renderer {
       g.beginPath();
       g.ellipse(e.x, e.y, e.r * 1.6, e.r * 0.7, 0, 0, TAU);
       g.fill();
+      g.globalCompositeOperation = "source-over";
+    }
+    if (d.rare) {
+      // rare monster: a golden halo and sparkles orbiting it
+      g.globalCompositeOperation = "lighter";
+      g.fillStyle = `rgba(255,216,74,${0.22 + 0.1 * Math.sin(this.t * 5)})`;
+      g.beginPath();
+      g.ellipse(e.x, e.y, e.r * 1.8, e.r * 0.8, 0, 0, TAU);
+      g.fill();
+      for (let i = 0; i < 4; i++) {
+        const a = this.t * 2.2 + (i * TAU) / 4, rx = e.r * 1.5, ry = e.r * 0.9;
+        g.fillStyle = i % 2 ? "#fff6c0" : "#ffd84a";
+        g.fillRect(Math.round(e.x + Math.cos(a) * rx) - 1, Math.round(e.y - e.r * 0.8 + Math.sin(a) * ry) - 1, 2, 2);
+      }
       g.globalCompositeOperation = "source-over";
     }
     const z = e.z || 0;

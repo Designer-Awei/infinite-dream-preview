@@ -84,6 +84,8 @@ export function showHelp() {
       ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，持续到本局结束。打碎箱子、击败敌人会刷出。
       ${H("地块")}草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。`],
     ["模式与地图", `在大厅「开始冒险」上方左右滑动地图卡切换（全部支持离线单机）：${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `${H(`主线 ${i + 1} · ${d.name}`)}${d.desc} 敌人血量 ×${d.hp}，晶石奖励 ×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200 晶石。`; }).join("")}
+      ${H("稀有怪物与梦境藏品")}每张地图都有一只稀有怪物（带金色光圈），偶尔混在战斗房间里出现：草原的黄金缓存史莱姆、冰原的极光水母、熔炉的黑曜骷髅。打倒它必掉一件该地图的梦境藏品（已集齐则换成 40 晶石）。
+      ${H("怪物图鉴")}大厅右上角 👾：遇到过的怪物会显示出来并记录击败数，没遇到的只显示剪影；梦境藏品也在这里查看。
       ${H("无尽回廊")}一层接一层没有终点：每 5 层补给站、每 10 层首领（打完继续），每 10 层换一张地图，敌人越来越多越来越强，伤害也随层数提高（精英和首领涨得更快）；倒下时按层数结算。完成任意一局后解锁。`],
     ["梦境矿场", `${H("下潜")}用一把铲子下潜一次：A/D 走、S 向下挖、顶着墙走就横挖、W 喷气上升（耗电），J 攻击、K 炸药、L 撤离信标。从 4 格以上高处直接掉下来才会摔伤。
       ${H("分层")}越深越暗也越值钱：矿坑 → 洞穴（落石、瓦斯）→ 深海（氧气）→ 遗迹（坚岩、守卫）。铜铲到 60m，银铲到 90m，金铲全层。
@@ -121,19 +123,16 @@ export function showNet(pre = {}) {
   const m = load();
   const s = el("div", "modal");
   s.style.background = "radial-gradient(120% 90% at 30% 20%, #4a7cff 0%, #3a3ad0 35%, #241a6a 70%, #140c30 100%)";
-  s.innerHTML = `<div class="panel netp"><h2 class="outline">联机 · 合作闯关 / 竞技场</h2>
-   <div class="row o1" style="margin-bottom:8px">昵称 <input class="nm" maxlength="8" style="text-transform:none;width:150px"></div>
-   <div class="row">
-     <div style="text-align:center"><div class="o1" style="margin-bottom:6px">创建房间</div><div class="row c-btns"></div></div>
-     <div style="width:3px;height:70px;background:#1a1020;border-radius:2px"></div>
-     <div style="text-align:center"><div class="o1" style="margin-bottom:6px">加入房间</div><div class="row"><input class="code-in" maxlength="4" placeholder="房间码"></div><div class="row j-btns" style="margin-top:6px"></div></div>
+  // the player's name is changed only from the lobby (first change free, later ones cost 晶石), so no name field here
+  s.innerHTML = `<div class="panel netp np2">
+   <div class="np-h"><h2 class="outline">联机 · 合作闯关 / 竞技场</h2><div class="back"></div></div>
+   <div class="np-cols">
+     <div class="np-col"><div class="np-t o1">创建房间</div><div class="np-row c-btns"></div></div>
+     <div class="np-div"></div>
+     <div class="np-col"><div class="np-t o1">加入房间</div><div class="np-row"><input class="code-in" maxlength="4" placeholder="房间码"><span class="j-btns"></span></div></div>
    </div>
-   <div class="muted" style="margin-top:10px">把 4 位房间码发给朋友即可一起玩（2~4人，点对点直连，无需注册）。<br>合作模式：敌人血量与数量随人数提升，倒地队友靠近 2 秒可救起。竞技场：自由混战，先拿 5 次击倒获胜。各自装配的天赋都会生效。</div>
-   <div class="row back" style="margin-top:8px"></div></div>`;
+   <div class="np-notes o1"><p><b>怎么玩</b><span>把 4 位房间码发给朋友即可一起玩（2~4 人，点对点直连，无需注册）</span></p><p><b>合作闯关</b><span>敌人血量与数量随人数提升；倒地的队友，靠近 2 秒可救起</span></p><p><b>竞技场</b><span>自由混战，先拿 5 次击倒获胜；各自装配的天赋都会生效</span></p></div></div>`;
   root.appendChild(s);
-  const nm = $(".nm", s);
-  nm.value = m.name;
-  nm.onchange = () => ((m.name = nm.value.trim().slice(0, 8) || m.name), save());
   $(".c-btns", s).append(btn("合作闯关", "green", () => app.hostRoom(false)), btn("竞技场PVP", "red", () => app.hostRoom(true)));
   $(".j-btns", s).append(btn("加入", "blue", () => app.joinRoom($(".code-in", s).value.trim().toUpperCase())));
   $(".back", s).append(btn("返回大厅", "gray small", () => app.leaveNet()));
