@@ -87,15 +87,17 @@ for (const u of Object.values(UPGRADES)) {
 }
 
 // monsters living in the mine (sprites from critters/)
+// dmg = contact damage: 1 near the surface, 2 from the caves down, +1 more for anything in the ruins, 3 for the
+// guardian, so 最终减伤 (-1 / -2 per hit) visibly matters deeper down
 export const MOBS = {
   bat: { sprite: "bat", hp: 10, spd: 70, r: 8, sc: 0.36, fly: true, dmg: 1, zones: { pit: 1, cave: 4 } },
   slime: { sprite: "slime", hp: 16, spd: 30, r: 9, sc: 0.42, dmg: 1, zones: { pit: 3, cave: 1 } },
-  slime_purple: { sprite: "slime_purple", hp: 20, spd: 30, r: 9, sc: 0.42, dmg: 1, zones: { cave: 2, ruin: 1 } },
-  jelly: { sprite: "jelly", hp: 22, spd: 26, r: 10, sc: 0.32, fly: true, dmg: 1, swim: true, zones: { sea: 5 } },
-  ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 1, zones: { ruin: 3, sea: 1 } },
+  slime_purple: { sprite: "slime_purple", hp: 20, spd: 30, r: 9, sc: 0.42, dmg: 2, zones: { cave: 2, ruin: 1 } },
+  jelly: { sprite: "jelly", hp: 22, spd: 26, r: 10, sc: 0.32, fly: true, dmg: 2, swim: true, zones: { sea: 5 } },
+  ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 2, zones: { ruin: 3, sea: 1 } },
   mole: { draw: "mole", hp: 26, spd: 74, r: 8, sc: 1, dmg: 0, flee: true, zones: {} }, // 宝藏鼹鼠: runs away, burrows off after a while
-  golem: { draw: "golem", hp: 300, spd: 30, r: 34, sc: 1, dmg: 2, boss: true, zones: {} }, // 遗迹守护者 (gold-shovel chamber)
-  skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 1, shoot: 2.4, zones: { ruin: 3 } },
+  golem: { draw: "golem", hp: 300, spd: 30, r: 34, sc: 1, dmg: 3, boss: true, zones: {} }, // 遗迹守护者 (gold-shovel chamber)
+  skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 2, shoot: 2.4, shotDmg: 2, zones: { ruin: 3 } },
 };
 
 // 梦境遗物: roguelike buffs found in relic chests (one per zone). Pick 1 of 3; they last for this dive only.

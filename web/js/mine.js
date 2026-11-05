@@ -760,9 +760,18 @@ export class Dive {
     this.t[mid] = T.DIRT;
     this.t[W + mid] = T.DIRT;
   }
+  /** codex id of a mine monster: the ones shared with the runs keep their id, the mine's own get "mine:" */
+  codexId(m) {
+    return m.d.draw ? "mine:" + m.type : m.type;
+  }
+  meet(m) {
+    (this.seenTypes || (this.seenTypes = {}))[this.codexId(m)] = 1;
+  }
   mkMob(type, x, y) {
-    const d = MOBS[type], hp = d.hp * (1 + this.zoneIdx(y / MT) * 0.35);
-    return { type, d, x, y, vx: 0, vy: 0, hp, maxHp: hp, anim: Math.random() * 5, face: 1, cd: 1 + Math.random() * 2, flash: 0, awake: false, home: { x, y } };
+    const d = MOBS[type], zi = this.zoneIdx(y / MT), hp = d.hp * (1 + zi * 0.35);
+    // the ruins (deepest zone) hit one harder than their kind does elsewhere
+    const dmg = d.dmg && !d.boss ? d.dmg + (zi >= 3 ? 1 : 0) : d.dmg, shotDmg = (d.shotDmg || 1) + (zi >= 3 ? 1 : 0);
+    return { type, d, x, y, vx: 0, vy: 0, hp, maxHp: hp, dmg, shotDmg, anim: Math.random() * 5, face: 1, cd: 1 + Math.random() * 2, flash: 0, awake: false, home: { x, y } };
   }
   zoneIdx(row) {
     return Math.max(0, ZONES.indexOf(zoneAt(row)));
@@ -793,7 +802,7 @@ export class Dive {
   }
   addLoot(id, x, y) {
     if (this.bag.length >= this.bagCap) {
-      this.text(x, y - 10, "背包满了！", "#ff8a8a");
+      this.text(x, y - 10, "背包满了！点背包丢弃", "#ff8a8a");
       snd("hit");
       return;
     }
@@ -957,6 +966,9 @@ export class Dive {
     this.moveP(p.vx * dt, 0);
     p.ground = false;
     this.moveP(0, p.vy * dt);
+    // the sky has a ceiling: the camera stops at the top of the sky, so she can't fly off the screen
+    const skyTop = -SURF * MT + 20 + PH + 40; // + room for the HUD along the top
+    if (p.y < skyTop) (p.y = skyTop), (p.vy = Math.max(0, p.vy));
     // ---- oxygen
     if (headWet) {
       p.o2 -= dt * (this.rel.gill ? 0.4 : 1);
@@ -1134,7 +1146,7 @@ export class Dive {
     // 最终减伤 (梦境工坊): -1 per level; the guardian's hits and drowning still cost at least 1
     const dr = this.up.dr || 0;
     if (dr) {
-      n = Math.max(why === "缺氧" || this.bossHit ? 1 : 0, n - dr);
+      n = Math.max((why && why.startsWith("缺氧")) || this.bossHit ? 1 : 0, n - dr);
       if (n <= 0) {
         p.inv = 0.5;
         this.text(p.x, p.y - PH - 12, "减伤", "#c8d8ff");
@@ -1158,7 +1170,7 @@ export class Dive {
       m.anim += dt;
       m.flash -= dt;
       const dx = p.x - m.x, dy = py - m.y, d = Math.hypot(dx, dy);
-      if (!m.awake && d < 6 * MT) m.awake = true;
+      if (!m.awake && d < 6 * MT) (m.awake = true), this.meet(m);
       const d0 = m.d;
       if (d0.flee) {
         this.moleAI(m, dt, dx, d);
@@ -1201,10 +1213,10 @@ export class Dive {
         if (m.cd <= 0 && d < 8 * MT) {
           m.cd = d0.shoot;
           const a = Math.atan2(dy, dx);
-          this.bullets.push({ x: m.x, y: m.y, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110, t: 2.4, dmg: 1, enemy: true, col: "#ff6a8a" });
+          this.bullets.push({ x: m.x, y: m.y, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110, t: 2.4, dmg: m.shotDmg || 1, enemy: true, col: "#ff6a8a" });
         }
       }
-      if (d < m.d.r + 10) this.hurt(m.d.dmg);
+      if (d < m.d.r + 10 && (m.dmg ?? m.d.dmg) > 0) this.hurt(m.dmg ?? m.d.dmg);
     }
   }
   /** 遗迹守护者: wakes when you enter its chamber. Fist slam (shockwave along the floor) up close, rock throw at range;
@@ -1214,6 +1226,7 @@ export class Dive {
     const inRoom = gr && p.x > gr.x0 * MT && p.x < (gr.x1 + 1) * MT && p.y > gr.ty * MT && p.y <= (gr.fy + 0.5) * MT;
     if (!m.awake && inRoom) {
       m.awake = true;
+      this.meet(m);
       m.intro = 1.4;
       this.text(m.x, m.y - 130, "遗迹守护者 苏醒了！", "#ff8a6a", 1.5);
       this.shake = 10;
@@ -1235,7 +1248,7 @@ export class Dive {
       f.t -= dt;
       if (f.t <= 0 && !f.done) {
         f.done = true;
-        this.bullets.push({ x: f.x, y: (gr.ty + 1) * MT, vx: 0, vy: 60, g: 600, t: 2, dmg: 1, enemy: true, rock: true, col: "#b8a890" });
+        this.bullets.push({ x: f.x, y: (gr.ty + 1) * MT, vx: 0, vy: 60, g: 600, t: 2, dmg: 2, enemy: true, rock: true, col: "#b8a890" });
       }
     }
     if (m.rain) m.rain = m.rain.filter((f) => !f.done);
@@ -1259,7 +1272,7 @@ export class Dive {
               m.wave = { t: 0, x: m.x };
             } else if (k === "throw") {
               const t = 0.85, ox = m.x + m.face * 96, oy = m.y - 110, vx = (p.x - ox) / t, vy = (p.y - PH / 2 - oy) / t - 0.5 * 420 * t;
-              this.bullets.push({ x: ox, y: oy, vx, vy, g: 420, t: 2, dmg: 1, enemy: true, rock: true, big: true, col: "#b8a890" });
+              this.bullets.push({ x: ox, y: oy, vx, vy, g: 420, t: 2, dmg: 3, enemy: true, rock: true, big: true, col: "#b8a890" });
               snd("click");
             } else if (k === "rain") {
               m.rain = [];
@@ -1280,13 +1293,13 @@ export class Dive {
         }
       }
       m.face = dx > 0 ? 1 : -1;
-      if (Math.abs(p.x - m.x) < 26 && p.y > m.y - 70 && p.y < m.y + m.d.r + 4) (this.bossHit = true), this.hurt(1), (this.bossHit = false);
+      if (Math.abs(p.x - m.x) < 26 && p.y > m.y - 70 && p.y < m.y + m.d.r + 4) (this.bossHit = true), this.hurt(m.d.dmg), (this.bossHit = false);
     }
     // shockwave rolls out along the floor both ways
     if (m.wave) {
       m.wave.t += dt;
       const reach = m.wave.t * 260;
-      if (p.ground && Math.abs(p.y - (m.y + m.d.r)) < MT && Math.abs(Math.abs(p.x - m.wave.x) - reach) < 14) (this.bossHit = true), this.hurt(2, "震地"), (this.bossHit = false);
+      if (p.ground && Math.abs(p.y - (m.y + m.d.r)) < MT && Math.abs(Math.abs(p.x - m.wave.x) - reach) < 14) (this.bossHit = true), this.hurt(3, "震地"), (this.bossHit = false);
       if (Math.random() < 0.8) for (const side of [-1, 1]) this.parts.push({ x: m.wave.x + side * reach, y: m.y + m.d.r - 3, vx: 0, vy: -70, t: 0.3, col: m.rage ? "#ff7a4a" : "#d8ccb8", s: 3 });
       if (reach > 9 * MT) m.wave = null;
     }
@@ -1298,6 +1311,7 @@ export class Dive {
   moleAI(m, dt, dx, d) {
     if (!m.awake && d < 7 * MT) {
       m.awake = true;
+      this.meet(m);
       this.text(m.x, m.y - 20, "宝藏鼹鼠！快抓住它", "#ffd84a", 1.1);
       snd("pickup", 0.1);
     }
@@ -1370,6 +1384,9 @@ export class Dive {
     if (m.hp <= 0) {
       this.mobs.splice(this.mobs.indexOf(m), 1);
       this.kills++;
+      this.meet(m);
+      const ck = this.codexId(m);
+      (this.killTypes || (this.killTypes = {}))[ck] = (this.killTypes[ck] || 0) + 1;
       this.spawnFx("spawn/poof", m.x, m.y + 6, {});
       snd("kill", 0.05);
       // monsters carry a little loot
@@ -1460,7 +1477,7 @@ export class Dive {
     const kept = bag.slice(0, Math.round(bag.length * keep));
     const dz = DEPTH_STARS[zoneAt(Math.max(0, this.p.deepest - 1)).id] || 0;
     const stars = Math.floor((this.stars + dz) * keep);
-    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, moles: this.moles, relicsOpened: this.relicsOpened, mats: kept.reduce((a, id) => a + ORES[id].m, 0) };
+    this.ended = { how, keep, kept, lost: bag.length - kept.length, stars, starsFound: this.stars, depth: this.p.deepest, kills: this.kills, dug: this.dug, value: Math.round(kept.reduce((a, id) => a + ORES[id].v, 0) * (this.rel.greed ? 1.3 : 1)), relics: { ...this.rel }, moles: this.moles, relicsOpened: this.relicsOpened, mats: kept.reduce((a, id) => a + ORES[id].m, 0), seenTypes: { ...(this.seenTypes || {}) }, killTypes: { ...(this.killTypes || {}) } };
     snd(how === "dead" ? "lose" : "clear");
     this.onEnd && this.onEnd(this.ended);
   }
@@ -2146,4 +2163,25 @@ export class Dive {
     g.fillText(s, Math.round(x), Math.round(y));
     g.restore();
   }
+}
+
+/** a mine-only monster (宝藏鼹鼠 / 遗迹守护者) drawn into a codex thumbnail W×H, animation step fr */
+export function mineThumb(g, type, W, H, fr = 0) {
+  const d = MOBS[type];
+  if (!d) return;
+  const stub = { time: fr * 0.09, label() {}, text() {}, guardRoom: null, mobs: [] };
+  const m = { type, d, x: 0, y: -d.r, face: 1, anim: fr * 0.09, awake: false, flash: 0, rage: false, act: null, wave: null, rain: [] };
+  g.save();
+  if (type === "golem") {
+    const k = Math.min(W / 140, H / 150);
+    g.translate(W / 2, H - 4);
+    g.scale(k, k);
+    Dive.prototype.drawGolem.call(stub, g, m);
+  } else {
+    const k = Math.floor(Math.min(W / 30, H / 22));
+    g.translate(Math.round(W / 2 + 2 * k), Math.round(H / 2 + 8 * k));
+    g.scale(k, k);
+    Dive.prototype.drawMole.call(stub, g, m);
+  }
+  g.restore();
 }
