@@ -1741,7 +1741,10 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 /* loadout: slot cards start level with the first talent card (the list keeps 10px above for its tags); passive
    talents as an aligned two-column list: icon, name, level */
 .kit-l { padding-top: 10px; }
-.kit-pass { display: block; }
+.kit-pass { display: flex; flex-direction: column; flex-wrap: nowrap; overflow: hidden; flex: 1 1 auto; margin-top: 4px; }
+/* the 通用天赋 heading stays put; only the talent rows scroll under it */
+.kit-pass .kp-h { flex: none; padding-bottom: 2px; border-bottom: 1px solid rgba(255,255,255,.12); }
+.kit-pass .kp-grid { flex: 1 1 auto; min-height: 0; overflow-y: auto; align-content: start; padding: 4px 2px 2px 0; margin-top: 0; }
 .kp-grid { display: grid; grid-template-columns: 1fr 1fr; column-gap: 12px; row-gap: 3px; margin-top: 4px; }
 .kp-it { display: grid; grid-template-columns: 18px 1fr auto; align-items: center; gap: 5px; font-size: 12px; white-space: nowrap; min-width: 0; }
 .kp-it img { width: 16px; height: 16px; image-rendering: pixelated; }
@@ -1759,3 +1762,74 @@ button.name-pill:active { transform: translateY(1px); }
 .rn-p .rn-free { color: #7dffb0; font-weight: normal; margin-left: 4px; }
 .rn-p .rn-err { min-height: 1.2em; font-size: 12px; color: #ff9aa8; }
 .rn-p .rn-acts { justify-content: center; gap: 10px; }
+
+/* net panel: title with 返回大厅 at the top right, two even columns (create / join), notes as label + text rows */
+.np2 { width: min(760px, 94vw); min-width: 0; display: flex; flex-direction: column; gap: 12px; padding: 12px 18px 14px; }
+.np2 .np-h { display: flex; align-items: center; gap: 10px; }
+.np2 .np-h h2 { flex: 1; margin: 0; text-align: left; }
+.np2 .np-h .back { flex: none; }
+.np2 .np-cols { display: grid; grid-template-columns: 1fr 3px 1fr; gap: 18px; align-items: stretch; }
+.np2 .np-col { display: flex; flex-direction: column; align-items: center; gap: 10px; background: rgba(10,6,30,.3); border: 2px solid rgba(255,255,255,.08); border-radius: 12px; padding: 12px 10px 14px; }
+.np2 .np-t { font-size: 17px; }
+.np2 .np-row { display: flex; align-items: center; justify-content: center; gap: 10px; flex-wrap: nowrap; }
+.np2 .np-row .btn { min-width: 128px; }
+.np2 .np-div { background: #1a1020; border-radius: 2px; }
+.np2 .code-in { width: 140px; }
+.np2 .np-notes { display: flex; flex-direction: column; gap: 4px; font-size: 13px; line-height: 1.45; color: #e8e4ff; }
+.np2 .np-notes p { margin: 0; display: grid; grid-template-columns: 5.2em 1fr; gap: 8px; text-align: left; }
+.np2 .np-notes b { font-weight: normal; color: var(--y1); white-space: nowrap; }
+@media (max-height: 420px) { .np2 { gap: 8px; padding: 10px 14px; } .np2 .np-col { padding: 8px 8px 10px; gap: 8px; } .np2 .np-notes { font-size: 12px; } .np2 .np-row .btn { min-width: 112px; } }
+@media (max-width: 600px) { .np2 .np-cols { grid-template-columns: 1fr; } .np2 .np-div { display: none; } }
+/* merchant: every buy button the same width whatever the price's digits */
+.ms-it .btn { flex: none; width: 128px; justify-content: center; white-space: nowrap; }
+@media (max-height: 420px) { .ms-it .btn { width: 116px; } }
+/* mine HUD: the bag counter is a button (opens the bag) */
+.mhud button.bag { font: inherit; font-size: 13px; color: #fff; cursor: pointer; pointer-events: auto; }
+.mhud button.bag:active { transform: translateY(1px); }
+/* 背包 */
+.bagm-md { display: grid; place-items: center; }
+.bagm { width: min(600px, 94vw); max-height: 92vh; max-height: 92dvh; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; }
+.bagm .bg-h { display: flex; align-items: baseline; gap: 12px; }
+.bagm .bg-h h2 { margin: 0; font-size: 22px; }
+.bagm .bg-h span { font-size: 13px; color: #e8e4ff; }
+.bagm .bg-list { display: flex; flex-direction: column; gap: 5px; overflow-y: auto; min-height: 0; padding-right: 2px; }
+.bagm .bg-it { display: grid; grid-template-columns: 26px 5.5em 3em 1fr 92px 72px; align-items: center; gap: 8px; padding: 4px 8px; border-radius: 10px; background: rgba(10,6,30,.38); border: 2px solid rgba(255,255,255,.08); }
+.bagm .bg-it img { width: 24px; height: 24px; image-rendering: pixelated; }
+.bagm .bg-it b { font-weight: normal; color: var(--y1); white-space: nowrap; font-size: 14px; }
+.bagm .bg-it em { font-style: normal; font-size: 14px; }
+.bagm .bg-v { font-size: 12px; white-space: nowrap; color: #e8e4ff; } .bagm .bg-v small { opacity: .7; margin-left: 2px; }
+.bagm .bg-v .cur { width: 1em; height: 1em; vertical-align: -0.15em; }
+.bagm .bg-it .btn { width: 100%; justify-content: center; white-space: nowrap; padding-left: 4px; padding-right: 4px; }
+.bagm .bg-f { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.bagm .bg-f .muted { font-size: 11.5px; }
+.bagm .bg-empty { text-align: center; padding: 16px; }
+@media (max-height: 420px) { .bagm { padding: 10px 12px; gap: 6px; } .bagm .bg-it { padding: 2px 6px; } .bagm .bg-it .btn { font-size: 13px; padding-top: 4px; padding-bottom: 6px; } }
+/* 怪物图鉴 */
+.topbar .tb-ico.t-codex { background: linear-gradient(180deg, #e0a8ff, #8a4ad8); }
+.cdx-md { display: grid; place-items: center; }
+.cdx-p { width: min(860px, 96vw); height: min(560px, 92vh); height: min(560px, 92dvh); display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; }
+.cdx-h { display: flex; align-items: center; gap: 14px; }
+.cdx-h h2 { margin: 0; font-size: 22px; }
+.cdx-h > span.o1 { flex: 1; font-size: 13px; color: #e8e4ff; } .cdx-h b { font-weight: normal; color: var(--y1); }
+.cdx-b { flex: 1; min-height: 0; display: grid; grid-template-columns: 112px 1fr; gap: 10px; }
+.cdx-tabs { display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.cdx-tabs .cdx-tab { width: 100%; }
+.cdx-main { min-height: 0; display: flex; flex-direction: column; gap: 8px; }
+.cdx-grid { flex: 1; min-height: 0; overflow-y: auto; display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 6px; align-content: start; padding: 2px; }
+.cdx-c { position: relative; font: inherit; color: #fff; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 4px 5px; border: 2px solid var(--ink); border-radius: 10px; background: rgba(10,6,30,.45); }
+.cdx-c canvas { width: 96px; height: 72px; image-rendering: pixelated; }
+.cdx-c img { width: 48px; height: 48px; margin: 12px 0; image-rendering: pixelated; }
+.cdx-c b { font-weight: normal; font-size: 12.5px; white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.cdx-c small { font-size: 10.5px; color: #c8c0e8; }
+.cdx-c.no b { color: #9a90c0; }
+.cdx-c.on { border-color: #ffd84a; box-shadow: 0 0 0 2px #ffd84a inset; }
+.cdx-c .cdx-tag { position: absolute; top: 3px; right: 3px; }
+.cdx-tag { font-style: normal; font-size: 10px; padding: 0 4px; border-radius: 5px; border: 1.5px solid var(--ink); color: #fff; line-height: 1.5; }
+.cdx-tag.elite { background: #d8862a; } .cdx-tag.boss { background: #d04a5a; } .cdx-tag.rare { background: linear-gradient(90deg, #ffd84a, #ff8ad8); color: #3a1a40; }
+.cdx-info { flex: none; min-height: 64px; padding: 6px 10px; border-radius: 10px; background: rgba(10,6,30,.38); border: 2px solid rgba(255,255,255,.08); display: grid; grid-template-columns: auto 1fr; column-gap: 12px; align-items: baseline; }
+.cdx-info b { font-weight: normal; color: var(--y1); font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
+.cdx-info > span { font-size: 12px; color: #c8c0e8; }
+.cdx-info p { grid-column: 1 / -1; margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8e4ff; }
+@media (max-height: 420px) { .cdx-p { padding: 8px 12px; gap: 6px; } .cdx-b { grid-template-columns: 100px 1fr; } .cdx-c canvas { width: 72px; height: 48px; } .cdx-c { padding: 2px 3px 3px; } .cdx-c img { width: 36px; height: 36px; margin: 6px 0; } .cdx-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); } .cdx-info { min-height: 56px; padding: 4px 8px; } }
+.cdx-tag { text-shadow: none !important; -webkit-text-stroke: 0; }
+.cdx-c.no img { filter: brightness(0) opacity(.5); }
