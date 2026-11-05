@@ -95,7 +95,7 @@ export const MOBS = {
   slime_purple: { sprite: "slime_purple", hp: 20, spd: 30, r: 9, sc: 0.42, dmg: 2, zones: { cave: 2, ruin: 1 } },
   jelly: { sprite: "jelly", hp: 22, spd: 26, r: 10, sc: 0.32, fly: true, dmg: 2, swim: true, zones: { sea: 5 } },
   ghost: { sprite: "ghost", hp: 20, spd: 34, r: 9, sc: 0.5, fly: true, phase: true, dmg: 2, zones: { ruin: 3, sea: 1 } },
-  mole: { draw: "mole", hp: 26, spd: 74, r: 8, sc: 1, dmg: 0, flee: true, zones: {} }, // 宝藏鼹鼠: runs away, burrows off after a while
+  mole: { draw: "mole", hp: 26, spd: 74, r: 8, sc: 1, dmg: 0, flee: true, zones: {} }, // 宝藏地鼠: runs away, burrows off after a while
   golem: { draw: "golem", hp: 300, spd: 30, r: 34, sc: 1, dmg: 3, boss: true, zones: {} }, // 遗迹守护者 (gold-shovel chamber)
   skull: { sprite: "skull", hp: 34, spd: 22, r: 10, sc: 0.3, fly: true, dmg: 2, shoot: 2.4, shotDmg: 2, zones: { ruin: 3 } },
 };
@@ -139,7 +139,7 @@ export const QUESTS = {
   ore: { w: 3 }, // 带出 N 个某种矿
   depth: { w: 2 }, // 到达某深度
   kill: { w: 2 }, // 击败怪物（累计）
-  mole: { w: 1 }, // 抓到宝藏鼹鼠
+  mole: { w: 1 }, // 抓到宝藏地鼠
   relic: { w: 2 }, // 打开遗物箱（累计）
   haul: { w: 2 }, // 单次带出 💎 ≥ V
   extract: { w: 2 }, // 安全撤离（累计）

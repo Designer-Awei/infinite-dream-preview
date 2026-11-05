@@ -1,4 +1,4 @@
-// 矿场玩法说明：吉普缇在演示里清晰（按屏幕尺寸缩小）、宝藏鼹鼠受击闪白是本体而不是白方块
+// 矿场玩法说明：吉普缇在演示里清晰（按屏幕尺寸缩小）、宝藏地鼠受击闪白是本体而不是白方块
 import { createRequire } from "module"; const require = createRequire(import.meta.url); const { chromium } = require("playwright");
 const PORT = process.argv[2] || 8775;
 const b = await chromium.launch(); const p = await (await b.newContext({ viewport: { width: 844, height: 390 }, deviceScaleFactor: 2.6 })).newPage(); const errs = []; p.on("pageerror", (e) => errs.push(e.message));

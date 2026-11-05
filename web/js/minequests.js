@@ -33,7 +33,7 @@ export function questText(q) {
     case "ore": return `带出 ${q.n} 个${ORES[q.id].name}`;
     case "depth": return `下潜到 ${q.n}m`;
     case "kill": return `击败 ${q.n} 只怪物`;
-    case "mole": return "抓到宝藏鼹鼠";
+    case "mole": return "抓到宝藏地鼠";
     case "relic": return `打开 ${q.n} 个遗物箱`;
     case "haul": return `一次带出价值 ${q.v} 晶石以上`;
     case "extract": return `安全撤离 ${q.n} 次`;

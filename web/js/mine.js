@@ -710,7 +710,7 @@ export class Dive {
       this.merchant = { x: (x0 + 3) * MT, y: (y + 1) * MT, c0: x0, r: y };
       for (const k of Object.keys(this.chest)) if (this.t[k] !== T.CHEST) delete this.chest[k];
     }
-    // 宝藏鼹鼠: one per dive (half the rifts), in a little pocket
+    // 宝藏地鼠: one per dive (half the rifts), in a little pocket
     if (!this.lite || r.chance(0.5)) {
       let y = 10, x = 3;
       for (let k = 0; k < 20; k++) {
@@ -1307,12 +1307,12 @@ export class Dive {
     if (!this.solidAt(m.x, ny + m.d.r)) m.y = ny;
     else m.vy = 0;
   }
-  /** 宝藏鼹鼠: wakes up when you get close, runs away digging through soft ground, and burrows off when its time is up */
+  /** 宝藏地鼠: wakes up when you get close, runs away digging through soft ground, and burrows off when its time is up */
   moleAI(m, dt, dx, d) {
     if (!m.awake && d < 7 * MT) {
       m.awake = true;
       this.meet(m);
-      this.text(m.x, m.y - 20, "宝藏鼹鼠！快抓住它", "#ffd84a", 1.1);
+      this.text(m.x, m.y - 20, "宝藏地鼠！快抓住它", "#ffd84a", 1.1);
       snd("pickup", 0.1);
     }
     if (Math.random() < dt * 4) this.parts.push({ x: m.x + (Math.random() - 0.5) * 14, y: m.y - 6, vx: 0, vy: -20, t: 0.5, col: "#ffe36a", s: 1, glow: true });
@@ -1322,7 +1322,7 @@ export class Dive {
       if (m.life <= 0) {
         this.mobs.splice(this.mobs.indexOf(m), 1);
         this.spawnFx("spawn/poof", m.x, m.y + 6, {});
-        this.text(m.x, m.y - 14, "鼹鼠钻走了…", "#c8b0ff");
+        this.text(m.x, m.y - 14, "地鼠钻走了…", "#c8b0ff");
         return;
       }
       m.turnT = (m.turnT || 0) - dt;
@@ -1407,7 +1407,7 @@ export class Dive {
       }
       if (m.d.flee) {
         this.moles++;
-        this.text(m.x, m.y - 26, "抓到宝藏鼹鼠！", "#ffd84a", 1.3);
+        this.text(m.x, m.y - 26, "抓到宝藏地鼠！", "#ffd84a", 1.3);
         this.spawnFx("pickups/loot-beam", m.x, m.y + 8, { life: 1.5 });
         const n = this.r.int(4, 6);
         for (let k = 0; k < n; k++) this.addLoot(this.r.weighted(ids, (q) => ORES[q].zones[z.id] * ORES[q].v * ORES[q].v), m.x, m.y - k * 6);
@@ -2165,7 +2165,7 @@ export class Dive {
   }
 }
 
-/** a mine-only monster (宝藏鼹鼠 / 遗迹守护者) drawn into a codex thumbnail W×H, animation step fr */
+/** a mine-only monster (宝藏地鼠 / 遗迹守护者) drawn into a codex thumbnail W×H, animation step fr */
 export function mineThumb(g, type, W, H, fr = 0) {
   const d = MOBS[type];
   if (!d) return;

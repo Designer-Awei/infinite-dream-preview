@@ -16,7 +16,7 @@ cmap = font.getBestCmap()
 # pixel by pixel. char: (left source, first column taken from the right source, right source)
 COMPOSE = {"缇": ("给", 5, "提")}
 # hand-drawn ones (no glyph has the right half we need): 13 columns, rows from y=11 down to y=-2, "#" = pixel
-BITMAPS = {"鼹": ['.............', '.............', '.............', '.##...######.', '.#....#....#.', '.##...######.', '.#......#....', '.###########.', '.#.#..#....#.', '.####..#..#..', '.#.#..######.', '.####...#.#..', '.#.#.....#...', '.#.##..##.##.']}
+BITMAPS = {}  # none needed now: characters the font lacks are renamed instead (宝藏鼹鼠 -> 宝藏地鼠)
 def compose(font, cmap):
     from fontTools.pens.pointInsidePen import PointInsidePen
     from fontTools.pens.ttGlyphPen import TTGlyphPen

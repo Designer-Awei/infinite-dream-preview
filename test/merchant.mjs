@@ -1,4 +1,4 @@
-// 地下商人 + 宝藏鼹鼠: the mole flees/drops loot, the merchant trades bag ore (下潜补给 was removed: nothing is charged)
+// 地下商人 + 宝藏地鼠: the mole flees/drops loot, the merchant trades bag ore (下潜补给 was removed: nothing is charged)
 import { createRequire } from "module"; const require = createRequire(import.meta.url); const { chromium } = require("playwright");
 const W = +(process.argv[2] || 804), H = +(process.argv[3] || 360), touch = W < 1000;
 const b = await chromium.launch(); const ctx = await b.newContext({ viewport: { width: W, height: H }, deviceScaleFactor: 2, isMobile: touch, hasTouch: touch });

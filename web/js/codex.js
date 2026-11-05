@@ -50,7 +50,7 @@ export const CODEX = [
   { id: "any", name: "各地通用", list: ["slime_purple", "ghost", "jelly", "skull", "wisp"] },
   { id: "mine", name: "梦境矿场", list: ["mine:mole", "mine:golem"] },
 ];
-const MINE_NAMES = { mole: "宝藏鼹鼠", golem: "遗迹守护者" };
+const MINE_NAMES = { mole: "宝藏地鼠", golem: "遗迹守护者" };
 /** one line on what each monster does (codex only) */
 const DESC = {
   slime: "跳一下停一下地靠近，撞到会掉血。", slime_blue: "冰原上的史莱姆，比普通的更耐打。", slime_purple: "死后留下毒池，别站在里面。",
@@ -66,7 +66,7 @@ const DESC = {
   snake_ice: "冰原的蛇，碰到会减速。", jelly_ice: "冰原的水母，放电范围不变但更耐打。",
   slime_gold: "稀有！偶尔在数据草原出现，打倒必掉草原藏品。", jelly_aurora: "稀有！偶尔在显存冰原出现，打倒必掉冰原藏品。",
   skull_obsidian: "稀有！偶尔在算力熔炉出现，打倒必掉熔炉藏品。",
-  "mine:mole": "梦境矿场里会逃跑、会钻土的鼹鼠，抓到它能拿到一堆好矿。", "mine:golem": "地底遗迹最深处的守护者，打倒后才能开星图宝箱。",
+  "mine:mole": "梦境矿场里会逃跑、会钻土的地鼠，抓到它能拿到一堆好矿。", "mine:golem": "地底遗迹最深处的守护者，打倒后才能开星图宝箱。",
 };
 
 // ---------------------------------------------------------------- records (save.codex = {type: {seen, kills}}, save.curios = {id: n})
