@@ -8,6 +8,29 @@
 
 ## 更新记录
 
+### 2026-11-05 · 清理旧 APK 与 iOS 发布；更新 README
+
+- 更新内容：
+  - 正式版 Releases 的「latest」里有两个 APK：
+    - `ai-girls-dungeon.apk`：11 月 1 日改名「无限梦境」之前的旧包。现有的热更新代码都指向 `infinite-dream.apk`，没有地方再引用旧包。
+    - `infinite-dream.apk`：页面上显示为「无限梦境.apk」的当前包。
+    - 旧包已删除。
+  - 预览版和正式版的 `ios-latest` 发布连同 tag 一起删除，正式版里的 IPA 也随之删除。
+  - 删除方式：本会话不允许通过 GitHub 接口直接删除发布，所以在两个仓库各加了一个只执行一次的工作流（用仓库自带的权限执行 `gh release delete` 和 `delete-asset`），推送后自动运行，运行成功后再删掉这个工作流文件。
+  - 两个仓库的 README：
+    - 角色名改为大肥鱼、吉普缇、格洛克、克劳德、奶糖包、吉拉姆。
+    - 补上三张主线地图与无尽、梦境矿场、局外养成（梦核、怪物图鉴、梦境藏品）的介绍。
+    - 新增「安装」一节：网页版地址、Android APK 下载，并说明不再提供 iOS 安装包。
+    - 打包体积改为约 6MB，目录说明补上 `mine.js`、`codex.js`、`art/`。
+    - 预览版保留原有的预览说明；正式版去掉了不适用的 `npm install` 一行。
+- 对应 commit：
+  - 预览版：[54dcdb8](https://github.com/Designer-Awei/infinite-dream-preview/commit/54dcdb8ef6daae5037cd6a72a2f63a532d7cdd17)，[f2307d0](https://github.com/Designer-Awei/infinite-dream-preview/commit/f2307d0374be72dbe6bfdf8d58583bec8f7e41c3)（删掉一次性工作流）。
+  - 正式版：[36031e4](https://github.com/Designer-Awei/infinite-dream/commit/36031e4ac57b4c679da361de5add45d45e52bace)，[e02eae3](https://github.com/Designer-Awei/infinite-dream/commit/e02eae3544849e128e58eebcc8d2d61bcb7a022d)（删掉一次性工作流）。
+- 验证：
+  - 两个仓库的「Clean up releases」工作流都运行成功。
+  - 之后查询发布列表：两边都只剩 `latest`，里面只有 `infinite-dream.apk`。
+  - 标签只剩 `latest`，`ios-latest` 已不存在。
+
 ### 2026-11-05 · 宝藏鼹鼠改名宝藏地鼠；同步正式版
 
 - 更新内容：
