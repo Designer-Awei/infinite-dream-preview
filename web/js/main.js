@@ -206,7 +206,7 @@ export const app = {
     if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);
     if (g.curiosFound.length) {
       const cr = recordCurios(g.curiosFound);
-      for (const id of cr.fresh) extras.push(["✦ 梦境藏品", CURIOS[id].name]);
+      for (const id of cr.fresh) extras.push(["梦境藏品", CURIOS[id].name]);
       if (cr.gems) extras.push(["重复藏品", `+${cr.gems}<i class="cur gem"></i>`]);
     }
     if (this.riftLoot) {

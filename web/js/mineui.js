@@ -379,7 +379,7 @@ export function showMineResult(res, again, back) {
       <div class="res-chip o1"><span>${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1"><span>${CUR.star()} 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
       ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
-      ${res.questsDone && res.questsDone.length ? `<div class="mres-q o1">✔ 委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
+      ${res.questsDone && res.questsDone.length ? `<div class="mres-q o1">委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
       ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
     <div class="res-r"><div class="mres-items">${Object.keys(counts).length ? Object.entries(counts).sort((a, b) => ORES[b[0]].v - ORES[a[0]].v).map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="muted">两手空空…</div>`}</div>
       <div class="res-stats"><div class="res-st"><span>到达深度</span><b class="outline">${res.depth}m</b></div><div class="res-st"><span>挖掘方块</span><b class="outline">${res.dug}</b></div><div class="res-st"><span>击败怪物</span><b class="outline">${res.kills}</b></div><div class="res-st"><span>剩余铲子</span><b class="outline">${ms.shovels.cu + ms.shovels.ag + ms.shovels.au}</b></div></div>

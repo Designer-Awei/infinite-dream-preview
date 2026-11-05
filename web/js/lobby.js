@@ -772,7 +772,7 @@ export function showSaveImport() {
     try {
       const s = parseSave(ta.value);
       msg.style.color = "#8cff9a";
-      msg.textContent = `✓ 存档有效：${s.name || "玩家"} · 晶石 ${s.tokens} · 角色 ${s.chars.length} 个 · 通关 ${(s.stats && s.stats.bossKills) || 0} 次`;
+      msg.textContent = `存档有效：${s.name || "玩家"} · 晶石 ${s.tokens} · 角色 ${s.chars.length} 个 · 通关 ${(s.stats && s.stats.bossKills) || 0} 次`;
       return s;
     } catch (e) {
       msg.style.color = "#ff8a9a";

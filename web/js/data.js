@@ -281,7 +281,7 @@ export const CARDS = [
   { id: "ult_charge", r: "R", tag: "提示词", name: "梯度累积", desc: "大招充能速度 +30%", max: 2 },
   { id: "vamp", r: "R", tag: "提示词", name: "自我修复", desc: "击杀时 8% 概率恢复1点生命", max: 2 },
   { id: "dodge_crit", r: "R", tag: "提示词", name: "随机失活", desc: "闪避后 2.5 秒内必定暴击", max: 1 },
-  { id: "low_rage", r: "R", tag: "提示词", name: "背水一战", desc: "生命 ≤ 2 时伤害 +60%", max: 1 },
+  { id: "low_rage", r: "R", tag: "提示词", name: "背水一战", desc: "生命不高于 2 时伤害 +60%", max: 1 },
   { id: "kill_boom", r: "SR", tag: "机制", name: "连锁崩溃", desc: "敌人死亡时爆炸，造成 10 点范围伤害", max: 2, locked: true },
   { id: "reaction_amp", r: "SR", tag: "反应", name: "跨模态融合", desc: "元素反应伤害 +60%", max: 2, locked: true },
   { id: "element_spread", r: "SR", tag: "反应", name: "知识蒸馏", desc: "元素印记命中时 25% 概率传染给附近敌人", max: 1, locked: true },

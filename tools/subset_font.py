@@ -15,6 +15,8 @@ cmap = font.getBestCmap()
 # characters the font lacks but the game needs (a character name): built from the halves of two glyphs it has,
 # pixel by pixel. char: (left source, first column taken from the right source, right source)
 COMPOSE = {"缇": ("给", 5, "提")}
+# hand-drawn ones (no glyph has the right half we need): 13 columns, rows from y=11 down to y=-2, "#" = pixel
+BITMAPS = {"鼹": ['.............', '.............', '.............', '.##...######.', '.#....#....#.', '.##...######.', '.#......#....', '.###########.', '.#.#..#....#.', '.####..#..#..', '.#.#..######.', '.####...#.#..', '.#.#.....#...', '.#.##..##.##.']}
 def compose(font, cmap):
     from fontTools.pens.pointInsidePen import PointInsidePen
     from fontTools.pens.ttGlyphPen import TTGlyphPen
@@ -35,6 +37,23 @@ def compose(font, cmap):
         name = "uni%04X" % ord(ch)
         font["glyf"][name] = pen.glyph(); font.getGlyphOrder().append(name) if name not in font.getGlyphOrder() else None
         font["hmtx"][name] = font["hmtx"][cmap[ord(r)]]
+        for t in font["cmap"].tables:
+            if t.isUnicode(): t.cmap[ord(ch)] = name
+        cmap[ord(ch)] = name
+    for ch, rows in BITMAPS.items():
+        if ord(ch) in cmap: continue
+        pen = TTGlyphPen(None)
+        for i, row in enumerate(rows):
+            y = 11 - i
+            x0 = None
+            for x, v in enumerate(row + "."):
+                if v == "#" and x0 is None: x0 = x
+                if v != "#" and x0 is not None:
+                    pen.moveTo((x0 * P, y * P)); pen.lineTo((x0 * P, (y + 1) * P)); pen.lineTo((x * P, (y + 1) * P)); pen.lineTo((x * P, y * P)); pen.closePath(); x0 = None
+        name = "uni%04X" % ord(ch)
+        font["glyf"][name] = pen.glyph()
+        if name not in font.getGlyphOrder(): font.getGlyphOrder().append(name)
+        font["hmtx"][name] = (13 * P, 100)
         for t in font["cmap"].tables:
             if t.isUnicode(): t.cmap[ord(ch)] = name
         cmap[ord(ch)] = name

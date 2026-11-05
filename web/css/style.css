@@ -1833,3 +1833,6 @@ button.name-pill:active { transform: translateY(1px); }
 @media (max-height: 420px) { .cdx-p { padding: 8px 12px; gap: 6px; } .cdx-b { grid-template-columns: 100px 1fr; } .cdx-c canvas { width: 72px; height: 48px; } .cdx-c { padding: 2px 3px 3px; } .cdx-c img { width: 36px; height: 36px; margin: 6px 0; } .cdx-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); } .cdx-info { min-height: 56px; padding: 4px 8px; } }
 .cdx-tag { text-shadow: none !important; -webkit-text-stroke: 0; }
 .cdx-c.no img { filter: brightness(0) opacity(.5); }
+/* codex card names: a fixed line box, so a character the pixel font lacks can't push one card's name lower */
+.cdx-c b { line-height: 1.3; height: 1.3em; }
+.cdx-c small { line-height: 1.3; height: 1.3em; }

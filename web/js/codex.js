@@ -136,7 +136,7 @@ function drawThumb(cv, t, fr, dark) {
   if (!s) return;
   // fit the frame's opaque box (cached per sprite) into the canvas, whole pixels
   const bb = s.__bb || (s.__bb = frameBox(s));
-  const k = Math.max(1, Math.floor(Math.min((W - 4) / bb.w, (H - 4) / bb.h) * 2) / 2);
+  const k = Math.max(1, Math.floor(Math.min((W - 10) / bb.w, (H - 10) / bb.h) * 2) / 2);
   const dw = s.w * k, dh = s.h * k, dx = Math.round(W / 2 - (bb.x + bb.w / 2) * k), dy = Math.round(H / 2 - (bb.y + bb.h / 2) * k);
   g.save();
   if (dark) g.filter = "brightness(0) opacity(.55)";
@@ -150,13 +150,13 @@ function frameBox(s) {
   c.width = s.w;
   c.height = s.h;
   const g = c.getContext("2d"), cols = new Uint16Array(s.w), rows = new Uint16Array(s.h);
-  for (let f = 0; f < s.n; f += Math.max(1, Math.floor(s.n / 4))) {
+  for (const f of [0, Math.floor(s.n / 2)]) {
     g.clearRect(0, 0, s.w, s.h);
     g.drawImage(s.img, f * s.w, 0, s.w, s.h, 0, 0, s.w, s.h);
     const px = g.getImageData(0, 0, s.w, s.h).data;
     for (let y = 0; y < s.h; y++) for (let x = 0; x < s.w; x++) if (px[(y * s.w + x) * 4 + 3] > 180) cols[x]++, rows[y]++;
   }
-  const lim = (a) => Math.max(3, Math.max(...a) * 0.08);
+  const lim = (a) => Math.max(2, Math.max(...a) * 0.12);
   const cl = lim(cols), rl = lim(rows);
   let x0 = cols.findIndex((v) => v >= cl), x1 = s.w - 1 - [...cols].reverse().findIndex((v) => v >= cl);
   let y0 = rows.findIndex((v) => v >= rl), y1 = s.h - 1 - [...rows].reverse().findIndex((v) => v >= rl);

@@ -25,5 +25,5 @@ for (let i = 0; i < 8 && (await p.$(".modal")); i++) (await p.evaluate(() => doc
 await p.click(".codex-btn"); await p.waitForTimeout(800);
 await p.screenshot({ path: "/tmp/u_codex.png" });
 out.codex = await p.evaluate(() => ({ cards: document.querySelectorAll(".cdx-c").length, seen: document.querySelectorAll(".cdx-c:not(.no)").length, head: document.querySelector(".cdx-h span.o1").textContent }));
-for (const i of [4, 5]) { await p.click(`.cdx-tab[data-i="${i}"]`); await p.waitForTimeout(500); await p.screenshot({ path: `/tmp/u_codex${i}.png` }); }
+for (const i of [1, 2, 3, 4, 5]) { await p.click(`.cdx-tab[data-i="${i}"]`); await p.waitForTimeout(500); await p.screenshot({ path: `/tmp/u_codex${i}.png` }); }
 console.log(JSON.stringify(out, null, 1)); console.log("errors", JSON.stringify(errs)); await b.close();
