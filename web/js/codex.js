@@ -1,5 +1,6 @@
 // 怪物图鉴 + 梦境藏品: every monster you've met (silhouette until then), how many you've beaten, where it lives and
 // what it does; the rare monster of each map drops one of that map's 藏品.
+import { COLLECTION } from "./collection.js";
 import { ENEMIES, MAPS } from "./data.js";
 import { MOBS } from "./minedata.js";
 import { A } from "./assets.js";
@@ -11,36 +12,20 @@ import { mineThumb } from "./mine.js";
 
 /** 梦境藏品 (first set: three per map, dropped by that map's rare monster). col = the shard's colours */
 export const CURIOS = {
-  grass_dew: { map: "grass", name: "晨露数据珠", desc: "草原上第一滴被缓存下来的露水，里面映着还没加载完的天空。", col: ["#1f5a22", "#7ad85a", "#e0ffd0"] },
-  grass_seed: { map: "grass", name: "初版种子", desc: "据说整片数据草原都是从这颗种子里编译出来的。", col: ["#5a3a10", "#c8902e", "#fff0b0"] },
-  grass_lens: { map: "grass", name: "幻觉之眼的镜片", desc: "透过它看世界，会多出一些并不存在的东西。", col: ["#2a1a5a", "#a070ff", "#ffffff"] },
-  ice_flake: { map: "ice", name: "不化的显存雪花", desc: "存满了一段很久以前的画面，所以永远不会融化。", col: ["#1e4a7a", "#a8e0ff", "#ffffff"] },
-  ice_bell: { map: "ice", name: "冰原风铃", desc: "风吹过时会响起开机时的提示音。", col: ["#3a5a8a", "#c8d8ff", "#ffffff"] },
-  ice_crown: { map: "ice", name: "史莱姆王的冰冠", desc: "冰封史莱姆王小时候戴过的王冠，有点小。", col: ["#2a6ab0", "#8ad0ff", "#fffbe0"] },
-  lava_core: { map: "lava", name: "冷却的算力核心", desc: "熔炉里唯一一颗不再发烫的核心，摸起来像一块温热的石头。", col: ["#5a1e10", "#ff7a2a", "#ffe0a0"] },
-  lava_fan: { map: "lava", name: "停转的风扇叶", desc: "它最后一次转动时，熔炉的温度降了一度。", col: ["#3a3a4a", "#9a9aaa", "#ffffff"] },
-  lava_gem: { map: "lava", name: "黑曜结晶", desc: "黑曜骷髅的心脏，冷得发亮。", col: ["#1a0a2a", "#6a3aa0", "#ffb040"] },
+  grass_dew: { map: "grass", name: "晨露珠", desc: "草原上第一滴被缓存下来的露水，里面映着还没加载完的天空。", col: ["#1f5a22", "#7ad85a", "#e0ffd0"] },
+  grass_seed: { map: "grass", name: "初生种", desc: "据说整片数据草原都是从这颗种子里编译出来的。", col: ["#5a3a10", "#c8902e", "#fff0b0"] },
+  grass_lens: { map: "grass", name: "幻眼镜片", desc: "透过它看世界，会多出一些并不存在的东西。", col: ["#2a1a5a", "#a070ff", "#ffffff"] },
+  ice_flake: { map: "ice", name: "永冻雪花", desc: "存满了一段很久以前的画面，所以永远不会融化。", col: ["#1e4a7a", "#a8e0ff", "#ffffff"] },
+  ice_bell: { map: "ice", name: "冰风铃", desc: "风吹过时会响起开机时的提示音。", col: ["#3a5a8a", "#c8d8ff", "#ffffff"] },
+  ice_crown: { map: "ice", name: "霜王冰冠", desc: "冰封史莱姆王小时候戴过的王冠，有点小。", col: ["#2a6ab0", "#8ad0ff", "#fffbe0"] },
+  lava_core: { map: "lava", name: "冷却核心", desc: "熔炉里唯一一颗不再发烫的核心，摸起来像一块温热的石头。", col: ["#5a1e10", "#ff7a2a", "#ffe0a0"] },
+  lava_fan: { map: "lava", name: "静风叶", desc: "它最后一次转动时，熔炉的温度降了一度。", col: ["#3a3a4a", "#9a9aaa", "#ffffff"] },
+  lava_gem: { map: "lava", name: "黑曜晶", desc: "黑曜骷髅的心脏，冷得发亮。", col: ["#1a0a2a", "#6a3aa0", "#ffb040"] },
 };
 /** what a rare monster's kill gives when its map's 藏品 are all collected already */
 export const CURIO_DUP_GEMS = 40;
-const curioIcons = {};
-export function curioIcon(id) {
-  if (curioIcons[id]) return curioIcons[id];
-  const c = document.createElement("canvas");
-  c.width = c.height = 16;
-  const g = c.getContext("2d"), [d, m, l] = CURIOS[id].col;
-  const P = [[8, 1], [13, 6], [11, 14], [5, 14], [3, 6]];
-  const poly = (pts, col) => ((g.fillStyle = col), g.beginPath(), pts.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))), g.closePath(), g.fill());
-  poly(P, "#1a1020");
-  poly(P.map(([x, y]) => [x + (8 - x) * 0.2, y + (9 - y) * 0.2]), m);
-  g.fillStyle = d;
-  g.fillRect(9, 9, 2, 3);
-  g.fillRect(6, 11, 3, 1);
-  g.fillStyle = l;
-  g.fillRect(6, 5, 2, 2);
-  g.fillRect(7, 3, 1, 1);
-  return (curioIcons[id] = c.toDataURL());
-}
+// PixelLab-generated icons, unique silhouettes; see assets/curios/manifest.json.
+export function curioIcon(id) { return `assets/curios/${id}.png`; }
 
 /** codex pages: which monsters live where (an entry may only appear once) */
 export const CODEX = [
@@ -100,9 +85,9 @@ export function recordCurios(ids = []) {
 /** the rare monster of a map */
 export const rareOf = (mapId) => Object.keys(ENEMIES).find((k) => ENEMIES[k].rare === mapId);
 /** a 藏品 of that map for a rare kill: one not owned yet when there is one */
-export function rollCurio(mapId, owned = load().curios || {}) {
+export function rollCurio(mapId, owned = load().curios || {}, pending = []) {
   const ids = Object.keys(CURIOS).filter((k) => CURIOS[k].map === mapId);
-  const left = ids.filter((k) => !owned[k]);
+  const left = ids.filter((k) => !owned[k] && !pending.includes(k));
   const pool = left.length ? left : ids;
   return pool[Math.floor(Math.random() * pool.length)];
 }
@@ -204,7 +189,7 @@ export function showCodex() {
     grid.querySelectorAll(".cdx-c").forEach((c) => c.classList.toggle("on", c.dataset.t === t));
     if (page === CODEX.length) {
       const c = CURIOS[t], n = cu[t] || 0;
-      info.innerHTML = n ? `<b>${c.name}</b><span>${MAPS[c.map].name} · 稀有怪物掉落 · 已获得 ${n} 次</span><p>${c.desc}</p>` : `<b>？？？</b><span>${MAPS[c.map].name} · 打倒${ENEMIES[rareOf(c.map)].name}可能获得</span><p>还没有获得。</p>`;
+      info.innerHTML = n ? `<b>${c.name}</b><span>${MAPS[c.map].name} · 首领 / 稀有怪物掉落 · 已获得 ${n} 次</span><p>${c.desc} · ${COLLECTION[t].text}（PVE，同件不叠加）</p>` : `<b>？？？</b><span>${MAPS[c.map].name} · 首领有 35% 概率掉落，${ENEMIES[rareOf(c.map)].name}必掉一件</span><p>${COLLECTION[t].text}（获得后 PVE 生效，同件不叠加）</p>`;
       return;
     }
     const e = cx[t];

@@ -27,7 +27,16 @@ function gen(ms) {
   }
   return out;
 }
-export const todayQuests = () => mineQuests(gen);
+export function todayQuests() {
+  const list = mineQuests(gen); let changed = false;
+  for (const q of list) if (q.stars !== 20) {
+    // Top up previously claimed old rewards once; retain today's tasks and progress.
+    if (q.claimed) mineState().stars += Math.max(0, 20 - (q.stars || 0));
+    q.stars = 20; changed = true;
+  }
+  if (changed) save();
+  return list;
+}
 export function questText(q) {
   switch (q.k) {
     case "ore": return `带出 ${q.n} 个${ORES[q.id].name}`;
@@ -63,6 +72,7 @@ export function claimQuest(i) {
   if (!q || q.claimed || q.prog < q.n) return null;
   q.claimed = true;
   ms.stars += q.stars;
+  save();
   return q;
 }
 export const claimable = () => todayQuests().filter((q) => q.prog >= q.n && !q.claimed).length;

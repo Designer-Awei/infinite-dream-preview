@@ -1,0 +1,19 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/create-image-pixflux",
+  "request": {
+    "description": "One inventory collectible icon: a delicate six pointed icy blue snowflake, branching star silhouette. Cute crisp 16-bit dungeon pixel art, chunky dark purple outline, three tone shading, upper-left light, centered whole object with 3px transparent padding, no letters, no frame, no ground shadow.",
+    "image_size": {
+      "width": 32,
+      "height": 32
+    },
+    "no_background": true,
+    "outline": "single color black outline",
+    "shading": "basic shading",
+    "detail": "low detail"
+  },
+  "usage": {
+    "type": "generations",
+    "generations": 1.0
+  }
+}

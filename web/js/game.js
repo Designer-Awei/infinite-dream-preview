@@ -68,6 +68,14 @@ export class Game {
       target: null, input: { mx: 0, my: 0, atk: false, aim: null, skill: false, ult: false, dash: false, castAim: {} },
       dodgeCrit: 0, sunCd: 0, barrier: 0, breathT: 0, orbs: 0, kills: 0, pvpAcc: 0, respawnT: 0,
     };
+    if (!this.pvp) {
+      // Accept only known, bounded bonuses; the host applies each player's own kit.
+      const caps = { dmg: .05, rate: .1, ultG: .1, coin: .1, speed: .05, shieldRegen: .1, cd: -.03 };
+      for (const [stat, cap] of Object.entries(caps)) {
+        const v = Number(kit.collection?.[stat]) || 0;
+        p.st[stat] *= 1 + (cap < 0 ? Math.max(cap, Math.min(0, v)) : Math.min(cap, Math.max(0, v)));
+      }
+    }
     this.players.push(p);
     return p;
   }
@@ -145,6 +153,7 @@ export class Game {
     return MAPS[ids[Math.floor(idx / 10) % ids.length]];
   }
   loadRoom(idx, def) {
+    if (this.endless && idx % 10 === 0) this.raresSeen = 0;
     this.room = def;
     const kind = def.kind;
     const md = this.roomMap(idx);
@@ -246,7 +255,7 @@ export class Game {
       const s = spots[i % spots.length];
       this.spawnEnemy(k.replace("*", ""), s.x, s.y, elite, 0.6 + i * 0.12);
     });
-    // now and then the map's rare monster joins the first wave of a combat room (twice a run at most)
+    // now and then the map's rare monster joins the first wave of a combat room (twice per chapter / ten endless floors)
     const rare = !this.pvp && this.host && this.wave === 0 && this.room.kind === "combat" && this.raresSeen < 2 && rareOf(this.roomMap(this.roomIdx).id);
     if (rare && rr() < (this.endless ? 0.05 : 0.08)) {
       const s = spots[list.length % spots.length] || this.map.center;
@@ -545,12 +554,14 @@ export class Game {
     this.killedTypes[e.type] = (this.killedTypes[e.type] || 0) + 1;
     // a rare monster's 藏品 (one of its map's set not owned yet, when there is one)
     if (e.def.rare && this.host) {
-      const id = rollCurio(e.def.rare);
-      this.curiosFound.push(id);
-      this.text(e.x, e.y - 40, `获得藏品：${CURIOS[id].name}`, "#ffd84a", 1.3, 2.2);
-      this.vfx("pickups/loot-beam", e.x, e.y + 4, { life: 1.6 });
-      this.sound("ssr");
+      this.dropCurio(e.def.rare, e.x, e.y);
     }
+  }
+  dropCurio(mapId, x, y) {
+    const id = rollCurio(mapId, undefined, this.curiosFound);
+    this.curiosFound.push(id);
+    this.text(x, y - 40, `获得藏品：${CURIOS[id].name}`, "#ffd84a", 1.3, 2.2);
+    this.sound("ssr");
   }
   spawnCoin(x, y) {
     const a = Math.random() * TAU, s = 40 + Math.random() * 70;
@@ -761,6 +772,10 @@ export class Game {
   }
   bossDown(e) {
     this.runStats.boss = true;
+    if (this.host && !this.pvp && Math.random() < .35) {
+      const mapId = Object.keys(MAPS).find(id => MAPS[id] === this.roomMap(this.roomIdx)) || this.opt.map;
+      this.dropCurio(mapId, e.x, e.y);
+    }
     this.shake = 14;
     this.vfx("explosions/plasma-explosion", e.x, e.y - 30, { palette: ["#1a0610", "#4a1028", "#8a2040", "#d04060", "#ff8090", "#ffd0d0", "#ffffff"] });
     this.after(0.5, () => this.vfx("ui/confetti", e.x, e.y - 40));
@@ -1081,12 +1096,14 @@ export class Game {
   }
   /** boss reward for 梦境矿场: 金 10% / 银 35% / 铜 55%, dropped at the centre with a beam in its colour */
   dropShovel() {
-    if (this.runStats.shovel) return;
+    if (this.shovelRoom === this.roomIdx) return;
+    this.shovelRoom = this.roomIdx;
     const r = Math.random(), kind = r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu";
     const c = this.map.center, col = { cu: "#ff9a4a", ag: "#d8e4ff", au: "#ffd84a" }[kind];
     this.runStats.shovel = kind;
+    (this.runStats.shovels ||= []).push(kind);
     this.shovelItem = { kind, x: c.x + 46, y: c.y + 2, t: 0, col };
-    this.vfx("pickups/loot-beam", this.shovelItem.x, this.shovelItem.y + 6, { life: 2 });
+    // drawShovelDrop renders the pillar and shovel without the sword baked into loot-beam.
     this.text(this.shovelItem.x, this.shovelItem.y - 40, { cu: "铜铲", ag: "银铲", au: "金铲" }[kind] + "掉落！", col, 1.2, 1.4);
   }
   openChest(p) {

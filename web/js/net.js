@@ -435,6 +435,7 @@ function snapshot(g) {
     po: g.portal ? [r1(g.portal.x), r1(g.portal.y)] : 0,
     sh: g.shop ? g.shop.map((s) => s.price) : 0,
     bn: g.banner ? [g.banner.text, g.banner.sub, round2(g.banner.t)] : 0,
+    cu: g.curiosFound,
     sc: g.pvpScore, su: g.spikeUp || 0, cf: Object.keys(g.cardOffers).map(Number), rs: g.runStats,
   };
 }
@@ -456,6 +457,7 @@ function applySnapshot(app, s) {
   }
   if (!g.map) return;
   g.phase = s.ph;
+  g.curiosFound = s.cu || [];
   g.serverTime = s.tm;
   // players
   for (const a of s.P) {

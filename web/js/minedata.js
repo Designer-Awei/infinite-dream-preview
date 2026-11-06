@@ -38,7 +38,7 @@ export const zoneAt = (row) => ZONES.find((z) => row < z.to) || ZONES[ZONES.leng
 export const ORES = {
   copper: { name: "铜矿", v: 1, m: 1, col: ["#e08a4a", "#ffb878", "#a85428"], zones: { pit: 10, cave: 3 } },
   iron: { name: "铁矿", v: 2, m: 2, col: ["#c8c0b8", "#f0ece6", "#8a8078"], zones: { pit: 6, cave: 4, sea: 1 } },
-  coinbag: { name: "失落钱袋", v: 4, m: 0, col: ["#ffd84a", "#fff3a0", "#c08a10"], zones: { pit: 2, cave: 1 } },
+  coinbag: { name: "星砂金矿", v: 6, s: 4, m: 0, col: ["#ffd84a", "#fff3a0", "#c08a10"], zones: { pit: 2, cave: 1 } },
   glow: { name: "荧光石", v: 4, m: 3, col: ["#7affc8", "#d0fff0", "#2aa880"], zones: { cave: 6, sea: 1 }, light: true },
   silver: { name: "银矿", v: 5, m: 3, col: ["#d8e4f4", "#ffffff", "#8a9ab8"], zones: { cave: 5, sea: 2 } },
   amethyst: { name: "紫晶", v: 8, m: 4, col: ["#b46aff", "#e8c8ff", "#6a2ab0"], s: 1, zones: { cave: 3, sea: 2, ruin: 1 } },
@@ -77,7 +77,7 @@ export const UPGRADES = {
   bag: { name: "背包", max: 5, label: "容量", val: (l) => `${12 + 6 * l} 格`, cost: (l) => ({ m: [10, 26, 50, 90, 140][l], v: [30, 60, 100, 150, 220][l] }) },
   armor: { name: "护甲", max: 3, label: "生命", val: (l) => `${5 + 2 * l}`, cost: (l) => ({ m: [16, 45, 100][l], v: [40, 100, 200][l] }) },
   radar: { name: "雷达", max: 3, label: "视野", val: (l) => `+${l}`, unlock: (l) => (l === 1 ? " · 透视瓦斯" : l === 2 ? " · 透视矿物" : ""), cost: (l) => ({ m: [15, 50, 120][l], v: [40, 120, 240][l] }) },
-  beacon: { name: "信标", max: 2, label: "信标", val: (l) => `${1 + l} 个`, cost: (l) => ({ m: [30, 90][l], v: [80, 200][l] }) },
+  beacon: { name: "救援信标", max: 2, label: "失利保留", val: (l) => `${30 + 10 * l}%`, unlock: (l) => ` · 撤离 ${1.5 - .5 * l} 秒`, cost: (l) => ({ m: [30, 90][l], v: [80, 200][l] }) },
   tank: { name: "氧气瓶", max: 3, label: "氧气", val: (l) => `${20 + 10 * l} 秒`, cost: (l) => ({ m: [20, 50, 110][l], v: [50, 120, 220][l] }) },
 };
 // one-line upgrade text: "挖速 ×1.00 → ×1.35 · 坚岩" (or just the current value when maxed)

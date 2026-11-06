@@ -184,11 +184,9 @@ export const app = {
     save();
     const unl = checkUnlocks();
     // 梦境矿场 shovels: a boss always drops one; a decent run sometimes gives a copper one
-    const drop = rs.shovel || rollShovel(rs);
-    if (drop) {
-      mineState().shovels[drop]++;
-      save();
-    }
+    const drops = rs.shovels?.length ? [...rs.shovels] : [rs.shovel || rollShovel(rs)].filter(Boolean);
+    for (const drop of drops) mineState().shovels[drop]++;
+    if (drops.length) save();
     sfx(win ? "win" : "lose");
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const extras = [];
@@ -200,7 +198,7 @@ export const app = {
     if (endless && rs.rooms > prevBest) extras.push(["无尽新纪录", rs.rooms + " 层"]);
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
-    if (drop) extras.push(["⛏ 梦境矿场", "获得" + SHOVELS[drop].name]);
+    if (drops.length) extras.push(["⛏ 梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
     // 怪物图鉴 + 梦境藏品
     const met = recordCodex(g.seen, g.killedTypes);
     if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);

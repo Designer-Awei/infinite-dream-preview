@@ -1,6 +1,8 @@
 // Meta progression kept in the player's own browser (no account needed).
 import { START_CHARS, START_TOKENS, UNLOCKS, GACHA, CHAR_ORDER, LOADOUT_SLOTS } from "./data.js";
 
+import { collectionBonuses } from "./collection.js";
+
 const KEY = "ai-girls-dungeon-v1";
 const fresh = () => ({
   tokens: START_TOKENS,
@@ -82,7 +84,7 @@ export function makeKit(cid) {
     tal[it.id] = lv;
   }
   for (const id of loadoutOf(cid)) if (id) eq[id] = m.talents[id] || 1;
-  return { tal, eq, cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
+  return { tal, eq, collection: collectionBonuses(m.curios), cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
 }
 
 /** Check unlock conditions; returns newly unlocked char ids. */
@@ -219,6 +221,14 @@ export function claimFreeShovels() {
   s.freePend = 0;
   save();
   return n;
+}
+
+/** Repeatable resource sink; no currency round trip, no fractional or negative exchanges. */
+export function refineOre(batches = 1) {
+  if (!Number.isSafeInteger(batches) || batches < 1 || batches > 10) return false;
+  const ms = mineState(), cost = batches * 20;
+  if (ms.mats < cost) return false;
+  ms.mats -= cost; ms.stars += batches; save(); return true;
 }
 
 /** 每日委托: today's three quests (regenerated when the local date changes) */

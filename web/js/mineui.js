@@ -1,7 +1,7 @@
 // 梦境矿场 UI: the hub (shovels, upgrades, exchange cards), the dive HUD and the results.
 import { CHARS, VIEW_H, CORE_FX } from "./data.js";
 import { RELICS, ORES, ZONES, zoneAt, SHOVELS, UPGRADES, FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP, MT, STAR, WORKSHOP, oreIcon } from "./minedata.js";
-import { load, save, mineState, refreshFreeShovels, claimFreeShovels } from "./save.js";
+import { load, save, mineState, refineOre, refreshFreeShovels, claimFreeShovels } from "./save.js";
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
@@ -21,7 +21,7 @@ export const CUR = {
 };
 const CUR_INFO = {
   gem: ["晶石", "通用货币。闯关结算和矿场带出的矿物都会换成晶石；用于扭蛋和矿场装备升级。"],
-  ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备。"],
+  ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备；也可在梦境工坊用 20 矿石兑换 1 星砂。"],
   star: ["星砂", "稀有货币。来自宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊升级最终减伤、兑换 SSR 兑换卡和梦核。"],
 };
 export function showCurInfo(k) {
@@ -44,6 +44,7 @@ export function showMineHub() {
   playMusic("lobby");
   const m = load(), ms = mineState();
   const wait = refreshFreeShovels(FREE_SHOVEL_HOURS, FREE_SHOVEL_CAP);
+  todayQuests(); // migrate today's reward amounts before rendering the currency bar
   const s = el("div", "screen mine-hub");
   s.innerHTML = `<div class="sparkles"></div>
   <div class="topbar"><div class="mh-tl"><button class="btn gray small back-btn">◀ 返回</button><div class="logo outline">梦境矿场<span>搜 · 打 · 撤</span></div><button class="btn small mh-help" title="玩法说明">?</button><button class="mh-freecu o1" title="免费铜铲：每 ${FREE_SHOVEL_HOURS} 小时 1 把，最多攒 ${FREE_SHOVEL_CAP} 把，点击领取"><img src="${iconURL("shovel_cu", 2)}" alt=""><b class="fc-v"></b></button></div><div class="spacer"></div>
@@ -90,7 +91,7 @@ export function showMineHub() {
     const u = ms.up, U = UPGRADES;
     const rows = [
       ["heart", "生命", 5 + 2 * u.armor], ["battery", "电量", U.battery.val(u.battery)], ["bag", "背包", U.bag.val(u.bag)], ["pick", "挖速", U.drill.val(u.drill)],
-      ["target", "视野", U.radar.val(u.radar)], ["elem_bubble", "氧气", U.tank.val(u.tank)], ["beacon", "信标", U.beacon.val(u.beacon)], ["shield", "减伤", String(u.dr || 0)],
+      ["target", "视野", U.radar.val(u.radar)], ["elem_bubble", "氧气", U.tank.val(u.tank)], ["beacon", "救援", U.beacon.val(u.beacon)], ["shield", "减伤", String(u.dr || 0)],
     ];
     buff.innerHTML = `<div class="mb-h o1">当前增益</div><div class="mb-g">${rows.map(([ic, n, v]) => `<div class="mb-i"><img src="${iconURL(ic, 2)}" alt=""><span>${n}</span><b>${v}</b></div>`).join("")}</div>`;
   };
@@ -179,7 +180,15 @@ export function showMineHub() {
       return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${k === "core" ? CORE_FX[cid] : w.desc}</span></div>
         <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${label}</span>${price ? `<small>${price}</small>` : ""}</button></div>`;
     }).join("");
-    ups.innerHTML = rows;
+    ups.innerHTML = rows + `<div class="mup ws"><img class="ws-i" src="${oreIcon("star")}" alt=""><div class="mu-t"><b class="o1">矿石提炼</b><span>20 矿石换 1 星砂，可重复兑换</span></div><button class="btn small refine-b" data-n="1">兑换 1</button><button class="btn small refine-b" data-n="10">兑换 10</button></div>`;
+    ups.querySelectorAll(".refine-b").forEach(b => {
+      b.classList.toggle("gray", ms.mats < Number(b.dataset.n) * 20);
+      b.onclick = () => {
+        const n = Number(b.dataset.n);
+        if (!refineOre(n)) return toast(`需要 ${20 * n} 矿石`);
+        sfx("card"); toast(`星砂 +${n}`); pills(); drawShop();
+      };
+    });
     ups.querySelectorAll(".ws-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, w = WORKSHOP[k];
       if (w.trade) {
@@ -478,7 +487,7 @@ export function showBag(dive) {
     md.innerHTML = `<div class="panel bagm"><div class="bg-h"><h2 class="outline">背包</h2><span class="o1">${dive.bag.length} / ${dive.bagCap} 格 · 价值 ${CUR.gem()}${dive.bagValue()}</span></div>
       <div class="bg-list">${ids.length ? ids.map((id) => {
         const o = ORES[id];
-        return `<div class="bg-it"><img src="${oreIcon(id)}" alt=""><b class="o1">${o.name}</b><em class="o1">×${n[id]}</em><span class="bg-v">${CUR.gem()}${o.v}${o.m ? ` ${CUR.ore()}${o.m}` : ""}<small>／个</small></span><button class="btn small gray bg-1" data-id="${id}">丢 1 个</button><button class="btn small red bg-all" data-id="${id}">全丢</button></div>`;
+        return `<div class="bg-it"><img src="${oreIcon(id)}" alt=""><b class="o1">${o.name}</b><em class="o1">×${n[id]}</em><span class="bg-v">${CUR.gem()}${o.v}${o.m ? ` ${CUR.ore()}${o.m}` : ""}${o.s ? ` ${CUR.star()}${o.s}` : ""}<small>／个</small></span><button class="btn small gray bg-1" data-id="${id}">丢 1 个</button><button class="btn small red bg-all" data-id="${id}">全丢</button></div>`;
       }).join("") : `<div class="bg-empty muted">背包是空的</div>`}</div>
       <div class="bg-f"><span class="muted o1">按价值从低到高排列；丢掉的矿物不会再出现</span><span class="bg-close"></span></div></div>`;
     const drop = (id, all) => {
@@ -498,7 +507,7 @@ export function showBag(dive) {
 
 export function confirmBeacon(dive, yes, no) {
   const md = el("div", "modal bc-md");
-  md.innerHTML = `<div class="panel bc-p"><h2 class="outline">确认撤离？</h2><p class="o1">启动撤离信标，1.5 秒后带着背包全部离开（剩余信标 ${dive.p.beacons}）。</p><div class="row bc-acts"></div></div>`;
+  md.innerHTML = `<div class="panel bc-p"><h2 class="outline">确认撤离？</h2><p class="o1">启动撤离信标，${1.5 - .5 * Math.min(2, dive.up.beacon || 0)} 秒后带着背包全部离开（剩余信标 ${dive.p.beacons}）。</p><div class="row bc-acts"></div></div>`;
   const a = md.querySelector(".bc-acts");
   const done = (f) => (md.remove(), f());
   a.appendChild(btn("撤离", "green", () => done(yes)));

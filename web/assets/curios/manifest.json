@@ -1,0 +1,74 @@
+{
+  "grass_dew": {
+    "file": "grass_dew.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "9474de8bfc529283f9604193ad16b23f0bb2f3ccbbb78a6ae380a82b17421ebd"
+  },
+  "grass_seed": {
+    "file": "grass_seed.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "e24d0f4f30ade6e7eef09ef65a48474b5aa82f4f52685d6bcbb337f4d2941fcc"
+  },
+  "grass_lens": {
+    "file": "grass_lens.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "5ec5ad05898a9d75d71919f3d9fbb57d72360e8e121dd63f744ac27dec1bba0a"
+  },
+  "ice_flake": {
+    "file": "ice_flake.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "c2d88d2dcca52830e70663f42229af3fd48649651ed9c14b575752dadbc1505c"
+  },
+  "ice_bell": {
+    "file": "ice_bell.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "740a497e75857170e76ba9813a7bbab7232d8d2ad32324af6b9218bf584d05b6"
+  },
+  "ice_crown": {
+    "file": "ice_crown.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "ac7163d397526b50922013bc65acace9d6ca1c6b84c285001652cf4a316a2c6f"
+  },
+  "lava_core": {
+    "file": "lava_core.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "579d7423708ad35747c092c869f39dd3b7fbcc17890e7c64cbddb053e7b56a44"
+  },
+  "lava_fan": {
+    "file": "lava_fan.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "c32ff776553f10d96544198c0f9157df5b95fa9ca8b729bc127c01186c94302f"
+  },
+  "lava_gem": {
+    "file": "lava_gem.png",
+    "w": 32,
+    "h": 32,
+    "n": 1,
+    "fps": 0,
+    "sha256": "3751586c51af4a296c86ac68ef1d2872d5ee0784c1b448949eb5e770e2420d65"
+  }
+}

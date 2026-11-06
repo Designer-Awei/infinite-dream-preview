@@ -544,7 +544,7 @@ export class Dive {
       x: (MW * MT) / 2, y: 0, vx: 0, vy: 0, face: 1, ground: false, hp, maxHp: hp,
       energy: 100 + 40 * (up.battery || 0), maxE: 100 + 40 * (up.battery || 0),
       o2: 20 + 10 * (up.tank || 0), maxO2: 20 + 10 * (up.tank || 0), inv: 0, hurtT: 0, atkCd: 0,
-      bombs: 2, beacons: 1 + (up.beacon || 0), beaconT: 0, dig: null, deepest: 0, anim: 0, jet: false,
+      bombs: 2, beacons: 1, beaconT: 0, dig: null, deepest: 0, anim: 0, jet: false,
       atkDmg: c.atk.dmg * (1 + 0.04 * ((o.talents && o.talents.t_dmg) || 0)), elem: c.elem,
     };
     // pre-bought supplies
@@ -1039,7 +1039,7 @@ export class Dive {
     if (inp.beacon && !p.beaconT) {
       if (p.beacons > 0) {
         p.beacons--;
-        p.beaconT = 1.5;
+        p.beaconT = 1.5 - .5 * Math.min(2, this.up.beacon || 0);
         this.spawnFx("spawn/respawn-beam", p.x, p.y, { life: 1.6 });
         snd("portal");
         this.text(p.x, p.y - 34, "撤离信标启动…", "#7dffb0", 1.1);
@@ -1471,7 +1471,8 @@ export class Dive {
   /** end of the dive: how much of the bag comes out */
   finish(how) {
     if (this.ended) return;
-    const keep = how === "extract" ? 1 : how === "timeup" ? 1 : how === "power" ? 0.5 : 0.3;
+    const rescue = .1 * Math.min(2, this.up.beacon || 0);
+    const keep = how === "extract" || how === "timeup" ? 1 : Math.min(1, (how === "power" ? .5 : .3) + rescue);
     const r = this.r;
     const bag = r.shuffle([...this.bag]);
     const kept = bag.slice(0, Math.round(bag.length * keep));
