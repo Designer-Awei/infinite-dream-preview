@@ -384,7 +384,7 @@ export function showCharDetail(id) {
   const reacts = Object.entries(REACTIONS).filter(([k]) => k === "bubble" || k.split("+").includes(c.elem));
   const md = el("div", "modal cd-modal");
   md.innerHTML = `<div class="panel cd-panel">
-    <div class="kit-head"><img class="kit-face" src="assets/head_${id}.png" alt=""><div class="cd-identity"><div class="cd-nrow"><h2 class="outline${core ? " core-name" : ""}">${c.name}</h2><div class="char-xp-detail o1">Lv.${xp.level} · ${xp.maxed ? '已满级 <i class="level-star" aria-label="满级"></i>' : `经验 ${xp.current} / ${xp.need}`}</div></div><div class="kit-sub o1">「${c.title}」 · ${e.name}元素 · ${c.role}</div></div><button class="btn gray small x-btn">关闭</button></div>
+    <div class="kit-head"><img class="kit-face" src="assets/head_${id}.png" alt=""><div class="cd-identity"><div class="cd-nrow"><h2 class="outline${core ? " core-name" : ""}">${c.name}</h2><div class="char-xp-detail o1">Lv.${xp.level} · ${xp.maxed ? '已满级 <i class="level-star" aria-label="满级"></i>' : `经验 ${xp.current} / ${xp.need}`}</div></div><div class="kit-sub o1">${c.title} · ${e.name}元素 · ${c.role}</div></div><button class="btn gray small x-btn">关闭</button></div>
     <div class="cd-body">
       <div class="cd-sec">${[["普攻 J", "atk", c.atk.name, c.passive], ["小技能 K", "skill", c.skill.name, c.skill.desc + `（冷却 ${c.skill.cd} 秒）`], ["大招 L", "ult", c.ult.name, c.ult.desc]]
         .map(([k, slot, n, d]) => `<div class="cd-sk"><img src="${iconURL(skillIcon(id, slot), 2)}" alt=""><div><b class="o1">${n} <small>${k}</small></b><p>${d}</p></div></div>`).join("")}
