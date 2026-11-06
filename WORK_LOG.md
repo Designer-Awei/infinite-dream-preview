@@ -16,7 +16,7 @@
 - README 同步行为，生成 docs/热更新清单；CI/CD 配置不变，正式版未同步。
 - 对应 commit：[fc9e056](https://github.com/Designer-Awei/infinite-dream-preview/commit/fc9e056743f45e4d3e478a536f7a2e57005d43b7)。
 - 验证：Node 语法检查、git diff --cached --check、tools/build.sh 通过。test/talent-panel.mjs 在 804×360/667×375/877×393/1280×720 下各连续触屏开关 5 次，验证打开时人物动画对象/底座/角色卡/背景节点保持、首页无 DOM 变更、重复打开只有一个面板；前 15 个动画帧遮罩始终 rgba(8,4,20,0.62)、透明度 1，遮罩与面板入场 animation 均 none。全量天赋及 SSR 已拥有数据下装配/卸下、完成/点背景关闭、角色切换与原关闭回调回归通过，无页面错误。
-- 按 804×360、DPR 3 生成 2412×1080 打开状态截图并查看；录屏抽帧与对照产物仅存项目 tmp。浏览器测试禁用持久配置旧 HTTP 缓存，确保测到当前源文件。dist/docs/Git 暂存的全部 65 文件大小与哈希校验通过，版本 20261106.0948-054fe1。未在 PHW110 实机运行修复版，最终手机观感仍需更新后确认。
+- 按 804×360、DPR 3 生成 2412×1080 打开状态截图并查看；录屏抽帧与对照产物仅存项目 tmp。浏览器测试禁用持久配置旧 HTTP 缓存，确保测到当前源文件。dist/docs/Git 暂存的全部 65 文件大小与哈希校验通过，版本 20261106.0948-054fe1；部署后 test/update-integrity.py --git-ref HEAD --url 全量核验线上 65 文件通过。[Pages 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42199878877)与 [Android APK 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42199880181)均成功。未在 PHW110 实机运行修复版，最终手机观感仍需更新后确认。
 
 ### 2026-11-06 · 梦境藏品描述、效果固定两行
 
