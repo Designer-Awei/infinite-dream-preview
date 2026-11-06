@@ -187,9 +187,11 @@ export function showCodex() {
   const showInfo = (t) => {
     sel = t;
     grid.querySelectorAll(".cdx-c").forEach((c) => c.classList.toggle("on", c.dataset.t === t));
+    info.classList.toggle("curio-info", page === CODEX.length);
     if (page === CODEX.length) {
       const c = CURIOS[t], n = cu[t] || 0;
-      info.innerHTML = n ? `<b>${c.name}</b><span>${MAPS[c.map].name} · 首领 / 稀有怪物掉落 · 已获得 ${n} 次</span><p>${c.desc} · ${COLLECTION[t].text}（PVE，同件不叠加）</p>` : `<b>？？？</b><span>${MAPS[c.map].name} · 首领有 35% 概率掉落，${ENEMIES[rareOf(c.map)].name}必掉一件</span><p>${COLLECTION[t].text}（获得后 PVE 生效，同件不叠加）</p>`;
+      const source = n ? `${MAPS[c.map].name} · 首领 / 稀有怪物掉落 · 已获得 ${n} 次` : `${MAPS[c.map].name} · 首领 35% / 稀有怪物必掉`;
+      info.innerHTML = `<b>${n ? c.name : "？？？"}</b><span title="${source}">${source}</span><p class="curio-desc">${n ? c.desc : "尚未获得，收集后解锁藏品描述。"}</p><p class="curio-effect">效果：${COLLECTION[t].text}（${n ? "PVE，同件不叠加" : "获得后 PVE 生效，同件不叠加"}）</p>`;
       return;
     }
     const e = cx[t];

@@ -1865,6 +1865,9 @@ button.name-pill:active { transform: translateY(1px); }
 .cdx-info b { font-weight: normal; color: var(--y1); font-size: 15px; display: inline-flex; align-items: center; gap: 6px; }
 .cdx-info > span { font-size: 12px; color: #c8c0e8; }
 .cdx-info p { grid-column: 1 / -1; margin: 3px 0 0; font-size: 12.5px; line-height: 1.45; color: #e8e4ff; }
+.cdx-info.curio-info { grid-template-columns: auto minmax(0, 1fr); row-gap: 3px; }
+.cdx-info.curio-info > span { min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-info.curio-info p { margin: 0; white-space: nowrap; }
 @media (max-height: 420px) { .cdx-p { padding: 8px 12px; gap: 6px; } .cdx-b { grid-template-columns: 100px 1fr; } .cdx-c canvas { width: 72px; height: 48px; } .cdx-c { padding: 2px 3px 3px; } .cdx-c img { width: 36px; height: 36px; margin: 6px 0; } .cdx-grid { grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); } .cdx-info { min-height: 56px; padding: 4px 8px; } }
 .cdx-tag { text-shadow: none !important; -webkit-text-stroke: 0; }
 .cdx-c.no img { filter: brightness(0) opacity(.5); }
