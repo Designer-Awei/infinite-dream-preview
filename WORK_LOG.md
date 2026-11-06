@@ -17,7 +17,7 @@
 - README、等级方案同步最终行为，更新中文字体与 docs/热更新清单；CI/CD 配置不变，正式版未同步。
 - 对应 commit：[6a2a499](https://github.com/Designer-Awei/infinite-dream-preview/commit/6a2a4999ac6951a7c4c7c2dff7d66bf77524ce2c)。
 - 验证：tools/build.sh、git diff --cached --check 通过。test/level-rewards.mjs 覆盖六角色 × 七级奖励、实际释放/伤害/蓄力/护盾恢复、主动五次蓄满、100% 封顶、冷却按键无收益、回响与联动去重、36 组梦核/SSR 组合、天赋/藏品/两张冷却卡乘算、PVP 隔离、合作真实接收配置路径及下一局应用；四种视口 804×360/667×375/877×393/1280×720 检查七行首屏可见、三列对齐、描述单行完整、无横向溢出；另生成 804×360、DPR 3 的 2412×1080 截图并查看外观。
-- test/character-levels.mjs、test/mining-update.mjs、test/result-layout.mjs 回归通过，无页面错误；护盾最终提升到 50% 后重新运行等级奖励检查通过。test/update-integrity.py --git-ref : 验证 dist/docs/Git 暂存全部 65 个文件，test/hot-update-publish.mjs 验证旧更新器完整应用最终版本 20261106.0704-5c9eb1。尚未在实体手机或公网合作做体验测试，10 小时满级仍为估算。
+- test/character-levels.mjs、test/mining-update.mjs、test/result-layout.mjs 回归通过，无页面错误；护盾最终提升到 50% 后重新运行等级奖励检查通过。test/update-integrity.py --git-ref : 验证 dist/docs/Git 暂存全部 65 个文件，test/hot-update-publish.mjs 验证旧更新器完整应用最终版本 20261106.0704-5c9eb1。部署后 --git-ref HEAD --url 完整核验线上 65 个文件通过，线上版本 20261106.0704-5c9eb1；Pages 与 Android APK 自动发布均成功。尚未在实体手机或公网合作做体验测试，10 小时满级仍为估算。
 
 ### 2026-11-06 · 修复移动端增量更新校验失败
 
