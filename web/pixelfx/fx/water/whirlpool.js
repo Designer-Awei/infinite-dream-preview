@@ -13,10 +13,10 @@ export const meta = {
   loop: true,
   fps: 30,
   bg: "dark",
-  options: { palette: WATER, seed: 5 },
+  options: { palette: WATER, seed: 5, radius: 60 },
 };
 
-const D = meta.duration, R = 60, SY = 0.6, K = 2.4, EYE = 0.16;
+const D = meta.duration, SY = 0.6, K = 2.4, EYE = 0.16;
 
 // the flow at radius rho (0 eye, 1 rim), angle th: thin streaks of foam laid along a log spiral that turns once a
 // loop (a turning log spiral reads as water drawn inward), dashed and brightest where two sets of streaks cross
@@ -31,7 +31,7 @@ function foam(rho, th, ph) {
 }
 
 export function draw(p, t, o) {
-  const C = fit(o.palette, 8), ph = t / D, ry = R * SY;
+  const R = Math.max(1, o.radius ?? 60), C = fit(o.palette, 8), ph = t / D, ry = R * SY;
   p.shade(-R, -ry, R, ry, (x, y, out) => {
     const dx = x / R, dy = y / ry, rho = Math.hypot(dx, dy);
     if (rho > 1) return;

@@ -289,9 +289,10 @@ export function castUlt(g, p, a, target) {
         g.sound("explode");
         for (const e of g.enemiesNear(cx, cy, 66)) (g.hit(e, 30, { p, elem: "water" })), g.knock(e, cx, cy, 260);
         if (g.pvp) for (const o of g.players) if (o !== p && dist(o.x, o.y, cx, cy) < 66) g.hit(o, 30, { p });
-        const fh = g.vfx("water/whirlpool", cx, cy, { palette: pal, layer: "back", life: 5 });
+        const radius = p.core ? 90 : 72, life = p.core ? 8 : 5;
+        const fh = g.vfx("water/whirlpool", cx, cy, { palette: pal, layer: "back", radius, life });
         g.addZone({
-          kind: "tide", x: cx, y: cy, r: p.core ? 90 : 72, life: p.core ? 8 : 5, side: "p", owner: p.id, sh: 0,
+          kind: "tide", x: cx, y: cy, r: radius, life, fxh: fh, side: "p", owner: p.id, sh: 0,
           update: (z, dt) => {
             z.tick += dt;
             z.sh += dt;

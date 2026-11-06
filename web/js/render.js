@@ -591,8 +591,8 @@ export class Renderer {
       g.beginPath();
       g.ellipse(z.x, z.y, z.r, z.r * 0.5, 0, 0, TAU);
       g.stroke();
-    } else if (z.kind === "tide" || z.kind === "domain" || z.kind === "inkcircle" || z.kind === "tome") {
-      const col = { tide: "#3aa8ff", domain: "#ffb03a", inkcircle: "#7b6cff", tome: "#7b6cff" }[z.kind];
+    } else if (z.kind === "domain" || z.kind === "inkcircle" || z.kind === "tome") {
+      const col = { domain: "#ffb03a", inkcircle: "#7b6cff", tome: "#7b6cff" }[z.kind];
       const fadeIn = clamp(z.t * 4), fadeOut = clamp(z.life * 3);
       g.globalAlpha = 0.16 * fadeIn * fadeOut;
       g.fillStyle = col;

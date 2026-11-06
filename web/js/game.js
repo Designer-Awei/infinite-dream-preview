@@ -1098,7 +1098,7 @@ export class Game {
     this.banner = { text: "清场完成！", sub: "打开补给箱选择技能卡", t: 2 };
     const c = this.map.center;
     this.chest = { x: c.x, y: c.y + 38, opened: false };
-    this.vfx("pickups/loot-beam", c.x, c.y + 44, { life: 2.5 });
+    this.vfx("pickups/loot-beam", c.x, c.y + 44, { life: 2.5, opts: { item: false } });
     // vacuum coins
     for (const q of this.pickups) if (q.kind === "coin") q.magnet = true;
   }
