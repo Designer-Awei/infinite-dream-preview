@@ -1475,6 +1475,13 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .hp-main { flex: 1; min-width: 0; overflow: auto; font-size: 13px; line-height: 1.6; color: #fff; background: rgba(10,6,30,.3); border-radius: 10px; padding: 8px 12px; }
 .hp-t { font-size: 16px; color: var(--y1); margin-bottom: 4px; }
 .hp-h { display: block; color: #ffe36a; font-weight: normal; margin-top: 6px; }
+.hp-levels { margin: 6px 0; }
+.hp-level { display: grid; grid-template-columns: 44px 48px minmax(0, 1fr); column-gap: 8px; align-items: center; min-height: 26px; white-space: nowrap; }
+.hp-level b, .hp-level em { font-weight: normal; font-style: normal; color: #ffe36a; }
+.hp-level span { min-width: 0; }
+.level-star { display: inline-block; flex: none; width: 10px; height: 10px; background: #ffe36a; clip-path: polygon(50% 0, 62% 35%, 100% 38%, 71% 62%, 80% 100%, 50% 78%, 20% 100%, 29% 62%, 0 38%, 38% 35%); }
+.li-level:has(.level-star) { display: flex; align-items: center; gap: 3px; }
+.char-xp-detail .level-star { margin-left: 4px; }
 .hp-cur { display: flex; gap: 8px; align-items: baseline; margin: 3px 0; }
 .hp-cur .chip { flex: none; }
 .hp-cur .cur-gem { background: #3ab0ff; } .hp-cur .cur-ore { background: #8a7a6a; } .hp-cur .cur-star { background: #ffd84a; color: #1a1020; }

@@ -6,6 +6,7 @@ import { sfx } from "./audio.js";
 import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
+import { levelBonuses } from "./progression.js";
 
 export const RIFT_CHANCE = 0.25;
 export class Game {
@@ -53,9 +54,10 @@ export class Game {
     const c = CHARS[cid];
     // every player is built from their own meta progression (sent by their client), not the host's save
     kit = kit && kit.tal ? kit : { tal: {}, eq: {}, cards: [] };
+    const growth = levelBonuses(this.pvp ? 1 : kit.level);
     const talent = (k) => +kit.tal[k] || 0;
     const p = {
-      id, cid, name, local, kind: "player",
+      id, cid, name, local, kind: "player", growth,
       x: 0, y: 0, r: 12, vx: 0, vy: 0, face: 0, moving: false, animT: Math.random() * 3,
       hp: c.hp + talent("t_hp"), maxHp: c.hp + talent("t_hp"), core: kit.core ? 1 : 0, shield: c.shield + talent("t_shield2"), maxShield: c.shield + talent("t_shield2"),
       atkCd: 0, atkCount: 0, rampT: 0, idleFire: 1, skillCd: 0, ult: 0.3 * talent("t_ult"), dashCd: 0, dashT: 0, dashDx: 0, dashDy: 0,
@@ -75,6 +77,10 @@ export class Game {
         const v = Number(kit.collection?.[stat]) || 0;
         p.st[stat] *= 1 + (cap < 0 ? Math.max(cap, Math.min(0, v)) : Math.min(cap, Math.max(0, v)));
       }
+      // Multiplicative with talents/collections; apply once at the next run's creation.
+      for (const stat of ["dmg", "cd", "shieldRegen", "ultG"]) p.st[stat] *= growth[stat];
+      p.hp += growth.hp;
+      p.maxHp += growth.hp;
     }
     this.players.push(p);
     return p;
@@ -1325,7 +1331,10 @@ export class Game {
         castSkill(this, p, p.cid, a, inp.castAim?.skill != null ? null : p.target, 1);
         for (const l of p.links) castSkill(this, p, l, a, p.target, 0.7);
         if (p.cards.echo && Math.random() < 0.35) this.after(0.45, () => castSkill(this, p, p.cid, p.face, p.target, 1));
-        p.skillCd = 6 * 0 + (CHARS[p.cid].skill.cd * p.st.cd);
+        p.skillCd = CHARS[p.cid].skill.cd * p.st.cd;
+        // Fixed percentage points per manual cast, never multiplied by ult-gain stats.
+        // Echo/linked casts above share this activation and do not grant it again.
+        p.ult = Math.min(1, p.ult + p.growth.skillCharge);
         p.castT = 0.4;
         this.sound("skill");
       }

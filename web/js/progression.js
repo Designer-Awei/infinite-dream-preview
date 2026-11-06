@@ -1,6 +1,22 @@
 // Permanent character experience; pure helpers shared by UI and settlement.
 export const XP_REQUIREMENTS = Object.freeze([611, 795, 1033, 1343, 1746, 2272]);
 export const MAX_CHARACTER_XP = XP_REQUIREMENTS.reduce((a, b) => a + b, 0);
+// Reward descriptions and cumulative PVE bonuses.
+export const LEVEL_REWARDS = Object.freeze([
+  { level: 1, name: "初始", text: "角色基础能力" },
+  { level: 2, name: "伤害", text: "造成伤害 +20%" },
+  { level: 3, name: "蓄能", text: "每次小技能增加 20% 大招进度" },
+  { level: 4, name: "生命", text: "生命上限 +1" },
+  { level: 5, name: "技能", text: "小技能冷却 -30%" },
+  { level: 6, name: "护盾", text: "护盾恢复速度 +50%" },
+  { level: 7, name: "觉醒", text: "大招蓄力 +30% · 满级星徽" },
+]);
+export function levelBonuses(value = 1) {
+  const level = Number.isFinite(value) ? Math.max(1, Math.min(7, Math.floor(value))) : 1;
+  return { level, dmg: level >= 2 ? 1.2 : 1, skillCharge: level >= 3 ? .2 : 0,
+    hp: level >= 4 ? 1 : 0, cd: level >= 5 ? .7 : 1,
+    shieldRegen: level >= 6 ? 1.5 : 1, ultG: level >= 7 ? 1.3 : 1 };
+}
 export function progressFromXP(value = 0) {
   const total = Math.max(0, Math.min(MAX_CHARACTER_XP, Math.floor(Number.isFinite(value) ? value : 0)));
   let current = total, level = 1;

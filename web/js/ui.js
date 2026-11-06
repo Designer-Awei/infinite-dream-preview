@@ -6,6 +6,7 @@ import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
+import { LEVEL_REWARDS } from "./progression.js";
 
 let root, app;
 export const $ = (s, r = root) => r.querySelector(s);
@@ -96,7 +97,10 @@ export function showHelp() {
       ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
       ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉星砂金矿，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
-    ["养成", `${H("扭蛋机")}通关获得晶石，扭蛋机抽取永久天赋与稀有技能卡。SSR 不会重复，全部集齐后再抽到 SSR 会变成积攒点。
+    ["角色养成", `<div class="hp-levels">${LEVEL_REWARDS.map(r => `<div class="hp-level"><b>Lv.${r.level}</b><em>${r.name}</em><span>${r.text}</span></div>`).join("")}</div>
+      ${H("成长规则")}每位角色独立积累经验，最高 7 级；闯关奖励逐级累计，下局生效，竞技场禁用。蓄能按每次主动释放小技能计算，回响和联动不重复增加，进度最多 100%；矿场装备独立。
+      ${H("升级经验")}六次升级需要 611 / 795 / 1033 / 1343 / 1746 / 2272 经验，累计 7800；闯关与矿场获得经验，暂停和长时间无操作不计。
+      ${H("扭蛋机")}通关获得晶石，扭蛋机抽取永久天赋与稀有技能卡。SSR 不会重复，全部集齐后再抽到 SSR 会变成积攒点。
       ${H("天赋")}N/R/SR 天赋自动生效；SSR 天赋要在角色介绍卡右上角的「天赋」页装配，每个角色一页、2 个槽位，PVE 和 PVP 都生效。
       ${H("角色")}达成条件解锁新角色。`],
   ];

@@ -94,7 +94,7 @@ export function makeKit(cid) {
     tal[it.id] = lv;
   }
   for (const id of loadoutOf(cid)) if (id) eq[id] = m.talents[id] || 1;
-  return { tal, eq, collection: collectionBonuses(m.curios), cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
+  return { tal, eq, level: characterProgress(cid).level, collection: collectionBonuses(m.curios), cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
 }
 
 /** Check unlock conditions; returns newly unlocked char ids. */
