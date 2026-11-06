@@ -427,19 +427,46 @@ export function showResult(r, onAgain, onLobby) {
   closeCards(); // a pending card choice must not cover the results
   // landscape two-column panel: everything (incl. the buttons) fits a 360px-tall phone screen without scrolling
   const md = el("div", "modal result");
+  // Progress and new rewards come before routine bonuses. Stable ties retain run order.
+  const priority = (label) => /首通|新地图|新角色|新纪录/.test(label) ? 0 : /梦境藏品/.test(label) ? 1 : /梦境裂隙/.test(label) ? 2 : /梦境矿场/.test(label) ? 3 : /怪物图鉴/.test(label) ? 4 : 5;
+  const extras = [...(r.extras || [])].sort((a, b) => priority(a[0]) - priority(b[0]));
+  const chip = ([label, value]) => {
+    // Emoji and pixel text have different baselines: align separate, fixed icon boxes.
+    const parts = label.match(/^(⛏|📖|🔓)\s*(.*)$/u);
+    return `<div class="res-chip o1"><span class="res-label">${parts ? `<i class="res-icon" aria-hidden="true">${parts[1]}</i>${parts[2]}` : label}</span><b>${value}</b></div>`;
+  };
   const hero = r.cid ? `<div class="res-hero${r.win ? "" : " lost"}"><i class="res-glow"></i><img src="assets/hero_${r.cid}.png" alt=""></div>` : "";
   md.innerHTML = `<div class="panel res2 ${r.win ? "win" : "lose"}">
     <div class="res-l">
       <h2 class="outline">${r.title}</h2>
       <div class="res-sub o1">${r.sub || ""}</div>
       ${hero}
-      <div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div>
-      ${(r.extras || []).map(([a, b]) => `<div class="res-chip o1"><span>${a}</span><b>${b}</b></div>`).join("")}
+      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div>
+      ${extras.length > 2 ? `<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">其余 ${extras.length - 2} 项 ↑</button>` : ""}</div>
+      <div class="res-extras">${extras.slice(0, 2).map(chip).join("")}</div>
     </div>
     <div class="res-r">
       <div class="res-stats">${r.rows.map(([a, b], i) => `<div class="res-st" style="animation-delay:${0.08 + i * 0.05}s"><span>${a}</span><b class="outline">${b}</b></div>`).join("")}</div>
       <div class="row acts"></div>
     </div></div>`;
+  const more = $(".res-more", md);
+  if (more) more.onclick = () => {
+    if ($(".res-details", md)) return;
+    const overlay = el("div", "res-details");
+    overlay.innerHTML = `<section class="panel res-sheet" role="dialog" aria-modal="true" aria-labelledby="res-detail-title" tabindex="-1"><header><h2 id="res-detail-title">本局收获</h2></header><div class="res-detail-list" tabindex="0" aria-label="结算明细">${extras.map(chip).join("")}</div></section>`;
+    const sheet = $(".res-sheet", overlay);
+    const close = () => { overlay.remove(); more.setAttribute("aria-expanded", "false"); more.focus(); };
+    const closeButton = btn("收起 ↓", "blue", close);
+    $("header", sheet).appendChild(closeButton);
+    overlay.onclick = (e) => { if (e.target === overlay) close(); };
+    overlay.onkeydown = (e) => {
+      if (e.key === "Escape") { e.stopPropagation(); close(); }
+      if (e.key === "Tab") { e.preventDefault(); (document.activeElement === closeButton ? $(".res-detail-list", sheet) : closeButton).focus(); }
+    };
+    md.appendChild(overlay);
+    more.setAttribute("aria-expanded", "true");
+    closeButton.focus();
+  };
   const a = $(".acts", md);
   if (onAgain) a.appendChild(btn("再来一局", "", onAgain));
   a.appendChild(btn("返回大厅", "blue", onLobby));
