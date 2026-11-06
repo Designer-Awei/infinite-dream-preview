@@ -21,7 +21,8 @@ for(const [width,height] of [[804,360],[667,375],[877,393],[1280,720]]) {
  const panel=document.querySelector('.res2').getBoundingClientRect(); const left=document.querySelector('.res-l'); const hero=document.querySelector('.res-hero').getBoundingClientRect();
  const buttons=[...document.querySelectorAll('.res-r .btn')].map(n=>{const r=n.getBoundingClientRect();return r.bottom<=panel.bottom-4 && r.right<=panel.right-4 && r.top>=panel.top});
  return {buttons,hero:hero.height,chips:document.querySelectorAll('.res-extras .res-chip').length,leftOverflow:left.scrollHeight-left.clientHeight,panelBottom:panel.bottom}; });
- console.log(width,height,count,JSON.stringify(result)); assert(result.buttons.every(Boolean)); assert(result.panelBottom<=height); assert(result.hero>=(height<=380?100:140)); assert(result.leftOverflow<=1); assert.equal(result.chips,Math.min(2,count));
+ console.log(width,height,count,JSON.stringify(result)); assert(result.buttons.every(Boolean)); assert(result.panelBottom<=height); assert.equal(result.hero,height<=380?100:140); assert(result.leftOverflow<=1); assert.equal(result.chips,Math.max(1,Math.min(2,count)));
+ if(count===0) { assert((await page.locator(".res-extras").innerText()).includes("本局晶石")); assert.equal(await page.locator(".res-more").count(),0); }
  if(count===8){
  const alignment=await page.evaluate(()=>{const a=document.querySelector('.res-extras .res-chip').getBoundingClientRect(),b=document.querySelector('.res-more').getBoundingClientRect(),c=document.querySelectorAll('.res-extras .res-chip')[1].getBoundingClientRect();return {top:Math.abs(a.top-b.top),bottom:Math.abs(a.bottom-b.bottom),gap:b.left-a.right,right:Math.abs(b.right-c.right),text:document.querySelector('.res-more').textContent};});
  assert(alignment.top<1 && alignment.bottom<1 && alignment.right<1 && alignment.gap>0); assert(!alignment.text.includes('↑'));

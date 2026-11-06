@@ -430,6 +430,7 @@ export function showResult(r, onAgain, onLobby) {
   // Progress and new rewards come before routine bonuses. Stable ties retain run order.
   const priority = (label) => /首通|新地图|新角色|新纪录/.test(label) ? 0 : /梦境藏品/.test(label) ? 1 : /梦境裂隙/.test(label) ? 2 : /梦境矿场/.test(label) ? 3 : /怪物图鉴/.test(label) ? 4 : 5;
   const extras = [...(r.extras || [])].sort((a, b) => priority(a[0]) - priority(b[0]));
+  if (!extras.length) extras.push(["本局晶石", `+${r.tokens}`]);
   const chip = ([label, value]) => {
     // Emoji and pixel text have different baselines: align separate, fixed icon boxes.
     const parts = label.match(/^(⛏|📖|🔓)\s*(.*)$/u);
