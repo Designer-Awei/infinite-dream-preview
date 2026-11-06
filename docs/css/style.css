@@ -1757,6 +1757,9 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
    full-screen layer over the animated lobby made some phones flash for a frame */
 .modal { animation: dimIn .2s; }
 @keyframes dimIn { from { background-color: rgba(8,4,20,0); } }
+/* Talent entry: paint the completed panel and dim backdrop together, without
+   repainting the full-screen tint or scaling the panel over the animated lobby. */
+.kit-modal, .kit-modal .kit-panel { animation: none; }
 /* character detail: everything on one screen (no scrolling) on phones in landscape */
 @media (max-height: 420px) {
   .cd-panel { gap: 4px; padding: 8px 12px; }

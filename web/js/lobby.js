@@ -402,6 +402,7 @@ export function showCharDetail(id) {
 
 // ------------------------------------------------------------------ talent loadout (one page per character)
 export function showLoadout(cid, onClose) {
+  if (uiRoot().querySelector(".kit-modal")) return;
   const c = CHARS[cid], m = load();
   const md = el("div", "modal kit-modal");
   let page = loadoutOf(cid), sel = page.indexOf(null) >= 0 ? page.indexOf(null) : 0;
@@ -471,8 +472,8 @@ export function showLoadout(cid, onClose) {
   };
   q(".x-btn", md).onclick = close;
   md.onclick = (e) => e.target === md && close();
-  uiRoot().appendChild(md);
   refresh();
+  uiRoot().appendChild(md);
 }
 
 // ------------------------------------------------------------------ mode carousel (swipe left/right on the lobby)
