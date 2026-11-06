@@ -98,7 +98,7 @@ body:not(.ingame) #stage::after { display: none; }
 .hud .pausebtn { pointer-events: auto; width: 36px; height: 36px; font-size: 14px; padding: 0; }
 .banner { position: absolute; top: 24%; left: 0; right: 0; text-align: center; animation: bannerIn .4s cubic-bezier(.2,1.6,.4,1); }
 .banner b { display: inline-block; font-size: 30px; font-weight: normal; padding: 6px 28px; background: linear-gradient(90deg, transparent, rgba(10,6,24,.7) 15%, rgba(10,6,24,.7) 85%, transparent); }
-.banner small { display: block; font-size: 14px; margin-top: 4px; color: #ffe; text-shadow: none; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
+.banner small { display: block; font-size: 14px; margin-top: 4px; color: #ffe; text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
 @keyframes bannerIn { from { transform: scale(2.2); opacity: 0; } }
 .keys { position: absolute; left: max(10px, env(safe-area-inset-left)); bottom: 8px; font-size: 11px; opacity: .85; }
 .pcskills { position: absolute; right: 12px; bottom: 10px; display: flex; gap: 8px; }
@@ -1364,7 +1364,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .cur-trade { border-top: 1px solid rgba(255,255,255,.2); margin-top: 5px; padding-top: 8px; display: grid; gap: 8px; }
 .cur-trade p { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
 .cur-trade .cur-balance { color: #c8c0e8; font-size: 12px; }
-.cur-trade .cur-refine { width: 100%; text-shadow: none; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
+.cur-trade .cur-refine { width: 100%; text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
 /* mine guide (❓) */
 .mg-md { display: grid; place-items: center; }
 .mg-p { width: min(720px, 96vw); max-height: 96vh; max-height: 96dvh; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; }

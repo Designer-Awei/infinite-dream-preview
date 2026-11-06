@@ -107,11 +107,11 @@ try {
   const shot=await send('Page.captureScreenshot',{format:'png'});
   await writeFile(path.join(out,'chest-and-core-vortex.png'),Buffer.from(shot.data,'base64'));
   const bannerStyle=await evaluate(`(()=>{const s=getComputedStyle(document.querySelector('.banner small'));return {shadow:s.textShadow,stroke:s.webkitTextStrokeWidth,color:s.webkitTextStrokeColor,order:s.paintOrder}})()`);
-  assert.equal(bannerStyle.shadow,'none');assert.equal(bannerStyle.stroke,'1px');assert(bannerStyle.order.startsWith('stroke'));
+  assert.equal(bannerStyle.shadow,'none');assert.equal(bannerStyle.stroke,'2px');assert(bannerStyle.order.startsWith('stroke'));
   await evaluate(`(async()=>{const S=await import('./js/save.js'),M=await import('./js/mineui.js');S.mineState().mats=400;M.showMineHub();M.showCurInfo('star');})()`);
   await sleep(350);
   const buttonStyle=await evaluate(`(()=>{const b=document.querySelector('.cur-refine'),s=getComputedStyle(b);return {shadow:s.textShadow,stroke:s.webkitTextStrokeWidth,color:s.webkitTextStrokeColor,order:s.paintOrder}})()`);
-  assert.equal(buttonStyle.shadow,'none');assert.equal(buttonStyle.stroke,'1px');assert(buttonStyle.order.startsWith('stroke'));
+  assert.equal(buttonStyle.shadow,'none');assert.equal(buttonStyle.stroke,'2px');assert(buttonStyle.order.startsWith('stroke'));
   await evaluate(`document.querySelector('.cur-refine').classList.add('press')`);
   assert.equal(await evaluate(`getComputedStyle(document.querySelector('.cur-refine')).textShadow`),'none');
   await evaluate(`document.querySelector('.cur-refine').classList.remove('press')`);
