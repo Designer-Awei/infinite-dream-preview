@@ -634,14 +634,14 @@ body.touchmode .c-key { display: none; }
 .enter-ld .el-tip { font-size: 13px; color: #d8d0ff; }
 
 /* result panel v2: landscape two columns, buttons always on screen */
-.result .panel.res2 { display: grid; grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); height: min(460px, 94dvh); gap: 14px; width: min(760px, 94vw); max-height: 94vh; max-height: 94dvh; padding: 14px 16px; text-align: center; overflow: hidden; animation: popIn .35s cubic-bezier(.2,1.4,.4,1); }
+.result .panel.res2 { display: grid; grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.2fr); grid-template-rows: minmax(0, 1fr); height: min(460px, 80vh); height: min(460px, 80dvh); gap: 14px; width: min(760px, 94vw); max-height: 94vh; max-height: 94dvh; padding: 14px 16px; text-align: center; overflow: hidden; animation: popIn .35s cubic-bezier(.2,1.4,.4,1); }
 .res2 h2 { font-size: 30px; margin: 0; line-height: 1.1; }
 .res2.win h2 { color: var(--y1); }
 .res2.lose h2 { color: #ffb4c4; }
 .res-l { display: flex; flex-direction: column; align-items: center; gap: 3px; min-height: 0; min-width: 0; }
 .res-l > :not(.res-hero) { flex-shrink: 0; }
 .res-sub { font-size: 13px; color: #d8d0ff; }
-.res-hero { position: relative; flex: 0 0 140px; margin: auto 0; height: 140px; min-height: 60px; width: 100%; display: flex; justify-content: center; }
+.res-hero { position: relative; flex: 0 0 150px; margin: auto 0; height: 150px; width: 100%; display: flex; justify-content: center; }
 .res-hero img { height: 100%; object-fit: contain; image-rendering: pixelated; filter: drop-shadow(0 6px 6px rgba(0,0,0,.4)); animation: breathe 2.6s ease-in-out infinite; transform-origin: 50% 100%; position: relative; }
 .res-hero.lost img { filter: grayscale(.7) brightness(.8) drop-shadow(0 6px 6px rgba(0,0,0,.4)); }
 .res-glow { position: absolute; left: 50%; top: 50%; width: 150px; height: 150px; transform: translate(-50%, -50%); border-radius: 50%; background: radial-gradient(circle, rgba(255,228,106,.45), transparent 65%); }
@@ -679,12 +679,12 @@ body.touchmode .c-key { display: none; }
 .res-st b { font-size: 20px; color: #fff; font-weight: normal; line-height: 1.1; }
 .res-r .acts { flex: 0 0 auto; margin: 0; gap: 10px; justify-content: center; }
 .res-r .acts .btn { flex: 1; max-width: 200px; }
-@media (max-height: 380px) {
+@media (max-height: 420px) {
   .result .panel.res2 { padding: 6px 12px; gap: 10px; }
   .res2 h2 { font-size: 22px; }
   .res-gain .big { font-size: 28px; }
   .res-st { padding: 3px 8px; } .res-st b { font-size: 17px; }
-  .res-hero { height: 100px; flex-basis: 100px; }
+  .res-hero { height: 110px; flex-basis: 110px; }
   .res-l { gap: 2px; }
   .res2 .res-sub { font-size: 11px; }
 }
@@ -1114,10 +1114,27 @@ body.mining .b-dash, body.mining .s-dash { display: none !important; }
 body.mining .b-skill .cdt, body.mining .b-ult .cdt { display: block !important; position: absolute; bottom: -2px; right: -2px; font-size: 12px; color: #fff; background: #1a1020; border-radius: 6px; padding: 0 4px; }
 body.mining .hud .keys { font-size: 10.5px; }
 @media (max-height: 420px) { .mhud .bar { width: 120px; height: 12px; } .mhud .bar span { font-size: 9px; line-height: 9px; } .mhud .face { width: 36px; height: 36px; } }
-/* results */
-.mres-items { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 5px; overflow: auto; max-height: 40vh; }
-.mri { display: flex; align-items: center; gap: 4px; padding: 3px 6px; border-radius: 8px; background: rgba(10,6,30,.4); font-size: 12px; }
-.mri img { width: 16px; height: 16px; image-rendering: pixelated; } .mri b { margin-left: auto; color: var(--y1); font-weight: normal; }
+/* Mine results share the combat portrait and two summary rows; only details scroll. */
+.mres-body { flex: 1 1 auto; min-height: 0; overflow: auto; touch-action: pan-y; overscroll-behavior: contain; display: flex; flex-direction: column; gap: 8px; text-align: left; }
+.mres-body > * { flex-shrink: 0; }
+.mres-body .res-stats { flex: none; overflow: visible; }
+.mres-body .res-st { flex-direction: row; align-items: center; justify-content: space-between; gap: 4px; }
+.mres-body .res-st span { white-space: nowrap; }
+.mres-body .res-st b { font-size: 17px; }
+.mres-loot { min-width: 0; }
+.mres-heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 12px; color: #d8d0ff; }
+.mres-heading span { font-size: 11px; }
+.mres-items { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; }
+.mres-items.single { grid-template-columns: minmax(0, 1fr); }
+.mri { display: flex; align-items: center; gap: 5px; min-width: 0; padding: 5px 7px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; background: rgba(10,6,30,.4); font-size: 12px; line-height: 1.2; }
+.mri img { flex: 0 0 16px; width: 16px; height: 16px; image-rendering: pixelated; }
+.mri span, .mri b { flex-shrink: 0; white-space: nowrap; }
+.mri b { margin-left: auto; color: var(--y1); font-weight: normal; }
+.mres-empty { grid-column: 1 / -1; padding: 12px; border-radius: 8px; background: rgba(10,6,30,.25); text-align: center; }
+.mres .res-sub { max-width: 100%; text-wrap: balance; }
+.mres-note { font-size: 11px; color: #c8bff0; }
+.mres .mres-rel { flex-wrap: wrap; }
+@media (max-height: 420px) { .mres-body { gap: 6px; } .mri { font-size: 11px; padding: 4px 6px; } }
 .ex-panel { width: min(820px, 96vw); max-height: 94vh; display: flex; flex-direction: column; gap: 8px; padding: 10px 14px; }
 .ex-panel .kit-list { overflow: auto; }
 body.mining .tbtn .cd, body.mining .tbtn .ring { display: none !important; }

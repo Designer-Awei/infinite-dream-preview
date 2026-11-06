@@ -5,7 +5,7 @@ import { load, save, mineState, refineOre, refreshFreeShovels, claimFreeShovels 
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
-import { btn, toast, clear, uiRoot } from "./ui.js";
+import { btn, toast, clear, uiRoot, resultHero } from "./ui.js";
 import { app } from "./main.js";
 import { showMineGuide } from "./mineguide.js";
 import { todayQuests, questText, claimQuest, claimable } from "./minequests.js";
@@ -396,24 +396,27 @@ export function showMineResult(res, again, back) {
   const counts = {};
   for (const id of res.kept) counts[id] = (counts[id] || 0) + 1;
   const [title, sub] = HOW[res.how] || HOW.extract;
+  const items = Object.entries(counts).sort((a, b) => ORES[b[0]].v - ORES[a[0]].v);
   const md = el("div", "modal result mres");
   md.innerHTML = `<div class="panel res2 ${res.how === "dead" ? "lose" : "win"}">
     <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.characterXP?.gained ? ` · 经验 +${res.characterXP.gained}（Lv.${res.characterXP.after.level}）` : ""}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
-      <div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
-      <div class="res-chip o1"><span>${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
-      ${res.stars ? `<div class="res-chip o1"><span>${CUR.star()} 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}
-      ${res.record ? `<div class="res-chip o1"><span>最深纪录</span><b>${res.depth}m</b></div>` : ""}
-      ${res.questsDone && res.questsDone.length ? `<div class="mres-q o1">委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
+      ${resultHero(res.cid || m.sel, res.how !== "dead")}
+      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div></div>
+      <div class="res-extras"><div class="res-chip o1" data-cur="ore"><span class="res-label">${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
+      ${res.stars ? `<div class="res-chip o1" data-cur="star"><span class="res-label">${CUR.star()} 星砂</span><b>+${res.stars}</b></div>` : ""}</div></div>
+    <div class="res-r"><div class="mres-body" tabindex="0" aria-label="矿场结算明细">
+      <div class="res-stats"><div class="res-st"><span>${res.record ? "最深纪录" : "到达深度"}</span><b class="outline">${res.depth}m</b></div><div class="res-st"><span>挖掘方块</span><b class="outline">${res.dug}</b></div><div class="res-st"><span>击败怪物</span><b class="outline">${res.kills}</b></div><div class="res-st"><span>剩余铲子</span><b class="outline">${ms.shovels.cu + ms.shovels.ag + ms.shovels.au}</b></div></div>
+      <section class="mres-loot"><div class="mres-heading o1">带出材料 <span>${items.length} 种 / ${res.kept.length} 件</span></div>
+      <div class="mres-items${items.length === 1 ? " single" : ""}">${items.length ? items.map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="mres-empty muted">两手空空…</div>`}</div></section>
+      ${res.starsFound > res.stars ? `<div class="mres-note o1">丢失星砂 ${res.starsFound - res.stars}</div>` : ""}
+      ${res.questsDone?.length ? `<div class="mres-q o1">委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
       ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
-    <div class="res-r"><div class="mres-items">${Object.keys(counts).length ? Object.entries(counts).sort((a, b) => ORES[b[0]].v - ORES[a[0]].v).map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="muted">两手空空…</div>`}</div>
-      <div class="res-stats"><div class="res-st"><span>到达深度</span><b class="outline">${res.depth}m</b></div><div class="res-st"><span>挖掘方块</span><b class="outline">${res.dug}</b></div><div class="res-st"><span>击败怪物</span><b class="outline">${res.kills}</b></div><div class="res-st"><span>剩余铲子</span><b class="outline">${ms.shovels.cu + ms.shovels.ag + ms.shovels.au}</b></div></div>
       <div class="row acts"></div></div></div>`;
   const a = q(".acts", md);
   if (again) a.appendChild(btn("再次下潜", "", again));
   a.appendChild(btn(again ? "返回矿场" : "继续", "blue", back));
   uiRoot().appendChild(md);
   md.querySelectorAll("[data-cur]").forEach((b) => (b.onclick = () => showCurInfo(b.dataset.cur)));
-  void m;
 }
 
 // ------------------------------------------------------------------ relic pick (pick 1 of 3; the dive waits)

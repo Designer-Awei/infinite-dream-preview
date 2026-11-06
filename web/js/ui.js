@@ -429,6 +429,9 @@ export function showTutorial(go) {
   $(".row:last-child", md).appendChild(btn("出发！", "big", () => (md.remove(), go())));
   root.appendChild(md);
 }
+export function resultHero(cid, win = true) {
+  return cid && CHARS[cid] ? `<div class="res-hero${win ? "" : " lost"}"><i class="res-glow"></i><img src="assets/hero_${cid}.png" alt="${CHARS[cid].name}"></div>` : "";
+}
 export function showResult(r, onAgain, onLobby) {
   closeCards(); // a pending card choice must not cover the results
   // landscape two-column panel: everything (incl. the buttons) fits a 360px-tall phone screen without scrolling
@@ -442,7 +445,7 @@ export function showResult(r, onAgain, onLobby) {
     const parts = label.match(/^(⛏|📖|🔓)\s*(.*)$/u);
     return `<div class="res-chip o1"><span class="res-label">${parts ? `<i class="res-icon" aria-hidden="true">${parts[1]}</i>${parts[2]}` : label}</span><b>${value}</b></div>`;
   };
-  const hero = r.cid ? `<div class="res-hero${r.win ? "" : " lost"}"><i class="res-glow"></i><img src="assets/hero_${r.cid}.png" alt=""></div>` : "";
+  const hero = resultHero(r.cid, r.win);
   md.innerHTML = `<div class="panel res2 ${r.win ? "win" : "lose"}">
     <div class="res-l">
       <h2 class="outline">${r.title}</h2>

@@ -298,6 +298,7 @@ export const app = {
   endDive(d, res) {
     if (this.dive !== d || d.xpSettled) return;
     d.xpSettled = true;
+    res.cid = d.o.cid;
     res.characterXP = grantCharacterXP(d.o.cid, sessionExperience({ seconds: d.progressSession?.seconds, mine: true, extracted: res.how === "extract" && (res.dug > 0 || res.kills > 0) }));
     const m = load(), ms = mineState();
     m.tokens += res.value;
