@@ -13,7 +13,8 @@
 - README 说明最终布局；新增矿场结算布局检查，更新战斗布局断言和测试就绪等待，重新生成 docs/热更新清单。只修改预览版，正式版、CI/CD 配置、经济数值及结算奖励逻辑未同步或调整。
 - 对应 commit：[abcdf6c](https://github.com/Designer-Awei/infinite-dream-preview/commit/abcdf6c1a7ed53f5893e5136d404d7c2272ff407)。
 - 验证：Node 语法检查、tools/build.sh、git diff --cached --check 通过。test/mine-result-layout.mjs 覆盖 804×360、667×375、877×393、1280×720，空手/一种/两种/全部 11 种材料 × 安全撤离/裂隙关闭/电量耗尽/倒下共 64 组，名称及数量完整单行、无横向溢出、人物尺寸固定、按钮可见及回调、滚动可达末项均通过；实际下潜结算人物与返回矿场路径通过。test/result-layout.mjs 的四尺寸 0/1/2/8 项摘要、面板高度、人物尺寸、展开/收起/焦点和操作按钮、首领通关及裂隙计时结束真实路径通过，无页面错误。
-- 以 804×360、DPR 3 生成 2412×1080 截图并查看矿场两种/全部材料与战斗面板；截图示例的安全撤离数据校正后重跑矿场检查通过。test/update-integrity.py --git-ref : 完整核验 dist、docs、Git 暂存的 65 文件大小及哈希，通过；版本 20261106.1337-417b35。未在 PHW110 实机运行，线上发布结果将在 CI/CD 完成后补记。
+- 以 804×360、DPR 3 生成 2412×1080 截图并查看矿场两种/全部材料与战斗面板；截图示例的安全撤离数据校正后重跑矿场检查通过。test/update-integrity.py --git-ref : 完整核验 dist、docs、Git 暂存的 65 文件大小及哈希，通过；版本 20261106.1337-417b35。[Pages 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42227411988)、[Android APK 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42227413492)均成功；线上清单与本地一致，全部 65 项线上文件大小及 SHA-1 校验通过。未在 PHW110 实机运行。
+- 按用户节省 E 盘空间的偏好，检查结束后停止本次 8775 调试服务，清除临时安装的 node_modules、npm 缓存、两个专用浏览器配置、dist 及测试中间截图。四张供用户查看的效果图和清理清单保留于 E:/Rouge-Game/context/settlement-2026-11-06；源码、素材、docs 发布产物和系统工具保留。
 
 ## 更新记录
 
