@@ -1923,10 +1923,10 @@ button.name-pill:active { transform: translateY(1px); }
 
 /* Cubic glyphs sit above the line-box center; 2px top padding centers the visible ink. */
 .lb .li-xp-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-top: 2px; color: #fff; font-size: 10px; line-height: 1; font-weight: normal; white-space: nowrap; pointer-events: none; }
-/* Short landscape cards: reclaim spacing added around the XP/chip rows so the ult line fits. */
+/* Short landscape cards: give the three header rows room while reserving a full ult line. */
 @media (max-height: 420px) {
-  .lb .lb-info { gap: 3px; }
-  .lb .li-head { row-gap: 2px; }
+  .lb .lb-info { gap: 3px; padding-bottom: 4px; }
+  .lb .li-head { row-gap: 4px; }
   .lb .li-chips { margin-top: 0; }
   .lb .li-skills { gap: 3px; }
 }
