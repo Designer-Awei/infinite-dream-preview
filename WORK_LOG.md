@@ -14,7 +14,7 @@
 - 修复：构建在生成清单前将发布文本转为 LF（不改变图片/字体二进制），docs 明确使用 LF Git 规则；重新生成正确清单。无需修改客户端或原生版本号，保留哈希验证与原子切换，不需要卸载或清除存档。
 - 新增完整性检查，可验证构建目录、Git 暂存/提交字节和全部线上资源；新增旧版更新器回归测试。README 补充发布核验方法。现有 CI/CD 配置和正式版未改动。
 - 对应 commit：[4871509](https://github.com/Designer-Awei/infinite-dream-preview/commit/4871509c38d839caffe03ef0554a157e2ea8b772)。
-- 验证：tools/build.sh、git diff --cached --check 通过；test/update-integrity.py --git-ref : 通过，验证 dist、docs 和 Git 暂存中全部 65 个文件的大小及 SHA-1，CRLF 文本样例归一化且二进制原样保留。test/hot-update-publish.mjs 使用修复前版本的实际更新器与 Git 文件重现同名失败，再以修正清单成功写入并校验全部 65 个文件、切换更新目录，无页面错误。尚未在实体手机实测；线上全量核验在推送部署后执行。
+- 验证：tools/build.sh、git diff --cached --check 通过；test/update-integrity.py --git-ref : 通过，验证 dist、docs 和 Git 暂存中全部 65 个文件的大小及 SHA-1，CRLF 文本样例归一化且二进制原样保留。test/hot-update-publish.mjs 使用修复前版本的实际更新器与 Git 文件重现同名失败，再以修正清单成功写入并校验全部 65 个文件、切换更新目录，无页面错误。部署后运行 --git-ref HEAD --url 全量检查通过，线上版本 20261106.0635-4a9048 的 65 个文件均匹配清单（首次请求遇到临时 HTTP 503，重新完整检查通过）。Pages 发布成功；尚未在实体手机实测。
 
 ### 2026-11-06 · 经验条黑色胶囊边框与数字居中
 
