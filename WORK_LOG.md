@@ -15,7 +15,7 @@
 - README 补充上述规则，更新字体及 docs/热更新清单；CI/CD 配置不变，正式版未同步。
 - 对应 commit：[14a8d18](https://github.com/Designer-Awei/infinite-dream-preview/commit/14a8d1830587be639ee68470c1786bb53edd2be2)。
 - 验证：Node 语法检查、git diff --check、tools/build.sh 通过；以 Node VM 执行真实 codex 模块函数检查地图限定/等概率分支、未拥有与本局防重复、集齐后随机重复、每件重复转 40 晶石、次数从 9999 到 10000、同件不叠加及不同件同类属性相加，全部通过。按实际 WOFF 字体字宽和现有 CSS 计算 667×375/804×360/877×393/1280×720 四尺寸下九件藏品、已拥有/未拥有的完整文本，最长 379.17px，小于最窄可用 464.98px；固定两行结构检查通过。
-- dist/docs/Git 暂存的全部 65 个文件大小与哈希核验通过，版本 20261106.0743-f0d015。浏览器启动验证的执行授权未通过，本次未进行 DOM/截图或实体手机视觉验证，字体测量不等同浏览器实测；未声称已完成截图验证。
+- dist/docs/Git 暂存的全部 65 个文件大小与哈希核验通过，版本 20261106.0743-f0d015；部署后 test/update-integrity.py --git-ref HEAD --url 全量核验线上 65 文件通过。[Pages 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42184776118)、[Android APK 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42184776846)均成功。浏览器启动验证的执行授权未通过，本次未进行 DOM/截图或实体手机视觉验证，字体测量不等同浏览器实测；未声称已完成截图验证。
 
 ### 2026-11-06 · 实装等级奖励，角色养成分列说明
 
