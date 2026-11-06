@@ -1,6 +1,7 @@
 // Meta progression kept in the player's own browser (no account needed).
 import { START_CHARS, START_TOKENS, UNLOCKS, GACHA, CHAR_ORDER, LOADOUT_SLOTS } from "./data.js";
 
+import { progressFromXP, MAX_CHARACTER_XP } from "./progression.js";
 import { collectionBonuses } from "./collection.js";
 
 const KEY = "ai-girls-dungeon-v1";
@@ -52,6 +53,15 @@ export function save() {
   try {
     localStorage.setItem(KEY, JSON.stringify(mem));
   } catch {}
+}
+export const characterProgress = cid => progressFromXP(load().characterXP?.[cid]);
+export function grantCharacterXP(cid, amount) {
+  const before = characterProgress(cid);
+  if (!CHAR_ORDER.includes(cid) || !Number.isFinite(amount) || amount <= 0) return { gained: 0, before, after: before };
+  const m = load(), total = Math.min(MAX_CHARACTER_XP, before.total + Math.floor(amount));
+  m.characterXP = m.characterXP && typeof m.characterXP === "object" && !Array.isArray(m.characterXP) ? m.characterXP : {};
+  m.characterXP[cid] = total; save();
+  return { gained: total - before.total, before, after: progressFromXP(total) };
 }
 export const talent = (id) => load().talents[id] || 0;
 

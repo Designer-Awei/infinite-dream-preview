@@ -6,7 +6,8 @@ import { Renderer } from "./render.js";
 import { Game } from "./game.js";
 import { input, initInput, consume } from "./input.js";
 import { initAudio, playMusic, sfx, setSound, setMusic } from "./audio.js";
-import { load, save, checkUnlocks, makeKit, mineState } from "./save.js";
+import { trackExperienceTime, sessionExperience } from "./progression.js";
+import { load, save, checkUnlocks, makeKit, mineState, grantCharacterXP } from "./save.js";
 import { Dive } from "./mine.js";
 import { progressQuests, questText } from "./minequests.js";
 import { recordCodex, recordCurios, CURIOS } from "./codex.js";
@@ -127,6 +128,7 @@ export const app = {
     this.paused = false;
     this.cardOpen = false;
     this.ended = false;
+    this.progressSession = { seconds: 0, idle: 0 };
     g.onUi = (k, pid) => this.onGameUi(k, pid);
     if (cfg.mode !== "client") g.startRun();
     UI.showHud(g, this.me);
@@ -189,7 +191,9 @@ export const app = {
     if (drops.length) save();
     sfx(win ? "win" : "lose");
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
+    const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
+    if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {
       const nx = MAP_ORDER.find((id) => MAPS[id].need === o.map);
@@ -280,6 +284,7 @@ export const app = {
     this.dive = null;
     MUI.hideMineHud();
     this.riftLoot = res;
+    if (this.progressSession) this.progressSession.seconds += d.progressSession?.seconds || 0;
     if (!g) return MUI.showMineHub();
     if (g.endless) {
       // back to the corridor: the haul also feeds this run (coins and a power cube)
@@ -291,7 +296,9 @@ export const app = {
     g.victory();
   },
   endDive(d, res) {
-    if (this.dive !== d) return;
+    if (this.dive !== d || d.xpSettled) return;
+    d.xpSettled = true;
+    res.characterXP = grantCharacterXP(d.o.cid, sessionExperience({ seconds: d.progressSession?.seconds, mine: true, extracted: res.how === "extract" && (res.dug > 0 || res.kills > 0) }));
     const m = load(), ms = mineState();
     m.tokens += res.value;
     ms.mats += res.mats;
@@ -391,9 +398,10 @@ function fade() {
 let last = performance.now();
 function frame(now) {
   requestAnimationFrame(frame);
-  let dt = Math.min(0.05, (now - last) / 1000);
+  const wallDt = Math.min(.25, Math.max(0, (now - last) / 1000));
+  let dt = Math.min(0.05, wallDt);
   last = now;
-  if (app.dive) return diveFrame(dt);
+  if (app.dive) return diveFrame(dt, wallDt);
   const g = app.game;
   if (!g) {
     renderer.g.setTransform(RS, 0, 0, RS, 0, 0);
@@ -415,6 +423,8 @@ function frame(now) {
     if (consume("ult")) (inp.ult = true), (inp.castAim = { ...inp.castAim, ult: input.castAim.ult });
     if (consume("dash")) inp.dash = true;
   }
+  const active = me && (Math.abs(me.input.mx) > .1 || Math.abs(me.input.my) > .1 || me.input.atk || me.input.skill || me.input.ult || me.input.dash || me.castT > 0);
+  trackExperienceTime(app.progressSession, wallDt, active, !document.hidden && !frozen && !app.cardOpen && !app.ended && !g.pvp && !me?.dead && !me?.downed && ["fight", "clear", "portal"].includes(g.phase) && g.room?.kind !== "shop");
   if (g.hitStop > 0) {
     g.hitStop -= dt;
     dt = 0.0001;
@@ -450,7 +460,7 @@ function frame(now) {
   }
 }
 
-function diveFrame(dt) {
+function diveFrame(dt, wallDt = dt) {
   const d = app.dive;
   if (consume("pause")) app.pauseMd ? null : app.pause();
   const bomb = consume("skill");
@@ -476,6 +486,7 @@ function diveFrame(dt) {
     });
   }
   if (!app.paused) {
+    trackExperienceTime(d.progressSession, wallDt, Math.abs(input.mx) > .1 || Math.abs(input.my) > .1 || input.atk || bomb || beacon, !document.hidden && !d.ended && !d.choice && !d.shop);
     d.update(dt, { mx: input.mx, my: input.my, atk: input.atk, bomb, beacon });
     fx.update(dt);
   }

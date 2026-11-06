@@ -1065,6 +1065,8 @@ export class Game {
     if (this.phase !== "fight") return;
     this.phase = "clear";
     this.sound("clear");
+    if (this.room.kind === "boss") this.runStats.xpBosses = (this.runStats.xpBosses || 0) + 1;
+    else if (["combat", "elite"].includes(this.room.kind)) this.runStats.xpRooms = (this.runStats.xpRooms || 0) + 1;
     this.runStats.rooms = Math.max(this.runStats.rooms, this.roomIdx + 1);
     // a boss always drops a 梦境矿场 shovel: it lands with a light beam; walk over it to pick it up
     // (it is counted at the settlement either way)

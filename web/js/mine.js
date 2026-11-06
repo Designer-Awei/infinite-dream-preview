@@ -504,6 +504,7 @@ export class Dive {
   /** o: { cid, shovel: "cu"|"ag"|"au", up: upgrades, fx, seed, talents, lite: {rows, time} } */
   constructor(o) {
     this.o = o;
+    this.progressSession = { seconds: 0, idle: 0 };
     this.fx = o.fx;
     this.seed = o.seed ?? (Math.random() * 1e9) | 0;
     this.r = rng(this.seed);

@@ -398,7 +398,7 @@ export function showMineResult(res, again, back) {
   const [title, sub] = HOW[res.how] || HOW.extract;
   const md = el("div", "modal result mres");
   md.innerHTML = `<div class="panel res2 ${res.how === "dead" ? "lose" : "win"}">
-    <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
+    <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.characterXP?.gained ? ` · 经验 +${res.characterXP.gained}（Lv.${res.characterXP.after.level}）` : ""}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
       <div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div>
       <div class="res-chip o1"><span>${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1"><span>${CUR.star()} 星砂</span><b>+${res.stars}${res.starsFound > res.stars ? `（丢失 ${res.starsFound - res.stars}）` : ""}</b></div>` : ""}

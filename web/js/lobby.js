@@ -1,6 +1,7 @@
 // Lobby (Brawl Stars-style home: hero on a stage in the middle, info on the left, play button bottom-right)
 // and the capsule gacha with a staged pull sequence (crank → capsule → open → card flips → summary).
 import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS, CORE_FX, CORE_DETAIL } from "./data.js";
+import { characterProgress } from "./save.js";
 import { claimable } from "./minequests.js";
 import { load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, exportSave, parseSave, importSave, mineState } from "./save.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
@@ -349,13 +350,14 @@ function renderHero(s, id, swap) {
     });
     sfx("card");
   } else apply();
+  const xp = characterProgress(id);
   const dps = c.atk.dmg * c.atk.rate, core = !!(load().cores || {})[id];
   const info = q(".lb-info", s);
   info.classList.remove("refresh");
   void info.offsetWidth;
   info.classList.add("refresh");
   info.innerHTML = `
-    <div class="li-head"><div class="li-nrow"><div class="li-name outline${core ? " core-name" : ""}"${core ? ` title="梦核：${CORE_FX[id]}"` : ""}>${c.name}</div><button class="li-kit" title="天赋装配">${loadoutOf(id).map((t) => `<i class="ks${t ? " on" : ""}">${t ? `<img src="${iconURL(t, 1)}" alt="">` : "+"}</i>`).join("")}<span class="o1">天赋</span></button></div><div class="li-title o1"><span>「${c.title}」</span></div>
+    <div class="li-head"><div class="li-nrow"><div class="li-name outline${core ? " core-name" : ""}"${core ? ` title="梦核：${CORE_FX[id]}"` : ""}>${c.name}</div><span class="li-level o1">Lv.${xp.level}</span><button class="li-kit" title="天赋装配">${loadoutOf(id).map((t) => `<i class="ks${t ? " on" : ""}">${t ? `<img src="${iconURL(t, 1)}" alt="">` : "+"}</i>`).join("")}<span class="o1">天赋</span></button></div><div class="li-title o1"><span>「${c.title}」</span><div class="li-xp" role="progressbar" aria-label="角色经验" aria-valuemin="0" aria-valuemax="${xp.maxed ? 1 : xp.need}" aria-valuenow="${xp.maxed ? 1 : xp.current}" title="${xp.maxed ? "已满级" : `${xp.current} / ${xp.need}`}" ><i style="width:${xp.fraction * 100}%"></i><span class="li-xp-text o1" aria-hidden="true">${xp.maxed ? "已满级" : `${xp.current}/${xp.need}`}</span></div></div>
       <div class="li-chips o1"><span class="chip el-chip" style="background:${e.color}"><img src="${iconURL("elem_" + c.elem, 1)}" alt="">${e.name}元素</span><span class="chip role">${c.role}</span><button class="li-more">详情</button></div></div>
     <div class="li-bars o1">
       ${bar("生命", c.hp, 7, "linear-gradient(90deg,#ff8a9a,#ff3a5a)")}
@@ -378,10 +380,11 @@ function renderHero(s, id, swap) {
 // ------------------------------------------------------------------ character detail (everything that doesn't fit the card)
 export function showCharDetail(id) {
   const m = load(), c = CHARS[id], e = ELEM[c.elem], open = m.chars.includes(id), core = !!(m.cores || {})[id];
+  const xp = characterProgress(id);
   const reacts = Object.entries(REACTIONS).filter(([k]) => k === "bubble" || k.split("+").includes(c.elem));
   const md = el("div", "modal cd-modal");
   md.innerHTML = `<div class="panel cd-panel">
-    <div class="kit-head"><img class="kit-face" src="assets/head_${id}.png" alt=""><div><h2 class="outline${core ? " core-name" : ""}">${c.name}</h2><div class="kit-sub o1">「${c.title}」 · ${e.name}元素 · ${c.role}</div></div><button class="btn gray small x-btn">关闭</button></div>
+    <div class="kit-head"><img class="kit-face" src="assets/head_${id}.png" alt=""><div><h2 class="outline${core ? " core-name" : ""}">${c.name}</h2><div class="kit-sub o1">「${c.title}」 · ${e.name}元素 · ${c.role}</div><div class="char-xp-detail o1">Lv.${xp.level} · ${xp.maxed ? "已满级" : `经验 ${xp.current} / ${xp.need}`}</div></div><button class="btn gray small x-btn">关闭</button></div>
     <div class="cd-body">
       <div class="cd-sec">${[["普攻 J", "atk", c.atk.name, c.passive], ["小技能 K", "skill", c.skill.name, c.skill.desc + `（冷却 ${c.skill.cd} 秒）`], ["大招 L", "ult", c.ult.name, c.ult.desc]]
         .map(([k, slot, n, d]) => `<div class="cd-sk"><img src="${iconURL(skillIcon(id, slot), 2)}" alt=""><div><b class="o1">${n} <small>${k}</small></b><p>${d}</p></div></div>`).join("")}
