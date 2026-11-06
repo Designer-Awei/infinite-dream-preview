@@ -649,15 +649,19 @@ body.touchmode .c-key { display: none; }
 .res-gain { display: flex; align-items: center; gap: 8px; }
 .res-gain .gem { width: 28px; height: 28px; }
 .res-gain .big { font-size: 36px; color: var(--y1); line-height: 1; }
-.res-chip { display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%; max-width: 260px; padding: 4px 10px; border-radius: 10px; background: rgba(255,228,106,.14); border: 2px solid rgba(255,228,106,.5); font-size: 13px; animation: popIn .4s .5s cubic-bezier(.2,1.4,.4,1) backwards; }
+.res-chip, .res-more { display: flex; align-items: center; gap: 8px; justify-content: space-between; width: 100%; max-width: 260px; padding: 4px 10px; border-radius: 10px; background: rgba(255,228,106,.14); border: 2px solid rgba(255,228,106,.5); font-size: 13px; animation: popIn .4s .5s cubic-bezier(.2,1.4,.4,1) backwards; }
 .res-chip b { color: var(--y1); font-weight: normal; min-width: 0; overflow-wrap: anywhere; text-align: right; }
 .res-label { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .res-icon { display: inline-flex; align-items: center; justify-content: center; width: 1.2em; height: 1.2em; font-style: normal; line-height: 1; }
 .res-rewards { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
-.res-more { font: inherit; font-size: 11px; color: var(--y1); border: 1px solid rgba(255,228,106,.5); border-radius: 8px; background: rgba(10,6,30,.38); padding: 4px; cursor: pointer; }
+.res-more { font-family: inherit; color: var(--y1); justify-content: center; white-space: nowrap; cursor: pointer; }
 .res-more:focus-visible { outline: 2px solid var(--y1); }
-.res-extras { width: 100%; display: grid; justify-items: center; gap: 3px; }
-.res-extras .res-chip { font-size: 11px; line-height: 1.2; padding: 3px 7px; animation: none; }
+.res-extras { width: 100%; max-width: 260px; display: grid; gap: 3px 6px; }
+.res-extras.has-more { grid-template-columns: minmax(0, 1fr) auto; }
+.res-extras.has-more .res-chip:first-child { grid-column: 1; grid-row: 1; }
+.res-extras.has-more .res-chip:nth-child(2) { grid-column: 1 / -1; grid-row: 2; }
+.res-extras .res-more { grid-column: 2; grid-row: 1; width: auto; }
+.res-extras .res-chip, .res-extras .res-more { font-size: 11px; line-height: 1.2; padding: 3px 7px; animation: none; }
 .res-extras .res-chip b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .res-details { position: absolute; inset: 0; z-index: 2; display: flex; align-items: flex-end; justify-content: center; background: rgba(8,4,20,.7); border-radius: inherit; }
 .res-details .res-sheet { display: flex; flex-direction: column; width: min(560px, 94vw); max-height: 85%; overflow: hidden; border-radius: 18px 18px 0 0; animation: resSlide .2s ease-out; }

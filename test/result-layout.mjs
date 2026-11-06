@@ -23,6 +23,9 @@ for(const [width,height] of [[804,360],[667,375],[877,393],[1280,720]]) {
  return {buttons,hero:hero.height,chips:document.querySelectorAll('.res-extras .res-chip').length,leftOverflow:left.scrollHeight-left.clientHeight,panelBottom:panel.bottom}; });
  console.log(width,height,count,JSON.stringify(result)); assert(result.buttons.every(Boolean)); assert(result.panelBottom<=height); assert(result.hero>=(height<=380?100:140)); assert(result.leftOverflow<=1); assert.equal(result.chips,Math.min(2,count));
  if(count===8){
+ const alignment=await page.evaluate(()=>{const a=document.querySelector('.res-extras .res-chip').getBoundingClientRect(),b=document.querySelector('.res-more').getBoundingClientRect(),c=document.querySelectorAll('.res-extras .res-chip')[1].getBoundingClientRect();return {top:Math.abs(a.top-b.top),bottom:Math.abs(a.bottom-b.bottom),gap:b.left-a.right,right:Math.abs(b.right-c.right),text:document.querySelector('.res-more').textContent};});
+ assert(alignment.top<1 && alignment.bottom<1 && alignment.right<1 && alignment.gap>0); assert(!alignment.text.includes('↑'));
+
  await page.screenshot({path:path.join(out,`${width}-${height}-collapsed.png`)});
  await page.locator('.res-more').click(); await page.waitForTimeout(300);
  assert.equal(await page.locator('.res-detail-list .res-chip').count(),8);

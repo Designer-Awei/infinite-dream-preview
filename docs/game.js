@@ -216,9 +216,8 @@ var Mg=Object.defineProperty;var X=(a,t)=>()=>(a&&(t=a(a=0)),t);var gt=(a,t)=>{f
       <h2 class="outline">${a.title}</h2>
       <div class="res-sub o1">${a.sub||""}</div>
       ${i}
-      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${a.tokens}</span><div class="gem"></div></div>
-      ${o.length>2?`<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">\u5176\u4F59 ${o.length-2} \u9879 \u2191</button>`:""}</div>
-      <div class="res-extras">${o.slice(0,2).map(r).join("")}</div>
+      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${a.tokens}</span><div class="gem"></div></div></div>
+      <div class="res-extras${o.length>2?" has-more":""}">${o.slice(0,2).map(r).join("")}${o.length>2?`<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">\u5176\u4F59 ${o.length-2} \u9879</button>`:""}</div>
     </div>
     <div class="res-r">
       <div class="res-stats">${a.rows.map(([l,d],h)=>`<div class="res-st" style="animation-delay:${.08+h*.05}s"><span>${l}</span><b class="outline">${d}</b></div>`).join("")}</div>

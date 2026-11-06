@@ -441,9 +441,8 @@ export function showResult(r, onAgain, onLobby) {
       <h2 class="outline">${r.title}</h2>
       <div class="res-sub o1">${r.sub || ""}</div>
       ${hero}
-      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div>
-      ${extras.length > 2 ? `<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">其余 ${extras.length - 2} 项 ↑</button>` : ""}</div>
-      <div class="res-extras">${extras.slice(0, 2).map(chip).join("")}</div>
+      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div></div>
+      <div class="res-extras${extras.length > 2 ? " has-more" : ""}">${extras.slice(0, 2).map(chip).join("")}${extras.length > 2 ? `<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">其余 ${extras.length - 2} 项</button>` : ""}</div>
     </div>
     <div class="res-r">
       <div class="res-stats">${r.rows.map(([a, b], i) => `<div class="res-st" style="animation-delay:${0.08 + i * 0.05}s"><span>${a}</span><b class="outline">${b}</b></div>`).join("")}</div>
