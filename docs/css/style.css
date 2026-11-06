@@ -1334,6 +1334,10 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .cur-p { width: min(420px, 90vw); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px; }
 .cur-h { display: flex; align-items: center; gap: 10px; } .cur-h h2 { margin: 0; }
 .cur-p p { margin: 0; font-size: 13px; line-height: 1.6; color: #f0e8ff; }
+.cur-trade { border-top: 1px solid rgba(255,255,255,.2); margin-top: 5px; padding-top: 8px; display: grid; gap: 8px; }
+.cur-trade p { display: flex; align-items: center; gap: 4px; flex-wrap: wrap; }
+.cur-trade .cur-balance { color: #c8c0e8; font-size: 12px; }
+.cur-trade .cur-refine { width: 100%; }
 /* mine guide (❓) */
 .mg-md { display: grid; place-items: center; }
 .mg-p { width: min(720px, 96vw); max-height: 96vh; max-height: 96dvh; display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; }

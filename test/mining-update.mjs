@@ -35,10 +35,20 @@ const report=await p.evaluate(async()=>{
 });console.log('economy/combat',report);
 await p.evaluate(async()=>{const S=await import('./js/save.js'),{Dive}=await import('./js/mine.js'),M=await import('./js/mineui.js');const d=new Dive({cid:'gpt',shovel:'au',up:S.mineState().up,fx:null,talents:{}});d.addLoot('coinbag',100,100);M.showBag(d);});
 assert((await p.locator('.bg-it').innerText()).includes('星砂金矿'));assert((await p.locator('.bg-v').innerText()).includes('4'));await p.waitForTimeout(1900);await p.screenshot({path:path.join(out,'bag-gold.png')});await p.locator('.bg-close button').click();
-for(const [width,height] of [[804,360],[667,375],[877,393],[1280,720]]){
+for(const [width,height] of [[804,360],[667,375],[877,393],[1280,720],[2412,1080]]){
  await p.setViewportSize({width,height});await p.evaluate(async()=>{(await import('./js/mineui.js')).showMineHub()});await p.getByRole('button',{name:'梦境工坊',exact:true}).click();
- await p.locator('.refine-b[data-n="10"]').click();await p.waitForTimeout(1900);await p.screenshot({path:path.join(out,`${width}-workshop.png`)});
- const safe=await p.locator('.refine-b').evaluateAll(ns=>ns.every(n=>{const r=n.getBoundingClientRect();return r.right<=innerWidth && r.bottom<=innerHeight}));assert(safe);
+ assert.equal(await p.locator('.mh-r .refine-b').count(),0);assert.equal(await p.locator('.mh-r .mup').count(),5);
+ await p.evaluate(async()=>{const S=await import('./js/save.js');S.mineState().mats=400;S.mineState().stars=150;S.save();document.querySelector(".mine-hub").dispatchEvent(new Event("currencychange"));});
+ await p.locator('.mine-hub [data-cur="star"]').click();assert.equal(await p.locator('.cur-p button').count(),1);
+ const exchange=p.getByRole('button',{name:'兑换 10 星砂',exact:true});const before=await p.evaluate(async()=>{const m=(await import('./js/save.js')).mineState();return {m:m.mats,s:m.stars}});
+ await exchange.click();assert.equal(await p.locator('.cur-md').count(),1);
+ const after=await p.evaluate(async()=>{const m=(await import('./js/save.js')).mineState();return {m:m.mats,s:m.stars}});assert.equal(after.m,before.m-200);assert.equal(after.s,before.s+10);assert(!(await p.locator(".ws-b[data-k=card]").evaluate(n=>n.classList.contains("gray"))));
+ assert.equal(await p.locator('.mine-hub .mats').innerText(),String(after.m));assert.equal(await p.locator('.mine-hub .stars').innerText(),String(after.s));
+ await p.screenshot({path:path.join(out,`${width}-star-exchange.png`)});
+ const safe=await exchange.evaluate(n=>{const r=n.getBoundingClientRect();return r.right<=innerWidth && r.bottom<=innerHeight && r.left>=0 && r.top>=0});assert(safe);
+ await exchange.click();assert(await exchange.isDisabled());await exchange.evaluate(n=>n.click());assert.equal((await p.evaluate(async()=>(await import('./js/save.js')).mineState().mats)),0);
+ await p.locator('.cur-md').click({position:{x:2,y:2}});assert.equal(await p.locator('.cur-md').count(),0);
+ await p.screenshot({path:path.join(out,`${width}-workshop.png`)});
  await p.evaluate(async()=>{(await import('./js/ui.js')).clear();(await import('./js/codex.js')).showCodex()});await p.getByRole('button',{name:'梦境藏品',exact:true}).click();await p.waitForTimeout(300);
  assert.equal(await p.locator('.cdx-grid.curio .cdx-c').count(),9);await p.screenshot({path:path.join(out,`${width}-curios.png`)});
  const fit=await p.locator('.cdx-grid.curio .cdx-c b').evaluateAll(ns=>ns.every(n=>n.scrollWidth<=n.clientWidth+1));assert(fit,'name truncation');
@@ -49,6 +59,10 @@ const hud=await p.evaluate(async()=>{const UI=await import('./js/ui.js');const m
 // Settlement pays all the shovels once, not only the last boss.
 const settlement=await p.evaluate(async()=>{const S=await import('./js/save.js');const ms=S.mineState(),n=ms.shovels.cu;__app.game.runStats.shovels=['cu','cu','cu'];__app.game.runStats.boss=true;__app.endRun(false);__app.endRun(false);return ms.shovels.cu-n});assert.equal(settlement,3);
 assert.deepEqual(errors,[]);console.log('PASS',JSON.stringify({hud,settlement,errors}));
+const phone=await b.browser().newContext({viewport:{width:804,height:360},deviceScaleFactor:3,hasTouch:true,isMobile:true});
+const phonePage=await phone.newPage();await phonePage.addInitScript(()=>localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,chars:['deepseek','gpt'],seenUnlock:['deepseek','gpt'],sel:'gpt',mine:{mats:850,stars:116}})));
+await phonePage.goto('http://127.0.0.1:8775');await phonePage.waitForTimeout(1800);await phonePage.evaluate(async()=>{(await import('./js/mineui.js')).showMineHub()});await phonePage.getByRole('button',{name:'梦境工坊',exact:true}).click();await phonePage.locator('.mine-hub [data-cur="star"]').click();await phonePage.waitForTimeout(300);
+const phoneShot=path.join(out,'2412x1080-star-exchange.png');await phonePage.screenshot({path:phoneShot});const png=await readFile(phoneShot);assert.equal(png.readUInt32BE(16),2412);assert.equal(png.readUInt32BE(20),1080);await phone.close();
 const manifest=JSON.parse(await readFile('web/assets/curios/manifest.json','utf8'));assert.equal(Object.keys(manifest).length,9);assert.equal(new Set(Object.values(manifest).map(m=>m.sha256)).size,9);
 }finally{await b.close()}
 

@@ -21,14 +21,36 @@ export const CUR = {
 };
 const CUR_INFO = {
   gem: ["晶石", "通用货币。闯关结算和矿场带出的矿物都会换成晶石；用于扭蛋和矿场装备升级。"],
-  ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备；也可在梦境工坊用 20 矿石兑换 1 星砂。"],
+  ore: ["矿石", "矿场专用材料。矿物带出时附带；和晶石一起用来升级矿场装备；也可点击星砂，在介绍浮窗用 200 矿石兑换 10 星砂。"],
   star: ["星砂", "稀有货币。来自宝箱、深层矿物、抵达新深度和每日委托；在梦境工坊升级最终减伤、兑换 SSR 兑换卡和梦核。"],
 };
 export function showCurInfo(k) {
   const [name, text] = CUR_INFO[k];
   const md = el("div", "modal cur-md");
   md.innerHTML = `<div class="panel cur-p"><div class="cur-h">${CUR[k]().replace('class="cur', 'class="cur big')}<h2 class="outline">${name}</h2></div><p class="o1">${text}</p></div>`;
-  md.onclick = () => md.remove();
+  if (k === "star") {
+    const trade = el("div", "cur-trade");
+    trade.innerHTML = `<p class="o1">每次消耗 ${CUR.ore()}200，获得 ${CUR.star()}10</p><p class="cur-balance o1"></p>`;
+    const exchange = btn("兑换 10 星砂", "cur-refine", () => {
+      if (!refineOre(10)) return;
+      refresh();
+      const ms = mineState();
+      uiRoot().querySelectorAll(".mine-hub .mats").forEach(n => n.textContent = ms.mats);
+      uiRoot().querySelectorAll(".mine-hub .stars").forEach(n => n.textContent = ms.stars);
+      uiRoot().querySelector(".mine-hub")?.dispatchEvent(new Event("currencychange"));
+      sfx("card");
+    });
+    const refresh = () => {
+      const ms = mineState();
+      q(".cur-balance", trade).innerHTML = `持有 ${CUR.ore()}${ms.mats} · ${CUR.star()}${ms.stars}`;
+      exchange.disabled = ms.mats < 200;
+      exchange.classList.toggle("gray", exchange.disabled);
+    };
+    trade.appendChild(exchange);
+    q(".cur-p", md).appendChild(trade);
+    refresh();
+  }
+  md.onclick = (e) => { if (e.target === md || k !== "star") md.remove(); };
   uiRoot().appendChild(md);
   sfx("click");
 }
@@ -180,15 +202,7 @@ export function showMineHub() {
       return `<div class="mup ws ws-${k}"><img class="ws-i${k === "core" ? " core" : ""}" src="${ico}" alt=""><div class="mu-t"><b class="o1">${w.name} <small>${owned}</small></b><span>${k === "core" ? CORE_FX[cid] : w.desc}</span></div>
         <button class="btn small ${can ? "" : "gray"} ws-b" data-k="${k}"><span>${label}</span>${price ? `<small>${price}</small>` : ""}</button></div>`;
     }).join("");
-    ups.innerHTML = rows + `<div class="mup ws"><img class="ws-i" src="${oreIcon("star")}" alt=""><div class="mu-t"><b class="o1">矿石提炼</b><span>20 矿石换 1 星砂，可重复兑换</span></div><button class="btn small refine-b" data-n="1">兑换 1</button><button class="btn small refine-b" data-n="10">兑换 10</button></div>`;
-    ups.querySelectorAll(".refine-b").forEach(b => {
-      b.classList.toggle("gray", ms.mats < Number(b.dataset.n) * 20);
-      b.onclick = () => {
-        const n = Number(b.dataset.n);
-        if (!refineOre(n)) return toast(`需要 ${20 * n} 矿石`);
-        sfx("card"); toast(`星砂 +${n}`); pills(); drawShop();
-      };
-    });
+    ups.innerHTML = rows;
     ups.querySelectorAll(".ws-b").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, w = WORKSHOP[k];
       if (w.trade) {
@@ -250,6 +264,7 @@ export function showMineHub() {
   };
   qdot();
   const draw = () => (ups.classList.toggle("fill", tab === "shop"), tab === "ups" ? drawUps() : tab === "quest" ? drawQuests() : drawShop());
+  s.addEventListener("currencychange", () => { pills(); draw(); });
   s.querySelectorAll(".mh-tab").forEach((b) => (b.onclick = () => {
     tab = b.dataset.t;
     s.querySelectorAll(".mh-tab").forEach((x) => x.classList.toggle("on", x === b));
