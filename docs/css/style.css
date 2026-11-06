@@ -1874,11 +1874,12 @@ button.name-pill:active { transform: translateY(1px); }
 .lb .li-level { grid-column: 2; grid-row: 1; align-self: center; color: #fff; font-family: inherit; font-size: clamp(12px, 1.8vw, 20px); font-weight: 700; line-height: 1.1; white-space: nowrap; background: none; border: 0; padding: 0; }
 .lb .li-nrow .li-kit { grid-column: 3; grid-row: 1; justify-self: end; box-shadow: none; }
 .lb .li-title > span { grid-column: 1; grid-row: 2; white-space: nowrap; font-size: clamp(11px, 1.3vw, 16px); }
-.lb .li-xp { grid-column: 2 / 4; grid-row: 2; align-self: center; position: relative; height: 14px; width: 100%; border: 1px solid #fff; border-radius: 4px; background: #241a40; box-shadow: none; overflow: hidden; }
-.lb .li-xp i { display: block; height: 100%; background: linear-gradient(90deg, #31bc70, #70d48a); border-radius: 2px; transition: width .25s ease-out; }
+.lb .li-xp { grid-column: 2 / 4; grid-row: 2; align-self: center; position: relative; height: 14px; width: 100%; border: 1px solid var(--ink); border-radius: 999px; background: #241a40; box-shadow: none; overflow: hidden; }
+.lb .li-xp i { display: block; height: 100%; background: linear-gradient(90deg, #31bc70, #70d48a); border-radius: 999px; transition: width .25s ease-out; }
 .lb .li-chips { grid-column: 1 / -1; grid-row: 3; }
 .char-xp-detail { color: #fff; font-size: 12px; }
 @media (max-width: 750px) { .lb .li-head { column-gap: 4px; } .lb .li-nrow .li-kit { padding-left: 3px; padding-right: 4px; gap: 2px; } .lb .li-nrow .li-kit .ks { width: 18px; height: 18px; } .lb .li-nrow .li-kit .ks img { width: 14px; height: 14px; } }
 @media (prefers-reduced-motion: reduce) { .lb .li-xp i { transition: none; } }
 
-.lb .li-xp-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; color: #fff; font-size: 10px; line-height: 1; font-weight: normal; white-space: nowrap; pointer-events: none; }
+/* Cubic glyphs sit above the line-box center; 2px top padding centers the visible ink. */
+.lb .li-xp-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding-top: 2px; color: #fff; font-size: 10px; line-height: 1; font-weight: normal; white-space: nowrap; pointer-events: none; }
