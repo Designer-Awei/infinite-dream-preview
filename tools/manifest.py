@@ -2,6 +2,9 @@
 import hashlib, json, os, sys, time
 root = sys.argv[1]
 files = {}
+# Git normalizes published text to LF. Normalize the build output BEFORE hashing,
+# so Windows CRLF checkouts cannot produce hashes that differ from GitHub Pages.
+text_extensions = {".html", ".js", ".css", ".json", ".webmanifest", ".txt", ".md", ".svg"}
 for d, _, fs in os.walk(root):
     for f in fs:
         p = os.path.join(d, f)
@@ -9,6 +12,12 @@ for d, _, fs in os.walk(root):
         if rel in ("update.json", ".nojekyll"):
             continue
         b = open(p, "rb").read()
+        if os.path.splitext(f)[1].lower() in text_extensions:
+            normalized = b.replace(b"\r\n", b"\n")
+            if normalized != b:
+                with open(p, "wb") as output:
+                    output.write(normalized)
+                b = normalized
         files[rel] = {"h": hashlib.sha1(b).hexdigest()[:12], "s": len(b)}
 digest = hashlib.sha1(json.dumps(files, sort_keys=True).encode()).hexdigest()[:6]
 version = time.strftime("%Y%m%d.%H%M", time.gmtime()) + "-" + digest

@@ -1,0 +1,2 @@
+# Published bytes must match update.json on Windows and on GitHub's Linux runners.
+/docs/** text=auto eol=lf

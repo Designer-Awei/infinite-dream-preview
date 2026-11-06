@@ -45,7 +45,10 @@
 npm install                                # 安装依赖（含打包工具 esbuild）
 cd web && python3 -m http.server 8000      # 开发：直接用 ES 模块运行，打开 http://localhost:8000
 ./tools/build.sh                           # 打包到 dist/ 和 docs/（静态站点，约 6MB）
+python test/update-integrity.py --git-ref HEAD # 检查构建与已提交文件是否符合热更新清单
 ```
+
+构建会先将发布文本统一为 LF 换行，再生成大小与校验值；docs 的 Git 换行规则保持一致，避免 Windows 构建的清单与线上文件不符。更新失败时保留原版本和本机存档；修复发布后重新启动应用可再次更新，无需卸载。可用 `python test/update-integrity.py --url https://designer-awei.github.io/infinite-dream-preview/` 核验全部线上资源。
 
 GitHub Pages：仓库 Settings → Pages → Deploy from branch → `main` / `docs`。
 联机走 PeerJS（WebRTC 点对点，免费公共信令）；也可以 `?peer=你的域名:端口` 指定自建 PeerServer。`?local` 用 BroadcastChannel 在同一浏览器双开调试。
