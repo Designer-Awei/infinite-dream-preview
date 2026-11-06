@@ -11,7 +11,7 @@
 - 战斗结算与矿场结算右下角操作按钮统一去掉按钮阴影、文字投影，文字改用 1px 细黑描边，保留原颜色、布局和交互。规则只作用于 .res-r .acts .btn，正常、按下状态均不恢复阴影，不改其他界面按钮。
 - README 同步说明，发布 CSS 与源文件一致，更新 docs/update.json；本次仅样式修改，无需重新安装开发依赖或重打 JavaScript，正式版和 CI/CD 配置未改。
 - 对应 commit：[c12b20d](https://github.com/Designer-Awei/infinite-dream-preview/commit/c12b20d26dec5101d77740c07a4886e86f780cf5)。
-- 验证：核对两个结算界面共用的按钮结构及 CSS 优先级；git diff --cached --check 通过，全部 65 项本地及 Git 暂存文件大小、SHA-1 与热更新清单一致，确认运行文件仅 css/style.css 变化。版本 20261106.1423-dba78b。本次未重跑浏览器或整局测试；发布结果完成后补记。
+- 验证：核对两个结算界面共用的按钮结构及 CSS 优先级；git diff --cached --check 通过，全部 65 项本地及 Git 暂存文件大小、SHA-1 与热更新清单一致，确认运行文件仅 css/style.css 变化。版本 20261106.1423-dba78b。[Pages 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42233676596)、[Android APK 发布](https://github.com/Designer-Awei/infinite-dream-preview/actions/runs/42233677732)均成功，线上清单及全部 65 项文件大小/哈希核验通过。本次未重跑浏览器或整局测试，未安装依赖或新增开发环境。
 
 ### 2026-11-06 · 矿场结算布局与战斗结算比例恢复
 
