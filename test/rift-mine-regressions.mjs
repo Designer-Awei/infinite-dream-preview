@@ -97,13 +97,12 @@ try {
     const canvas=document.createElement('canvas');canvas.width=1608;canvas.height=720;const r=new Renderer(canvas,fx);r.cam.x=host.map.center.x-402;r.cam.y=host.map.center.y-180;hero.x=host.chest.x-160;hero.y=host.chest.y;
     const samples=[];for(const t of [.05,.25,.6,1.5,2.6]){fx.clearAll();fx.spawn(event.id,event.x,event.y,event.o);fx.update(t);r.draw(host,hero,0);
       const x=Math.round((host.chest.x-12-Math.round(r.cam.x))*2),y=Math.round((host.chest.y-10-Math.round(r.cam.y))*2);const color=[...canvas.getContext('2d').getImageData(x,y,1,1).data];check(color.join(',')==='255,216,74,255','Chest foreground stable at '+t+': '+color);samples.push({t,color});}
-    const pixels=icon('mine_pick').getContext('2d').getImageData(0,0,22,22).data,colors=new Set();for(let i=0;i<pixels.length;i+=4)if(pixels[i+3])colors.add(pixels.slice(i,i+3).join(','));check(colors.size>=8,'Detailed multicolor mine icon');
     // Leave a populated result for screenshot and alignment checks.
     UI.clear();g=make(true);g.runStats.rooms=30;g.runStats.kills=860;g.runStats.shovels=['ag','ag','ag'];g.runStats.riftDeclines=2;app.endRun(false);
     const more=document.querySelector('.res-more');if(more)more.click();
     const mine=[...document.querySelectorAll('.res-detail-list .res-chip')].find(n=>n.textContent.includes('梦境矿场'));check(mine && !mine.querySelector('.res-icon') && !mine.textContent.includes('⛏'),'Mine settlement label is plain aligned text');
     app.paused=true;
-    return {normalDecline:200,endlessDeclines:400,repeatedClicksSafe:true,enteredRiftReturns:true,resultStroke:'2px',riftStroke:'2px',moleLoot:d.bag.length,moleSwordRemoved:true,chestSamples:samples,networkBackLayer:true,mineIconColors:colors.size};
+    return {normalDecline:200,endlessDeclines:400,repeatedClicksSafe:true,enteredRiftReturns:true,resultStroke:'2px',riftStroke:'2px',moleLoot:d.bag.length,moleSwordRemoved:true,chestSamples:samples,networkBackLayer:true};
   })()`);
   console.log('PASS',JSON.stringify(report));
   await writeFile(path.join(out,'checks.json'),JSON.stringify(report,null,2));
@@ -123,7 +122,7 @@ try {
   const mineStyle=await evaluate(`(()=>{const s=getComputedStyle(document.querySelector('.mres .acts .btn'));return{shadow:s.textShadow,stroke:s.webkitTextStrokeWidth}})()`);assert.equal(mineStyle.shadow,'none');assert.equal(mineStyle.stroke,'2px');
   shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(path.join(out,'mine-result.png'),Buffer.from(shot.data,'base64'));
   await evaluate(`import('./js/lobby.js').then(L=>L.showLobby())`);await sleep(300);
-  assert(await evaluate(`document.querySelector('.t-mine .ti img').naturalWidth>0`),'Mine tile has rendered pixel icon');
+  assert(await evaluate(`document.querySelector('.t-mine .ti img').naturalWidth===64`),'New PixelLab mine icon loads at native 64px');
   shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(path.join(out,'mine-icon.png'),Buffer.from(shot.data,'base64'));
   await evaluate(`import('./js/ui.js').then(UI=>UI.toast('已放弃裂隙，本局结算额外 +200 晶石',3000))`);await sleep(150);
   shot=await send('Page.captureScreenshot',{format:'png'});await writeFile(path.join(out,'notification.png'),Buffer.from(shot.data,'base64'));

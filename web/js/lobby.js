@@ -139,7 +139,7 @@ export function showLobby() {
   };
   tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 && !gachaDone() ? Math.min(99, pulls) : "", "抽天赋卡");
   const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au + (msh.freePend || 0);
-  tile(`<img src="${iconURL("mine_pick", 4)}" alt="">`, "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "", "搜 · 打 · 撤");
+  tile('<img src="assets/ui/mine-pick.png" alt="">', "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "", "搜 · 打 · 撤");
   if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
   tile("👥", "联机模式", "t-net", () => showNet());
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
