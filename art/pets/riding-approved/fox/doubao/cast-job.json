@@ -16,7 +16,7 @@
     "generations": 8,
     "cost_if_paid": 0.031411456114716
   },
-  "sha256": "5f19ff00061430f283983b1cc0c38be63f475bac4a9437833f3e3dad3b3aab9d",
+  "sha256": "277cb12bdb1068aea0b3ff4a47a8ba1ca5bee5178490e3974c56bceaf86b02ff",
   "runtime": [
     160,
     160
@@ -38,6 +38,7 @@
       160
     ],
     "input_white_matte_removed": true,
+    "endpoint_alpha": "original approved RGBA, direct nearest sampling, no white colour key",
     "small_detached_fragments": []
   }
 }

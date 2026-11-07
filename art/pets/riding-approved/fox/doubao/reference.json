@@ -1,6 +1,6 @@
 {
   "source_sha256": "cb7f80179d8ee764a58d076bfb44a136152f9a643ec42f1cbb0a99c581a1fe11",
-  "reference_sha256": "102fd869d6c33321a139634d2772800d70ad8456448bb824d5b674de52f5022a",
+  "reference_sha256": "66e3f1f519392f95e17c223f626c19adfd843776bd38fc348ca67aed6cde0c97",
   "canvas": [
     256,
     256
@@ -11,9 +11,9 @@
   ],
   "body": [
     196,
-    185
+    183
   ],
   "pixel_palette_preserved": true,
-  "background_cleanup": "border-connected white matte from unzoom output; main connected figure kept",
+  "background_cleanup": "original approved RGBA alpha preserved; direct 128px nearest sampling, no white-matte colour key",
   "previous_white_reference_sha256": "92b13f6b8e2a899e01ff16a149a52f9bac1e942e2ae82445ff6013022cdfcefa"
 }

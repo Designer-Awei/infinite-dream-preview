@@ -4,12 +4,14 @@ from pathlib import Path
 import numpy as np
 from scipy import ndimage
 from PIL import Image
-from animate_mounts import OUT,cut_native_background,IDS
+from animate_mounts import OUT,cut_native_background,approved_reference,IDS
 def normalize(species,cid,clip):
  folder=OUT/species/cid;rawpath=folder/(clip+'-256.png')
  if not rawpath.exists():return
  raw=Image.open(rawpath).convert('RGBA');base=cut_native_background(raw.crop((0,0,256,256)));box=base.getbbox();factor=196/max(box[2]-box[0],box[3]-box[1]);size=round(256*factor)
  offset=(round(128-(box[0]+box[2])/2*factor),round(232-box[3]*factor));base256=Image.new('RGBA',(256,256));base256.paste(base.resize((size,size),Image.Resampling.NEAREST),offset)
+ # Only replace contaminated endpoints. Keep the generated middle motion exact.
+ base256=approved_reference(species,cid)[1]
  sheet=Image.new('RGBA',(160*9,160));removed=[]
  for i in range(9):
   image=raw.crop((i*256,0,(i+1)*256,256));a=np.array(image);a[a[:,:,3]<=8]=0
@@ -40,8 +42,8 @@ def normalize(species,cid,clip):
    if label!=main and (areas[label]<=12 or (areas[label]<=40 and xx.min()>=138)):
     removed.append({'frame':i,'runtime_pixels':int(mask.sum()),'reason':'reviewed detached right-edge residue' if areas[label]>12 else 'runtime fragment'});runtime[mask]=0
   sheet.paste(Image.fromarray(runtime),(i*160,0))
- target=folder/(clip+'.png');sheet.save(target);base256.resize((160,160),Image.Resampling.NEAREST).save(folder/'base.png')
- state=folder/(clip+'-job.json');record=json.loads(state.read_text(encoding='utf-8'));record['sha256']=hashlib.sha256(target.read_bytes()).hexdigest();record['normalization']={'provider_raw_unchanged':True,'source_first_frame_sha256':hashlib.sha256(raw.crop((0,0,256,256)).tobytes()).hexdigest(),'scale':factor,'offset':offset,'target_foot':[128,232],'runtime':[160,160],'input_white_matte_removed':True,'small_detached_fragments':removed};state.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
+ target=folder/(clip+'.png');sheet.save(target);sheet.crop((0,0,160,160)).save(folder/'base.png')
+ state=folder/(clip+'-job.json');record=json.loads(state.read_text(encoding='utf-8'));record['sha256']=hashlib.sha256(target.read_bytes()).hexdigest();record['normalization']={'provider_raw_unchanged':True,'source_first_frame_sha256':hashlib.sha256(raw.crop((0,0,256,256)).tobytes()).hexdigest(),'scale':factor,'offset':offset,'target_foot':[128,232],'runtime':[160,160],'input_white_matte_removed':True,'endpoint_alpha':'original approved RGBA, direct nearest sampling, no white colour key','small_detached_fragments':removed};state.write_text(json.dumps(record,ensure_ascii=False,indent=2),encoding='utf-8')
  print('normalized full mount',cid,clip,'scale',round(factor,3),'offset',offset,flush=True)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--species',default='fox');p.add_argument('--only',nargs='+',default=IDS);p.add_argument('--clip',nargs='+',default=['idle','move','cast']);a=p.parse_args()

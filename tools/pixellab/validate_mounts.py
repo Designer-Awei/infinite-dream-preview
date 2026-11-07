@@ -16,12 +16,16 @@ def main(species):
   board=Image.new('RGB',(9*192,6*216),'#181329');d=ImageDraw.Draw(board)
   for row,cid in enumerate(IDS):
    p=folder/cid;sheet=Image.open(p/(clip+'.png')).convert('RGBA');assert sheet.size==(160*9,160);job=json.loads((p/(clip+'-job.json')).read_text(encoding='utf-8'));assert hashlib.sha256((p/(clip+'.png')).read_bytes()).hexdigest()==job['sha256']
-   frames=[];areas=[];boxes=[]
+   frames=[];areas=[];boxes=[];neutral_rims=[]
    for i,(x,y) in enumerate(meta['actors'][cid][clip+'_e']):
     frame=sheet.crop((i*160,0,(i+1)*160,160));assert frame.tobytes()==atlas.crop((x,y,x+160,y+160)).tobytes();a=np.array(frame);box=frame.getbbox();assert box;boxes.append(box);areas.append(int((a[:,:,3]>32).sum()));frames.append(a)
     if min(box[:2])<=0 or box[2]>=160 or box[3]>=160:flags.append(f'{cid}/{clip}/{i}: clipped edge')
     whites=int(((a[:,:,:3].min(2)>=248)&(a[:,:,3]>8)).sum())
     if whites/max(1,areas[-1])>.25:flags.append(f'{cid}/{clip}/{i}: white background matte')
+    opaque=a[:,:,3]>8;rim=opaque&~ndimage.binary_erosion(opaque,np.ones((3,3)))
+    rgb=a[:,:,:3].astype(int);neutral=(rgb.min(2)>=215)&((rgb.max(2)-rgb.min(2))<=15)
+    neutral_rims.append(int((neutral&rim).sum()))
+    if neutral_rims[-1]>20:flags.append(f'{cid}/{clip}/{i}: neutral white matte rim ({neutral_rims[-1]} pixels)')
     labels,n=ndimage.label(a[:,:,3]>8,np.ones((3,3)));counts=np.bincount(labels.ravel());counts[0]=0;primary=int(counts.argmax())
     if any(v>12 for j,v in enumerate(counts) if j not in [0,primary]):flags.append(f'{cid}/{clip}/{i}: detached foreground fragment')
     big=frame.resize((192,192),Image.Resampling.NEAREST);board.paste(big,(i*192,row*216+20),big)
@@ -32,7 +36,7 @@ def main(species):
    if max(motion)<1:flags.append(f'{cid}/{clip}: static')
    if ratio>(1.6 if clip=='idle' else 2):flags.append(f'{cid}/{clip}: body area ratio {ratio:.2f}')
    if max(motion[0],motion[-1])>max(65,float(np.median(motion[1:-1]))*2):flags.append(f'{cid}/{clip}: first/last transition jump')
-   d.text((6,row*216+3),cid+' / '+clip,fill='white');report['checks'].append({'cid':cid,'clip':clip,'areaRatio':round(ratio,3),'motion':[round(m,2) for m in motion],'boxes':boxes})
+   d.text((6,row*216+3),cid+' / '+clip,fill='white');report['checks'].append({'cid':cid,'clip':clip,'areaRatio':round(ratio,3),'motion':[round(m,2) for m in motion],'boxes':boxes,'neutralWhiteRimPixels':neutral_rims})
   board.save(folder/(clip+'-review.png'))
  report['reviewFlags']=flags;report['passed']=not flags;(folder/'asset-check.json').write_text(json.dumps(report,ensure_ascii=False,indent=2),encoding='utf-8');print(json.dumps({'species':species,'clips':18,'passed':report['passed'],'flags':flags},ensure_ascii=False))
  if flags:raise SystemExit(1)

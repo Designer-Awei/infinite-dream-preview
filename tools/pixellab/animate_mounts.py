@@ -24,6 +24,25 @@ def cut_native_background(im):
  labels,n=ndimage.label(a[:,:,3]>8,np.ones((3,3)));areas=np.bincount(labels.ravel());areas[0]=0
  if n:a[labels!=int(areas.argmax())]=0
  return Image.fromarray(a)
+
+def approved_reference(species,cid):
+ # /unzoom flattened alpha onto white. Sample the approved transparent source
+ # directly instead; do not infer transparency by deleting pale fur/clothes.
+ source=Image.open(OUT/species/(cid+'-source.png')).convert('RGBA')
+ native=clean(source.resize((128,128),Image.Resampling.NEAREST));a=np.array(native)
+ labels,n=ndimage.label(a[:,:,3]>8,np.ones((3,3)));areas=np.bincount(labels.ravel());areas[0]=0
+ a[labels!=int(areas.argmax())]=0;native=Image.fromarray(a)
+ crop=native.crop(native.getbbox());factor=196/max(crop.size);w,h=[round(v*factor) for v in crop.size]
+ image=Image.new('RGBA',(256,256));image.paste(crop.resize((w,h),Image.Resampling.NEAREST),((256-w)//2,232-h))
+ return native,image
+
+def repair_input(species,cid):
+ folder=OUT/species/cid;native,image=approved_reference(species,cid)
+ native.save(folder/'native-transparent.png');image.save(folder/'reference-256.png')
+ record=json.loads((folder/'reference.json').read_text(encoding='utf-8'))
+ record.update(reference_sha256=hashlib.sha256((folder/'reference-256.png').read_bytes()).hexdigest(),body=[image.getbbox()[2]-image.getbbox()[0],image.getbbox()[3]-image.getbbox()[1]],background_cleanup='original approved RGBA alpha preserved; direct 128px nearest sampling, no white-matte colour key')
+ dump(folder/'reference.json',record)
+ print('repaired approved transparent input',cid,flush=True)
 def client():
  key=Path(os.environ['PIXELLAB_KEY_FILE']).read_text(encoding='utf-8-sig').strip();headers={'Authorization':'Bearer '+key}
  def call(method,route,body=None):
@@ -41,13 +60,8 @@ def client():
 def prepare(species,cid):
  folder=OUT/species/cid;folder.mkdir(parents=True,exist_ok=True);ref=folder/'reference-256.png'
  if ref.exists():return
- source=OUT/species/(cid+'-source.png');native=folder/'native.png';call=client()
- if not native.exists():
-  response=call('POST','/unzoom',{'image':{'type':'base64','base64':base64.b64encode(source.read_bytes()).decode()},'quantize':-1})
-  raw=response['image']['base64'];clean(Image.open(io.BytesIO(base64.b64decode(raw.split(',')[-1])))).save(native)
-  dump(folder/'unzoom.json',{k:v for k,v in response.items() if k!='image'})
- im=cut_native_background(Image.open(native));im.save(folder/'native-transparent.png');crop=im.crop(im.getbbox());factor=196/max(crop.size);w,h=[round(v*factor) for v in crop.size]
- image=Image.new('RGBA',(256,256));image.paste(crop.resize((w,h),Image.Resampling.NEAREST),((256-w)//2,232-h));image.save(ref)
+ source=OUT/species/(cid+'-source.png')
+ im,image=approved_reference(species,cid);im.save(folder/'native-transparent.png');image.save(ref);box=image.getbbox();w,h=box[2]-box[0],box[3]-box[1]
  dump(folder/'reference.json',{'source_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'reference_sha256':hashlib.sha256(ref.read_bytes()).hexdigest(),'canvas':[256,256],'foot':[128,232],'body':[w,h],'pixel_palette_preserved':True})
  print('prepared full mount',species,cid,flush=True)
 def animate(species,cid,clip):
@@ -86,9 +100,11 @@ def publish(species):
  check=json.loads((OUT/species/'asset-check.json').read_text(encoding='utf-8'));assert check['passed'],'Review must pass before publishing runtime assets'
  dest=ROOT/'web/assets/pets';dest.joinpath(species+'-mounted.png').write_bytes((OUT/species/'mounted.png').read_bytes());dest.joinpath(species+'-mounted.json').write_bytes((OUT/species/'mounted.json').read_bytes());print('published reviewed full mount',species,flush=True)
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','animate','pack','publish']);p.add_argument('--species',default='fox');p.add_argument('--only',nargs='+',default=IDS);p.add_argument('--clip',choices=['idle','move','cast','all'],default='all');a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','repair-input','animate','pack','publish']);p.add_argument('--species',default='fox');p.add_argument('--only',nargs='+',default=IDS);p.add_argument('--clip',choices=['idle','move','cast','all'],default='all');a=p.parse_args()
  if a.mode=='prepare':
   with ThreadPoolExecutor(max_workers=3) as pool:list(pool.map(lambda c:prepare(a.species,c),a.only))
+ elif a.mode=='repair-input':
+  for cid in a.only:repair_input(a.species,cid)
  elif a.mode=='pack':pack(a.species)
  elif a.mode=='publish':publish(a.species)
  else:
