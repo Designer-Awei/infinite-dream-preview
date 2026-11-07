@@ -16,7 +16,7 @@
     "generations": 8,
     "cost_if_paid": 0.0312813963956303
   },
-  "sha256": "563b39b925a441f76a0940a26ceffde0663f4a863208c0729dbdd47dc7f3d2fa",
+  "sha256": "0afb09b75964f4b5c9a16fd7a9e365f1fe9f682c951d765014ce0b057a7bdf86",
   "runtime": [
     160,
     160
@@ -45,8 +45,154 @@
     "small_detached_fragments": [
       {
         "frame": 1,
+        "reason": "approved ponytail loop is transparent; white headband retained",
+        "runtime_pixels": 24,
+        "runtime_coordinates": [
+          [
+            78,
+            34
+          ],
+          [
+            79,
+            34
+          ],
+          [
+            80,
+            34
+          ],
+          [
+            81,
+            34
+          ],
+          [
+            82,
+            34
+          ],
+          [
+            76,
+            35
+          ],
+          [
+            77,
+            35
+          ],
+          [
+            78,
+            35
+          ],
+          [
+            79,
+            35
+          ],
+          [
+            80,
+            35
+          ],
+          [
+            81,
+            35
+          ],
+          [
+            82,
+            35
+          ],
+          [
+            83,
+            35
+          ],
+          [
+            74,
+            36
+          ],
+          [
+            75,
+            36
+          ],
+          [
+            76,
+            36
+          ],
+          [
+            77,
+            36
+          ],
+          [
+            78,
+            36
+          ],
+          [
+            74,
+            37
+          ],
+          [
+            75,
+            37
+          ],
+          [
+            76,
+            37
+          ],
+          [
+            77,
+            37
+          ],
+          [
+            74,
+            38
+          ],
+          [
+            75,
+            38
+          ]
+        ]
+      },
+      {
+        "frame": 1,
         "runtime_pixels": 10,
         "reason": "runtime fragment"
+      },
+      {
+        "frame": 2,
+        "reason": "approved ponytail loop is transparent; white headband retained",
+        "runtime_pixels": 9,
+        "runtime_coordinates": [
+          [
+            79,
+            36
+          ],
+          [
+            80,
+            36
+          ],
+          [
+            81,
+            36
+          ],
+          [
+            78,
+            37
+          ],
+          [
+            79,
+            37
+          ],
+          [
+            80,
+            37
+          ],
+          [
+            81,
+            37
+          ],
+          [
+            77,
+            38
+          ],
+          [
+            78,
+            38
+          ]
+        ]
       },
       {
         "frame": 2,
@@ -55,13 +201,146 @@
       },
       {
         "frame": 4,
+        "reason": "approved ponytail loop is transparent; white headband retained",
+        "runtime_pixels": 1,
+        "runtime_coordinates": [
+          [
+            77,
+            39
+          ]
+        ]
+      },
+      {
+        "frame": 4,
         "runtime_pixels": 11,
         "reason": "runtime fragment"
       },
       {
         "frame": 6,
+        "reason": "approved ponytail loop is transparent; white headband retained",
+        "runtime_pixels": 9,
+        "runtime_coordinates": [
+          [
+            80,
+            34
+          ],
+          [
+            81,
+            34
+          ],
+          [
+            82,
+            34
+          ],
+          [
+            79,
+            35
+          ],
+          [
+            80,
+            35
+          ],
+          [
+            81,
+            35
+          ],
+          [
+            82,
+            35
+          ],
+          [
+            83,
+            35
+          ],
+          [
+            78,
+            36
+          ]
+        ]
+      },
+      {
+        "frame": 6,
         "runtime_pixels": 16,
         "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 7,
+        "reason": "approved ponytail loop is transparent; white headband retained",
+        "runtime_pixels": 18,
+        "runtime_coordinates": [
+          [
+            75,
+            32
+          ],
+          [
+            78,
+            34
+          ],
+          [
+            79,
+            34
+          ],
+          [
+            80,
+            34
+          ],
+          [
+            81,
+            34
+          ],
+          [
+            82,
+            34
+          ],
+          [
+            83,
+            34
+          ],
+          [
+            77,
+            35
+          ],
+          [
+            78,
+            35
+          ],
+          [
+            79,
+            35
+          ],
+          [
+            80,
+            35
+          ],
+          [
+            81,
+            35
+          ],
+          [
+            82,
+            35
+          ],
+          [
+            83,
+            35
+          ],
+          [
+            76,
+            36
+          ],
+          [
+            77,
+            36
+          ],
+          [
+            76,
+            37
+          ],
+          [
+            77,
+            37
+          ]
+        ]
       },
       {
         "frame": 7,

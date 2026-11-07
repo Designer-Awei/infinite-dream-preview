@@ -5,6 +5,18 @@ import numpy as np
 from scipy import ndimage
 from PIL import Image
 from animate_mounts import OUT,cut_native_background,approved_reference,IDS
+def hair_cavity_alpha(runtime,cid,frame):
+ # Reviewed empty loop above Deepseek's ponytail. The white headband extends
+ # outside this box, so it is explicitly excluded from the correction.
+ if cid!='deepseek' or frame in [0,8]:return []
+ rgb=runtime[:,:,:3].astype(int);pale=(runtime[:,:,3]>8)&(rgb.min(2)>=100)&((rgb.max(2)-rgb.min(2))<75)
+ labels,n=ndimage.label(pale,np.ones((3,3)));removed=[]
+ for label in range(1,n+1):
+  mask=labels==label;yy,xx=np.where(mask)
+  if len(xx)<=40 and xx.min()>=66 and xx.max()<=86 and yy.min()>=27 and yy.max()<=40:
+   removed.extend([[int(x),int(y)] for x,y in zip(xx,yy)]);runtime[mask]=0
+ return removed
+
 def normalize(species,cid,clip):
  folder=OUT/species/cid;rawpath=folder/(clip+'-256.png')
  if not rawpath.exists():return
@@ -35,7 +47,10 @@ def normalize(species,cid,clip):
       removed.append({'frame':i,'pixels':int(mask.sum()),'reason':'remaining detached marker edge'});a[mask]=0
   image=Image.fromarray(a);aligned=Image.new('RGBA',(256,256));aligned.paste(image.resize((size,size),Image.Resampling.NEAREST),offset)
   if i in [0,8]:aligned=base256
-  runtime=np.array(aligned.resize((160,160),Image.Resampling.NEAREST));labels,n=ndimage.label(runtime[:,:,3]>8,np.ones((3,3)));areas=np.bincount(labels.ravel());areas[0]=0;main=int(areas.argmax())
+  runtime=np.array(aligned.resize((160,160),Image.Resampling.NEAREST))
+  cavity=hair_cavity_alpha(runtime,cid,i)
+  if cavity:removed.append({'frame':i,'reason':'approved ponytail loop is transparent; white headband retained','runtime_pixels':len(cavity),'runtime_coordinates':cavity})
+  labels,n=ndimage.label(runtime[:,:,3]>8,np.ones((3,3)));areas=np.bincount(labels.ravel());areas[0]=0;main=int(areas.argmax())
   for label in range(1,n+1):
    mask=labels==label;yy,xx=np.where(mask)
    # Reviewed loose pixels to the right of the fox's mane, separated by sampling.

@@ -6,7 +6,7 @@ import assert from 'node:assert/strict';
 import {browserSession} from '../../test/browser-session.mjs';
 const b=await browserSession('pet-gameplay-video');let encoder;
 try{
-  const p=await b.page('http://127.0.0.1:8775',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({name:'伙伴演示',tutorialSeen:true,sel:'deepseek',chars:['deepseek'],seenUnlock:['deepseek'],sound:false,music:false}))`});
+  const p=await b.page(process.env.GAME_TEST_URL||'http://127.0.0.1:8775',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({name:'伙伴演示',tutorialSeen:true,sel:'deepseek',chars:['deepseek'],seenUnlock:['deepseek'],sound:false,music:false}))`});
   await p.wait(`!!document.querySelector('.pet-entry')`);
   await p.evaluate(`(async()=>{const {app}=await import('./js/main.js'),{Renderer}=await import('./js/render.js'),{VIEW_W,VIEW_H,RS}=await import('./js/data.js'),{makeKit}=await import('./js/save.js'),{renderGround}=await import('./js/map.js'),{resetPet,toggleMount}=await import('./js/pets.js'),{PETS}=await import('./js/petdata.js');await document.fonts.ready;
     const canvas=document.createElement('canvas');canvas.width=VIEW_W*RS;canvas.height=VIEW_H*RS;

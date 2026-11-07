@@ -5,7 +5,7 @@ import path from 'node:path';
 import {browserSession} from './browser-session.mjs';
 const b=await browserSession('pet-mounted');
 try {
-  const p=await b.page('http://127.0.0.1:8775',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,sound:false,music:false}))`});
+  const p=await b.page(process.env.GAME_TEST_URL||'http://127.0.0.1:8775',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,sound:false,music:false}))`});
   await p.wait(`!!document.querySelector('.pet-entry')`);
   const result=await p.evaluate(`(async()=>{
     const {A}=await import('./js/assets.js'),P=await import('./js/pets.js'),{CHAR_ORDER}=await import('./js/data.js');
