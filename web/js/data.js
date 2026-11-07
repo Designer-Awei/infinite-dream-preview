@@ -346,7 +346,7 @@ export const GACHA = {
 export const LOADOUT_SLOTS = 2;
 
 // tokens earned per run
-export const REWARD = { room: 15, kill: 1, elite: 6, boss: 120, firstBoss: 200 };
+export const REWARD = { room: 15, kill: 1, elite: 6, boss: 120, firstBoss: 200, riftSkip: 200 };
 export const START_TOKENS = 300;
 
 /** 梦核 (from 梦境工坊): each girl's ult gets stronger in its own way */

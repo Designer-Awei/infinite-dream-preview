@@ -33,7 +33,7 @@ export class Game {
     this.phase = "init";
     this.time = 0;
     this.shake = 0;
-    this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0 };
+    this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0, riftDeclines: 0 };
     // 怪物图鉴: what this run met and beat; 藏品 dropped by rare monsters (saved at the end of the run)
     this.seen = {};
     this.killedTypes = {};
@@ -1077,7 +1077,7 @@ export class Game {
     // a boss always drops a 梦境矿场 shovel: it lands with a light beam; walk over it to pick it up
     // (it is counted at the settlement either way)
     if (this.room.kind === "boss") this.dropShovel();
-    // a boss sometimes leaves a 梦境裂隙: a 60-second dig (solo only)
+    // a boss sometimes leaves a 梦境裂隙: a 90-second dig (solo only)
     if (this.room.kind === "boss" && this.mode === "solo" && Math.random() < RIFT_CHANCE) {
       this.banner = { text: "梦境裂隙出现！", sub: "限时挖宝的机会", t: 2 };
       this.vfx("arcane/portal", this.map.center.x, this.map.center.y + 8, { layer: "back", life: 3 });
@@ -1098,7 +1098,7 @@ export class Game {
     this.banner = { text: "清场完成！", sub: "打开补给箱选择技能卡", t: 2 };
     const c = this.map.center;
     this.chest = { x: c.x, y: c.y + 38, opened: false };
-    this.vfx("pickups/loot-beam", c.x, c.y + 44, { life: 2.5, opts: { item: false } });
+    this.vfx("pickups/loot-beam", c.x, c.y + 44, { layer: "back", life: 2.5, opts: { item: false } });
     // vacuum coins
     for (const q of this.pickups) if (q.kind === "coin") q.magnet = true;
   }

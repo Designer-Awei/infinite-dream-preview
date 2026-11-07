@@ -128,6 +128,7 @@ export const app = {
     this.paused = false;
     this.cardOpen = false;
     this.ended = false;
+    this.riftLoot = null;
     this.progressSession = { seconds: 0, idle: 0 };
     g.onUi = (k, pid) => this.onGameUi(k, pid);
     if (cfg.mode !== "client") g.startRun();
@@ -173,7 +174,8 @@ export const app = {
     m.maps = m.maps || {};
     const first = win && !endless && !m.maps[o.map];
     const mul = endless ? 1 : md.reward || 1;
-    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0)) * mul) + (first ? REWARD.firstBoss : 0);
+    const riftBonus = (rs.riftDeclines || 0) * REWARD.riftSkip;
+    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0)) * mul) + (first ? REWARD.firstBoss : 0) + riftBonus;
     if (win && !endless) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
     const prevBest = m.stats.endlessBest || 0;
     if (endless) m.stats.endlessBest = Math.max(prevBest, rs.rooms);
@@ -202,7 +204,8 @@ export const app = {
     if (endless && rs.rooms > prevBest) extras.push(["无尽新纪录", rs.rooms + " 层"]);
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
-    if (drops.length) extras.push(["⛏ 梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
+    if (drops.length) extras.push(["梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
+    if (riftBonus) extras.push(["放弃裂隙", `${rs.riftDeclines} 次 · +${riftBonus}<i class="cur gem"></i>`]);
     // 怪物图鉴 + 梦境藏品
     const met = recordCodex(g.seen, g.killedTypes);
     if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);
@@ -251,18 +254,29 @@ export const app = {
     MUI.showMineHud(d);
     playMusic("battle");
   },
-  /** boss rift: a timed 60-second dig with no shovel; the haul joins this run's rewards */
+  /** boss rift: a timed 90-second dig; endless returns to the current corridor */
   offerRift() {
     const g = this.game;
-    if (!g || this.net) return;
+    if (!g || this.net || this.ended || g.riftPromptRoom === g.roomIdx) return;
+    g.riftPromptRoom = g.roomIdx;
     this.paused = true;
-    UI.showMsg("梦境裂隙", "首领倒下时撕开了一道裂隙：<br>进入后有 <b>90 秒</b>限时挖宝：电量无限、不消耗铲子、矿物更密集，时间到自动带出全部收获。", "进入裂隙", () => this.startRift());
-    const md = document.querySelector("#ui .modal:last-child .row");
-    if (md) md.classList.add("eq-btns");
-    if (md) md.appendChild(UI.btn("不了，直接结算", "gray", () => {
-      document.querySelector("#ui .modal:last-child")?.remove();
+    let chosen = false;
+    const modal = UI.showMsg("梦境裂隙", `首领倒下时撕开了一道裂隙：<br>进入后有 <b>90 秒</b>限时挖宝：电量无限、不消耗铲子、矿物更密集，时间到自动带出全部收获。${g.endless ? '<div class="rift-tip">无尽模式：挖宝结束后返回当前进度继续闯关，不会提前结算。</div>' : ''}<div class="rift-tip">放弃进入：本局结算额外获得 ${REWARD.riftSkip} 晶石。</div>`, "进入裂隙", () => {
+      if (chosen || this.game !== g) return;
+      chosen = true;
+      this.startRift();
+    });
+    modal.classList.add("rift-modal");
+    const row = modal.querySelector(".row");
+    row.classList.add("eq-btns");
+    row.appendChild(UI.btn("放弃进入", "gray", () => {
+      if (chosen || this.game !== g) return;
+      chosen = true;
+      modal.remove();
+      g.runStats.riftDeclines = (g.runStats.riftDeclines || 0) + 1;
       this.paused = false;
       if (!g.endless) g.victory();
+      else UI.toast(`已放弃裂隙，本局结算额外 +${REWARD.riftSkip} 晶石`, 2000);
     }));
   },
   startRift() {

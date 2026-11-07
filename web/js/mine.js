@@ -789,6 +789,8 @@ export class Dive {
     this.texts.push({ x, y, s, col, size, t: 0.9 });
   }
   spawnFx(id, x, y, o = {}) {
+    // Mine rewards are ores, relics or currency, never the sword in the library demo.
+    if (id === "pickups/loot-beam") o = { ...o, opts: { ...o.opts, item: false } };
     this.fx && this.fx.spawn(id, x, y, o);
   }
   bagValue() {

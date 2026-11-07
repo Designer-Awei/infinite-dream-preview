@@ -678,7 +678,11 @@ body.touchmode .c-key { display: none; }
 .res-st span { font-size: 12px; color: #c8bff0; }
 .res-st b { font-size: 20px; color: #fff; font-weight: normal; line-height: 1.1; }
 .res-r .acts { flex: 0 0 auto; margin: 0; gap: 10px; justify-content: center; }
-.res-r .acts .btn { flex: 1; max-width: 200px; box-shadow: none; text-shadow: none; -webkit-text-stroke: 1px var(--ink); paint-order: stroke fill; }
+.res-r .acts .btn { flex: 1; max-width: 200px; box-shadow: none; }
+.res-r .acts .btn, .rift-modal .row .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.rift-modal .row .btn.gray { color: #fff; }
+.toast.outline { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.rift-tip { margin-top: 6px; color: #ffe36a; font-size: 12px; line-height: 1.5; }
 @media (max-height: 420px) {
   .result .panel.res2 { padding: 6px 12px; gap: 10px; }
   .res2 h2 { font-size: 22px; }
@@ -1065,6 +1069,7 @@ body.touchmode .c-key { display: none; }
 .lb-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)) !important; gap: 6px !important; }
 .lb-tile .tl { font-size: clamp(9px, 1.3vw, 14px) !important; }
 .t-mine { background: linear-gradient(180deg, #ffc27a, #c8642a); }
+.t-mine .ti img { display: block; width: 1.35em; height: 1.35em; image-rendering: pixelated; }
 /* hub */
 .mine-hub { background: radial-gradient(110% 90% at 30% 30%, #8a5a3a 0%, #4a2e2a 45%, #1e1426 100%); overflow: hidden; }
 .mine-hub .pill .pi { width: 18px; height: 18px; image-rendering: pixelated; }
