@@ -1,0 +1,13 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "6748d462-9d22-4d53-abe1-97e49a06fd95",
+  "reference": "idle-reference-192.png",
+  "canonical_scale": 1.0,
+  "request": {
+    "action": "A seamless calm living IDLE LOOP of the SAME red dragon, in-place. Chest and abdomen gently expand and relax with visible breathing. The tail slowly sways left and right at its base and curls at the tip, its existing small tail flame softly flickers. Both wings gently flex and partially flap once, membrane folds bend naturally. A subtle head lift and blink. Keep every foot planted; preserve exact horns, red/gold scales, face, proportions and size. No walking, no rotation, no new accessories, no spell, no external particles. Return smoothly to the exact first pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "seed": 6112703
+  }
+}

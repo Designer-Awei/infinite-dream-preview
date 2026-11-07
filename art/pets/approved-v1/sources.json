@@ -1,0 +1,217 @@
+{
+  "generation_size": [
+    192,
+    192
+  ],
+  "runtime_size": [
+    96,
+    96
+  ],
+  "anchor": [
+    48,
+    88
+  ],
+  "families": {
+    "dragon": {
+      "name": "赤焰火龙",
+      "source": "sources/dragon-evolution.png",
+      "source_sha256": "db6dd13ea8119e2000c8a6a6f256b71a6063b6856fe561b8a12fc1c945c6e7d3",
+      "stages": [
+        {
+          "id": "dragon-1",
+          "stage": 1,
+          "source_box": [
+            96,
+            420,
+            453,
+            674
+          ],
+          "scale_from_source": 0.18583042973286876,
+          "body_size": [
+            66,
+            47
+          ],
+          "mouth": [
+            62.5,
+            75.8
+          ],
+          "file": "dragon-1/base.png"
+        },
+        {
+          "id": "dragon-2",
+          "stage": 2,
+          "source_box": [
+            591,
+            215,
+            1113,
+            674
+          ],
+          "scale_from_source": 0.18583042973286876,
+          "body_size": [
+            97,
+            85
+          ],
+          "mouth": [
+            69.1,
+            60.4
+          ],
+          "file": "dragon-2/base.png"
+        },
+        {
+          "id": "dragon-3",
+          "stage": 3,
+          "source_box": [
+            1242,
+            16,
+            2103,
+            681
+          ],
+          "scale_from_source": 0.18583042973286876,
+          "body_size": [
+            160,
+            124
+          ],
+          "mouth": [
+            83.2,
+            49.6
+          ],
+          "file": "dragon-3/base.png"
+        }
+      ]
+    },
+    "fox": {
+      "name": "霆尾灵狐",
+      "source": "sources/fox-evolution.png",
+      "source_sha256": "0f200981149a541229b116e5170f4c4d3dedb192a490558826c30566437834fb",
+      "stages": [
+        {
+          "id": "fox-1",
+          "stage": 1,
+          "source_box": [
+            110,
+            283,
+            476,
+            639
+          ],
+          "scale_from_source": 0.20125786163522014,
+          "body_size": [
+            74,
+            72
+          ],
+          "mouth": [
+            64.3,
+            67.5
+          ],
+          "file": "fox-1/base.png"
+        },
+        {
+          "id": "fox-2",
+          "stage": 2,
+          "source_box": [
+            585,
+            159,
+            1131,
+            641
+          ],
+          "scale_from_source": 0.20125786163522014,
+          "body_size": [
+            110,
+            97
+          ],
+          "mouth": [
+            72.2,
+            58.9
+          ],
+          "file": "fox-2/base.png"
+        },
+        {
+          "id": "fox-3",
+          "stage": 3,
+          "source_box": [
+            1288,
+            27,
+            2083,
+            641
+          ],
+          "scale_from_source": 0.20125786163522014,
+          "body_size": [
+            160,
+            124
+          ],
+          "mouth": [
+            83.2,
+            48.3
+          ],
+          "file": "fox-3/base.png"
+        }
+      ]
+    },
+    "phoenix": {
+      "name": "霜羽冰凰",
+      "source": "sources/phoenix-evolution.png",
+      "source_sha256": "9d2335fbd1246e39bdcb1a4d5af55683ccaef0f63e81c68c7873157d0511dfbf",
+      "stages": [
+        {
+          "id": "phoenix-1",
+          "stage": 1,
+          "source_box": [
+            26,
+            319,
+            396,
+            663
+          ],
+          "scale_from_source": 0.1941747572815534,
+          "body_size": [
+            72,
+            67
+          ],
+          "mouth": [
+            63.8,
+            66.2
+          ],
+          "file": "phoenix-1/base.png"
+        },
+        {
+          "id": "phoenix-2",
+          "stage": 2,
+          "source_box": [
+            482,
+            155,
+            1038,
+            722
+          ],
+          "scale_from_source": 0.1941747572815534,
+          "body_size": [
+            108,
+            110
+          ],
+          "mouth": [
+            71.8,
+            50.6
+          ],
+          "file": "phoenix-2/base.png"
+        },
+        {
+          "id": "phoenix-3",
+          "stage": 3,
+          "source_box": [
+            1134,
+            24,
+            1958,
+            793
+          ],
+          "scale_from_source": 0.1941747572815534,
+          "body_size": [
+            160,
+            149
+          ],
+          "mouth": [
+            83.2,
+            37.3
+          ],
+          "file": "phoenix-3/base.png"
+        }
+      ]
+    }
+  }
+}

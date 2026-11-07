@@ -1,0 +1,12 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "0cc7574c-1052-472f-8e03-a9b19c728342",
+  "reference": "cast-input-reference-192.png",
+  "request": {
+    "action": "The SAME white and icy-blue phoenix performs one in-place frost CASTING animation. Keep its approved feather shapes, beak, tail, color, scale and position. It opens its beak, arches its neck and raises its wings in a controlled small sweep, a tiny cyan frost glow forms ONLY at the beak and wing tips. Hold a poised spellcasting stance then recover to the exact starting pose. No blizzard, no falling snow across the frame, no expanding ring, no distant ice shards, no background, no camera movement.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 6110723
+  }
+}

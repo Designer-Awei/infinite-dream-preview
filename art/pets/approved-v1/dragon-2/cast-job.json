@@ -1,0 +1,12 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "f7284439-13eb-42d5-ac69-6d918c1c4863",
+  "reference": "cast-input-reference-192.png",
+  "request": {
+    "action": "The SAME red dragon performs one in-place firebreath CASTING animation. Keep its exact approved design, scale, colors, horns, wing count and canvas position. It lifts its head slightly, OPENS its jaws wide; a compact bright orange and golden FIRE ORB spins and swirls INSIDE the open mouth, throat glows faintly, wings brace and chest expands. Hold the jaws open with the tiny swirling orb visible, then close and recover to the original pose. ONLY animate the BODY and a small effect INSIDE its mouth. No outward fire breath, no beam, no projectile, no big sparks, no scene-wide effects or camera motion. Whole creature stays in frame.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 6110702
+  }
+}

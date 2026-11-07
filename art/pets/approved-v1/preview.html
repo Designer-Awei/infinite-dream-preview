@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>无限梦境 · 宠物施法动作预览</title>
+<style>
+@font-face{font-family:Cubic;src:url(preview-font.woff2)}
+*{box-sizing:border-box}body{margin:0;padding:28px;background:#100e1c;color:#eee8ff;font:16px Cubic,monospace}main{max-width:1260px;margin:auto}h1{font-size:28px;margin:0 0 10px}p{color:#b2a9ca;line-height:1.7;margin:8px 0 20px}.controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:18px}button{font:inherit;color:#eee8ff;background:#30254d;border:2px solid #67558c;border-radius:9px;padding:9px 16px;cursor:pointer}button[aria-pressed=true]{color:#251d30;background:#ffda70;border-color:#ffecac}label{color:#c7bddc;display:flex;align-items:center;gap:8px}input{accent-color:#f7d674;width:120px}canvas{width:100%;height:auto;display:block;image-rendering:pixelated;border:2px solid #4a3a68;border-radius:16px;background:#181329}.foot{font-size:14px}a{color:#f8d974}
+</style>
+<main>
+<h1>梦境伙伴 · 施法动作</h1>
+<p>造型沿用你提供的三张底图，每种三个进化阶段。PixelLab 制作身体动作与贴身蓄能，喷火、雷电、暴风雪由代码实时绘制。</p>
+<div class="controls">
+<button data-stage="1">幼年形态</button><button data-stage="2">成长形态</button><button data-stage="3" aria-pressed="true">终阶形态</button>
+<button id="effects" aria-pressed="true">代码技能：开</button><button id="replay">重新施法</button>
+<button id="idle">只看待机细节</button>
+<label>龙息距离<input id="range" type="range" min="110" max="250" value="210"></label>
+<label>暴风雪范围<input id="radius" type="range" min="38" max="92" value="72"></label>
+</div>
+<canvas id="scene" width="1200" height="370"></canvas>
+<p class="foot">每轮包含待机呼吸、翼动尾摆、施法、收势。可关闭代码技能或只看待机细节。当前为素材与技能表现样片，尚未接入局内战斗、宠物兑换或存档。</p>
+<p class="foot"><a href="evolution-overview.png">查看九个原始形态</a> · <a href="pets.json">查看动作清单</a></p>
+</main>
+<script src="preview-data.js"></script><script src="preview-effects.js"></script>
+</html>

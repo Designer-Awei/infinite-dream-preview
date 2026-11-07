@@ -1,0 +1,13 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "4006fc87-83cb-4422-b7bc-57b238e75a9b",
+  "reference": "animation-reference-192.png",
+  "canonical_scale": 0.7,
+  "request": {
+    "action": "The exact same red baby dragon, stationary in-place. Only animate a natural small jaw opening, throat puff and wing bracing, hold the mouth OPEN, then close and recover. Preserve silhouette, red and gold colors, proportions, scale and feet position. BODY MOTION ONLY. No fire, no smoke, no orb, no energy, no projectile, no external visual effects, no camera movement. No growth, no transformation.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 6111701
+  }
+}

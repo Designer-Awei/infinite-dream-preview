@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "528af603-3c72-477a-b0c3-e588c62227bd",
+  "reference": "cast-reference-192.png",
+  "canonical_reference_sha256": "6f072bbc95f4cf5c3bff1708db4d8689ee6bcd0b72efd1d1510b67f88760176c",
+  "canonical_scale": 0.45,
+  "request": {
+    "action": "The exact same small blue and white bird, SIDE VIEW, looking RIGHT for every frame. A restrained body-only action: the beak opens for a short call, neck stretches slightly forward, chest puffs gently and wings gently flex without changing orientation, then returns. Head remains at the same height and the bird NEVER rotates, rolls, spins, loops, flips or somersaults. Keep the approved beak, eye, wing and tail feather shapes. Absolutely no effects, trails, circles, rings, particles, glow or magic. Fixed camera and fixed size. The bird stays completely visible.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 6111721
+  }
+}

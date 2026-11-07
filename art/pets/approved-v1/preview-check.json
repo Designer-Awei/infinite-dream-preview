@@ -1,0 +1,22 @@
+{
+  "actors": 9,
+  "clips": 18,
+  "stages": [
+    1,
+    2,
+    3
+  ],
+  "livingIdle": true,
+  "effectsToggle": true,
+  "adjustableRange": true,
+  "adjustableRadius": true,
+  "effectsTiming": true,
+  "pageErrors": [],
+  "video": {
+    "width": 1200,
+    "height": 370,
+    "fps": 24,
+    "duration": 20.25
+  },
+  "gameplayIntegrated": false
+}

@@ -1,0 +1,13 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "4141c710-9275-43b1-a980-c8f84c5c5d39",
+  "reference": "idle-reference-192.png",
+  "canonical_scale": 1.1111111111111112,
+  "request": {
+    "action": "A seamless living HOVER IDLE LOOP of the SAME white and cyan phoenix. The two wings make one smooth natural upstroke and downstroke with distinct feather articulation, restrained enough to fit the canvas. Chest breathes, body rises and falls slightly in response to the wingbeat, long feather tail follows with a flowing delayed sway. Beak and crest keep exact design. Preserve exact blue/white feathers, anatomy, scale and facing. No spinning, no shape transformation, no magic, no energy trails, no rings, no ice or particles. Smoothly return to the exact first pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "seed": 6112723
+  }
+}

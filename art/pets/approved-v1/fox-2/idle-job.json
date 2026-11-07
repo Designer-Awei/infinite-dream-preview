@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "77a2a462-a848-46d9-84e4-31f21e275682",
+  "reference": "idle-reference-192.png",
+  "canonical_reference_sha256": "0b76a8ab7df0244458e0ce125973163c80b61f9db7cfbe51cbeadf3b891b4326",
+  "canonical_scale": 0.6875,
+  "request": {
+    "action": "A seamless calm living IDLE LOOP of the SAME ivory gold fox, in-place. Visible gentle chest breathing, soft ear twitch and one blink. Its existing tail or tails naturally sway in a slow flowing wave from base to tips, slightly staggered, without adding or losing any tails. Fur remains detailed and stable. Keep all paws planted, head mostly still. Preserve exact face, anatomy, white/gold/violet palette, silhouette, proportions and size. No walking, no turning, no lightning, no spell effects or particles. Return smoothly to the exact first pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "seed": 6112712
+  }
+}

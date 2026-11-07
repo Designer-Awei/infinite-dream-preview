@@ -1,0 +1,25 @@
+{
+  "frame_count": 9,
+  "job": "d66440dd-6983-412a-95f6-ae5230d4469c",
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 5,
+    "cost_if_paid": 0.026040619320339624
+  },
+  "sha256": "1a2cb4b80ba9b3b37b5aaefa4f2e5fa6e61ce06bf915a9e3bf881ea1259d416b",
+  "w": 96,
+  "h": 96,
+  "fps": 8,
+  "normalization": {
+    "alpha_cutoff": 8,
+    "scale": 1.0,
+    "translation192": [
+      0,
+      17
+    ],
+    "endpoints": "approved-reference",
+    "previous_sha256": "d9ea993a1add38a7b8418b109aacb884ec5c7f1215b1f405ae9e9bee27a6f233"
+  },
+  "canonical_reference_sha256": "8740928224f8e861551560a952b9be1dc9a39152effea43fdb932988aa1669a5"
+}

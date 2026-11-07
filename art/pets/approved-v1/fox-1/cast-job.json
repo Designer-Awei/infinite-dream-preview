@@ -1,0 +1,12 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "a8e44d23-be20-4d5b-9db0-45282af3c646",
+  "reference": "cast-input-reference-192.png",
+  "request": {
+    "action": "The SAME elegant ivory and golden fox performs one in-place lightning CASTING animation. Preserve its exact approved anatomy, colors, tail count, scale and position. It lowers its front slightly, raises its golden tail or tails, pricks its ears, eyes brighten, and tiny golden electrical sparks flicker ONLY at its ear tips and tail tips. Briefly hold the charged pose then smoothly return to the original pose. No lightning bolts leaving the body, no projectiles, no circles on the ground, no camera movement, no extra tails.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 6110711
+  }
+}
