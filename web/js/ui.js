@@ -7,7 +7,7 @@ import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
 import { LEVEL_REWARDS } from "./progression.js";
-import { PETS, petPortrait } from "./petdata.js";
+import { PETS, PET_COST, PET_EVOLVE, PET_MAX_XP, petPortrait } from "./petdata.js";
 import { input } from "./input.js";
 
 let root, app;
@@ -76,13 +76,13 @@ export function showHelp() {
   const reacts = Object.entries(REACTIONS).map(([k, r]) => `<span class="chip">${k === "bubble" ? "泡+任意" : k.split("+").map((x) => ELEM[x].name).join("+")} → ${r.name}</span>`).join(" ");
   const cur = (cls, name, text) => `<div class="hp-cur"><span class="chip ${cls}">${name}</span><span>${text}</span></div>`;
   const SECS = [
-    ["操作", `${H("电脑")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
-      ${H("手机")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放`],
-    ["闯关循环", `每局 7 个房间：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
+    ["闯关基础", `${H("电脑操作")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
+      ${H("手机操作")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放
+      ${H("闯关循环")}每局 7 个房间：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
-      ${H("首领")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），然后开出传送门；捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限。`],
-    ["技能混搭", `每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他角色的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
+      ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 200 晶石。
+      ${H("技能混搭")}每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他角色的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
     ["地图道具", `走过去自动拾取：${Object.values(ITEMS).map((i) => `<div class="hp-cur"><span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span><span>${i.desc}</span></div>`).join("")}
       ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，持续到本局结束。打碎箱子、击败敌人会刷出。
       ${H("地块")}草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。`],
@@ -99,6 +99,14 @@ export function showHelp() {
       ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
       ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉星砂金矿，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
+    ["梦境伙伴", `${H("兑换与解锁")}SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点。在扭蛋机点「积攒」进入兑换，自选火龙、灵狐或冰凰：UR 消耗 ${PET_COST.UR} 点获得幼年，HUR 消耗 ${PET_COST.HUR} 点直接获得终极；不是随机抽取。已拥有的形态不可重复兑换。
+      ${H("大厅入口")}首次获得后自动携带，大厅人物右上方出现当前阶段的动画，点击进入面板；首次兑换前不显示这个入口。每次携带一只，可更换或取消。左侧点宠物，右侧切换三阶段及待机 / 行走 / 技能；预览未解锁形态不会获得它。
+      ${H("跟随助战")}主线、无尽与合作模式中自动跟随、索敌普攻并释放技能，不需额外按键；伙伴不承受伤害、不占传送人数。携带加成进入下一局生效，竞技场和矿场不出战、不提供加成。
+      ${H("经验与进化")}携带出战的伙伴在正常结算时获得经验：有效游玩每 6 秒 +1，清理战斗房 +4，首领 +8；暂停和长时间无操作不计。幼年 → 成长需要累计 ${PET_EVOLVE[2].xp} 经验 + ${PET_EVOLVE[2].stars} 星砂，成长 → 终极需要累计 ${PET_EVOLVE[3].xp} 经验 + ${PET_EVOLVE[3].stars} 星砂。达到条件后在面板手动「进化」，只扣星砂、不扣累计经验；经验上限 ${PET_MAX_XP}，进度随存档保留。
+      ${H("终极骑乘")}只有终极可骑乘。电脑按 <b>R</b>，手机点右上角暂停旁的「骑乘」，再次操作下骑。骑乘移速 +25%，普攻与大招换成坐骑能力，角色小技能与闪避保留；下骑恢复自动助战。
+      ${Object.values(PETS).map(d => `${H(d.name)}携带${d.passive} +${d.bonus.map(n => Math.round(n * 100) + "%").join(" / ")}（幼年 / 成长 / 终极）。助战：${d.attack}、${d.skill}。${d.trait}<br>骑乘：${d.rideDesc}`).join("")}
+      ${H("能力边界")}火龙龙息与宠物范围技能可伤害木箱、火药桶，保留物品掉落和爆炸连锁，不能破坏永久墙；大招伤害不会为自身大招充能。灵狐光环每 10 秒清除全图敌方弹幕，保留友方弹幕。冰凰的穿障碍和地面免伤仅骑乘时生效，仍受房间边界限制、仍会被直接攻击命中；下骑会寻找安全地面。
+      ${H("免费试用")}面板右下「免费试用 · 终极骑乘」可试玩任意一只的终极能力，大招每 10 秒恢复；无需兑换，不扣积攒点或星砂，试用的货币、经验、图鉴等收益都不保存。`],
     ["角色养成", `<div class="hp-levels">${LEVEL_REWARDS.map(r => `<div class="hp-level"><b>Lv.${r.level}</b><em>${r.name}</em><span>${r.text}</span></div>`).join("")}</div>
       ${H("成长规则")}每位角色独立积累经验，最高 7 级；闯关奖励逐级累计，下局生效，竞技场禁用。蓄能按每次主动释放小技能计算，回响和联动不重复增加，进度最多 100%；矿场装备独立。
       ${H("升级经验")}六次升级需要 611 / 795 / 1033 / 1343 / 1746 / 2272 经验，累计 7800；闯关与矿场获得经验，暂停和长时间无操作不计。
