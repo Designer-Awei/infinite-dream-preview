@@ -13,6 +13,8 @@ import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMa
 import { T } from "./data.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
+import { showPets } from "./petui.js";
+import { petPortrait } from "./petdata.js";
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -96,6 +98,7 @@ export function showLobby() {
     <div class="spacer"></div>
     <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
+    <button class="btn small tb-ico pet-entry" title="梦境伙伴"><img src="${petPortrait(m.pets?.equipped || 'dragon',m.pets?.owned?.[m.pets?.equipped]?.stage || 1)}" alt=""><small>伙伴</small></button>
     <button class="btn small tb-ico codex-btn t-codex" title="怪物图鉴"><span>👾</span></button>
     <button class="btn small tb-ico help-btn t-help" title="玩法说明"><span>📖</span></button>
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
@@ -113,6 +116,7 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
+  q(".pet-entry",s).onclick=()=>{sfx('click');showPets(()=>showLobby());};
   wireCurrency(s);
   const fs = q(".fs-btn", s);
   if (window.Capacitor || !document.documentElement.requestFullscreen) fs.remove();
@@ -1296,12 +1300,14 @@ function showStash() {
   const m = load(), n = m.stash || 0;
   const md = el("div", "modal stash-md");
   md.innerHTML = `<div class="panel stash-p"><h2 class="outline">积攒兑换</h2>
-    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换更稀有的天赋或限时活动道具。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
+    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换梦境伙伴，首次获得后解锁出战。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
     <div class="st-list">
-      <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">UR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 10</small></button></div>
-      <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">HUR 天赋 / 活动道具</b><span>敬请期待</span></div><button class="btn small gray" disabled><span>兑换</span><small>积攒 20</small></button></div>
+      <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">幼年伙伴</b><span>三选一 · 自动助战，可养成进化</span></div><button class="btn small"><span>选择伙伴</span><small>积攒 10</small></button></div>
+      <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">终极伙伴</b><span>三选一 · 可骑乘，替换普攻和大招</span></div><button class="btn small"><span>选择伙伴</span><small>积攒 20</small></button></div>
     </div><div class="row st-acts"></div></div>`;
 
   md.onclick = (e) => e.target === md && md.remove();
+  md.querySelectorAll('.st-it button').forEach(b=>b.onclick=()=>{md.remove();showPets(()=>showGacha());});
+  md.querySelector('.st-acts').appendChild(btn('关闭','gray small',()=>md.remove()));
   uiRoot().appendChild(md);
 }

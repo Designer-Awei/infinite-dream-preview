@@ -1,15 +1,15 @@
 {
   "generation_size": [
-    192,
-    192
+    256,
+    256
   ],
   "runtime_size": [
-    96,
-    96
+    128,
+    128
   ],
   "anchor": [
-    48,
-    88
+    64,
+    96
   ],
   "families": {
     "dragon": {
@@ -69,13 +69,18 @@
           "scale_from_source": 0.18583042973286876,
           "body_size": [
             160,
-            124
+            135
           ],
           "mouth": [
-            83.2,
-            49.6
+            80.8,
+            55.6
           ],
-          "file": "dragon-3/base.png"
+          "file": "dragon-3/base.png",
+          "original_body_size": [
+            160,
+            124
+          ],
+          "pose": "pose-192.png"
         }
       ]
     },
@@ -162,14 +167,19 @@
           ],
           "scale_from_source": 0.1941747572815534,
           "body_size": [
+            61,
+            72
+          ],
+          "mouth": [
+            60.3,
+            72.2
+          ],
+          "file": "phoenix-1/base.png",
+          "original_body_size": [
             72,
             67
           ],
-          "mouth": [
-            63.8,
-            66.2
-          ],
-          "file": "phoenix-1/base.png"
+          "pose": "pose-192.png"
         },
         {
           "id": "phoenix-2",
@@ -182,14 +192,19 @@
           ],
           "scale_from_source": 0.1941747572815534,
           "body_size": [
-            108,
+            89,
             110
           ],
           "mouth": [
-            71.8,
-            50.6
+            66.0,
+            63.8
           ],
-          "file": "phoenix-2/base.png"
+          "file": "phoenix-2/base.png",
+          "original_body_size": [
+            108,
+            110
+          ],
+          "pose": "pose-192.png"
         },
         {
           "id": "phoenix-3",
@@ -202,16 +217,25 @@
           ],
           "scale_from_source": 0.1941747572815534,
           "body_size": [
+            129,
+            160
+          ],
+          "mouth": [
+            74.2,
+            52.8
+          ],
+          "file": "phoenix-3/base.png",
+          "original_body_size": [
             160,
             149
           ],
-          "mouth": [
-            83.2,
-            37.3
-          ],
-          "file": "phoenix-3/base.png"
+          "pose": "pose-192.png"
         }
       ]
     }
-  }
+  },
+  "pose_reference_size": [
+    192,
+    192
+  ]
 }

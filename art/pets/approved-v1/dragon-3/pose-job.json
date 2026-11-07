@@ -1,0 +1,18 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/edit-images-v2",
+  "job": "c0317cc8-a81d-4491-8666-2bc67a83cc6c",
+  "reference": "pose-input-192.png",
+  "request": {
+    "method": "edit_with_text",
+    "image_size": {
+      "width": 192,
+      "height": 192
+    },
+    "description": "Edit ONLY the pose of this exact red and gold dragon. It is now a natural QUADRUPED standing on ALL FOUR FEET: both front arms reach down with straight weight-bearing forelegs and both front clawed paws firmly resting on the same ground plane as the hind paws. Lower the chest and shoulder line into an athletic four-legged dragon stance. NOT a dinosaur, NOT bipedal, NOT sitting upright or begging with lifted hands. Keep its exact face, gold horns, red scale armor, pale gold belly, red bat-wing membranes and flaming tail identity. Two large wings half raised together behind the shoulders with ample room to flap. Entire animal visible. Same right-facing three-quarter view and detailed pixel art. Transparent background, no ground, shadow, saddle, rider, effects or extra limbs.",
+    "seed": 7110803,
+    "no_background": true
+  },
+  "sha256": "4b039b13e10988723a8f1911ed241cde5904730a8743d135f03ef0644d3f6164",
+  "usage": null
+}

@@ -1,14 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "528af603-3c72-477a-b0c3-e588c62227bd",
-  "reference": "cast-reference-192.png",
-  "canonical_reference_sha256": "6f072bbc95f4cf5c3bff1708db4d8689ee6bcd0b72efd1d1510b67f88760176c",
-  "canonical_scale": 0.45,
+  "job": "96cb5597-ea65-493e-9f3f-7b103985b235",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "ccbc508e6ee728ca6b1ad9682c0a128ff6e5f5cfe88261de1c8a2dea522025fb",
+  "canonical_scale": 0.6,
   "request": {
-    "action": "The exact same small blue and white bird, SIDE VIEW, looking RIGHT for every frame. A restrained body-only action: the beak opens for a short call, neck stretches slightly forward, chest puffs gently and wings gently flex without changing orientation, then returns. Head remains at the same height and the bird NEVER rotates, rolls, spins, loops, flips or somersaults. Keep the approved beak, eye, wing and tail feather shapes. Absolutely no effects, trails, circles, rings, particles, glow or magic. Fixed camera and fixed size. The bird stays completely visible.",
+    "action": "The SAME ice phoenix performs one restrained casting gesture: neck extends forward and beak opens, BOTH wings lower TOGETHER and rise TOGETHER, always the SAME phase, never one wing up and the other down. Both visible wing tips highest together at start and end, lowest together in the middle. Body stays level and faces right. Preserve exact feather shapes, anatomy, size and colors. Only BODY motion and a tiny beak glow. No spin, flip, rings, trails, distant snow, blizzard or external effects. Full bird stays in frame.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6111721
+    "seed": 8111721
   }
 }

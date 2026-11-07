@@ -2,6 +2,7 @@
 import { CHARS, ELEM } from "./data.js";
 import { dist, angTo, TAU } from "./util.js";
 import { BLOCKS_SHOT, tileAt } from "./map.js";
+import { mountedAttack, mountedUlt } from "./pets.js";
 
 const MUZZLE = 20; // bullets leave from chest height
 
@@ -18,6 +19,7 @@ const atkBullet = (...a) => Object.assign(baseBullet(...a), { atk: true });
 
 /** one trigger of the normal attack */
 export function fireAttack(g, p, a, target) {
+  if (mountedAttack(g, p, a, target)) return;
   const c = CHARS[p.cid], s = p.st;
   p.atkCount++;
   let elem = c.elem;
@@ -276,6 +278,7 @@ export function castSkill(g, p, cid, a, target, pw = 1) {
 
 /** ultimate (L) */
 export function castUlt(g, p, a, target) {
+  if (mountedUlt(g, p, a, target)) return;
   const pal = ELEM[CHARS[p.cid].elem].ramp;
   const tx = target ? target.x : p.x + Math.cos(a) * 130, ty = target ? target.y : p.y + Math.sin(a) * 130;
   g.text(p.x, p.y - 84, CHARS[p.cid].ult.name, ELEM[CHARS[p.cid].elem].glow, 1.5, 1.2);

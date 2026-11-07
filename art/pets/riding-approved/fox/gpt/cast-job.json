@@ -1,0 +1,43 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "94775e68-6f17-45a3-a741-8fc0f96b1686",
+  "source": "../gpt-source.png",
+  "request": {
+    "action": "This exact fox and rider perform a restrained physical casting gesture, facing right. The fox plants all four paws, lowers its chest a little, extends its head and lifts its existing tails in a natural wave, then recovers. The rider leans slightly forward while STAYING SEATED, keeps the same grip on reins/book and balances naturally. Preserve exact anatomy, face, costume, tail count, size and position. The far rider leg stays hidden behind the animal, near leg in front. ONLY physical body movement. Empty space stays empty. Absolutely no magic, glow, bolts, sparks, circles or effects. Return to the starting pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 7110993
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.030847398969862196
+  },
+  "sha256": "e0ff59f5a7d58815d463f1aa947cd82e328d125816a268985c777edf4803e5a1",
+  "runtime": [
+    160,
+    160
+  ],
+  "normalization": {
+    "provider_raw_unchanged": true,
+    "source_first_frame_sha256": "81432666dd2c6e832da85119e19f98aa864ea68d349edfb96fc0d3bd1ef27d30",
+    "scale": 1.0,
+    "offset": [
+      0,
+      0
+    ],
+    "target_foot": [
+      128,
+      232
+    ],
+    "runtime": [
+      160,
+      160
+    ],
+    "input_white_matte_removed": true,
+    "small_detached_fragments": []
+  }
+}

@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {writeFile} from 'node:fs/promises';
+import path from 'node:path';
+import {browserSession,sleep} from './browser-session.mjs';
+const b=await browserSession('pet-network');
+const source=id=>`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({name:'${id}',tutorialSeen:true,sel:'deepseek',chars:['deepseek'],seenUnlock:['deepseek'],sound:false,music:false,pets:{owned:{${id}:{stage:3,xp:1200}},equipped:'${id}'}}))`;
+try{
+  const host=await b.page('http://127.0.0.1:8775/?local',{source:source('dragon')});await host.wait(`!!document.querySelector('.pet-entry')`);
+  const code=await host.evaluate(`(async()=>{const {app}=await import('./js/main.js'),{Net}=await import('./js/net.js');window.a=app;app.net=new Net(app);await app.net.host(false);return app.net.code})()`);
+  const client=await b.page('http://127.0.0.1:8775/?local',{source:source('phoenix')});await client.wait(`!!document.querySelector('.pet-entry')`);
+  await client.evaluate(`(async()=>{const {app}=await import('./js/main.js'),{Net}=await import('./js/net.js');window.a=app;app.net=new Net(app);await app.net.join('${code}')})()`);
+  await host.wait('a.net.members.length===2');await host.evaluate(`a.net.start();window.pump=setInterval(()=>{if(a.game?.map){a.paused=true;a.game.update(.02);a.net.hostTick(.02)}},20)`);
+  await client.evaluate(`window.pump=setInterval(()=>{if(a.game?.map){a.paused=true;a.net.clientTick(.02)}},20)`);
+  await host.wait('!!a.game?.map');await client.wait('!!a.game?.map');await sleep(1900);
+  assert.deepEqual(await host.evaluate('a.game.players.map(p=>p.pet?.id)'),['dragon','phoenix'],'Each player keeps own companion');
+  assert.deepEqual(await client.evaluate('a.game.players.map(p=>p.pet?.id)'),['dragon','phoenix'],'Client receives both companions');
+  await client.evaluate(`a.me.input.mount=true`);await host.wait('a.game.player(2).mounted');await client.wait('a.me.mounted');
+  assert(await host.evaluate('a.game.player(2).mounted'),'Client mount input reaches host');
+  await host.evaluate('a.game.player(2).ult=1');await client.wait('a.me.ult===1');
+  await client.evaluate('a.me.input.ult=true');
+  await host.wait('a.game.petFields.some(f=>f.owner===2&&f.ultimate)');await client.wait('a.game.petFields.some(f=>f.owner===2&&f.ultimate)');
+  assert(await client.evaluate('a.game.petFields.find(f=>f.owner===2).r===124'),'Blizzard radius transmitted');
+  await client.shot('coop-mounted-blizzard');
+  await host.evaluate(`a.game.players.forEach(p=>{p.invuln=999});a.game.enemies=[];a.game.phase='fight';a.game.waveDelay=999;`);
+  await client.evaluate('a.me.input.atk=true');await sleep(400);
+  const kinds=await client.evaluate(`a.game.bullets.filter(b=>b.owner===a.me.id).map(b=>({kind:b.kind,pred:!!b.pred}))`);
+  assert(kinds.length>0 && kinds.every(x=>x.kind==='pet_phoenix'&&!x.pred),'Mounted client gets host shots without duplicate character prediction');
+  await client.evaluate('a.me.input.atk=false');
+  await sleep(500);await client.evaluate(`a.me.input.mount=true`);await host.wait('!a.game.player(2).mounted');await client.wait('!a.me.mounted');
+  await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
+  assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,pageErrors:b.errors};
+  await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+}catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

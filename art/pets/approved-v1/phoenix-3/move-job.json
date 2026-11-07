@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "4b2246b2-1ff3-4f8b-81b8-22d94330ede3",
+  "reference": "move-reference-256.png",
+  "canonical_reference_sha256": "d66e892a88042c1b4d6d8a210d1ad20c7347ac0fcc757acb773ad874dcd1c9eb",
+  "canonical_scale": 1.3333333333333333,
+  "request": {
+    "action": "The SAME ice phoenix makes a forward-flight cycle IN PLACE, facing right. BOTH wings beat simultaneously DOWN then UP, always in the same phase: both wing tips reach bottom together, then both reach top together. Never alternate wings. Body gently leans forward with a small natural bob, long feather tails stream and ripple. Two complete feathered wings, exact design and colors, fixed scale and position. No rotations, somersaults, disappearing feathers, trails, magic or particles. Loop returns to BOTH wings high as in reference.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8113723
+  }
+}

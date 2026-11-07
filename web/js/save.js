@@ -3,6 +3,7 @@ import { START_CHARS, START_TOKENS, UNLOCKS, GACHA, CHAR_ORDER, LOADOUT_SLOTS } 
 
 import { progressFromXP, MAX_CHARACTER_XP } from "./progression.js";
 import { collectionBonuses } from "./collection.js";
+import { normalizePets, equippedPet } from "./petdata.js";
 
 const KEY = "ai-girls-dungeon-v1";
 const fresh = () => ({
@@ -20,6 +21,7 @@ const fresh = () => ({
   seenUnlock: [],
   loadout: null, // cid -> [ssr talent id | null] (one page per character)
   maps: {}, // map id -> clears
+  pets: { owned: {}, equipped: null },
 });
 
 let mem = null;
@@ -47,6 +49,7 @@ export function load() {
     mem.name = "玩家" + Math.floor(1000 + Math.random() * 9000);
     save();
   }
+  mem.pets = normalizePets(mem.pets);
   return mem;
 }
 export function save() {
@@ -94,7 +97,7 @@ export function makeKit(cid) {
     tal[it.id] = lv;
   }
   for (const id of loadoutOf(cid)) if (id) eq[id] = m.talents[id] || 1;
-  return { tal, eq, level: characterProgress(cid).level, collection: collectionBonuses(m.curios), cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0 };
+  return { tal, eq, level: characterProgress(cid).level, collection: collectionBonuses(m.curios), cards: [...m.cards], core: (m.cores || {})[cid] ? 1 : 0, pet: equippedPet(m) };
 }
 
 /** Check unlock conditions; returns newly unlocked char ids. */

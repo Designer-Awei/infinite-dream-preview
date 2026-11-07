@@ -4,7 +4,7 @@ export const input = {
   atk: false, // attack held
   aim: null, // manual aim angle (touch drag) or null = auto lock
   skillAim: null, ultAim: null, // aim preview while dragging those buttons
-  pressed: { skill: false, ult: false, dash: false, pause: false },
+  pressed: { skill: false, ult: false, dash: false, pause: false, mount: false },
   castAim: { skill: null, ult: null },
   touch: false,
   enabled: true,
@@ -42,6 +42,7 @@ export function initInput(root) {
       }
       if (e.code === "KeyK") (input.pressed.skill = true), (input.castAim.skill = null);
       if (e.code === "KeyL") (input.pressed.ult = true), (input.castAim.ult = null);
+      if (e.code === "KeyR" && document.querySelector('.pet-ride-btn')) input.pressed.mount = true;
       if (e.code === "Space" || e.code === "ShiftLeft") input.pressed.dash = true;
       if (e.code === "Escape" || e.code === "KeyP") input.pressed.pause = true;
     }

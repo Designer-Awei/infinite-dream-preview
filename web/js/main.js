@@ -17,6 +17,8 @@ import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
+import { PETS, petExperience } from "./petdata.js";
+import { grantPetXP } from "./petsave.js";
 
 const canvas = document.getElementById("view");
 const uiRoot = document.getElementById("ui");
@@ -67,6 +69,11 @@ export const app = {
   cardOpen: false,
   net: null,
   hudT: 0,
+  startPetTrial(id) {
+    if (!Object.hasOwn(PETS, id)) return;
+    const m = load(); this.net = null;
+    this.beginLoading({ mode: "solo", pvp: false, petTrial: id, seed: (Math.random() * 1e9) | 0, players: [{id:1,cid:m.sel,name:m.name,kit:{...makeKit(m.sel),pet:{id,stage:3}}}], myId:1, opt:{map:"grass",petTrial:true} });
+  },
 
   startSolo() {
     const m = load();
@@ -116,15 +123,18 @@ export const app = {
   },
   /** start a run (solo, host or client). cfg: {mode, pvp, seed, players:[{id,cid,name}], myId} */
   begin(cfg) {
+    consume("mount");
     UI.closeCards();
     const g = new Game({ mode: cfg.mode, pvp: cfg.pvp, seed: cfg.seed, fx, opt: cfg.opt || {} });
     this.cfg = cfg;
+    this.petTrial = cfg.petTrial || null;
     for (const p of cfg.players) {
       const pl = g.addPlayer({ id: p.id, cid: p.cid, name: p.name, local: p.id === cfg.myId, kit: p.kit });
       if (cfg.pvp && p.id !== cfg.myId) pl.pvpEnemy = true;
     }
     this.game = g;
     this.me = g.player(cfg.myId);
+    if (this.petTrial) this.me.ult = 1;
     this.paused = false;
     this.cardOpen = false;
     this.ended = false;
@@ -169,6 +179,11 @@ export const app = {
   endRun(win) {
     if (this.ended) return;
     this.ended = true;
+    if (this.petTrial) {
+      const id = this.petTrial, rs = this.game.runStats;
+      UI.showResult({title:"伙伴试炼结束",sub:`${PETS[id].name} · 试用收益不保存`,rows:[["清理房间",rs.rooms],["击败敌人",rs.kills],["造成伤害",Math.round(rs.dmg)]],extras:[["伙伴试用","未消耗货币，不保存收益"]],tokens:0,win,cid:this.me.cid},()=>this.startPetTrial(id),()=>this.toLobby());
+      return;
+    }
     const g = this.game, m = load(), rs = g.runStats;
     const o = g.opt, endless = g.endless, md = g.mapDef;
     m.maps = m.maps || {};
@@ -195,6 +210,8 @@ export const app = {
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
+    const petXP = this.me.pet && grantPetXP(this.me.pet.id, petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses}));
+    if (petXP) extras.push(["伙伴经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {
@@ -329,6 +346,7 @@ export const app = {
     MUI.showMineResult(res, again, () => MUI.showMineHub());
   },
   toLobby() {
+    this.petTrial = null;
     this.game = null;
     this.me = null;
     if (this.net) this.net.close(), (this.net = null);
@@ -437,6 +455,7 @@ function frame(now) {
     if (consume("skill")) (inp.skill = true), (inp.castAim = { ...inp.castAim, skill: input.castAim.skill });
     if (consume("ult")) (inp.ult = true), (inp.castAim = { ...inp.castAim, ult: input.castAim.ult });
     if (consume("dash")) inp.dash = true;
+    if (consume("mount")) inp.mount = true;
   }
   const active = me && (Math.abs(me.input.mx) > .1 || Math.abs(me.input.my) > .1 || me.input.atk || me.input.skill || me.input.ult || me.input.dash || me.castT > 0);
   trackExperienceTime(app.progressSession, wallDt, active, !document.hidden && !frozen && !app.cardOpen && !app.ended && !g.pvp && !me?.dead && !me?.downed && ["fight", "clear", "portal"].includes(g.phase) && g.room?.kind !== "shop");

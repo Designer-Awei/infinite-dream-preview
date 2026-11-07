@@ -1,0 +1,15 @@
+{
+  "frame_count": 9,
+  "job": "0175125d-c5a0-4e2a-ac18-3d4a35395463",
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.02709417578246858
+  },
+  "canonical_reference_sha256": "ccbc508e6ee728ca6b1ad9682c0a128ff6e5f5cfe88261de1c8a2dea522025fb",
+  "sha256": "d499732778fc11c9fdbdffa78ce0d0681e228ac62669cb8438eb47e207d2f910",
+  "w": 128,
+  "h": 128,
+  "fps": 6
+}

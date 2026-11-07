@@ -1,15 +1,15 @@
 {
   "frame_count": 9,
-  "job": "528af603-3c72-477a-b0c3-e588c62227bd",
+  "job": "96cb5597-ea65-493e-9f3f-7b103985b235",
   "usage": {
     "usd": 0.0,
     "type": "generations",
-    "generations": 5,
-    "cost_if_paid": 0.028868347499105662
+    "generations": 8,
+    "cost_if_paid": 0.02769147138463126
   },
-  "canonical_reference_sha256": "6f072bbc95f4cf5c3bff1708db4d8689ee6bcd0b72efd1d1510b67f88760176c",
-  "sha256": "5ac3f568d96755855a5bf566b3c4ca93a55a049175e64c8c11c8c3ea08565906",
-  "w": 96,
-  "h": 96,
+  "canonical_reference_sha256": "ccbc508e6ee728ca6b1ad9682c0a128ff6e5f5cfe88261de1c8a2dea522025fb",
+  "sha256": "cf0bc80a1824c811e8bbffdefc749df6e2352bd08a53b220ec6c76726b22f345",
+  "w": 128,
+  "h": 128,
   "fps": 8
 }

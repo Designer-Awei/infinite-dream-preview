@@ -7,12 +7,15 @@ import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
+import { attachPet, resetPet, updatePets, toggleMount } from "./pets.js";
 
 export const RIFT_CHANCE = 0.25;
 export class Game {
   constructor({ mode = "solo", pvp = false, seed = (Math.random() * 1e9) | 0, fx, opt = {} }) {
     this.mode = mode; // solo | host | client
     this.pvp = pvp;
+    this.petTrial = !pvp && !!opt.petTrial;
+    this.petFields = [];
     // mode options: map (chapter) for PVE, endless corridor, PVP rule set
     this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl" };
     this.endless = !pvp && this.opt.endless;
@@ -82,6 +85,7 @@ export class Game {
       p.hp += growth.hp;
       p.maxHp += growth.hp;
     }
+    attachPet(this, p, kit.pet);
     this.players.push(p);
     return p;
   }
@@ -170,6 +174,7 @@ export class Game {
     this.ground = renderGround(this.map);
     this.enemies.length = 0;
     this.bullets.length = 0;
+    this.petFields.length = 0;
     this.zones.length = 0;
     this.pickups.length = 0;
     this.lines.length = 0;
@@ -192,6 +197,7 @@ export class Game {
       if (p.hp <= 0) p.hp = 1;
       p.dashT = 0;
       p.invuln = 1;
+      resetPet(this, p);
       this.fx.spawn("arcane/magic-circle-cast", p.x, p.y + 4, { palette: ELEM[CHARS[p.cid].elem].ramp, speed2: 1.8 });
     });
     // map items
@@ -396,7 +402,7 @@ export class Game {
     e.flash = 0.1;
     e.lastBy = p ? p.id : e.lastBy;
     if (p) {
-      p.ult = Math.min(1, p.ult + (dmg / CHARS[p.cid].ult.need) * p.st.ultG * (p.buff.ultOn > 0 ? 0.25 : 1));
+      if (!src.noUltGain) p.ult = Math.min(1, p.ult + (dmg / CHARS[p.cid].ult.need) * p.st.ultG * (p.buff.ultOn > 0 ? 0.25 : 1));
       this.runStats.dmg += dmg;
     }
     const col = crit ? "#ffe14a" : src.elem ? ELEM[src.elem].glow : "#ffffff";
@@ -920,6 +926,7 @@ export class Game {
       this.flowT = 0.3;
     }
     for (const p of this.players) this.updatePlayer(p, dt);
+    updatePets(this, dt);
     for (const e of this.enemies) if (!e.dead) updateEnemy(this, e, dt);
     // lava burns walking enemies too
     if (this.hazard === "lava" && this.host)
@@ -1078,7 +1085,7 @@ export class Game {
     // (it is counted at the settlement either way)
     if (this.room.kind === "boss") this.dropShovel();
     // a boss sometimes leaves a 梦境裂隙: a 90-second dig (solo only)
-    if (this.room.kind === "boss" && this.mode === "solo" && Math.random() < RIFT_CHANCE) {
+    if (this.room.kind === "boss" && this.mode === "solo" && !this.petTrial && Math.random() < RIFT_CHANCE) {
       this.banner = { text: "梦境裂隙出现！", sub: "限时挖宝的机会", t: 2 };
       this.vfx("arcane/portal", this.map.center.x, this.map.center.y + 8, { layer: "back", life: 3 });
       this.after(1.8, () => this.onUi("rift"));
@@ -1200,6 +1207,7 @@ export class Game {
 
   // ------------------------------------------------------------ players
   updatePlayer(p, dt) {
+    if (this.host && p.input.mount) { toggleMount(this, p); p.input.mount = false; }
     p.animT += dt;
     for (const k in p.buff) if (p.buff[k] > 0) p.buff[k] -= dt;
     p.invuln -= dt;
@@ -1219,6 +1227,7 @@ export class Game {
     const c = CHARS[p.cid];
     // movement
     let spd = c.speed * p.st.speed;
+    if (p.mounted) spd *= 1.25;
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) spd *= 1.15; // SSR 混合专家
     if (p.buff.speed > 0) spd *= 1.4;
     if (p.buff.ultOn > 0 && p.cid === "grok") spd *= 1.4;

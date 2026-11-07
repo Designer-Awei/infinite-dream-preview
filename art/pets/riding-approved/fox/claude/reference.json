@@ -1,0 +1,19 @@
+{
+  "source_sha256": "9cfc52dd01c9824511ae9d13970d097c8069055310bbd829b72f36b2c5224e5e",
+  "reference_sha256": "78be94fdc6d7d9720465e3403a7780b725cf580ae04b3628a09e29cfe7411588",
+  "canvas": [
+    256,
+    256
+  ],
+  "foot": [
+    128,
+    232
+  ],
+  "body": [
+    196,
+    178
+  ],
+  "pixel_palette_preserved": true,
+  "background_cleanup": "border-connected white matte from unzoom output; main connected figure kept",
+  "previous_white_reference_sha256": "2641d1f3336ceeeb7b7ab84ce6ab772e10d9fbd93ddafb576dd527fc92c59686"
+}

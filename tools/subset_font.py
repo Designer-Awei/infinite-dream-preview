@@ -1,6 +1,7 @@
 # Re-subsets the Cubic 11 pixel font to every character used by the game's web sources (keeps the woff small).
 # usage: python3 tools/subset_font.py /path/to/Cubic_11.ttf
 import glob, sys
+from pathlib import Path
 from fontTools import subset
 from fontTools.ttLib import TTFont
 src = sys.argv[1] if len(sys.argv) > 1 else "/home/claude/ext/fonts/Cubic-11/fonts/ttf/Cubic_11.ttf"
@@ -9,6 +10,12 @@ for p in glob.glob("web/**/*", recursive=True):
     if p.endswith((".js", ".html", ".css", ".json", ".webmanifest")) and "vendor" not in p and "fxmods" not in p:
         chars |= set(open(p, encoding="utf-8").read())
 chars = {c for c in chars if ord(c) >= 0x20}
+# Preserve existing glyphs when adding features, so unused legacy/save text never falls back.
+target = Path("web/assets/font/Cubic_11.woff")
+if target.exists():
+    previous = TTFont(target)
+    chars |= {chr(c) for c in previous.getBestCmap()}
+    previous.close()
 font = TTFont(src)
 cmap = font.getBestCmap()
 

@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "8222f6f5-201d-4132-a4b6-88e83a152d79",
+  "source": "../claude-source.png",
+  "request": {
+    "action": "This exact rider and fox remain together in a living idle LOOP facing right. The fox gently breathes through the chest and belly, shifts weight naturally through bent leg joints, blinks, and its existing tails sway with soft delayed waves. The rider stays seated astride, gently balances and breathes, hair softly follows, hands retain the reins or book exactly. Preserve the exact character, clothes, tail count, anatomy, proportions and NEAR/FAR LEG OCCLUSION. The far leg stays behind the fox body. No dismounting or floating feet. Entire pair remains in place. Empty space stays empty. No symbols, sparks, rings or effects. Return to the same pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 7110792
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.03424678826332092
+  },
+  "sha256": "189f9ecb2a8bb61c02f43d1265551d0ac02f213327479e40c1552a37bcefa1ae",
+  "runtime": [
+    160,
+    160
+  ],
+  "submitted_reference_sha256": "2641d1f3336ceeeb7b7ab84ce6ab772e10d9fbd93ddafb576dd527fc92c59686",
+  "normalized_base_reference_sha256": "78be94fdc6d7d9720465e3403a7780b725cf580ae04b3628a09e29cfe7411588",
+  "input_background_note": "Provider no_background removes submitted white matte; normalized base uses corrected transparent reference",
+  "normalization": {
+    "provider_raw_unchanged": true,
+    "source_first_frame_sha256": "14ad2817a4cf63a90bf1cfb9ed136b850c8e584d5206925dafd33627de9e9964",
+    "scale": 1.0155440414507773,
+    "offset": [
+      0,
+      6
+    ],
+    "target_foot": [
+      128,
+      232
+    ],
+    "runtime": [
+      160,
+      160
+    ],
+    "input_white_matte_removed": true,
+    "small_detached_fragments": []
+  }
+}

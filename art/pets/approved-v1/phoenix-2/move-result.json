@@ -1,0 +1,102 @@
+{
+  "frame_count": 9,
+  "job": "77ba0aa7-7db5-43de-9e38-88ac11c8371a",
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.029205214493804504
+  },
+  "canonical_reference_sha256": "00120bd778f7f51b356f53743dd3492a37f044666f098826ac1f8d62149d1a25",
+  "sha256": "649123de319728d26f07c5b1c94731f43b77511c496416e0b45c4c8de329f9d1",
+  "w": 128,
+  "h": 128,
+  "fps": 6,
+  "stray_cleanup": {
+    "method": "isolated 8-connected fragments fully above connected bird body by >=2px",
+    "input_sha256": "b5c0434455906f90f852c0ec5940579a488d55d446496d6911189221aff48cde",
+    "removed": [
+      {
+        "frame": 3,
+        "pixels": 2,
+        "box": [
+          12,
+          10,
+          14,
+          11
+        ]
+      },
+      {
+        "frame": 3,
+        "pixels": 18,
+        "box": [
+          15,
+          11,
+          26,
+          14
+        ]
+      },
+      {
+        "frame": 3,
+        "pixels": 25,
+        "box": [
+          35,
+          20,
+          44,
+          27
+        ]
+      },
+      {
+        "frame": 3,
+        "pixels": 10,
+        "box": [
+          46,
+          25,
+          56,
+          26
+        ]
+      },
+      {
+        "frame": 4,
+        "pixels": 27,
+        "box": [
+          26,
+          7,
+          33,
+          14
+        ]
+      },
+      {
+        "frame": 4,
+        "pixels": 3,
+        "box": [
+          12,
+          11,
+          15,
+          12
+        ]
+      },
+      {
+        "frame": 4,
+        "pixels": 30,
+        "box": [
+          35,
+          16,
+          48,
+          22
+        ]
+      },
+      {
+        "frame": 4,
+        "pixels": 15,
+        "box": [
+          42,
+          31,
+          53,
+          36
+        ]
+      }
+    ],
+    "provider_raw_unchanged": true
+  }
+}

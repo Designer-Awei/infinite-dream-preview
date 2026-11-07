@@ -6,7 +6,7 @@
   const names = ['赤焰火龙', '霆尾灵狐', '霜羽冰凰'];
   const skills = ['长距离龙息', '连锁雷击', '范围暴风雪'];
   const colors = ['#ff9860', '#ffe69c', '#8fe6ff'];
-  const state = { stage: 3, effects: true, range: 210, radius: 72, manual: false, idleOnly: false };
+  const state = { stage: 3, effects: true, range: 210, radius: 72, manual: false, idleOnly: false, moveOnly: false };
   let started = performance.now();
   const noise = (i, salt = 0) => { const n = Math.sin(i * 127.1 + salt * 311.7) * 43758.5453; return n - Math.floor(n); };
   function pixel(x, y, size, color, alpha = 1) {
@@ -15,11 +15,11 @@
   function text(s, x, y, size, color = '#eee8ff') { ctx.font = `${size}px Cubic,monospace`; ctx.fillStyle = color; ctx.fillText(s, x, y); }
   function phaseAt(time) {
     const t = ((time % 6.75) + 6.75) % 6.75;
-    const idle = state.idleOnly || t < 2 || t >= 4.75;
+    const idle = state.idleOnly || state.moveOnly || t < 2 || t >= 4.75;
     const active = !idle && t >= 2.4 && t < 4.35;
     const power = idle ? 0 : Math.max(0, Math.min(1, (t - 2.4) / .18, (4.35 - t) / .25));
     const held = [3, 4, 5, 4];
-    const frame = idle ? Math.floor((state.idleOnly ? time : t < 2 ? t : t - 4.75) * 6) : t < 2.4 ? Math.floor((t - 2) * 7.5) : active ? held[Math.floor((t - 2.4) * 6) % held.length] : 6 + Math.floor((t - 4.35) * 7.5);
+    const frame = idle ? Math.floor((state.idleOnly || state.moveOnly ? time : t < 2 ? t : t - 4.75) * 6) : t < 2.4 ? Math.floor((t - 2) * 7.5) : active ? held[Math.floor((t - 2.4) * 6) % held.length] : 6 + Math.floor((t - 4.35) * 7.5);
     return { t, active, power, frame, idle, label: idle ? '待机 · 呼吸 / 翼动 / 尾摆' : t < 2.4 ? '蓄能' : active ? '释放' : '收势' };
   }
   function fire(x, y, time, power) {
@@ -73,11 +73,12 @@
       text(names[index], 22, 36, 23, colors[index]); text(skills[index], 22, 65, 16, '#b4a9c9');
       // Ground remains intentionally quiet so silhouettes and local energy read clearly.
       ctx.fillStyle = '#342544'; ctx.beginPath(); ctx.ellipse(108, 257, 75, 17, 0, 0, Math.PI * 2); ctx.fill();
-      const id = `${family}-${state.stage}`, actor = data.actors[id], clip = data.clips[id][phase.idle ? 'idle_e' : 'cast_e'];
-      const frame = phase.idle ? phase.frame % (clip.length - 1) : Math.min(phase.frame, clip.length - 1), [sx, sy] = clip[frame];
-      const scale = 2, left = 12, top = 82, mouthX = left + actor.mouth[0] * scale, mouthY = top + actor.mouth[1] * scale;
+      const id = `${family}-${state.stage}`, actor = data.actors[id], clip = data.clips[id][state.moveOnly ? 'move_e' : phase.idle ? 'idle_e' : 'cast_e'];
+      const [lo,hi]=actor.cast_hold_frames,mid=Math.floor((lo+hi)/2),hold=[lo,mid,hi,mid];
+      const frame = phase.idle ? phase.frame % (clip.length - 1) : phase.active ? family==='phoenix'?Math.floor(time*6)%8:hold[Math.floor(time*6)%4] : Math.min(phase.frame, clip.length - 1), [sx, sy] = clip[frame];
+      const scale = 2, left = 108-actor.anchor[0]*scale, top = 257-actor.anchor[1]*scale, mouthX = left + actor.mouth[0] * scale, mouthY = top + actor.mouth[1] * scale;
       if (state.effects && index === 2) blizzard(time, phase.power);
-      ctx.drawImage(atlas, sx, sy, 96, 96, left, top, 192, 192);
+      ctx.drawImage(atlas, sx, sy, data.cw, data.ch, left, top, data.cw*scale, data.ch*scale);
       if (state.effects && index === 0) fire(mouthX, mouthY, time, phase.power);
       if (state.effects && index === 1) lightning(mouthX, mouthY, time, phase.power);
       text(`阶段 ${state.stage}  /  ${phase.label}`, 22, 312, 16, '#dacbe9');
@@ -89,7 +90,8 @@
   document.querySelectorAll('[data-stage]').forEach(b => b.onclick = () => { setStage(b.dataset.stage); started = performance.now(); });
   document.querySelector('#effects').onclick = event => { state.effects = !state.effects; event.target.textContent = `代码技能：${state.effects ? '开' : '关'}`; event.target.setAttribute('aria-pressed', String(state.effects)); };
   document.querySelector('#replay').onclick = () => { started = performance.now(); };
-  document.querySelector('#idle').onclick = event => { state.idleOnly = !state.idleOnly; event.target.textContent = state.idleOnly ? '返回完整施法' : '只看待机细节'; event.target.setAttribute('aria-pressed', String(state.idleOnly)); started = performance.now(); };
+  document.querySelector('#idle').onclick = event => { state.idleOnly = !state.idleOnly; state.moveOnly=false;document.querySelector('#move').textContent='只看移动细节';document.querySelector('#move').setAttribute('aria-pressed','false');event.target.textContent = state.idleOnly ? '返回完整施法' : '只看待机细节'; event.target.setAttribute('aria-pressed', String(state.idleOnly)); started = performance.now(); };
+  document.querySelector('#move').onclick = event => {state.moveOnly=!state.moveOnly;state.idleOnly=false;document.querySelector('#idle').textContent='只看待机细节';document.querySelector('#idle').setAttribute('aria-pressed','false');event.target.textContent=state.moveOnly?'返回完整施法':'只看移动细节';event.target.setAttribute('aria-pressed',String(state.moveOnly));started=performance.now();};
   for (const key of ['range', 'radius']) document.querySelector(`#${key}`).oninput = event => { state[key] = Number(event.target.value); };
   const ready = new Promise((resolve, reject) => { atlas.onload = async () => { await document.fonts.load('16px Cubic'); drawAt(0); resolve(true); }; atlas.onerror = reject; });
   atlas.src = 'pets.png';

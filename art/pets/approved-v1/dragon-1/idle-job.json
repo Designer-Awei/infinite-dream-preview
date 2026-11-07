@@ -1,13 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "5b15c43f-4e80-4c32-a449-7b74aa067c9a",
-  "reference": "idle-reference-192.png",
-  "canonical_scale": 0.7,
+  "job": "fe60db0f-472a-4767-95bf-99803b0ab71a",
+  "reference": "idle-reference-256.png",
+  "canonical_reference_sha256": "f709c21ce823c87d47eba1e6cb67cbd89940fcbe8ccca00690ae443e7af55dc3",
+  "canonical_scale": 0.4583333333333333,
   "request": {
-    "action": "A seamless calm living IDLE LOOP of the SAME red dragon, in-place. Chest and abdomen gently expand and relax with visible breathing. The tail slowly sways left and right at its base and curls at the tip, its existing small tail flame softly flickers. Both wings gently flex and partially flap once, membrane folds bend naturally. A subtle head lift and blink. Keep every foot planted; preserve exact horns, red/gold scales, face, proportions and size. No walking, no rotation, no new accessories, no spell, no external particles. Return smoothly to the exact first pose.",
-    "frame_count": 12,
+    "action": "The SAME quadrupedal red dragon in a natural living idle LOOP. ALL FOUR CLAWED FEET remain planted on the ground, including BOTH FRONT PAWS; never lift front arms into a begging or bipedal pose. Clear chest and belly breathing. BOTH red wings perform a LARGE synchronized lift into a high V, then lower together to a wide horizontal spread, then return; strong readable wing motion with membrane folds, not a tiny twitch. Wings stay above the ground. Tail gently sways and existing tail flame flickers. A tiny head bob. Preserve exact face, horns, red/gold palette, scale and proportions. Full creature stays inside the canvas. No walking, no spin, no added effects. Return to the same four-foot standing pose.",
+    "frame_count": 8,
     "no_background": true,
-    "seed": 6112701
+    "seed": 8112701
   }
 }

@@ -1,0 +1,75 @@
+{
+  "approved_by_user": "2026-11-07",
+  "species": "fox",
+  "stage": 3,
+  "ride_only_at_final_stage": true,
+  "original_input": "C:\\Users\\19743\\AppData\\Local\\Temp\\codex-clipboard-c3222a6e-e25d-4100-b318-5ac57659db20.png",
+  "source_sha256": "923e987e3dbef35ebc9ca0d7611b5be2d70192db360262c4968ae5c0f50f242a",
+  "size": [
+    1536,
+    1024
+  ],
+  "characters": [
+    {
+      "cid": "deepseek",
+      "source_box": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "sha256": "6998e6a7f024a659d1d71a8da23d24495342cafd708c7647dc277ca6c1ab65ca"
+    },
+    {
+      "cid": "grok",
+      "source_box": [
+        512,
+        0,
+        1024,
+        512
+      ],
+      "sha256": "0356b37a603a2d743d1f4b4d1d467c0b4a2100628bff350e705ac2e99f1611d8"
+    },
+    {
+      "cid": "claude",
+      "source_box": [
+        1024,
+        0,
+        1536,
+        512
+      ],
+      "sha256": "9cfc52dd01c9824511ae9d13970d097c8069055310bbd829b72f36b2c5224e5e"
+    },
+    {
+      "cid": "gpt",
+      "source_box": [
+        0,
+        512,
+        512,
+        1024
+      ],
+      "sha256": "5316fb4974883a3a0e1ed5b7edf3d0df10526c347581eb3dd4ea4496eec2f253"
+    },
+    {
+      "cid": "doubao",
+      "source_box": [
+        512,
+        512,
+        1024,
+        1024
+      ],
+      "sha256": "cb7f80179d8ee764a58d076bfb44a136152f9a643ec42f1cbb0a99c581a1fe11"
+    },
+    {
+      "cid": "glm",
+      "source_box": [
+        1024,
+        512,
+        1536,
+        1024
+      ],
+      "sha256": "8fe6ce7fbf042c115ae0334d4e82ad4d3e9b931fdbc176dabb6e9a729d4d7482"
+    }
+  ],
+  "next_references": "dragon and phoenix pending from user"
+}

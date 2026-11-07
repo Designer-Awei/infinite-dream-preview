@@ -1,7 +1,7 @@
 // Loads images and prepares the sprite canvases the renderer draws from.
 import { CHAR_ORDER, ELEM, CHARS, SPR_K } from "./data.js";
 
-export const A = { girls: {}, critters: {}, portraits: {}, ready: false };
+export const A = { girls: {}, critters: {}, portraits: {}, pets: null, riders: null, mounts: {}, ready: false };
 
 function img(src) {
   return new Promise((res, rej) => {
@@ -98,6 +98,12 @@ export async function loadAll(progress = () => {}) {
   progress(0.8);
   const ps = await Promise.all(CHAR_ORDER.map((id) => img(base + "portrait_" + id + ".png")));
   CHAR_ORDER.forEach((id, i) => (A.portraits[id] = ps[i]));
+  const [petMeta, petImage] = await Promise.all([json(base + "pets/pets.json"), img(base + "pets/pets.png")]);
+  A.pets = { meta: petMeta, image: petImage };
+  const [riderMeta,riderImage,riderBack]=await Promise.all([json(base+'pets/riders.json'),img(base+'pets/riders-front.png'),img(base+'pets/riders-back.png')]);
+  A.riders={meta:riderMeta,image:riderImage,back:riderBack,white:silhouette(riderImage,'#ffffff')};
+  const [foxMountMeta,foxMountImage]=await Promise.all([json(base+'pets/fox-mounted.json'),img(base+'pets/fox-mounted.png')]);
+  A.mounts.fox={meta:foxMountMeta,image:foxMountImage};
   try {
     await document.fonts.load("12px Cubic");
   } catch {}

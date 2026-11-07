@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "4b8a5c36-3156-4b9e-bed0-3354659cdb72",
+  "reference": "move-reference-256.png",
+  "canonical_reference_sha256": "8740928224f8e861551560a952b9be1dc9a39152effea43fdb932988aa1669a5",
+  "canonical_scale": 1.1111111111111112,
+  "request": {
+    "action": "The SAME ivory gold fox performs a graceful four-legged TROT cycle IN PLACE facing right. Clearly animate all four legs with alternating diagonal pairs, weight-bearing paws and small shoulder/hip rise and fall. Body moves naturally rather than frozen. Its existing tail count is exact, tails stream behind with delayed sways, ears alert. Preserve face, proportions, ivory/gold/plum colors and size. No translation, no spin, no effects, seamless loop to starting pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8113713
+  }
+}

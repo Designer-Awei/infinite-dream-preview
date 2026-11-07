@@ -1,0 +1,49 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "e08c9fde-db75-44fd-b08a-8d9b56e5fa2c",
+  "source": "../deepseek-source.png",
+  "request": {
+    "action": "This exact fox and rider perform a smooth four-legged WALK cycle IN PLACE facing right. All four fox legs step naturally in diagonal pairs with weight-bearing paws, shoulders and hips rise and fall a little, tails follow the movement. The rider remains seated astride, hips stay attached to the back, knees gently absorb each step, hair follows naturally. Preserve exact rider identity, costume, book/reins, fox shape and tail count. Keep the far rider leg HIDDEN BEHIND the animal, near leg visible in front. No standing up, sliding or drifting. Empty space stays empty. No effects. Seamless return to the original pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 7110890
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.03929039854473538
+  },
+  "sha256": "9e098d7a66cc8fcd2132592a862fa5c5da7dda75543af6de8d66a16b5e13e129",
+  "runtime": [
+    160,
+    160
+  ],
+  "normalization": {
+    "provider_raw_unchanged": true,
+    "source_first_frame_sha256": "2c8e63d91f8087a3ef645921225cf8f06a3a4ff33592811ba3feff5494a3aca2",
+    "scale": 1.0,
+    "offset": [
+      0,
+      0
+    ],
+    "target_foot": [
+      128,
+      232
+    ],
+    "runtime": [
+      160,
+      160
+    ],
+    "input_white_matte_removed": true,
+    "small_detached_fragments": [
+      {
+        "frame": 4,
+        "pixels": 2,
+        "reason": "small fragment"
+      }
+    ]
+  }
+}

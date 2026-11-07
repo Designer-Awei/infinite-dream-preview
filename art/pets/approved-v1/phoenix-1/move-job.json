@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "0175125d-c5a0-4e2a-ac18-3d4a35395463",
+  "reference": "move-reference-256.png",
+  "canonical_reference_sha256": "ccbc508e6ee728ca6b1ad9682c0a128ff6e5f5cfe88261de1c8a2dea522025fb",
+  "canonical_scale": 0.6,
+  "request": {
+    "action": "A blue and white bird flies IN PLACE facing right. Both feathered wings flap DOWN TOGETHER then UP TOGETHER, in the same phase. Gentle body bob and natural tail feather sway. Preserve exact bird design, feather colors, size and position. ONLY physical bird movement. Empty space remains entirely empty: no magic, glow, lines, circles, rings, particles or trails. Seamlessly return to the starting pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8113721
+  }
+}

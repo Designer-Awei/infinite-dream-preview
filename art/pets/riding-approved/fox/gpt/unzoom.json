@@ -1,0 +1,15 @@
+{
+  "usage": {
+    "type": "generations",
+    "generations": 0.1
+  },
+  "original_size": {
+    "width": 512,
+    "height": 512
+  },
+  "unzoomed_size": {
+    "width": 128,
+    "height": 127
+  },
+  "zoom_factor_detected": 4.0
+}

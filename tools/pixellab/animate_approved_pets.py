@@ -11,6 +11,7 @@ from pathlib import Path
 import numpy as np
 import requests
 from PIL import Image
+from normalize_pet_clips import normalize_frames
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / 'art/pets/approved-v1'
@@ -21,18 +22,23 @@ SOURCES = {
 }
 NAMES = {'dragon':'赤焰火龙','fox':'霆尾灵狐','phoenix':'霜羽冰凰'}
 IDLE = {
- 'dragon': 'A seamless calm living IDLE LOOP of the SAME red dragon, in-place. Chest and abdomen gently expand and relax with visible breathing. The tail slowly sways left and right at its base and curls at the tip, its existing small tail flame softly flickers. Both wings gently flex and partially flap once, membrane folds bend naturally. A subtle head lift and blink. Keep every foot planted; preserve exact horns, red/gold scales, face, proportions and size. No walking, no rotation, no new accessories, no spell, no external particles. Return smoothly to the exact first pose.',
- 'fox': 'A seamless calm living IDLE LOOP of the SAME ivory gold fox, in-place. Visible gentle chest breathing, soft ear twitch and one blink. Its existing tail or tails naturally sway in a slow flowing wave from base to tips, slightly staggered, without adding or losing any tails. Fur remains detailed and stable. Keep all paws planted, head mostly still. Preserve exact face, anatomy, white/gold/violet palette, silhouette, proportions and size. No walking, no turning, no lightning, no spell effects or particles. Return smoothly to the exact first pose.',
- 'phoenix': 'A seamless living HOVER IDLE LOOP of the SAME white and cyan phoenix. The two wings make one smooth natural upstroke and downstroke with distinct feather articulation, restrained enough to fit the canvas. Chest breathes, body rises and falls slightly in response to the wingbeat, long feather tail follows with a flowing delayed sway. Beak and crest keep exact design. Preserve exact blue/white feathers, anatomy, scale and facing. No spinning, no shape transformation, no magic, no energy trails, no rings, no ice or particles. Smoothly return to the exact first pose.'
+ 'dragon': 'The SAME quadrupedal red dragon in a natural living idle LOOP. ALL FOUR CLAWED FEET remain planted on the ground, including BOTH FRONT PAWS; never lift front arms into a begging or bipedal pose. Clear chest and belly breathing. BOTH red wings perform a LARGE synchronized lift into a high V, then lower together to a wide horizontal spread, then return; strong readable wing motion with membrane folds, not a tiny twitch. Wings stay above the ground. Tail gently sways and existing tail flame flickers. A tiny head bob. Preserve exact face, horns, red/gold palette, scale and proportions. Full creature stays inside the canvas. No walking, no spin, no added effects. Return to the same four-foot standing pose.',
+ 'fox': 'The SAME ivory golden fox makes a living in-place idle LOOP. Show clearly VISIBLE CHEST AND BELLY BREATHING: ribcage expands, shoulders and hips gently rise and sink. Softly shift weight by bending the hind knees and flexing the foreleg joints; lift one front paw just a little, place it down, and settle, without walking away. Legs and torso MUST animate, not only tails. Existing tail or tails sway in staggered waves; blink and twitch an ear. Preserve exactly the approved face, tail count, ivory/gold/plum colors and anatomy. No new tails, no spinning or effects. Fixed position and size, smooth return to start.',
+ 'phoenix': 'The SAME icy blue and white phoenix makes a natural in-place flying idle LOOP. BOTH WINGS FLAP IN PERFECT SYNCHRONY: frame start BOTH wing tips HIGH ABOVE shoulders; middle BOTH wings sweep DOWN together BELOW shoulder level; end BOTH wings return UP together to the original high V. Both shoulders, elbows and feather tips share the same phase, like a real bird. NEVER a seesaw, NEVER one wing up while the other is down, NEVER alternating left and right. Feather fans flex naturally, body gently rises/falls and long tail feathers follow with delayed sway. Keep body level facing RIGHT, exact crest/beak/feathers, colors and size. No roll, spin, flip, loops, rings, trails, magic or particles. Full wings fit canvas.'
+}
+MOVE = {
+ 'dragon':'The SAME red dragon performs a seamless four-legged WALK cycle IN PLACE facing right. All four limbs step naturally in a quadruped gait: alternating diagonal foot pairs, elbows and knees bend, front feet reach down and bear weight. Never rear up or hold both front paws in the air. Gentle shoulder/hip movement, wings partly open with a coordinated flap, tail counterbalances. Preserve design, horns, scale, red/gold palette. Fixed screen position, no sliding, no camera, no effects. Return to starting pose.',
+ 'fox':'The SAME ivory gold fox performs a graceful four-legged TROT cycle IN PLACE facing right. Clearly animate all four legs with alternating diagonal pairs, weight-bearing paws and small shoulder/hip rise and fall. Body moves naturally rather than frozen. Its existing tail count is exact, tails stream behind with delayed sways, ears alert. Preserve face, proportions, ivory/gold/plum colors and size. No translation, no spin, no effects, seamless loop to starting pose.',
+ 'phoenix':'A blue and white bird flies IN PLACE facing right. Both feathered wings flap DOWN TOGETHER then UP TOGETHER, in the same phase. Gentle body bob and natural tail feather sway. Preserve exact bird design, feather colors, size and position. ONLY physical bird movement. Empty space remains entirely empty: no magic, glow, lines, circles, rings, particles or trails. Seamlessly return to the starting pose.'
 }
 ACTIONS = {
  'dragon': ('The SAME red dragon performs one in-place firebreath CASTING animation. Keep its exact approved design, scale, colors, horns, wing count and canvas position. '
             'It lifts its head slightly, OPENS its jaws wide; a compact bright orange and golden FIRE ORB spins and swirls INSIDE the open mouth, throat glows faintly, wings brace and chest expands. '
             'Hold the jaws open with the tiny swirling orb visible, then close and recover to the original pose. '
             'ONLY animate the BODY and a small effect INSIDE its mouth. No outward fire breath, no beam, no projectile, no big sparks, no scene-wide effects or camera motion. Whole creature stays in frame.'),
- 'fox': ('The SAME elegant ivory and golden fox performs one in-place lightning CASTING animation. Preserve its exact approved anatomy, colors, tail count, scale and position. '
-         'It lowers its front slightly, raises its golden tail or tails, pricks its ears, eyes brighten, and tiny golden electrical sparks flicker ONLY at its ear tips and tail tips. '
-         'Briefly hold the charged pose then smoothly return to the original pose. No lightning bolts leaving the body, no projectiles, no circles on the ground, no camera movement, no extra tails.'),
+ 'fox': ('The SAME elegant ivory and golden fox performs a physical spellcasting gesture IN PLACE, with NO effects at all. Preserve exact anatomy, fur colors, tail count, scale and position. '
+         'Its forelegs bend and shoulders lower into a grounded braced crouch, chest expands with an inhalation, head tilts forward, ears prick up; its existing tails lift in a coordinated natural wave. '
+         'Hold the braced stance briefly, then extend the legs and recover smoothly. All movement is anatomically plausible BODY motion. Absolutely NO lightning, bolts, sparks, glow, stars, projectiles, symbols or lines anywhere. Do not generate any effect pixels, not even ear or tail sparkles. Fixed camera, same facing and proportions.'),
  'phoenix': ('The SAME white and icy-blue phoenix performs one in-place frost CASTING animation. Keep its approved feather shapes, beak, tail, color, scale and position. '
              'It opens its beak, arches its neck and raises its wings in a controlled small sweep, a tiny cyan frost glow forms ONLY at the beak and wing tips. '
              'Hold a poised spellcasting stance then recover to the exact starting pose. No blizzard, no falling snow across the frame, no expanding ring, no distant ice shards, no background, no camera movement.'),
@@ -88,27 +94,39 @@ def animate(item,clip='cast'):
     key=Path(os.environ['PIXELLAB_KEY_FILE']).read_text(encoding='utf-8-sig').strip()
     headers={'Authorization':'Bearer '+key}
     def call(method,route,body=None):
-        r=requests.request(method,'https://api.pixellab.ai/v2'+route,headers=headers,json=body,timeout=180)
-        if not r.ok:raise RuntimeError(f'PixelLab {pid}: HTTP {r.status_code}')
+        for attempt in range(8 if method=='GET' else 1):
+            try:
+                r=requests.request(method,'https://api.pixellab.ai/v2'+route,headers=headers,json=body,timeout=180)
+                if method=='GET' and r.status_code in [429,500,502,503,504] and attempt<7:
+                    time.sleep(min(20,2**attempt));continue
+                break
+            except requests.RequestException:
+                if method!='GET' or attempt==7:raise
+                time.sleep(min(20,2**attempt))
+        if not r.ok:raise RuntimeError(f'PixelLab {pid}/{clip}: HTTP {r.status_code}: {r.text[:600]}')
         return r.json()
     if state.exists():record=json.loads(state.read_text(encoding='utf-8'))
     else:
-        reference=folder/'reference-192.png'; factor=1
-        # Tight inputs stop small juvenile silhouettes inviting giant scene effects.
-        if clip=='idle' or pid in ['dragon-1','phoenix-1','phoenix-2']:
-            crop=Image.open(folder/'source-crop.png').convert('RGBA')
-            extent=144 if family=='phoenix' and clip=='idle' else 160
-            w,h=[round(v*extent/max(crop.size)) for v in crop.size]
-            ref_im=Image.new('RGBA',(192,192));ref_im.paste(crop.resize((w,h),Image.Resampling.NEAREST),((192-w)//2,176-h))
-            reference=folder/f'{clip}-reference-192.png';ref_im.save(reference)
-            bbox=Image.open(folder/'reference-192.png').getbbox();factor=max(bbox[2]-bbox[0],bbox[3]-bbox[1])/extent
-        action=ACTIONS[family]
-        if pid=='dragon-1':action='The exact same red baby dragon, stationary in-place. Only animate a natural small jaw opening, throat puff and wing bracing, hold the mouth OPEN, then close and recover. Preserve silhouette, red and gold colors, proportions, scale and feet position. BODY MOTION ONLY. No fire, no smoke, no orb, no energy, no projectile, no external visual effects, no camera movement. No growth, no transformation.'
-        if pid in ['phoenix-1','phoenix-2']:action='The exact same icy white and blue phoenix makes a natural small in-place wing beat and opens its beak in a spellcasting pose, holds wings lifted, then returns. Preserve feather shapes, color, scale, anatomy and position. ONLY BODY ANIMATION. Absolutely no magic effects, no trails, no circles, no energy rings, no ice, no snow, no glow or particles. No camera motion. Full bird stays in frame.'
-        if pid=='phoenix-1':action='The exact same small blue and white bird, SIDE VIEW, looking RIGHT for every frame. A restrained body-only action: the beak opens for a short call, neck stretches slightly forward, chest puffs gently and wings gently flex without changing orientation, then returns. Head remains at the same height and the bird NEVER rotates, rolls, spins, loops, flips or somersaults. Keep the approved beak, eye, wing and tail feather shapes. Absolutely no effects, trails, circles, rings, particles, glow or magic. Fixed camera and fixed size. The bird stays completely visible.'
-        if clip=='idle':action=IDLE[family]
+        canonical=Image.open(folder/'reference-192.png').convert('RGBA')
+        crop=canonical.crop(canonical.getbbox());extent=120 if family=='phoenix' else 144
+        w,h=[round(v*extent/max(crop.size)) for v in crop.size]
+        ref_im=Image.new('RGBA',(256,256));ref_im.paste(crop.resize((w,h),Image.Resampling.NEAREST),((256-w)//2,224-h))
+        reference=folder/f'{clip}-reference-256.png';ref_im.save(reference)
+        bbox=canonical.getbbox();factor=max(bbox[2]-bbox[0],bbox[3]-bbox[1])/extent
+        action=IDLE[family] if clip=='idle' else MOVE[family] if clip=='move' else ACTIONS[family]
+        if clip=='cast' and family=='dragon':action+=' ALL FOUR FEET remain planted, especially both front paws. No rearing upright; wings flex together. The tiny mouth glow never grows beyond the muzzle.'
+        if clip=='cast' and family=='fox':action+=' The ribcage, shoulders and leg joints visibly flex as it gathers power, not only the tails.'
+        if clip=='cast' and family=='phoenix':action='The SAME ice phoenix performs one restrained casting gesture: neck extends forward and beak opens, BOTH wings lower TOGETHER and rise TOGETHER, always the SAME phase, never one wing up and the other down. Both visible wing tips highest together at start and end, lowest together in the middle. Body stays level and faces right. Preserve exact feather shapes, anatomy, size and colors. Only BODY motion and a tiny beak glow. No spin, flip, rings, trails, distant snow, blizzard or external effects. Full bird stays in frame.'
+        if clip=='cast' and stage==2:
+            action={
+             'dragon':'A four-legged red dragon in place, right-facing: its chest expands with a breath, jaws OPEN WIDE and neck extends forwards; wings brace, four paws firmly grounded. Hold jaws open and return. ONLY the physical animal moves. Its scales and horns remain their original colors. Empty space stays completely empty. No magic, glow, sparks, rings, or other effect pixels. Same size, body design and camera.',
+             'fox':'A gold and ivory fox in place, right-facing: smoothly bends its forelegs, lowers its chest into a braced crouch, ears prick up, head extends forward and tails sway. Hold, then straighten legs back to standing. ONLY natural body motion. Original tail count, fur colors, anatomy and size. Empty space stays completely empty. No magic, lightning, trails, sparks, rings, glowing lines or effects.',
+             'phoenix':'A blue and white bird performs a slow physical wingbeat in place facing right. Both wings lower together, neck extends and beak opens, both wings lift together, then return to the starting pose. Preserve its feathers, anatomy, colors and body size. ONLY the physical bird moves. Empty space stays completely empty. No magic, glow, circles, rings, lines, particles, snow or effects.'
+            }[family]
+        if clip=='cast' and family=='dragon' and stage==3:
+            action='The SAME four-legged red dragon prepares to breathe, facing RIGHT: all four paws remain grounded, chest expands, neck extends a little forward and jaws OPEN WIDE. Hold jaws open, then recover. Wings brace gently and tail balances. Preserve exact anatomy, horns, red scale colors, size and camera. ONLY physical body movement. Empty space stays empty. No fire orb, glow, particles, rings, beams or effects anywhere.'
         ref={'type':'base64','base64':base64.b64encode(reference.read_bytes()).decode()}
-        body={'first_frame':ref,'last_frame':ref,'action':action,'frame_count':12 if clip=='idle' else 8,'no_background':True,'seed':6111700+(1000 if clip=='idle' else 0)+list(SOURCES).index(family)*10+stage}
+        body={'first_frame':ref,'last_frame':ref,'action':action,'frame_count':8,'no_background':True,'seed':8111700+({'idle':1000,'move':2000,'cast':0}[clip])+list(SOURCES).index(family)*10+stage}
         response=call('POST','/animate-with-text-v3',body)
         record={'provider':'PixelLab','endpoint':'/v2/animate-with-text-v3','job':response['background_job_id'],'reference':reference.name,'canonical_reference_sha256':hashlib.sha256((folder/'reference-192.png').read_bytes()).hexdigest(),'canonical_scale':factor,'request':{k:v for k,v in body.items() if k not in ['first_frame','last_frame']}}
         dump(state,record);print('submitted',clip,pid,record['job'],flush=True)
@@ -124,46 +142,40 @@ def animate(item,clip='cast'):
     for raw in result['images']:
         b64=raw.get('base64') if isinstance(raw,dict) else raw
         frames.append(Image.open(io.BytesIO(base64.b64decode(b64.split(',')[-1]))).convert('RGBA'))
-    assert len(frames) in ([12,13] if clip=='idle' else [8,9]) and all(f.size==(192,192) for f in frames),(pid,len(frames))
-    sheet=Image.new('RGBA',(96*len(frames),96));raw_sheet=Image.new('RGBA',(192*len(frames),192))
-    for i,frame in enumerate(frames):
-        factor=record.get('canonical_scale',1)
-        if factor!=1:
-            size=round(192*factor);small=frame.resize((size,size),Image.Resampling.NEAREST)
-            normalized=Image.new('RGBA',(192,192));normalized.paste(small,((192-size)//2,176-round(176*factor)));frame=normalized
-        pixels=np.array(frame);pixels[pixels[:,:,3]<=8]=0;frame=Image.fromarray(pixels)
-        if i in [0,len(frames)-1]:frame=Image.open(folder/'reference-192.png').convert('RGBA')
-        raw_sheet.paste(frame,(i*192,0));sheet.paste(frame.resize((96,96),Image.Resampling.NEAREST),(i*96,0))
-    sheet.save(target);raw_sheet.save(folder/f'{clip}-192.png')
-    dump(folder/f'{clip}-result.json',{'frame_count':len(frames),'job':record['job'],'usage':result.get('usage'),'canonical_reference_sha256':record.get('canonical_reference_sha256'),'sha256':hashlib.sha256(target.read_bytes()).hexdigest(),'w':96,'h':96,'fps':6 if clip=='idle' else 8})
+    assert len(frames) in [8,9] and all(f.size==(256,256) for f in frames),(pid,len(frames))
+    normalized=normalize_frames(pid,clip,frames,record)
+    dump(folder/f'{clip}-result.json',{'frame_count':len(frames),'job':record['job'],'usage':result.get('usage'),'canonical_reference_sha256':record.get('canonical_reference_sha256'),**normalized,'fps':8 if clip=='cast' else 6 if family=='phoenix' or clip=='idle' else 10})
     print('ready',clip,pid,len(frames),flush=True)
 
 def pack():
     refs=json.loads((OUT/'sources.json').read_text(encoding='utf-8'))
+    refs.update(generation_size=[256,256],pose_reference_size=[192,192],runtime_size=[128,128],anchor=[64,96]);dump(OUT/'sources.json',refs)
     ids=[s['id'] for f in refs['families'].values() for s in f['stages']]
-    counts={(pid,clip):json.loads((OUT/pid/f'{clip}-result.json').read_text(encoding='utf-8'))['frame_count'] for pid in ids for clip in ['idle','cast']}
-    atlas=Image.new('RGBA',(96*max(counts.values()),96*len(ids)*3))
-    meta={'cw':96,'ch':96,'k':1,'fps':8,'frames':{},'clips':{},'actors':{},'world_fx_included':False}
+    counts={(pid,clip):json.loads((OUT/pid/f'{clip}-result.json').read_text(encoding='utf-8'))['frame_count'] for pid in ids for clip in ['idle','move','cast']}
+    atlas=Image.new('RGBA',(128*max(counts.values()),128*len(ids)*4))
+    meta={'cw':128,'ch':128,'k':1,'fps':8,'frames':{},'clips':{},'actors':{},'world_fx_included':False}
     for row,pid in enumerate(ids):
-        y=row*96*3
+        y=row*128*4
         atlas.paste(Image.open(OUT/pid/'base.png'),(0,y))
         family,stage=pid.split('-');ref=refs['families'][family]['stages'][int(stage)-1]
-        meta['frames'][pid]={'side':[0,y,96,96]}
+        meta['frames'][pid]={'side':[0,y,128,128]}
         meta['clips'][pid]={}
-        for offset,clip in enumerate(['idle','cast'],1):
-            atlas.paste(Image.open(OUT/pid/f'{clip}.png'),(0,y+offset*96))
-            meta['clips'][pid][clip+'_e']=[[i*96,y+offset*96] for i in range(counts[(pid,clip)])]
-        meta['actors'][pid]={'family':family,'stage':int(stage),'name':NAMES[family],'anchor':[48,88],'mouth':ref['mouth'],'cast_release_frame':3,'cast_hold_frames':[3,5],'idle_fps':6}
+        for offset,clip in enumerate(['idle','move','cast'],1):
+            atlas.paste(Image.open(OUT/pid/f'{clip}.png'),(0,y+offset*128))
+            meta['clips'][pid][clip+'_e']=[[i*128,y+offset*128] for i in range(counts[(pid,clip)])]
+        anchor_y=116 if pid=='dragon-3' else 96
+        mouths={'dragon-1':[79,81],'dragon-2':[86,67],'dragon-3':[101,74],'fox-1':[81,74],'fox-2':[88,65],'fox-3':[101,56],'phoenix-1':[79,77],'phoenix-2':[85,68],'phoenix-3':[95,53]}
+        meta['actors'][pid]={'family':family,'stage':int(stage),'name':NAMES[family],'anchor':[64,anchor_y],'mouth':mouths[pid],'cast_mouth':{'dragon-1':[80,80],'dragon-2':[91,66],'dragon-3':[105,73]}.get(pid,mouths[pid]),'cast_release_frame':2,'cast_hold_frames':[1,3] if pid=='dragon-1' else [3,5],'idle_fps':6}
     atlas.save(OUT/'pets.png');meta['sha256']=hashlib.sha256((OUT/'pets.png').read_bytes()).hexdigest();dump(OUT/'pets.json',meta)
-    print('packed approved pet idle/cast clips',len(ids)*2,flush=True)
+    print('packed approved pet idle/move/cast clips',len(ids)*3,flush=True)
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','animate','pack']);p.add_argument('--adult-only',action='store_true');p.add_argument('--source-dir',type=Path);p.add_argument('--only',nargs='+');p.add_argument('--clip',choices=['idle','cast'],default='cast');args=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','animate','pack']);p.add_argument('--adult-only',action='store_true');p.add_argument('--source-dir',type=Path);p.add_argument('--only',nargs='+');p.add_argument('--clip',choices=['idle','move','cast','all'],default='cast');args=p.parse_args()
     if args.mode=='prepare':prepare(args.source_dir)
     elif args.mode=='pack':pack()
     else:
         items=[(f,s) for s in ([3] if args.adult_only else [3,1,2]) for f in SOURCES]
         if args.only:items=[x for x in items if f'{x[0]}-{x[1]}' in args.only]
         with ThreadPoolExecutor(max_workers=3) as pool:
-            jobs=[pool.submit(animate,x,args.clip) for x in items]
+            jobs=[pool.submit(animate,x,clip) for stage in ([3] if args.adult_only else [3,1,2]) for clip in (['idle','move','cast'] if args.clip=='all' else [args.clip]) for x in items if x[1]==stage]
             for job in as_completed(jobs):job.result()

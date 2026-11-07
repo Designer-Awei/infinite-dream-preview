@@ -1,13 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "03a0f022-f45b-49f4-88fa-8c92087497e8",
-  "reference": "animation-reference-192.png",
-  "canonical_scale": 0.85,
+  "job": "9baeba4e-d400-4367-b128-e4ed589e84b8",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "00120bd778f7f51b356f53743dd3492a37f044666f098826ac1f8d62149d1a25",
+  "canonical_scale": 0.9166666666666666,
   "request": {
-    "action": "The exact same icy white and blue phoenix makes a natural small in-place wing beat and opens its beak in a spellcasting pose, holds wings lifted, then returns. Preserve feather shapes, color, scale, anatomy and position. ONLY BODY ANIMATION. Absolutely no magic effects, no trails, no circles, no energy rings, no ice, no snow, no glow or particles. No camera motion. Full bird stays in frame.",
+    "action": "A blue and white bird performs a slow physical wingbeat in place facing right. Both wings lower together, neck extends and beak opens, both wings lift together, then return to the starting pose. Preserve its feathers, anatomy, colors and body size. ONLY the physical bird moves. Empty space stays completely empty. No magic, glow, circles, rings, lines, particles, snow or effects.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6111722
+    "seed": 8111722
   }
 }

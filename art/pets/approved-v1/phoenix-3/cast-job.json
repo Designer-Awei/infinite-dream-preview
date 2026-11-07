@@ -1,12 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "0cc7574c-1052-472f-8e03-a9b19c728342",
-  "reference": "cast-input-reference-192.png",
+  "job": "bf5d6918-f66b-4d14-847b-e92c39e39d43",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "d66e892a88042c1b4d6d8a210d1ad20c7347ac0fcc757acb773ad874dcd1c9eb",
+  "canonical_scale": 1.3333333333333333,
   "request": {
-    "action": "The SAME white and icy-blue phoenix performs one in-place frost CASTING animation. Keep its approved feather shapes, beak, tail, color, scale and position. It opens its beak, arches its neck and raises its wings in a controlled small sweep, a tiny cyan frost glow forms ONLY at the beak and wing tips. Hold a poised spellcasting stance then recover to the exact starting pose. No blizzard, no falling snow across the frame, no expanding ring, no distant ice shards, no background, no camera movement.",
+    "action": "The SAME ice phoenix performs one restrained casting gesture: neck extends forward and beak opens, BOTH wings lower TOGETHER and rise TOGETHER, always the SAME phase, never one wing up and the other down. Both visible wing tips highest together at start and end, lowest together in the middle. Body stays level and faces right. Preserve exact feather shapes, anatomy, size and colors. Only BODY motion and a tiny beak glow. No spin, flip, rings, trails, distant snow, blizzard or external effects. Full bird stays in frame.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6110723
+    "seed": 8111723
   }
 }

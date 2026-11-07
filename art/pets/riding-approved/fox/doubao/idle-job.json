@@ -1,0 +1,109 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "8a66bf6f-1aef-4706-a7dd-b0b35f868fb5",
+  "source": "../doubao-source.png",
+  "request": {
+    "action": "This exact rider and fox remain together in a living idle LOOP facing right. The fox gently breathes through the chest and belly, shifts weight naturally through bent leg joints, blinks, and its existing tails sway with soft delayed waves. The rider stays seated astride, gently balances and breathes, hair softly follows, hands retain the reins or book exactly. Preserve the exact character, clothes, tail count, anatomy, proportions and NEAR/FAR LEG OCCLUSION. The far leg stays behind the fox body. No dismounting or floating feet. Entire pair remains in place. Empty space stays empty. No symbols, sparks, rings or effects. Return to the same pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 7110794
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.03409876455201043
+  },
+  "sha256": "b9da43904ca1fc6248631a4fb30a90d3047fd2a0da9f361e68cb9ff5fb8ded8f",
+  "runtime": [
+    160,
+    160
+  ],
+  "normalization": {
+    "provider_raw_unchanged": true,
+    "source_first_frame_sha256": "6bf32a1f6f0e62794bc46a5e3b6e78283e1607e5fba89053acd5f3a7e5e2f572",
+    "scale": 1.037037037037037,
+    "offset": [
+      -2,
+      1
+    ],
+    "target_foot": [
+      128,
+      232
+    ],
+    "runtime": [
+      160,
+      160
+    ],
+    "input_white_matte_removed": true,
+    "small_detached_fragments": [
+      {
+        "frame": 1,
+        "runtime_pixels": 14,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 2,
+        "runtime_pixels": 35,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 2,
+        "runtime_pixels": 5,
+        "reason": "runtime fragment"
+      },
+      {
+        "frame": 3,
+        "runtime_pixels": 21,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 3,
+        "runtime_pixels": 13,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 4,
+        "runtime_pixels": 19,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 4,
+        "runtime_pixels": 17,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 5,
+        "runtime_pixels": 20,
+        "reason": "reviewed detached right-edge residue"
+      },
+      {
+        "frame": 5,
+        "runtime_pixels": 12,
+        "reason": "runtime fragment"
+      },
+      {
+        "frame": 6,
+        "runtime_pixels": 12,
+        "reason": "runtime fragment"
+      },
+      {
+        "frame": 6,
+        "runtime_pixels": 10,
+        "reason": "runtime fragment"
+      },
+      {
+        "frame": 7,
+        "pixels": 12,
+        "reason": "small fragment"
+      },
+      {
+        "frame": 7,
+        "runtime_pixels": 13,
+        "reason": "reviewed detached right-edge residue"
+      }
+    ]
+  }
+}

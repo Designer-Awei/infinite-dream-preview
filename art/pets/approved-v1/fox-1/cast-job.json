@@ -1,12 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "a8e44d23-be20-4d5b-9db0-45282af3c646",
-  "reference": "cast-input-reference-192.png",
+  "job": "9a9a40ab-65f8-4b3e-b364-d10d8f0cb47d",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "95a1df3e17d44b449d73aeb804f646d5c972908fea0d25e1d6f2d6f2ae674a2d",
+  "canonical_scale": 0.5138888888888888,
   "request": {
-    "action": "The SAME elegant ivory and golden fox performs one in-place lightning CASTING animation. Preserve its exact approved anatomy, colors, tail count, scale and position. It lowers its front slightly, raises its golden tail or tails, pricks its ears, eyes brighten, and tiny golden electrical sparks flicker ONLY at its ear tips and tail tips. Briefly hold the charged pose then smoothly return to the original pose. No lightning bolts leaving the body, no projectiles, no circles on the ground, no camera movement, no extra tails.",
+    "action": "The SAME elegant ivory and golden fox performs a physical spellcasting gesture IN PLACE, with NO effects at all. Preserve exact anatomy, fur colors, tail count, scale and position. Its forelegs bend and shoulders lower into a grounded braced crouch, chest expands with an inhalation, head tilts forward, ears prick up; its existing tails lift in a coordinated natural wave. Hold the braced stance briefly, then extend the legs and recover smoothly. All movement is anatomically plausible BODY motion. Absolutely NO lightning, bolts, sparks, glow, stars, projectiles, symbols or lines anywhere. Do not generate any effect pixels, not even ear or tail sparkles. Fixed camera, same facing and proportions. The ribcage, shoulders and leg joints visibly flex as it gathers power, not only the tails.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6110711
+    "seed": 8111711
   }
 }

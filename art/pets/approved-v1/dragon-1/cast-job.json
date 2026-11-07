@@ -1,13 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "4006fc87-83cb-4422-b7bc-57b238e75a9b",
-  "reference": "animation-reference-192.png",
-  "canonical_scale": 0.7,
+  "job": "c6f0e709-e4a5-4e82-9f6d-ddac6b8f59d9",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "f709c21ce823c87d47eba1e6cb67cbd89940fcbe8ccca00690ae443e7af55dc3",
+  "canonical_scale": 0.4583333333333333,
   "request": {
-    "action": "The exact same red baby dragon, stationary in-place. Only animate a natural small jaw opening, throat puff and wing bracing, hold the mouth OPEN, then close and recover. Preserve silhouette, red and gold colors, proportions, scale and feet position. BODY MOTION ONLY. No fire, no smoke, no orb, no energy, no projectile, no external visual effects, no camera movement. No growth, no transformation.",
+    "action": "The SAME red dragon performs one in-place firebreath CASTING animation. Keep its exact approved design, scale, colors, horns, wing count and canvas position. It lifts its head slightly, OPENS its jaws wide; a compact bright orange and golden FIRE ORB spins and swirls INSIDE the open mouth, throat glows faintly, wings brace and chest expands. Hold the jaws open with the tiny swirling orb visible, then close and recover to the original pose. ONLY animate the BODY and a small effect INSIDE its mouth. No outward fire breath, no beam, no projectile, no big sparks, no scene-wide effects or camera motion. Whole creature stays in frame. ALL FOUR FEET remain planted, especially both front paws. No rearing upright; wings flex together. The tiny mouth glow never grows beyond the muzzle.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6111701
+    "seed": 8111701
   }
 }

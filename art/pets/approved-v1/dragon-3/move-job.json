@@ -1,0 +1,14 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/v2/animate-with-text-v3",
+  "job": "03986bbc-3e7a-4bf2-acf4-f7708f35902f",
+  "reference": "move-reference-256.png",
+  "canonical_reference_sha256": "dad82b83800040e4ada4af4fae3350d304336eefac8917456ff8e02c2b4c27c9",
+  "canonical_scale": 1.1111111111111112,
+  "request": {
+    "action": "The SAME red dragon performs a seamless four-legged WALK cycle IN PLACE facing right. All four limbs step naturally in a quadruped gait: alternating diagonal foot pairs, elbows and knees bend, front feet reach down and bear weight. Never rear up or hold both front paws in the air. Gentle shoulder/hip movement, wings partly open with a coordinated flap, tail counterbalances. Preserve design, horns, scale, red/gold palette. Fixed screen position, no sliding, no camera, no effects. Return to starting pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8113703
+  }
+}

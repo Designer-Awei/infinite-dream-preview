@@ -1,12 +1,14 @@
 {
   "provider": "PixelLab",
   "endpoint": "/v2/animate-with-text-v3",
-  "job": "95ff8e8d-f1e5-4210-861a-29b66cdeb9c6",
-  "reference": "cast-input-reference-192.png",
+  "job": "d1dfdfb5-2547-45e4-a6b9-af4e18d7060e",
+  "reference": "cast-reference-256.png",
+  "canonical_reference_sha256": "dad82b83800040e4ada4af4fae3350d304336eefac8917456ff8e02c2b4c27c9",
+  "canonical_scale": 1.1111111111111112,
   "request": {
-    "action": "The SAME red dragon performs one in-place firebreath CASTING animation. Keep its exact approved design, scale, colors, horns, wing count and canvas position. It lifts its head slightly, OPENS its jaws wide; a compact bright orange and golden FIRE ORB spins and swirls INSIDE the open mouth, throat glows faintly, wings brace and chest expands. Hold the jaws open with the tiny swirling orb visible, then close and recover to the original pose. ONLY animate the BODY and a small effect INSIDE its mouth. No outward fire breath, no beam, no projectile, no big sparks, no scene-wide effects or camera motion. Whole creature stays in frame.",
+    "action": "The SAME four-legged red dragon prepares to breathe, facing RIGHT: all four paws remain grounded, chest expands, neck extends a little forward and jaws OPEN WIDE. Hold jaws open, then recover. Wings brace gently and tail balances. Preserve exact anatomy, horns, red scale colors, size and camera. ONLY physical body movement. Empty space stays empty. No fire orb, glow, particles, rings, beams or effects anywhere.",
     "frame_count": 8,
     "no_background": true,
-    "seed": 6110703
+    "seed": 8111703
   }
 }

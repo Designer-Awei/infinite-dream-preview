@@ -61,6 +61,7 @@ try {
   await evaluate("document.querySelector('#idle').click()"); assert.equal(await evaluate('petPreview.state.idleOnly'), true);
   const idleStart=await bytes(0),idleMoved=await bytes(.8); assert(!idleStart.equals(idleMoved),'Living idle frames actually animate');
   await evaluate("document.querySelector('#idle').click()");
+  await evaluate("document.querySelector('#move').click()");assert.equal(await evaluate('petPreview.state.moveOnly'),true);const moveA=await bytes(.15),moveB=await bytes(.65);assert(!moveA.equals(moveB),'Movement body frames animate');await bytes(3.2);await evaluate("document.querySelector('#move').click()");
   if (!stillOnly) {
   const ffmpeg = process.env.FFMPEG;
   assert(ffmpeg, 'Set FFMPEG to the installed executable');
@@ -74,7 +75,7 @@ try {
   encoder.stdin.end(); await done;
   }
   assert.deepEqual(errors, []);
-  await writeFile(path.join(out, 'preview-check.json'), JSON.stringify({ actors: stages.length*3, clips: stages.length*6, stages, livingIdle: true, effectsToggle: true, adjustableRange: true, adjustableRadius: true, effectsTiming: true, pageErrors: errors, video: stillOnly ? null : { width: 1200, height: 370, fps: 24, duration: 6.75*stages.length }, gameplayIntegrated: false }, null, 2));
+  await writeFile(path.join(out, 'preview-check.json'), JSON.stringify({ actors: stages.length*3, clips: stages.length*9, stages, livingIdle: true, movement: true, effectsToggle: true, adjustableRange: true, adjustableRadius: true, effectsTiming: true, pageErrors: errors, video: stillOnly ? null : { width: 1200, height: 370, fps: 24, duration: 6.75*stages.length }, gameplayIntegrated: true }, null, 2));
   await send('Browser.close');
   console.log(`PASS ${stages.length*3} actors, stage controls, living idle, independent world effects, range adjustment, no page errors; ${stillOnly?'still capture':`recorded ${6.75*stages.length}s preview`}.`);
 } finally { socket?.close(); chrome.kill(); }

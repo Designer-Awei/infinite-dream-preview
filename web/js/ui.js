@@ -7,6 +7,8 @@ import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
 import { LEVEL_REWARDS } from "./progression.js";
+import { PETS, petPortrait } from "./petdata.js";
+import { input } from "./input.js";
 
 let root, app;
 export const $ = (s, r = root) => r.querySelector(s);
@@ -222,6 +224,12 @@ export function showHud(game, me) {
    </div>
    <div class="tipline o1" style="display:none"></div>`;
   root.appendChild(hud);
+  if(me.pet?.stage===3) {
+    const ride=el('button','btn small pet-ride-btn',`<img src="${petPortrait(me.pet.id,3)}" alt=""><span>骑乘</span><small>R</small>`);
+    ride.onclick=()=>{input.pressed.mount=true;sfx('click');};hud.appendChild(ride);
+    hud.querySelector('.keys').textContent+=' · R 骑乘';
+  }
+  if(game.petTrial)hud.appendChild(el('div','pet-trial-tag o1','伙伴试用 · 大招10秒恢复 · 收益不保存'));
   hud.querySelector(".pausebtn").onclick = () => app.pause();
   document.querySelectorAll(".touch .empty, .b-skill.empty, .b-ult.empty").forEach(n => n.classList.remove("empty"));
   document.querySelectorAll(".b-skill .cnt, .b-ult .cnt").forEach(n => n.remove());
@@ -244,6 +252,17 @@ export function updateHud(game, me) {
   const set = (k, v, fn) => {
     if (hudCache[k] !== v) (hudCache[k] = v), fn(v);
   };
+  set('mounted',!!me.mounted, mounted=>{
+    const b=hud.querySelector('.pet-ride-btn');if(b){b.querySelector('span').textContent=mounted?'下骑':'骑乘';b.disabled=!!me.dead||!!me.downed;}
+    for(const slot of ['atk','ult']) {
+      const name=mounted?PETS[me.pet.id][slot==='atk'?'rideAttack':'rideUlt']:CHARS[me.cid][slot].name;
+      const url=mounted?petPortrait(me.pet.id,3):iconURL(skillIcon(me.cid,slot),4);
+      document.querySelectorAll(`.b-${slot} .ico,.s-${slot} .ico`).forEach(im=>im.src=url);
+      document.querySelectorAll(`.b-${slot} .lb`).forEach(n=>n.textContent=name);
+      hud.querySelector(`.s-${slot}`).title=name;
+    }
+  });
+  const ride=hud.querySelector('.pet-ride-btn');if(ride)ride.disabled=!!me.dead||!!me.downed;
   set("hp", me.hp + "/" + me.maxHp, (v) => {
     hud.querySelector(".bar.hp i").style.width = (100 * Math.max(0, me.hp)) / me.maxHp + "%";
     hud.querySelector(".bar.hp span").textContent = "❤ " + v;

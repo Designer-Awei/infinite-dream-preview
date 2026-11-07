@@ -1,25 +1,19 @@
 {
   "frame_count": 9,
-  "job": "95ff8e8d-f1e5-4210-861a-29b66cdeb9c6",
+  "job": "d1dfdfb5-2547-45e4-a6b9-af4e18d7060e",
   "usage": {
     "usd": 0.0,
     "type": "generations",
-    "generations": 5,
-    "cost_if_paid": 0.026713284499115413
+    "generations": 8,
+    "cost_if_paid": 0.029588254431883496
   },
-  "sha256": "bd5b90c8028323cd36bf8d5b951cfe47ad20a1823b97757caed0eeb4d3ecc6c3",
-  "w": 96,
-  "h": 96,
-  "fps": 8,
-  "normalization": {
-    "alpha_cutoff": 8,
-    "scale": 1.0,
-    "translation192": [
-      0,
-      4
-    ],
-    "endpoints": "approved-reference",
-    "previous_sha256": "764996947dfca6587fcf5534f34c0707fd08213994d97d05f19bdba1d5170865"
-  },
-  "canonical_reference_sha256": "ec257d584fef5bacab299d03df06bc02404786235fcd96e431f46db2336a7f14"
+  "canonical_reference_sha256": "dad82b83800040e4ada4af4fae3350d304336eefac8917456ff8e02c2b4c27c9",
+  "sha256": "7853f51f1a76621466f64745ad2dc9302da21a92d3ae909346d22f38b5c803ef",
+  "anchor": [
+    64,
+    116
+  ],
+  "w": 128,
+  "h": 128,
+  "fps": 8
 }
