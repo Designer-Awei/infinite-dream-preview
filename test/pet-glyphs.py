@@ -4,7 +4,7 @@ from pathlib import Path
 from fontTools.ttLib import TTFont
 from fontTools.pens.recordingPen import DecomposingRecordingPen
 ROOT=Path(__file__).resolve().parents[1]
-baseline='654e800'
+baseline='8d863c9'
 raw=subprocess.check_output([r'C:\Program Files\Git\cmd\git.exe','show',baseline+':web/assets/font/Cubic_11.woff'],cwd=ROOT)
 old=TTFont(io.BytesIO(raw));new=TTFont(ROOT/'web/assets/font/Cubic_11.woff')
 before=old.getBestCmap();after=new.getBestCmap();a=old.getGlyphSet();b=new.getGlyphSet()

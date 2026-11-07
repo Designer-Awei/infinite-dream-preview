@@ -430,7 +430,7 @@ function bossCore(g, e, p, d, dt) {
     g.after(1, () => {
       for (const [x, y] of spots) {
         g.vfx("explosions/small-explosion", x, y, {});
-        for (const q of g.alivePlayers()) if (dist(q.x, q.y, x, y) < 30) if (g.hurt(q, 1, e)) q.buff.burn = 2.1;
+        for (const q of g.alivePlayers()) if (dist(q.x, q.y, x, y) < 30) if (g.hurt(q, 1, {src:e,x,y,groundHazard:true})) q.buff.burn = 2.1;
       }
       g.sound("explode", 0.35);
     });

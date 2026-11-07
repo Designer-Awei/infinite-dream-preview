@@ -3,11 +3,12 @@ import {writeFile} from 'node:fs/promises';
 import path from 'node:path';
 import {browserSession,sleep} from './browser-session.mjs';
 const b=await browserSession('pet-network');
+const base=(process.env.GAME_TEST_URL||'http://127.0.0.1:8775').replace(/\/$/,'')+'/?local';
 const source=id=>`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({name:'${id}',tutorialSeen:true,sel:'deepseek',chars:['deepseek'],seenUnlock:['deepseek'],sound:false,music:false,pets:{owned:{${id}:{stage:3,xp:1200}},equipped:'${id}'}}))`;
 try{
-  const host=await b.page('http://127.0.0.1:8775/?local',{source:source('dragon')});await host.wait(`!!document.querySelector('.pet-entry')`);
+  const host=await b.page(base,{source:source('dragon')});await host.wait(`!!document.querySelector('.pet-entry')`);
   const code=await host.evaluate(`(async()=>{const {app}=await import('./js/main.js'),{Net}=await import('./js/net.js');window.a=app;app.net=new Net(app);await app.net.host(false);return app.net.code})()`);
-  const client=await b.page('http://127.0.0.1:8775/?local',{source:source('phoenix')});await client.wait(`!!document.querySelector('.pet-entry')`);
+  const client=await b.page(base,{source:source('phoenix')});await client.wait(`!!document.querySelector('.pet-entry')`);
   await client.evaluate(`(async()=>{const {app}=await import('./js/main.js'),{Net}=await import('./js/net.js');window.a=app;app.net=new Net(app);await app.net.join('${code}')})()`);
   await host.wait('a.net.members.length===2');await host.evaluate(`a.net.start();window.pump=setInterval(()=>{if(a.game?.map){a.paused=true;a.game.update(.02);a.net.hostTick(.02)}},20)`);
   await client.evaluate(`window.pump=setInterval(()=>{if(a.game?.map){a.paused=true;a.net.clientTick(.02)}},20)`);
@@ -26,9 +27,25 @@ try{
   const kinds=await client.evaluate(`a.game.bullets.filter(b=>b.owner===a.me.id).map(b=>({kind:b.kind,pred:!!b.pred}))`);
   assert(kinds.length>0 && kinds.every(x=>x.kind==='pet_phoenix'&&!x.pred),'Mounted client gets host shots without duplicate character prediction');
   await client.evaluate('a.me.input.atk=false');
+  // Flying dismount snaps to walkable ground and rejects old position packets.
+  const blocked=await host.evaluate(`(()=>{const g=a.game,p=g.player(2);g.map.t.fill(0);g.map.crates={};const tx=Math.floor(p.x/32),ty=Math.floor(p.y/32);g.map.t[ty*g.map.W+tx]=1;return{x:p.x,y:p.y,tx,ty}})()`);
+  await client.evaluate(`a.game.map.t.fill(0);a.game.map.t[${blocked.ty}*a.game.map.W+${blocked.tx}]=1;a.me.input.mount=true`);
+  await host.wait(`!a.game.player(2).mounted`);await client.wait(`!a.me.mounted&&a.me.pet.warpSeq>0`);await sleep(300);
+  await client.evaluate(`a.net.send({t:'in',mx:0,my:0,atk:false,x:${blocked.x},y:${blocked.y},ws:0})`);await sleep(100);
+  assert(await host.evaluate(`(()=>{const g=a.game,p=g.player(2);return g.map.t[Math.floor(p.y/32)*g.map.W+Math.floor(p.x/32)]!==1})()`),'Stale client packet cannot restore invalid flying landing');
+  await client.evaluate(`a.me.input.mount=true`);await host.wait(`a.game.player(2).mounted`);await client.wait(`a.me.mounted`);
+  // Host-controlled teleports must not be overwritten by stale client positions.
+  await host.evaluate(`(()=>{const p=a.game.player(2);a.game.map.t.fill(0);a.game.map.crates={};p.pet.id='fox';p.pet.blinkT=0;p.pet.castT=0;p.pet.skillCd=99;p.ult=1;a.game.petFields=[];a.game.enemies=[];const e=a.game.spawnEnemy('slime',p.x+90,p.y);e.hp=e.maxHp=10000;e.spawnT=0;e.stunT=999;})()`);
+  await client.evaluate(`a.game.map.t.fill(0);a.game.map.crates={};`);
+  await client.wait(`a.me.pet.id==='fox'&&a.me.ult===1`);await client.evaluate(`a.me.input.ult=true`);
+  await host.wait(`a.game.player(2).pet.blinkHits===5`);await client.wait(`a.me.pet.warpSeq>=5`);
+  await sleep(250);
+  const hostPos=await host.evaluate(`(()=>{const p=a.game.player(2);return{x:p.x,y:p.y,seq:p.pet.warpSeq,hits:p.pet.blinkHits}})()`),clientPos=await client.evaluate(`({x:a.me.x,y:a.me.y,seq:a.me.pet.warpSeq})`);
+  assert.equal(hostPos.hits,5);assert.equal(clientPos.seq,hostPos.seq);assert(Math.hypot(hostPos.x-clientPos.x,hostPos.y-clientPos.y)<3,'Fox blink remains authoritative after client acknowledgement');
+  await client.shot('coop-fox-blink');
   await sleep(500);await client.evaluate(`a.me.input.mount=true`);await host.wait('!a.game.player(2).mounted');await client.wait('!a.me.mounted');
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

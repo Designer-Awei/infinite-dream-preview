@@ -5,7 +5,7 @@ import {browserSession,sleep} from './browser-session.mjs';
 const b=await browserSession();
 try{
   const p=await b.page(process.env.GAME_TEST_URL||'http://127.0.0.1:8775',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,sel:'deepseek',chars:['deepseek','gpt','grok','claude','doubao','glm'],seenUnlock:['deepseek','gpt','grok','claude','doubao','glm'],name:'伙伴回归',sound:false,music:false,tokens:521,stash:60,mine:{stars:200},characterXP:{deepseek:560}}))`});
-  await p.wait(`!!document.querySelector('.pet-entry')`);await p.evaluate(`document.fonts.ready`);
+  await p.wait(`!!document.querySelector('.lb-hero')`);await p.evaluate(`document.fonts.ready`);
   const report=await p.evaluate(`(async()=>{
     const {app}=await import('./js/main.js'),S=await import('./js/save.js'),PS=await import('./js/petsave.js'),PD=await import('./js/petdata.js'),P=await import('./js/pets.js'),UI=await import('./js/ui.js'),{Game}=await import('./js/game.js'),{A}=await import('./js/assets.js'),{FxLayer}=await import('./js/fx.js'),{fireAttack,castUlt}=await import('./js/skills.js');
     const check=(v,m)=>{if(!v)throw Error(m)},m=S.load(),results={};
@@ -35,9 +35,8 @@ try{
       check(e.hp<10000,id+' auto skill actually damages enemies');damage[id]=10000-e.hp;
       q.pet.castT=0;q.pet.skillCd=99;q.pet.attackCd=0;P.updatePets(g,.02);check(g.bullets.some(b=>b.kind==='pet_'+id),id+' auto basic attack');g.bullets=[];
       check(P.toggleMount(g,q) && q.mounted,'Final form mounts');check(!P.toggleMount(g,q),'Debounce rapid mount');
-      fireAttack(g,q,0,e);check(g.bullets.length && g.bullets.every(b=>b.kind==='pet_'+id),'Mounted basic replaces character projectiles');
-      const beforeShot=e.hp;for(let i=0;i<60;i++)g.updateBullets(1/60);check(e.hp<beforeShot,id+' mounted auto-aim hits from actual pet muzzle height');
-      const ult=q.ult;castUlt(g,q,0,e);check(q.pet.castT>0 && (id==='fox'?g.timers.length>=3:g.petFields.some(f=>f.ultimate)),'Mounted ult replaced');
+      const beforeShot=e.hp;fireAttack(g,q,0,e);if(id==='fox')check(!g.bullets.length&&e.hp<beforeShot,'Fox mounted nearest-target area strike');else{check(g.bullets.length===1&&g.bullets[0].kind==='pet_'+id,'Single mounted projectile');for(let i=0;i<60;i++)g.updateBullets(1/60);check(e.hp<beforeShot,id+' mounted auto-aim hits from actual pet muzzle height');}
+      const ult=q.ult;castUlt(g,q,0,e);check(q.pet.castT>0 && (id==='fox'?q.pet.blinkT>0:g.petFields.some(f=>f.ultimate)),'Mounted ult replaced');
       q.ult=0;e.marks.water=g.time+10;
       for(let i=0;i<60;i++){g.time+=1/60;P.updatePets(g,1/60);for(const t of [...g.timers]){t.t-=1/60;if(t.t<=0){g.timers.splice(g.timers.indexOf(t),1);t.fn();}}}
       check(q.ult===0,'Mounted ult and secondary reactions cannot recharge itself');

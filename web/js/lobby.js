@@ -15,6 +15,8 @@ import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.j
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
 import { showPets } from "./petui.js";
 import { petPortrait } from "./petdata.js";
+import { petState } from './petsave.js';
+import { petPreview } from './petpreview.js';
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -98,7 +100,6 @@ export function showLobby() {
     <div class="spacer"></div>
     <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
-    <button class="btn small tb-ico pet-entry" title="梦境伙伴"><img src="${petPortrait(m.pets?.equipped || 'dragon',m.pets?.owned?.[m.pets?.equipped]?.stage || 1)}" alt=""><small>伙伴</small></button>
     <button class="btn small tb-ico codex-btn t-codex" title="怪物图鉴"><span>👾</span></button>
     <button class="btn small tb-ico help-btn t-help" title="玩法说明"><span>📖</span></button>
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
@@ -116,7 +117,13 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
-  q(".pet-entry",s).onclick=()=>{sfx('click');showPets(()=>showLobby());};
+  const pets=petState(),petId=pets.equipped||Object.keys(pets.owned)[0];
+  if(petId){
+    const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
+    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-center',s).appendChild(entry);
+    petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true);
+    entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
+  }
   wireCurrency(s);
   const fs = q(".fs-btn", s);
   if (window.Capacitor || !document.documentElement.requestFullscreen) fs.remove();

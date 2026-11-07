@@ -3,6 +3,7 @@
 import { createFrame, clearFrame, createFx, painterFor, setSimHz } from "../pixelfx/core/index.js";
 import { VIEW_W, VIEW_H } from "./data.js";
 import { FX_MODS } from "./fxmods.js";
+import { mountedVisualHeight } from './pets.js';
 
 export const FX_IDS = [
   "water/splash", "water/wave-crash", "water/whirlpool", "water/bubbles",
@@ -103,6 +104,7 @@ export class FxLayer {
     if (fx.heavy) this.hNew = true;
     fx.layer = o.layer || "front";
     fx.follow = o.follow || null;
+    fx.baseRadius=fx.options.radius;
     fx.dy = o.dy || 0;
     fx.dx = o.dx || 0;
     fx.life = o.life ?? Infinity;
@@ -119,6 +121,11 @@ export class FxLayer {
         if (f.follow.dead || f.follow.gone) f.stop();
         f.options.x = f.follow.x + f.dx;
         f.options.y = f.follow.y + f.dy;
+        if(f.id==='holy/divine-shield'){
+          const height=mountedVisualHeight(f.follow);
+          f.options.radius=height?Math.ceil(height/2+6):f.baseRadius;
+          if(height)f.options.y=f.follow.y+22-height/2;
+        }
       }
       f.life -= dt;
       if (f.life <= 0) {

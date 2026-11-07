@@ -866,6 +866,7 @@ export class Renderer {
       P.glowLine(x - Math.cos(ang) * tl, y - Math.sin(ang) * tl, x, y, r * 0.8, H(el.color), 0.45);
       switch (b.kind) {
         case "pet_dragon":
+          for(let j=8;j>=1;j--){const d=j*3.4,w=Math.max(1,r*(1-j/10));P.circle(x-Math.cos(ang)*d,y-Math.sin(ang)*d+Math.sin(this.t*20+j)*j*.22,w,H(j>4?'#e3442d':'#ffb448'),1-j*.08);}
           P.circle(x,y,r+1,H('#7b2032'),1);P.circle(x,y,r,H('#ff7433'),1);P.circle(x-1,y-1,Math.max(1,r-2),H('#ffe79b'),1);break;
         case "pet_fox":
         case "pet_phoenix": {

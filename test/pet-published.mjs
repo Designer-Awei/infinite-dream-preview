@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {browserSession} from './browser-session.mjs';
 const b=await browserSession('pet-published');
 try {
- const p=await b.page('http://127.0.0.1:8776/docs/',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,sound:false,music:false}))`});
+ const p=await b.page(process.env.GAME_TEST_URL||'http://127.0.0.1:8776/docs/',{source:`localStorage.setItem('ai-girls-dungeon-v1',JSON.stringify({tutorialSeen:true,sound:false,music:false,pets:{owned:{fox:{stage:3,xp:1200}},equipped:'fox'}}))`});
  await p.wait(`!!document.querySelector('.pet-entry')`);
  await p.evaluate(`document.querySelector('.pet-entry').click();[...document.querySelectorAll('.pet-choice')].find(x=>x.textContent.includes('灵狐')).click();document.querySelector('.pet-trial button').click()`);
  await p.wait(`!!document.querySelector('.pet-ride-btn')`);

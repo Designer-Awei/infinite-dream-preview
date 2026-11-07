@@ -8,6 +8,7 @@ import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount } from "./pets.js";
+import { flyingMount } from './petcombat.js';
 
 export const RIFT_CHANCE = 0.25;
 export class Game {
@@ -589,21 +590,21 @@ export class Game {
     this.pickups.push(it);
     return it;
   }
-  explodeAt(x, y, r, playerDmg, enemyDmg, p) {
+  explodeAt(x, y, r, playerDmg, enemyDmg, p, source = {}) {
     this.vfx("explosions/small-explosion", x, y + 8, { opts: { size: r > 45 ? 0.8 : 0.55 }, speed2: 1.3 });
     this.sound("explode");
     this.shake = Math.max(this.shake, 7);
     for (const o of this.enemiesNear(x, y, r)) {
-      this.hit(o, enemyDmg, { p, noReact: true, noCrit: true });
+      this.hit(o, enemyDmg, { p, noReact: true, noCrit: true, noUltGain:!!source.noUltGain });
       this.knock(o, x, y, 240);
     }
-    if (playerDmg) for (const q of this.alivePlayers()) if (dist(q.x, q.y, x, y) < r + q.r) this.hurt(q, playerDmg, { x, y });
+    if (playerDmg) for (const q of this.alivePlayers()) if (dist(q.x, q.y, x, y) < r + q.r) this.hurt(q, playerDmg, { x, y, groundHazard:true });
     // chain to barrels/crates
     const m = this.map;
     for (let ty = Math.floor((y - r) / T); ty <= Math.floor((y + r) / T); ty++)
       for (let tx = Math.floor((x - r) / T); tx <= Math.floor((x + r) / T); tx++) {
         const i = ty * m.W + tx;
-        if (m.crates[i] && dist(x, y, tx * T + 16, ty * T + 16) < r + 12) this.damageTile(i, 40, p);
+        if (m.crates[i] && dist(x, y, tx * T + 16, ty * T + 16) < r + 12) this.damageTile(i, 40, p, source);
       }
   }
   /** area attacks that are not bullets (breath cones, shock rings) also hit crates and barrels.
@@ -620,7 +621,7 @@ export class Game {
         this.damageTile(i, dmg, p);
       }
   }
-  damageTile(i, dmg, p) {
+  damageTile(i, dmg, p, source = {}) {
     const m = this.map, c = m.crates[i];
     if (!c || c.dead) return;
     c.hp -= dmg;
@@ -632,7 +633,7 @@ export class Game {
     const x = (i % m.W) * T + 16, y = Math.floor(i / m.W) * T + 16;
     this.emit({ t: "tile", i });
     if (kind === BARREL) {
-      this.explodeAt(x, y, 58, 1, 26, p);
+      this.explodeAt(x, y, 58, 1, 26, p, source);
     } else {
       this.vfx("spawn/poof", x, y + 6, { palette: ["#2a1a10", "#6a4020", "#b8742e", "#e0a050", "#ffd090", "#ffffff"] });
       this.sound("kill");
@@ -659,6 +660,7 @@ export class Game {
   /** hurt a player by n points */
   hurt(p, n, src = {}) {
     if (!p || p.dead || p.downed) return false;
+    if ((p.mounted&&p.pet?.id==='fox'&&p.pet.blinkT>0)||(flyingMount(p)&&(src.groundHazard||src.kind==='poison'))) return false;
     if (p.invuln > 0 || p.dashT > 0 || p.buff.star > 0) return false;
     if (p.barrier > 0) {
       p.barrier = 0;
@@ -960,7 +962,7 @@ export class Game {
     if (this.spikeUp > 0.8 && this.host)
       for (const s of this.map.spikes) {
         const cx = s.x * T + 16, cy = s.y * T + 16;
-        for (const p of this.alivePlayers()) if (Math.abs(p.x - cx) < 18 && Math.abs(p.y - cy) < 18) this.hurt(p, 1, { x: cx, y: cy });
+        for (const p of this.alivePlayers()) if (Math.abs(p.x - cx) < 18 && Math.abs(p.y - cy) < 18) this.hurt(p, 1, { x: cx, y: cy, groundHazard:true });
         for (const e of this.enemiesNear(cx, cy, 14)) if (!e.def.fly && (e.spikeCd || 0) < this.time) (e.spikeCd = this.time + 1), this.hit(e, 8, { noReact: true });
       }
     if (this.host) this.updateFlow(dt);
@@ -1223,6 +1225,9 @@ export class Game {
       p.moving = false;
       return;
     }
+    if(p.pet?.blinkT>0&&p.mounted){p.moving=false;p.atkCd-=dt;p.skillCd-=dt;p.dashCd-=dt;p.castT-=dt;p.input.skill=p.input.ult=p.input.dash=false;return;}
+    const flying=flyingMount(p);
+    if(flying){p.buff.burn=0;p.buff.poison=0;p.poisonT=p.lavaT=p.burnTick=0;}
     const inp = p.input;
     const c = CHARS[p.cid];
     // movement
@@ -1233,7 +1238,7 @@ export class Game {
     if (p.buff.ultOn > 0 && p.cid === "grok") spd *= 1.4;
     if (p.buff.inkHaste > 0) spd *= 1.3;
     if (p.buff.slow > 0) spd *= 0.6;
-    const onHz = mudAt(this.map, p.x, p.y);
+    const onHz = !flying && mudAt(this.map, p.x, p.y);
     if (onHz && this.hazard === "mud") spd *= 0.55;
     if (onHz && this.hazard === "ice") spd *= 1.12;
     if (p.breathT > 0) spd *= 0.7;
@@ -1250,15 +1255,15 @@ export class Game {
       if (p.dashT > 0) p.dashT -= dt;
     } else if (p.dashT > 0) {
       p.dashT -= dt;
-      moveCircle(this.map, p, p.dashDx * BAL.dashSpeed * dt, p.dashDy * BAL.dashSpeed * dt);
+      moveCircle(this.map, p, p.dashDx * BAL.dashSpeed * dt, p.dashDy * BAL.dashSpeed * dt, flying, flying);
       if (Math.random() < 0.6) p.trail = (p.trail || []).concat([{ x: p.x, y: p.y, t: 0.25 }]).slice(-6);
-    } else if (this.hazard === "ice") {
+    } else if (this.hazard === "ice" && !flying) {
       // ice: momentum carries you (accelerate / brake slowly while standing on it)
       const k = onHz ? 1 - Math.exp(-3 * dt) : 1;
       p.ivx = (p.ivx || 0) + (mx * spd - (p.ivx || 0)) * k;
       p.ivy = (p.ivy || 0) + (my * spd - (p.ivy || 0)) * k;
       moveCircle(this.map, p, p.ivx * dt, p.ivy * dt);
-    } else moveCircle(this.map, p, mx * spd * dt, my * spd * dt);
+    } else {if(flying)p.ivx=p.ivy=0;moveCircle(this.map, p, mx * spd * dt, my * spd * dt, flying, flying);}
     if (remote) p.moving = ml > 0.1;
     if (p.trail) for (const q of p.trail) q.t -= dt;
     if (!this.host && !p.local) return;
@@ -1275,7 +1280,7 @@ export class Game {
       p.lavaT = (p.lavaT || 0) + dt;
       if (p.lavaT > 1) {
         p.lavaT = 0;
-        if (this.hurt(p, 1, {})) this.text(p.x, p.y - 50, "灼烧", "#ff8a3a", 0.9);
+        if (this.hurt(p, 1, {groundHazard:true})) this.text(p.x, p.y - 50, "灼烧", "#ff8a3a", 0.9);
       }
     } else p.lavaT = Math.min(p.lavaT || 0, 0.6);
     // status damage
@@ -1362,7 +1367,7 @@ export class Game {
     }
     // hazards
     for (const z of this.zones) {
-      if (z.kind !== "poison") continue;
+      if (z.kind !== "poison" || flying) continue;
       if (dist(p.x, p.y, z.x, z.y) < z.r + 6) {
         p.poisonT = (p.poisonT || 0) + dt;
         if (p.poisonT > 1.2) (p.poisonT = 0), this.hurt(p, 1, z);
