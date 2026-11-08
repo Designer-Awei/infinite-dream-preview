@@ -1,0 +1,31 @@
+{
+  "source_sha256": "aa6bab28c90340063b58ebd9bbf81be854df6bf0e7a46226fa240fae7e84a093",
+  "clean_source_sha256": "aa6bab28c90340063b58ebd9bbf81be854df6bf0e7a46226fa240fae7e84a093",
+  "reference_sha256": "c93d8be4c88ae6d49a04ab6b0e368ac2288bdd8cea789d478b59d9643160de48",
+  "canvas": [
+    256,
+    256
+  ],
+  "foot": [
+    128,
+    232
+  ],
+  "source_bbox": [
+    1027,
+    22,
+    1522,
+    506
+  ],
+  "size": [
+    212,
+    207
+  ],
+  "offset": [
+    22,
+    25
+  ],
+  "scale": 0.42828282828282827,
+  "alpha_cleanup": "largest connected rider+mount alpha>32, retain its own one-pixel alpha edge; no white colour key",
+  "original_white_clothing_and_feathers_preserved": true,
+  "no_128px_intermediate": true
+}

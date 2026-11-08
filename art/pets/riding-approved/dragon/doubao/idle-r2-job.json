@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "46624507-754a-4680-819f-f1fd7b8ccdef",
+  "species": "dragon",
+  "cid": "doubao",
+  "clip": "idle",
+  "revision": 2,
+  "reference_sha256": "428a12ce10bef4bf31077a17055821d8cd4d51ec2868e3cf0ea99790238321e7",
+  "request": {
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8130804,
+    "action": "Grounded breathing idle, NOT FLYING. Keep the wing root and upper wing ridge FIXED in their exact supplied position below the rider face. Only the lower wing tips may relax a tiny distance downward. Animate gentle chest/belly breathing, a natural tail sway and soft existing tail-flame flicker. All four feet stay planted. Rider breathes and hair sways slightly. NEVER lift or flap the wings upward. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose."
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.02587676900625229
+  },
+  "runtime": [
+    256,
+    256
+  ],
+  "raw_sha256": "36a5408b39bbbd7b6f8e92a201e31ffafa3dcef3748abdb98180ec01a4ae27cd",
+  "sha256": "555b7f51912ac466efb2fecde9eca7023e708e0fb22cfe269c189d3ee6c517fb",
+  "endpoint_alpha": "exact approved reference",
+  "selected": true,
+  "alpha_cleanup": "alpha<=8 and detached components<=32px only; never RGB colour key",
+  "frame_curation": {
+    "raw_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      0
+    ],
+    "reason": "Alpha cleanup only; preserve original frame order and approved endpoints."
+  }
+}

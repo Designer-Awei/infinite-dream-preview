@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "c5935638-d4d4-4900-bd5f-167f67770022",
+  "species": "phoenix",
+  "cid": "doubao",
+  "clip": "move",
+  "revision": 0,
+  "reference_sha256": "0dd7c02e1e3b3d0d532048c968b3b73725771f09eb18ecbe7d0d4f1b8e9b744a",
+  "request": {
+    "description": "Steady flying loop in place: BOTH wings flap DOWN TOGETHER then return to the reference highest pose, restrained downward arc only. Shoulder joints lead, flight feathers bend naturally with delay. Slight chest/hip breathing and tail feather wave. Rider stays seated and balances, hair follows. No leg-walking, no upward wing swing across rider. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved 奶糖包 girl seated on a blue-white ice phoenix",
+    "initial_pose": "Seated rider with face visible above the near wing, facing right; supplied wing height is its highest allowed pose.",
+    "seed": 8111904
+  },
+  "frames": 9,
+  "usage": null,
+  "runtime": [
+    256,
+    256
+  ],
+  "raw_sha256": "82397f6cc3a8659bf0b5e111b81f43de0f34c4bdb738b003c95833966b5533b9",
+  "sha256": "d402432861d2ba57bacfc943dbb343dae5ba4e58a84446d0a292911bcecead46",
+  "endpoint_alpha": "exact approved reference",
+  "selected": true,
+  "frame_curation": {
+    "raw_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      3,
+      2,
+      1,
+      0
+    ],
+    "reason": "Select inspected poses and documented ordering; omit wing poses that obscure the rider face. Original provider strip preserved."
+  },
+  "alpha_cleanup": "alpha<=8 and detached components<=32px only; never RGB colour key"
+}

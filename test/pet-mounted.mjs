@@ -16,7 +16,7 @@ try {
     const render=t=>{ctx.fillStyle='#181329';ctx.fillRect(0,0,c.width,c.height);
       CHAR_ORDER.forEach((cid,i)=>{
         ctx.save();ctx.translate(i%3*320+160,Math.floor(i/3)*280+230);ctx.scale(2,2);
-        const player={cid,x:0,y:0,mounted:true,pet:{id:'fox',stage:3,x:0,y:0,face:0,anim:t,moving:t>=1.5&&t<3,castT:t>=3?1:0,castMax:2}};
+        const player={cid,x:0,y:0,mounted:true,pet:{id:'fox',stage:3,x:0,y:0,face:0,anim:t,walkT:t,moving:t>=1.5&&t<3,castT:t>=3?1:0,castMax:2}};
         check(P.drawMountedPet(ctx,player,t),'Draw whole rider '+cid);check(P.mountedVisualHeight(player)>70,'Whole silhouette height');
         const muzzle=P.petMuzzle(player);check(muzzle.x>20&&muzzle.y<0,'Mouth forward of origin');
         ctx.restore();ctx.font='17px Cubic';ctx.fillStyle='#ffe36a';ctx.fillText(cid,i%3*320+12,Math.floor(i/3)*280+24);

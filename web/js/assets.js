@@ -102,8 +102,10 @@ export async function loadAll(progress = () => {}) {
   A.pets = { meta: petMeta, image: petImage };
   const [riderMeta,riderImage,riderBack]=await Promise.all([json(base+'pets/riders.json'),img(base+'pets/riders-front.png'),img(base+'pets/riders-back.png')]);
   A.riders={meta:riderMeta,image:riderImage,back:riderBack,white:silhouette(riderImage,'#ffffff')};
-  const [foxMountMeta,foxMountImage]=await Promise.all([json(base+'pets/fox-mounted.json'),img(base+'pets/fox-mounted.png')]);
-  A.mounts.fox={meta:foxMountMeta,image:foxMountImage};
+  await Promise.all(['fox','dragon','phoenix'].map(async id=>{
+    const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);
+    A.mounts[id]={meta,image};
+  }));
   try {
     await document.fonts.load("12px Cubic");
   } catch {}

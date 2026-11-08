@@ -4,6 +4,7 @@ import { createFrame, clearFrame, createFx, painterFor, setSimHz } from "../pixe
 import { VIEW_W, VIEW_H } from "./data.js";
 import { FX_MODS } from "./fxmods.js";
 import { mountedShield } from './pets.js';
+import { flyingMount } from './petcombat.js';
 
 export const FX_IDS = [
   "water/splash", "water/wave-crash", "water/whirlpool", "water/bubbles",
@@ -44,6 +45,9 @@ export class FxLayer {
     // display frame (and shifted with the camera in between): half the per-pixel glow work at 60 fps
     this.hback = createFrame(w, h);
     this.hfront = createFrame(w, h);
+    // Shield shells belonging to flying riders must be drawn after their body.
+    // Other front effects stay below the flying rider as before.
+    this.airShield = createFrame(w, h);
     this.hT = 0;
     this.hcam = [0, 0];
     this.cam = [0, 0];
@@ -62,6 +66,8 @@ export class FxLayer {
     this.cHF = mk();
     this.cHLB = mk();
     this.cHLF = mk();
+    this.cAirShield = mk();
+    this.cAirLight = mk();
     this.img = new ImageData(w, h);
     this.u32 = new Uint32Array(this.img.data.buffer);
     this.enabled = true;
@@ -140,8 +146,10 @@ export class FxLayer {
     const cx = Math.round(camX), cy = Math.round(camY), now = performance.now();
     this._clear(this.back);
     this._clear(this.front);
+    this._clear(this.airShield);
     this.back.ox = this.front.ox = this.cam[0] = cx;
     this.back.oy = this.front.oy = this.cam[1] = cy;
+    this.airShield.ox=cx;this.airShield.oy=cy;this.airShieldUsed=false;
     const re = this.hNew || now - this.hT >= (this.lite ? 48 : 30);
     if (re) {
       this._clear(this.hback);
@@ -153,6 +161,9 @@ export class FxLayer {
     }
     this.backUsed = this.frontUsed = false;
     for (const f of this.list) {
+      if(f.id==='holy/divine-shield'&&f.follow&&!f.follow.dead&&!f.follow.downed&&flyingMount(f.follow)){
+        this.airShieldUsed=true;f.draw(this.airShield);continue;
+      }
       const back = f.layer === "back";
       if (f.heavy) {
         if (re) f.draw(back ? this.hback : this.hfront);
@@ -235,5 +246,8 @@ export class FxLayer {
   }
   drawFront(g) {
     this._blit(g, this.hfront, this.cHF, this.cHLF, this.front, this.cFront, this.cLightF, this.frontUsed, this.lightF);
+  }
+  drawAirShields(g) {
+    this._blit(g,{bbox:null},null,null,this.airShield,this.cAirShield,this.cAirLight,this.airShieldUsed,this.lightF);
   }
 }

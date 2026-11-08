@@ -1,0 +1,122 @@
+{
+  "approved_by_user": "2026-11-08",
+  "species": "phoenix",
+  "stage": 3,
+  "ride_only_at_final_stage": true,
+  "original_input": "D:\\xwechat_files\\wxid_oqz97frs2yw122_5f6d\\temp\\RWTemp\\2026-11\\de6cf23feafbc6cf7e088b746fec5f04\\1fe5b8720181634a9f98a6a55261b9c4.png",
+  "source_sha256": "3ab2ab3671015a1bce7f1fddaf742c8d3918dc233a733710aabb956e84a364e8",
+  "size": [
+    1536,
+    1024
+  ],
+  "characters": [
+    {
+      "cid": "deepseek",
+      "nominal_cell": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "source_box": [
+        4,
+        6,
+        499,
+        507
+      ],
+      "solid_pixels": 128118,
+      "sha256": "b2303aa51134b39aae6ced0021987ff3967e9700460235cce9227400bf1d09c0",
+      "complete_component": true
+    },
+    {
+      "cid": "grok",
+      "nominal_cell": [
+        512,
+        0,
+        1024,
+        512
+      ],
+      "source_box": [
+        515,
+        13,
+        1011,
+        506
+      ],
+      "solid_pixels": 129662,
+      "sha256": "209f24dbbf0d9459de76c471fa1fd51a0724876d0b3a3b6e282d90fa247803e0",
+      "complete_component": true
+    },
+    {
+      "cid": "claude",
+      "nominal_cell": [
+        1024,
+        0,
+        1536,
+        512
+      ],
+      "source_box": [
+        1027,
+        22,
+        1522,
+        506
+      ],
+      "solid_pixels": 125482,
+      "sha256": "aa6bab28c90340063b58ebd9bbf81be854df6bf0e7a46226fa240fae7e84a093",
+      "complete_component": true
+    },
+    {
+      "cid": "gpt",
+      "nominal_cell": [
+        0,
+        512,
+        512,
+        1024
+      ],
+      "source_box": [
+        4,
+        513,
+        498,
+        1019
+      ],
+      "solid_pixels": 129960,
+      "sha256": "fa7cfa9f43036d522f55bd8d4061f4c445e241cb176527be9175f346270fb8db",
+      "complete_component": true
+    },
+    {
+      "cid": "doubao",
+      "nominal_cell": [
+        512,
+        512,
+        1024,
+        1024
+      ],
+      "source_box": [
+        515,
+        529,
+        1011,
+        1018
+      ],
+      "solid_pixels": 127007,
+      "sha256": "31d9ef47a790376d2315c44068f9e5f1b17bfe3462893950f2a0539ded4ac6d4",
+      "complete_component": true
+    },
+    {
+      "cid": "glm",
+      "nominal_cell": [
+        1024,
+        512,
+        1536,
+        1024
+      ],
+      "source_box": [
+        1027,
+        512,
+        1522,
+        1019
+      ],
+      "solid_pixels": 134516,
+      "sha256": "de64d9b95374754a319f6ec83337fc66fba994bbaf34c76c855accf5fcf9f0e2",
+      "complete_component": true
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "e0ab3819-d799-4797-bfb9-f1843cc484ce",
+  "species": "phoenix",
+  "cid": "deepseek",
+  "clip": "idle",
+  "revision": 0,
+  "reference_sha256": "12a05beace97d27d9a6c1427e8b92a3ecb9af9dd9cef9538c511d325e512bcfb",
+  "request": {
+    "description": "Hover idle in place: BOTH wings flap DOWN TOGETHER gently, then return to the supplied pose as their HIGHEST point. No upward overshoot; never seesaw one wing up while other down. Chest breathes, feathers and tail softly lag behind, rider balances subtly. Keep the face visible throughout. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose.",
+    "frame_count": 8,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved 大肥鱼 girl seated on a blue-white ice phoenix",
+    "initial_pose": "Seated rider with face visible above the near wing, facing right; supplied wing height is its highest allowed pose.",
+    "seed": 8111800
+  },
+  "frames": 9,
+  "usage": null,
+  "runtime": [
+    256,
+    256
+  ],
+  "raw_sha256": "8efa9fc6fa9070d110551a1f697f4b17da660248bc51214b8b70e3835fce9aea",
+  "sha256": "890964001de31bfbf51b113b6e914b4169f382e1ce7e6daf53d21b48437bfbcf",
+  "endpoint_alpha": "exact approved reference",
+  "selected": true,
+  "frame_curation": {
+    "raw_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      3,
+      2,
+      1,
+      0
+    ],
+    "reason": "Select inspected poses and documented ordering; omit wing poses that obscure the rider face. Original provider strip preserved."
+  },
+  "alpha_cleanup": "alpha<=8 and detached components<=32px only; never RGB colour key"
+}

@@ -10,7 +10,7 @@ try{
  const combat=await p.evaluate(`(async()=>{
  const {Game}=await import('./js/game.js'),{FxLayer}=await import('./js/fx.js'),P=await import('./js/pets.js'),C=await import('./js/petcombat.js'),{A}=await import('./js/assets.js');
  const check=(v,m)=>{if(!v)throw Error(m)},make=(id,stage=3)=>{const fx=new FxLayer(),g=new Game({fx,seed:17}),p=g.addPlayer({id:1,cid:'gpt',name:'回归',local:true,kit:{tal:{},eq:{},cards:[],pet:{id,stage}}});g.startRun();g.enemies=[];g.map.t.fill(0);g.map.mud.fill(0);g.map.crates={};g.phase='fight';g.waveDelay=999;p.x=320;p.y=272;p.invuln=0;P.resetPet(g,p);return[g,p,fx];},enemy=(g,x,y)=>{const e=g.spawnEnemy('slime',x,y);e.spawnT=0;e.hp=e.maxHp=10000;return e;};
- check(!A.mounts.dragon&&!A.mounts.phoenix&&A.mounts.fox,'Old reviewed materials only');
+ check(['dragon','fox','phoenix'].every(id=>A.mounts[id]?.image.complete),'Three reviewed mounted atlases loaded');
  const [fg,fp]=make('fox',1);fg.bullets=[{id:1,side:'e'},{id:2,side:'p'}];P.updatePets(fg,9.99);check(fg.bullets.length===2,'Aura not early');P.updatePets(fg,.02);check(fg.bullets.length===1&&fg.bullets[0].id===2,'10s clears enemies, preserves friendly');
  const [g,q]=make('fox');P.toggleMount(g,q);const near=enemy(g,400,272),splash=enemy(g,422,272),far=enemy(g,720,272);
  P.mountedAttack(g,q,Math.PI,far);check(near.hp<10000&&splash.hp<10000&&far.hp===10000&&!g.bullets.length,'Nearest-target area lightning, no projectile');
@@ -30,7 +30,7 @@ try{
  const f=dg.petFields.find(f=>f.kind==='fire');check(C.fireHalfWidth(f,f.visibleLength-1)<f.width*.3,'Rounded fire tip narrows');
  const [pg,pp]=make('phoenix');P.toggleMount(pg,pp);const frozen=put(pg,11,8,4);P.mountedUlt(pg,pp,0,null);for(let i=0;i<80;i++)P.updatePets(pg,1/60);check(pg.map.crates[frozen].dead,'Snow area damages props');
  for(const id of ['dragon','fox','phoenix']){const [g,p,fx]=make(id);P.toggleMount(g,p);const effect=fx.spawn('holy/divine-shield',p.x,p.y,{follow:p,life:5});check(!!effect,'Shield effect available');fx.update(.01);const h=P.mountedHeadHeight(p),cy=effect.options.y-22,r=effect.options.radius;check(cy-r<=p.y-h&&cy+r>=p.y,'Shield fits rider and body '+id);p.mountCd=0;P.toggleMount(g,p);fx.update(.01);check(effect.options.radius===29&&effect.options.y===p.y,'Shield restores on foot '+id);}
- window.revision={make,enemy,P};return{aura10s:true,nearestAOE:true,blinkHits:times.length,blinkTimes:times,blinkInvulnerability:true,flightAndSafeLanding:true,groundImmunityScoped:true,singleIceSpike:true,movingStormRadius:124,propDamageAndLoot:true,roundedBreath:true,mountedShield:true,oldMaterials:true};
+ window.revision={make,enemy,P};return{aura10s:true,nearestAOE:true,blinkHits:times.length,blinkTimes:times,blinkInvulnerability:true,flightAndSafeLanding:true,groundImmunityScoped:true,singleIceSpike:true,movingStormRadius:124,propDamageAndLoot:true,roundedBreath:true,mountedShield:true,reviewedMountedAtlases:3};
  })()`);
  await p.evaluate(`(async()=>{const S=await import('./js/save.js'),PS=await import('./js/petsave.js'),L=await import('./js/lobby.js');PS.exchangePet('dragon','UR');L.showLobby();})()`);
  await p.wait(`!!document.querySelector('.lb-pet canvas')`);await sleep(250);

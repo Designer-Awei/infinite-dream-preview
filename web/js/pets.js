@@ -14,6 +14,13 @@ export function attachPet(game,p,value){
 export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,route:[],room:game.roomIdx,castT:0,moving:false,blinkT:0,targetId:null,state:'idle',returning:false,nav:null,navCd:0,stuck:0});}
 export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];}
 function mountAsset(p){return p.mounted&&p.pet?.stage===3?A.mounts?.[p.pet.id]||null:null;}
+function mountedFrame(q,actor){
+  let name='idle_e',frame=Math.floor(q.anim*6);
+  if(q.castT>0&&actor.cast_e){name='cast_e';const t=q.castMax-q.castT;frame=t<.35?Math.floor(t*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):[3,4,5,4][Math.floor(t*6)%4];}
+  else if(q.moving&&actor.move_e){name='move_e';frame=Math.floor((q.walkT||0)*PET_MOTION.walkFps);}
+  const clip=actor[name],index=Math.max(0,Math.min(clip.length-1,q.castT>0?frame:frame%Math.max(1,clip.length-1)));
+  return{name,index,pos:clip[index]};
+}
 export function mountedVisualHeight(p){
   if(!p.mounted||!p.pet)return null;
   const m=mountAsset(p),a=m?.meta.actors[p.cid];if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
@@ -32,7 +39,7 @@ export function mountedShield(p){
 }
 export function petMuzzle(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
-  if(a)return{x:p.pet.x+(a.mouth[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.pet.face)>=0?1:-1),y:p.pet.y+(a.mouth[1]-m.meta.anchor[1])*m.meta.scale};
+  if(a){const f=mountedFrame(p.pet,a),mouth=a.mouth_frames?.[f.name]?.[f.index]||a.mouth;return{x:p.pet.x+(mouth[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.pet.face)>=0?1:-1),y:p.pet.y+(mouth[1]-m.meta.anchor[1])*m.meta.scale};}
   const q=p.pet,a0=A.pets?.meta.actors[`${q.id}-${q.stage}`],point=(q.castT>0&&a0?.cast_mouth)||a0?.mouth||[89,60],anchor=a0?.anchor||[64,96],k=petScale(p);
   return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k-flightLift(p)};
 }
@@ -167,10 +174,7 @@ export function drawPet(ctx,player,time,ride=false) {
 export function drawMountedPet(ctx,player,time,shadow=true) {
   const mount=mountAsset(player),actor=mount?.meta.actors[player.cid];if(!actor)return false;
   const q=player.pet,{cw,ch,anchor,scale}=mount.meta;
-  let clip=actor.idle_e,frame=Math.floor(q.anim*6);
-  if(q.castT>0 && actor.cast_e){clip=actor.cast_e;const t=q.castMax-q.castT;frame=t<.35?Math.floor(t*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):[3,4,5,4][Math.floor(t*6)%4];}
-  else if(q.moving && actor.move_e){clip=actor.move_e;frame=Math.floor((q.walkT||0)*PET_MOTION.walkFps);}
-  const pos=clip[Math.min(clip.length-1,q.castT>0?frame:frame%Math.max(1,clip.length-1))];
+  const {pos}=mountedFrame(q,actor);
   ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
   if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
   ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;

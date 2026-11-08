@@ -184,6 +184,9 @@ export class Renderer {
     this.drawLines(g, game);
     // Flying riders are the last world sprites, above walls, units and combat FX.
     for(const p of game.players)if(flyingMount(p)&&!p.dead&&!p.downed)this.drawHero(g,p,me,game);
+    g.setTransform(RS,0,0,RS,0,0);
+    this.fx.drawAirShields(g);
+    g.translate(-cx,-cy);
     // overlays
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);

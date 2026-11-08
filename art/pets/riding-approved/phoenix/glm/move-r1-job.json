@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "d1873d93-e0f7-4537-8c56-a80c65aa8a7a",
+  "species": "phoenix",
+  "cid": "glm",
+  "clip": "move",
+  "revision": 1,
+  "reference_sha256": "22be59811e76c697d1bb5da6e65dc687c7e903485c1ed41b227e2eee3c0744f7",
+  "request": {
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8121905,
+    "action": "Steady flying loop in place: BOTH wings flap DOWN TOGETHER then return to the reference highest pose, restrained downward arc only. Shoulder joints lead, flight feathers bend naturally with delay. Slight chest/hip breathing and tail feather wave. Rider stays seated and balances, hair follows. No leg-walking, no upward wing swing across rider. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose."
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.03302168730232451
+  },
+  "runtime": [
+    256,
+    256
+  ],
+  "raw_sha256": "f79e47d848878cfc3ddfe2699e59e2ca1ac42d24e79db39bcc7a59ca12b840a7",
+  "sha256": "e7847a5d8226ea3cfef21e05dc33b92ebf22f2616dfe199e922aa622e0b21dcb",
+  "endpoint_alpha": "exact approved reference",
+  "selected": true,
+  "alpha_cleanup": "alpha<=8 and detached components<=32px only; never RGB colour key",
+  "frame_curation": {
+    "raw_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      0
+    ],
+    "reason": "Alpha cleanup only; preserve original frame order and approved endpoints."
+  }
+}

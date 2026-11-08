@@ -1,0 +1,46 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-with-text-v3",
+  "job": "6fb6917f-0588-407a-97d9-70143e329039",
+  "species": "dragon",
+  "cid": "doubao",
+  "clip": "cast",
+  "revision": 3,
+  "reference_sha256": "428a12ce10bef4bf31077a17055821d8cd4d51ec2868e3cf0ea99790238321e7",
+  "request": {
+    "frame_count": 8,
+    "no_background": true,
+    "seed": 8141004,
+    "action": "ONLY THE DRAGON OPENS ITS REPTILIAN MOUTH: the dragon leans its long neck forward and lowers its red lower jaw to reveal teeth, then closes its jaw and recovers. The GIRL keeps her exact neutral face, closed lips and open coloured eyes throughout. Her mouth NEVER opens. All four dragon feet remain planted, wings stay low and fixed, tail sways, chest breathes. Absolutely NO fire, glow, projectile or outside effects. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose."
+  },
+  "frames": 9,
+  "usage": {
+    "usd": 0.0,
+    "type": "generations",
+    "generations": 8,
+    "cost_if_paid": 0.029305330594380695
+  },
+  "runtime": [
+    256,
+    256
+  ],
+  "raw_sha256": "0d16eaba776cb77e109086bbfef388508b7be7935a3de970d21dcc139f841223",
+  "sha256": "36d81947229bd85bd8637105b5a9af7026564363aeb88f016b4484ad3fca3c89",
+  "endpoint_alpha": "exact approved reference",
+  "alpha_cleanup": "alpha<=8 and detached components<=32px only; never RGB colour key",
+  "selected": true,
+  "frame_curation": {
+    "raw_indices": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      0
+    ],
+    "reason": "Alpha cleanup only; preserve original frame order and approved endpoints."
+  }
+}
