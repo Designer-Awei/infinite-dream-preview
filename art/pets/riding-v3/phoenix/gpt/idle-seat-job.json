@@ -1,0 +1,20 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/edit-animation-v2",
+  "edit_jobs": [
+    "idle-seat-g0-job.json",
+    "idle-seat-g1-job.json",
+    "idle-seat-g2-job.json"
+  ],
+  "parent_selection": {
+    "revision": 2,
+    "job_file": "idle-smooth-r2-job.json",
+    "raw_file": "idle-smooth-r2-raw.png"
+  },
+  "reference_sha256": "84838b71fa90b39627a77a2744e376fd4a2e4fca4ea3fe175fff7e4e3d2e13d9",
+  "raw_sha256": "64473a14022e00811d3291ffd9c4d14de3aae2ca80c6999ba8e1d64d55254510",
+  "sha256": "64473a14022e00811d3291ffd9c4d14de3aae2ca80c6999ba8e1d64d55254510",
+  "frames": 13,
+  "alpha_cleanup": "alpha<=8 and detached components<=128px only; never RGB key",
+  "edit": "Pelvis seated in contact with back; wing phase retained"
+}

@@ -1,0 +1,23 @@
+{
+  "job": "9cae69a1-ac43-4b7f-930d-54fdb2385b12",
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "reference_sha256": "bbf3f218472b2d3b8bc9ba640b3db5a86e2ec314dd87858eb0b045df59c55481",
+  "source_prompt_file": "art\\pets\\riding-approved\\phoenix\\deepseek\\move-r1-job.json",
+  "request": {
+    "description": "Grounded four-legged walk in place, diagonal paw pairs alternate with weight: BOTH wings flap DOWN TOGETHER then return to the reference highest pose, restrained downward arc only. Shoulder joints lead, wing membrane bend naturally with delay. Slight chest/hip breathing and tail feather wave. Rider stays seated and balances, hair follows. No rearing, no upward wing swing across rider. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved girl seated on a red four-legged fire dragon",
+    "initial_pose": "Right-facing side view, rider seated, face above near wing, same exact reference pose and size.",
+    "seed": 8111905
+  },
+  "frames": 13,
+  "usage": null,
+  "raw_sha256": "03e16c18a945712d50c1115455c090782ac83f38bbbfe943dc9451029d1c116e",
+  "sha256": "e0c5105d6245c46b086df653abe5262a3a5937319d42921272b0d519aeec9487",
+  "alpha_cleanup": "alpha<=8; remove detached components <=128px only; no RGB colour key"
+}

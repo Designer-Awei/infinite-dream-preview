@@ -1,0 +1,23 @@
+{
+  "job": "e7ac73b5-6eb8-43d5-94bd-40a86165367f",
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "reference_sha256": "9407d952d05f23d82b1261cdfd278dc9066f18f11cf526257f3bc4f6ae4d513a",
+  "source_prompt_file": "art\\pets\\riding-approved\\phoenix\\deepseek\\idle-job.json",
+  "request": {
+    "description": "Grounded breathing idle, four paws planted: BOTH wings flap DOWN TOGETHER gently, then return to the supplied pose as their HIGHEST point. No upward overshoot; never seesaw one wing up while other down. Chest breathes, wing tips and tail softly lag behind, rider balances subtly. Keep the face visible throughout. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved girl seated on a red four-legged fire dragon",
+    "initial_pose": "Right-facing side view, rider seated, face above near wing, same exact reference pose and size.",
+    "seed": 8111802
+  },
+  "frames": 13,
+  "usage": null,
+  "raw_sha256": "466a5752c2f4e85beeb6eaefe2d6cbee66350f4e47f0ad275e511f4aeb7f05a7",
+  "sha256": "26ba172909d573a57defc4b8589f5dc642fc1595983a41a9298db4a04a7106d4",
+  "alpha_cleanup": "alpha<=8; remove detached components <=128px only; no RGB colour key"
+}

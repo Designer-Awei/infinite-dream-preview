@@ -1,0 +1,20 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/edit-animation-v2",
+  "edit_jobs": [
+    "cast-seat-g0-job.json",
+    "cast-seat-g1-job.json",
+    "cast-seat-g2-job.json"
+  ],
+  "parent_selection": {
+    "revision": 2,
+    "job_file": "cast-smooth-r2-job.json",
+    "raw_file": "cast-smooth-r2-raw.png"
+  },
+  "reference_sha256": "84838b71fa90b39627a77a2744e376fd4a2e4fca4ea3fe175fff7e4e3d2e13d9",
+  "raw_sha256": "03bc167472a520a25cfbf94e760fc16a3482469610e1f6a0bcedb5a360bd2451",
+  "sha256": "03bc167472a520a25cfbf94e760fc16a3482469610e1f6a0bcedb5a360bd2451",
+  "frames": 13,
+  "alpha_cleanup": "alpha<=8 and detached components<=128px only; never RGB key",
+  "edit": "Pelvis seated in contact with back; wing phase retained"
+}

@@ -15,12 +15,13 @@ try{
    for(const cid of CHAR_ORDER){
     const a=m.meta.actors[cid],q={id:species,stage:3,x:0,y:0,face:0,anim:0,walkT:0,castT:0,castMax:0,moving:false},player={cid,mounted:true,pet:q};
     for(const clip of ['idle_e','move_e','cast_e']){
-     check(a[clip].length===9&&a.mouth_frames[clip].length===9,'Nine mapped frames');
-     for(let i=0;i<8;i++){
-      Object.assign(q,{anim:clip==='idle_e'?(i+.05)/6:0,walkT:(i+.05)/7,moving:clip==='move_e',castMax:4,castT:clip==='cast_e'?4-(i<3?(i+.05)/8:.36+(i-3)/6):0});
+     check(a[clip].length===13&&a.mouth_frames[clip].length===13,'Thirteen mapped frames');
+     for(let i=0;i<12;i++){
+      const expected=clip==='cast_e'&&species==='phoenix'?'move_e':clip;
+      Object.assign(q,{anim:(i+.05)/9,walkT:(i+.05)/10.5,moving:clip==='move_e',castMax:4,castT:clip==='cast_e'?3:0});
       let call;const draw=ctx.drawImage.bind(ctx);ctx.drawImage=(...args)=>{call=args;draw(...args)};check(P.drawMountedPet(ctx,player,0,false),'Whole pair rendered');ctx.drawImage=draw;
-      const index=a[clip].findIndex(([x,y])=>x===call[1]&&y===call[2]);check(index>=0,'Rendering correct action strip');
-      const point=a.mouth_frames[clip][index],muzzle=P.petMuzzle(player);check(Math.abs(muzzle.x-(point[0]-128)*m.meta.scale)<.001&&Math.abs(muzzle.y-(point[1]-232)*m.meta.scale)<.001,'Muzzle follows displayed frame');
+      const index=a[expected].findIndex(([x,y])=>x===call[1]&&y===call[2]);check(index===i,'Rendering correct action sample');
+      const point=a.mouth_frames[expected][index],muzzle=P.petMuzzle(player);check(Math.abs(muzzle.x-(point[0]-128)*m.meta.scale)<.001&&Math.abs(muzzle.y-(point[1]-232)*m.meta.scale)<.001,'Muzzle follows displayed frame');
       q.face=Math.PI;const mirrored=P.petMuzzle(player);check(Math.abs(mirrored.x+muzzle.x)<.001&&mirrored.y===muzzle.y,'Muzzle mirrors with body');q.face=0;
      }
     }
@@ -31,7 +32,7 @@ try{
   }
   const render=(species,mode,t)=>{ctx.fillStyle='#181329';ctx.fillRect(0,0,c.width,c.height);CHAR_ORDER.forEach((cid,i)=>{ctx.save();ctx.translate(i%3*512+256,Math.floor(i/3)*310+270);ctx.scale(2.2,2.2);P.drawMountedPet(ctx,{cid,mounted:true,pet:{id:species,stage:3,x:0,y:0,face:0,anim:t,walkT:t,moving:mode==='move',castMax:3,castT:mode==='cast'?2:0}},t,false);ctx.restore();ctx.font='18px Cubic';ctx.fillStyle='#ffe36a';ctx.fillText(cid+' '+mode,i%3*512+18,Math.floor(i/3)*310+25);});return c.toDataURL().split(',')[1];};
   for(const species of ['dragon','phoenix'])for(const mode of ['idle','move'])check(render(species,mode,.1)!==render(species,mode,.65),'Animated '+species+mode);
-  window.mountReview={render};return{riders:12,clips:36,sourceCells:256,maxAtlasDimension:3584,muzzleSamples:288,stage3Only:true,geometry:checks};
+  window.mountReview={render};return{riders:12,clips:36,sourceCells:256,maxAtlasDimension:4096,muzzleSamples:432,stage3Only:true,geometry:checks};
  })()`);
  for(const species of ['dragon','phoenix'])for(const mode of ['idle','move','cast'])await writeFile(path.join(b.out,species+'-'+mode+'.png'),Buffer.from(await p.evaluate(`mountReview.render('${species}','${mode}',.65)`),'base64'));
  assert.deepEqual(b.errors,[]);await writeFile(path.join(b.out,'report.json'),JSON.stringify({...report,pageErrors:b.errors},null,2));console.log(JSON.stringify({...report,geometry:report.geometry.length,pageErrors:b.errors}));

@@ -1,0 +1,9 @@
+{
+  "endpoint": "/animate-pixminimax",
+  "requested_canvas": [
+    512,
+    512
+  ],
+  "status_code": 422,
+  "error": "Image too large (512x512). Maximum size for animation is 256x256 pixels."
+}

@@ -1,0 +1,23 @@
+{
+  "job": "81fb6c08-f10e-42de-bd18-a95ed91bb60c",
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "reference_sha256": "9407d952d05f23d82b1261cdfd278dc9066f18f11cf526257f3bc4f6ae4d513a",
+  "source_prompt_file": "art\\pets\\riding-approved\\phoenix\\deepseek\\cast-job.json",
+  "request": {
+    "description": "Grounded four-legged walking breath-attack loop: BOTH wings beat DOWN TOGETHER in a small controlled arc, return only to reference height. ONLY dragon extends neck and opens reptilian jaw, girl mouth closed, then recovers. Chest breathes, tail wing tips undulate, rider remains seated. No external fire, rings, sparks or beams. Exact approved rider and mount, same costume, colours, face and proportions, facing right, fixed camera. Preserve eyes with coloured iris and white highlight; no black empty eyes. Rider remains seated and hands retain reins or book. Far rider leg stays hidden; near wing stays in FRONT of lower rider hair/body consistently, below the face. Never move a wing across the face. No extra limbs, symbols, background, speed lines, exterior magic or particles. Return seamlessly to reference pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved girl seated on a red four-legged fire dragon",
+    "initial_pose": "Right-facing side view, rider seated, face above near wing, same exact reference pose and size.",
+    "seed": 8112002
+  },
+  "frames": 13,
+  "usage": null,
+  "raw_sha256": "56b8f7efedc03298c51b35f172db169123f6238b7742c4825e20bee2a6d39e09",
+  "sha256": "4a08d4c2c095e53d95584065360635121ecdce3443810572f9f4de94a89438fb",
+  "alpha_cleanup": "alpha<=8; remove detached components <=128px only; no RGB colour key"
+}

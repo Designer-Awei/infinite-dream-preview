@@ -1,0 +1,23 @@
+{
+  "job": "1635b2c3-1722-4402-9774-cadb65ad4137",
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "reference_sha256": "84838b71fa90b39627a77a2744e376fd4a2e4fca4ea3fe175fff7e4e3d2e13d9",
+  "source_prompt_file": "art\\pets\\riding-approved\\phoenix\\deepseek\\move-r1-job.json",
+  "request": {
+    "description": "NO ground, floor, cast shadow, grey blobs or flat patches. Reference wing height is the HIGHEST pose. Flap DOWN first, never cover rider face. Show underside on downstroke, fold and turn edge-on on recovery. No grey shadows or blobs. Steady flying loop in place: BOTH wings flap DOWN TOGETHER then return to the reference highest pose, restrained downward arc only. Shoulder joints lead, flight feathers bend naturally with delay. Slight chest/hip breathing and tail feather wave. Rider stays seated and balances, hair follows. No leg-walking, no upward wing swing across rider. Same rider, costume, proportions, bright coloured eyes and correct far-leg occlusion. Right-facing side view and fixed camera. Transparent background, no effects. Return seamlessly to supplied pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved girl seated on a blue-white ice phoenix",
+    "initial_pose": "Right-facing side view, rider seated, face above near wing, same exact reference pose and size.",
+    "seed": 8132903
+  },
+  "frames": 13,
+  "usage": null,
+  "raw_sha256": "6f21eaa93f21a1b9df104e4cb38d61fcea40bec7baabacfbe9c04533a632e53e",
+  "sha256": "6a5cbe2b7d23fcf5363cf3abf4ba9b79323da0a7398b6255339098a8a5defaae",
+  "alpha_cleanup": "alpha<=8; remove detached components <=128px only; no RGB colour key"
+}

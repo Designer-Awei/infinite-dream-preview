@@ -1,0 +1,122 @@
+{
+  "approved_by_user": "2026-11-08",
+  "species": "dragon",
+  "stage": 3,
+  "ride_only_at_final_stage": true,
+  "original_input": "E:\\Rouge-Game\\assets\\characters\\ai-girls\\sheets\\ai-girls-fire-dragon-ride-3x2-v15.png",
+  "source_sha256": "5ccae711e6958e4aa73ca50a896672fc5ad5e2d7aee4bdfdf896655f24c7717c",
+  "size": [
+    1536,
+    1024
+  ],
+  "characters": [
+    {
+      "cid": "deepseek",
+      "nominal_cell": [
+        0,
+        0,
+        512,
+        512
+      ],
+      "source_box": [
+        61,
+        51,
+        453,
+        426
+      ],
+      "solid_pixels": 87806,
+      "sha256": "7311802b0b692ae26d40931781dfc69aafba5817ee588080ff9c00a8e1b1687d",
+      "complete_component": true
+    },
+    {
+      "cid": "grok",
+      "nominal_cell": [
+        512,
+        0,
+        1024,
+        512
+      ],
+      "source_box": [
+        572,
+        56,
+        957,
+        426
+      ],
+      "solid_pixels": 89798,
+      "sha256": "7a95248cd8f43191cd16190eb95b4a21ee447469429878db505ad29c47b9afbd",
+      "complete_component": true
+    },
+    {
+      "cid": "claude",
+      "nominal_cell": [
+        1024,
+        0,
+        1536,
+        512
+      ],
+      "source_box": [
+        1077,
+        60,
+        1466,
+        426
+      ],
+      "solid_pixels": 88857,
+      "sha256": "4e0f06808199f430057293c8ac2524fcd12e6632f387121e2b482bdfcab1b256",
+      "complete_component": true
+    },
+    {
+      "cid": "gpt",
+      "nominal_cell": [
+        0,
+        512,
+        512,
+        1024
+      ],
+      "source_box": [
+        61,
+        565,
+        452,
+        938
+      ],
+      "solid_pixels": 89698,
+      "sha256": "c430bd600c3c409a0e1b167e6a6c1326753014cab10ae48e380bba5dbac0fa62",
+      "complete_component": true
+    },
+    {
+      "cid": "doubao",
+      "nominal_cell": [
+        512,
+        512,
+        1024,
+        1024
+      ],
+      "source_box": [
+        572,
+        576,
+        957,
+        938
+      ],
+      "solid_pixels": 86201,
+      "sha256": "3fea91a6eb10e4c2d12d429a853e8e8cf8efe3c72b9c2665c79a12ad26385891",
+      "complete_component": true
+    },
+    {
+      "cid": "glm",
+      "nominal_cell": [
+        1024,
+        512,
+        1536,
+        1024
+      ],
+      "source_box": [
+        1078,
+        561,
+        1466,
+        938
+      ],
+      "solid_pixels": 94934,
+      "sha256": "2add5ebb3689326e2c7f288e2aa2dc6145389a48e89a4425c0681718ffb68de6",
+      "complete_component": true
+    }
+  ]
+}

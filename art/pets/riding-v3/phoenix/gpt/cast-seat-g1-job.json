@@ -1,0 +1,19 @@
+{
+  "job": "be6d199f-9276-4ea9-83d0-62d4ca598382",
+  "endpoint": "/edit-animation-v2",
+  "source_sha256": "55632a4e485c501d5026a12802b05f2a983739e07e58fc9c221dc2ffc0890188",
+  "source_selection": {
+    "revision": 2,
+    "job_file": "cast-smooth-r2-job.json",
+    "raw_file": "cast-smooth-r2-raw.png"
+  },
+  "indices": [
+    5,
+    6,
+    7,
+    8
+  ],
+  "prompt": "Fix ONLY rider sitting anatomy, keep the existing wing movement and frame poses. Girl must SIT astride the phoenix: buttocks and bent upper thighs REST ON its solid feathered back directly behind the neck. Remove the floating gap under her pelvis. Lower her pelvis/body as needed and restore thick blue feathered back under her seat. Hips and phoenix torso remain in contact as one unit in every frame, never standing on feet. Near knee bent down beside bird, FAR leg hidden. Preserve face, bright violet eyes, white dress, WHITE lace boots, hair and horns. Same right-facing side view, body size, position and animation timing. Wings and tail retain these exact motion phases. No extra objects, shadow, grey patch or outside magic. Transparent alpha.",
+  "sha256": "6e2b5c44654d7739ac3cc53174d79b23b9ed3289151457f5d24a9506d3a5b46a",
+  "usage": null
+}

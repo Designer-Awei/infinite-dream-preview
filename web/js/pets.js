@@ -15,12 +15,16 @@ export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,ro
 export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];}
 function mountAsset(p){return p.mounted&&p.pet?.stage===3?A.mounts?.[p.pet.id]||null:null;}
 function mountedFrame(q,actor){
-  let name='idle_e',frame=Math.floor(q.anim*6);
-  if(q.castT>0&&q.id==='phoenix'&&actor.move_e){name='move_e';frame=Math.floor(q.anim*6);}
-  else if(q.castT>0&&q.id==='dragon'&&q.moving&&actor.cast_e){name=actor.cast_walk?'cast_e':'move_e';frame=Math.floor((q.walkT||0)*PET_MOTION.walkFps);}
-  else if(q.castT>0&&actor.cast_e){name='cast_e';const t=q.castMax-q.castT;frame=q.id==='dragon'?Math.floor(q.anim*6):t<.35?Math.floor(t*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):[3,4,5,4][Math.floor(t*6)%4];}
-  else if(q.moving&&actor.move_e){name='move_e';frame=Math.floor((q.walkT||0)*PET_MOTION.walkFps);}
-  const clip=actor[name],cycle=q.castT<=0||q.id==='dragon'||q.id==='phoenix',index=Math.max(0,Math.min(clip.length-1,cycle?frame%Math.max(1,clip.length-1):frame));
+  let name='idle_e',clock=q.anim,fps=6,held=null;
+  if(q.castT>0&&q.id==='phoenix'&&actor.move_e){name='move_e';}
+  else if(q.castT>0&&q.id==='dragon'){
+    name=q.moving?(actor.cast_walk?'cast_e':'move_e'):'cast_e';clock=q.moving?(q.walkT||0):q.anim;fps=q.moving?PET_MOTION.walkFps:6;
+  }else if(q.castT>0&&actor.cast_e){
+    name='cast_e';const t=q.castMax-q.castT;held=t<.35?Math.floor(t*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):[3,4,5,4][Math.floor(t*6)%4];
+  }else if(q.moving&&actor.move_e){name='move_e';clock=q.walkT||0;fps=PET_MOTION.walkFps;}
+  const clip=actor[name],count=Math.max(1,clip.length-1);
+  // More native samples improve smoothness without slowing down the authored cycle.
+  const index=held==null?Math.floor(clock*fps*count/8)%count:Math.max(0,Math.min(clip.length-1,held));
   return{name,index,pos:clip[index]};
 }
 // Stable whole-silhouette centre, shared by the breath, aim guide and collision height.
