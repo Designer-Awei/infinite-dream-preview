@@ -48,7 +48,9 @@ import * as m45 from "../pixelfx/fx/ice/frost-nova.js";
 import * as m46 from "../pixelfx/fx/scifi/force-field.js";
 import * as m47 from "../pixelfx/fx/explosions/cartoon-pow.js";
 import * as m48 from "../pixelfx/fx/explosions/dirt-explosion.js";
+import * as m49 from "../pixelfx/fx/fire/fire-tornado.js";
 export const FX_MODS = {
+  "fire/fire-tornado": m49,
   "water/splash": m0,
   "water/wave-crash": m1,
   "water/whirlpool": m2,

@@ -6,7 +6,8 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawMountedPet, mountedHeadHeight, mountedCenter, drawPetFields, drawPetAfterimages } from "./pets.js";
+import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages } from "./pets.js";
+import { DRAGON_BREATH } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -112,6 +113,7 @@ export class Renderer {
 
     // pixelfx: back layer
     g.setTransform(RS, 0, 0, RS, 0, 0);
+    this.fx.syncPetFields(game);
     this.fx.begin(cx, cy);
     this.drawBullets(game, cx, cy);
     this.fx.drawBack(g);
@@ -141,7 +143,7 @@ export class Renderer {
         case 0: {
           const X=d.x*T,Y=d.ty*T-LIFT,hp=m.wallHp?.[d.ty*m.W+d.x];
           const damage=hp!=null&&hp<DRAGON_WALL_HP?(hp<=DRAGON_WALL_HP/2?2:1):0;
-          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty),damage,A.structureDamage),X,Y);
+          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty),damage,null,d.x*13+d.ty*7),X,Y);
           break;
         }
         case 1: {
@@ -452,9 +454,8 @@ export class Renderer {
   }
   drawAim(g, me) {
     if (!me || me.dead || me.downed) return;
-    const show = (ang, len, wid, col) => {
+    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16}) => {
       g.save();
-      const origin=me.mounted&&me.pet?.id==='dragon'?mountedCenter(me):{x:me.x,y:me.y-16};
       g.translate(origin.x, origin.y);
       g.rotate(ang);
       g.globalAlpha = 0.28;
@@ -466,9 +467,9 @@ export class Renderer {
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, c.atk.range * me.st.range, 8, "#ffffff");
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_BREATH.length:c.atk.range * me.st.range, 8, "#ffffff",mountedAttackOrigin(me));
     if (input.skillAim != null) show(input.skillAim, 160, 24, "#7fd0ff");
-    if (input.ultAim != null) show(input.ultAim, 190, 30, "#ffe14a");
+    if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }
 
   // ---------------------------------------------------------- enemies

@@ -27,9 +27,9 @@ def generate(name,stage):
  if item is None:raise RuntimeError('Response keys '+str(list(response)))
  raw=item.get('base64') if isinstance(item,dict) else item;im=Image.open(io.BytesIO(base64.b64decode(raw.split(',')[-1]))).convert('RGBA');assert im.size==(32,48);im.save(target);record.update(sha256=sha(target),usage=response.get('usage'));dump(state,record);print('Ready damage',name,stage,flush=True)
 def pack():
- atlas=Image.new('RGBA',(320,48))
- for k,name in enumerate(['wall-0','wall-1','wall-2','wall-3','crate']):
-  for stage in [1,2]:atlas.paste(Image.open(OUT/(name+'-damage-'+str(stage)+'.png')),( (k*2+stage-1)*32,0))
+ # Walls now use the approved code-native wear; publish only the two crate tiles.
+ atlas=Image.new('RGBA',(64,48))
+ for stage in [1,2]:atlas.paste(Image.open(OUT/('crate-damage-'+str(stage)+'.png')),((stage-1)*32,0))
  atlas.save(OUT/'damage-atlas.png');atlas.save(ROOT/'web/assets/structure-damage.png')
  # Separate rows for original, moderate and heavy, readable at 4x.
  board=Image.new('RGBA',(640,640),'#181329')

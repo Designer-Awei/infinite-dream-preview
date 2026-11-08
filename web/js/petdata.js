@@ -1,8 +1,10 @@
 // Companion rules shared by save, UI and the authoritative battle simulation.
 export const PHOENIX_STORM_RADIUS=124, FOX_RIDE_RANGE=PHOENIX_STORM_RADIUS*1.5;
 export const PET_ATTACK_RANGE={dragon:150,fox:170,phoenix:180};
+export const DRAGON_BREATH={length:128,width:20,damageScale:.65,interval:.55,linger:.65};
+export const DRAGON_TORNADO={count:1,radius:40,range:360,speed:110,duration:4.5,damage:36,interval:.4};
 export const PETS = {
-  dragon: { name: "赤焰火龙", color: "#ff9c56", elem: "dragon", passive: "伤害", stat: "dmg", bonus: [.08, .12, .18], attack: "焰弹", skill: "灼热龙息", rideAttack: "爆炎弹", rideUlt: "焚天龙息", desc: "骑乘火球可破墙，龙息穿墙并烧草。", trait:"骑乘普攻与大招均可破墙；墙体耐久为箱子两倍。", rideDesc:"火球破墙；大招期间普攻轮盘只调整龙息方向。", skillCd: 9 },
+  dragon: { name: "赤焰火龙", color: "#ff9c56", elem: "dragon", passive: "伤害", stat: "dmg", bonus: [.08, .12, .18], attack: "焰弹", skill: "灼热龙息", rideAttack: "短焰喷吐", rideUlt: "焚天火龙卷", desc: "龙嘴喷火，大型火龙卷自动追敌。", trait:"骑乘喷火与火龙卷均可破墙、烧草，外边界保留。", rideDesc:"龙嘴短程低频喷火；大招召出一道大型自动索敌火龙卷。", skillCd: 9 },
   fox: { name: "霆尾灵狐", color: "#ffe69a", elem: "thunder", passive: "攻速", stat: "rate", bonus: [.08, .12, .18], attack: "雷针", skill: "连锁雷击", rideAttack: "弹射电弧", rideUlt: "雷影穿梭", desc: "每10秒释放光环，清空敌方弹幕。", trait:"出战每10秒释放雷电光环，清除全图敌方弹幕。", rideDesc:`电弧索敌或指向发射，最多弹射3次；大招无目标立即结束。`, skillCd: 8 },
   phoenix: { name: "霜羽冰凰", color: "#9aeaff", elem: "water", passive: "大招蓄力", stat: "ultG", bonus: [.10, .15, .22], attack: "冰羽", skill: "范围暴风雪", rideAttack: "极寒冰锥", rideUlt: "极寒风暴", desc: "骑乘飞行越过障碍，免疫地面危害。", trait:"骑乘无视场景障碍，免疫毒圈、火焰、爆炸与冰面。", rideDesc:"单发冰锥 / 跟随自身的124范围极寒风暴。", skillCd: 10 },
 };

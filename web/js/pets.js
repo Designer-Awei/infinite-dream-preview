@@ -1,5 +1,5 @@
 // Host-authoritative companions; clients render plain snapshot state.
-import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS } from './petdata.js';
+import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS, DRAGON_BREATH, DRAGON_TORNADO } from './petdata.js';
 import { A } from './assets.js';
 import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
 import { updateCompanion, PET_MOTION } from './petai.js';
@@ -27,7 +27,7 @@ function mountedFrame(q,actor){
   const index=held==null?Math.floor(clock*fps*count/8)%count:Math.max(0,Math.min(clip.length-1,held));
   return{name,index,pos:clip[index]};
 }
-// Stable whole-silhouette centre, shared by the breath, aim guide and collision height.
+// Whole-silhouette centre remains available for body overlays.
 export function mountedCenter(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
   if(a){const c=a.center||[m.meta.anchor[0],(a.top+m.meta.anchor[1])/2];return{x:p.x+(c[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.face)>=0?1:-1),y:p.y+(c[1]-m.meta.anchor[1])*m.meta.scale};}
@@ -54,6 +54,7 @@ export function petMuzzle(p){
   const q=p.pet,a0=A.pets?.meta.actors[`${q.id}-${q.stage}`],point=(q.castT>0&&a0?.cast_mouth)||a0?.mouth||[89,60],anchor=a0?.anchor||[64,96],k=petScale(p);
   return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k-flightLift(p)};
 }
+export function mountedAttackOrigin(p){return p.mounted&&p.pet?.id==='dragon'?petMuzzle(p):{x:p.x,y:p.y-16};}
 export function toggleMount(game,p){
   if(game.pvp||!p.pet||p.pet.stage!==3||p.dead||p.downed||p.mountCd>0)return false;
   if(flyingMount(p)){const spot=safeLanding(game.map,p.x,p.y,p.r);if(!spot)return false;Object.assign(p,spot);p.pet.warpSeq++;p.petWarpUntil=game.time+.2;}
@@ -92,7 +93,14 @@ export function mountedAttack(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
   p.pet.face=angle;
   if(p.pet.id==='fox'){foxArc(game,p,angle);return true;}
-  if(p.pet.id==='dragon'&&game.petFields.some(f=>f.owner===p.id&&f.kind==='fire'&&f.ultimate&&f.life>0))return true;
+  if(p.pet.id==='dragon'){
+    const m=petMuzzle(p),a=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
+    let f=game.petFields.find(f=>f.owner===p.id&&f.kind==='fire'&&f.mountedBreath&&f.life>0);
+    if(f)f.life=DRAGON_BREATH.linger;
+    else game.petFields.push({id:nid(),owner:p.id,kind:'fire',mountedBreath:true,x:m.x,y:m.y,a,length:DRAGON_BREATH.length,width:DRAGON_BREATH.width,damage:CHARS[p.cid].atk.dmg*DRAGON_BREATH.damageScale,t:0,life:DRAGON_BREATH.linger,max:DRAGON_BREATH.linger,delay:0,tick:0,ultimate:false});
+    p.pet.castT=Math.max(p.pet.castT,.3);p.pet.castMax=Math.max(p.pet.castMax,.3);
+    game.sound('shoot_dragon',.08);return true;
+  }
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;
 }
 function foxArc(game,p,angle){
@@ -135,7 +143,7 @@ function lightning(game,p,targets,damage,from){
   for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:FOX_RIDE_RANGE,used,true,bounds);if(!e)break;used.add(e.id);game.line(x,y,e.x,e.y-e.r,'#fff2a0',3,.24,'zap');game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38&&Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r);if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);x=e.x;y=e.y-e.r;groundY=e.y;}
 }
 function skill(game,p,target,angle,ultimate=false){
-  const q=p.pet;q.face=angle;const m=ultimate&&p.mounted&&q.id==='dragon'?mountedCenter(p):petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
+  const q=p.pet;q.face=angle;const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
   if(q.id==='dragon')channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length:ultimate?320:180+q.stage*18,width:ultimate?64:25+q.stage*5,damage:ultimate?22:5+q.stage*3},ultimate?3.2:1.6,ultimate);
   else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:ultimate?18:5+q.stage*3,follow:ultimate},ultimate?5:3.2,ultimate);
   else{q.castT=q.castMax=1.1;game.after(.35,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,10+q.stage*5,petMuzzle(p));});game.vfx('lightning/thunderclap',m.x,m.y,{life:.7,size:35});}
@@ -143,7 +151,15 @@ function skill(game,p,target,angle,ultimate=false){
 export function mountedUlt(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
   game.text(p.x,p.y-95,PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);
-  if(p.pet.id==='fox'){if(!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false))return true;Object.assign(p.pet,{blinkT:1,blinkHits:0,blinkOrigin:{x:p.x,y:p.y,r:FOX_RIDE_RANGE},blinkRoom:game.roomIdx,castT:1,castMax:1});p.petWarpUntil=game.time+1.15;}
+  if(p.pet.id==='dragon'){
+    game.petFields=game.petFields.filter(f=>f.owner!==p.id||f.kind!=='tornado');
+    const claimed=new Set();
+    for(let i=0;i<DRAGON_TORNADO.count;i++){
+      const a=angle+(i-(DRAGON_TORNADO.count-1)/2)*.65,e=targetFor(game,p.x,p.y,DRAGON_TORNADO.range,claimed,false);if(e)claimed.add(e.id);
+      game.petFields.push({id:nid(),owner:p.id,kind:'tornado',ultimate:true,x:p.x+Math.cos(a)*28,y:p.y+Math.sin(a)*28,a,r:DRAGON_TORNADO.radius,origin:{x:p.x,y:p.y},targetId:e?.id??null,t:0,delay:0,life:DRAGON_TORNADO.duration,max:DRAGON_TORNADO.duration,tick:0,damage:DRAGON_TORNADO.damage});
+    }
+    p.pet.castT=p.pet.castMax=.4;game.sound('shoot_dragon',.18);
+  }else if(p.pet.id==='fox'){if(!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false))return true;Object.assign(p.pet,{blinkT:1,blinkHits:0,blinkOrigin:{x:p.x,y:p.y,r:FOX_RIDE_RANGE},blinkRoom:game.roomIdx,castT:1,castMax:1});p.petWarpUntil=game.time+1.15;}
   else skill(game,p,target,angle,true);return true;
 }
 export function releaseEmptyBlink(game,p){
@@ -184,19 +200,31 @@ export function updatePets(game,dt){
   }
   for(const f of game.petFields){f.t+=dt;f.life-=dt;const p=game.player(f.owner);if(!p?.pet||p.dead||p.downed){f.life=0;continue;}
     if(f.follow){f.x=p.x;f.y=p.y;}
-    if(f.kind==='fire'){const m=f.ultimate&&p.mounted?mountedCenter(p):petMuzzle(p);f.x=m.x;f.y=m.y;f.height=p.y-m.y;if(p.mounted)f.a=p.input.aim==null&&p.target?Math.atan2(p.target.y-p.target.r-m.y,p.target.x-m.x):p.face;f.visibleLength=f.length;
+    if(f.kind==='tornado'&&game.host){
+      const valid=e=>e&&!e.dead&&e.spawnT<=0&&Math.hypot(e.x-f.origin.x,e.y-f.origin.y)<=DRAGON_TORNADO.range;
+      let e=game.enemies.find(e=>e.id===f.targetId);
+      if(!valid(e)){
+        const claimed=new Set(game.petFields.filter(o=>o!==f&&o.owner===p.id&&o.kind==='tornado'&&o.life>0).map(o=>o.targetId));
+        e=targetFor(game,f.x,f.y,DRAGON_TORNADO.range,claimed,false,{...f.origin,r:DRAGON_TORNADO.range})||targetFor(game,f.x,f.y,DRAGON_TORNADO.range,null,false,{...f.origin,r:DRAGON_TORNADO.range});f.targetId=e?.id??null;
+      }
+      if(valid(e)){const dx=e.x-f.x,dy=e.y-f.y,d=Math.hypot(dx,dy);f.a=Math.atan2(dy,dx);const step=Math.min(d,DRAGON_TORNADO.speed*dt);f.x+=Math.cos(f.a)*step;f.y+=Math.sin(f.a)*step;}
+      else{f.x+=Math.cos(f.a)*45*dt;f.y+=Math.sin(f.a)*45*dt;}
+      f.x=Math.max(T+f.r,Math.min(game.map.pxW-T-f.r,f.x));f.y=Math.max(T+f.r,Math.min(game.map.pxH-T-f.r,f.y));
+    }
+    if(f.kind==='fire'){const m=petMuzzle(p);f.x=m.x;f.y=m.y;f.height=p.pet.y-m.y;if(p.mounted)f.a=p.input.aim==null&&p.target?Math.atan2(p.target.y-p.target.r-m.y,p.target.x-m.x):p.face;f.visibleLength=f.length;
       if(!f.ultimate)for(let d=8;d<f.length;d+=8){const tile=tileAt(game.map,f.x+Math.cos(f.a)*d,f.y+Math.sin(f.a)*d+(p.pet.y-m.y));if(BLOCKS_SHOT(tile)){f.visibleLength=d;break;}}
     }
-    if(!game.host||f.t<f.delay||!['fire','snow'].includes(f.kind))continue;
-    f.tick-=dt;if(f.tick>0)continue;f.tick=f.kind==='fire'?.25:.4;
-    for(const e of game.enemies){if(e.dead||e.spawnT>0)continue;const inside=f.kind==='snow'?Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r&&(f.ultimate||los(game.map,f.x,f.y,e.x,e.y)):inFire(f,e.x,e.y-e.r,e.r);if(!inside)continue;
-      game.hit(e,f.damage,{p,elem:f.kind==='fire'?'dragon':'water',noUltGain:f.ultimate,noReact:true});if(f.kind==='snow'){e.slowT=Math.max(e.slowT||0,.65);e.slowK=.45;if(!e.boss&&f.t%1.6<.5)e.freezeT=Math.max(e.freezeT||0,.35);}}
+    if(!game.host||f.life<=0||f.t<f.delay||!['fire','snow','tornado'].includes(f.kind))continue;
+    f.tick-=dt;if(f.tick>0)continue;f.tick=f.mountedBreath?DRAGON_BREATH.interval:f.kind==='fire'?.25:DRAGON_TORNADO.interval;
+    for(const e of game.enemies){if(e.dead||e.spawnT>0)continue;const inside=f.kind==='tornado'?Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r:f.kind==='snow'?Math.hypot(e.x-f.x,e.y-f.y)<f.r+e.r&&(f.ultimate||los(game.map,f.x,f.y,e.x,e.y)):inFire(f,e.x,e.y-e.r,e.r);if(!inside)continue;
+      game.hit(e,f.damage,{p,elem:f.kind==='snow'?'water':'dragon',noUltGain:f.ultimate,noReact:true});if(f.kind==='snow'){e.slowT=Math.max(e.slowT||0,.65);e.slowK=.45;if(!e.boss&&f.t%1.6<.5)e.freezeT=Math.max(e.freezeT||0,.35);}}
     const height=f.height??p.pet.y-petMuzzle(p).y;
-    props(game,p,f.damage,(x,y)=>f.kind==='snow'?Math.hypot(x-f.x,y-f.y)<f.r+12&&(f.ultimate||los(game.map,f.x,f.y,x,y)):inFire(f,x,y-height,12),f.ultimate);
-    if(f.kind==='fire'&&f.ultimate&&p.mounted&&p.pet.id==='dragon'){
+    props(game,p,f.damage,(x,y)=>f.kind==='tornado'?Math.hypot(x-f.x,y-f.y)<f.r+12:f.kind==='snow'?Math.hypot(x-f.x,y-f.y)<f.r+12&&(f.ultimate||los(game.map,f.x,f.y,x,y)):inFire(f,x,y-height,12),f.ultimate);
+    if((f.kind==='tornado'||f.mountedBreath)&&p.mounted&&p.pet.id==='dragon'){
       const m=game.map;
-      for(let ty=Math.max(1,Math.floor((p.y-f.length)/T));ty<=Math.min(m.H-2,Math.ceil((p.y+f.length)/T));ty++)for(let tx=Math.max(1,Math.floor((p.x-f.length)/T));tx<=Math.min(m.W-2,Math.ceil((p.x+f.length)/T));tx++){
-        const i=ty*m.W+tx;if(inFire(f,tx*T+T/2,ty*T+T/2-height,T/2)){if(m.t[i]===WALL)game.damageWall(i,f.damage,p);else if(m.t[i]===BUSH)game.burnBush(i,p);}
+      const reach=f.length||f.r+T,cx=f.kind==='tornado'?f.x:p.x,cy=f.kind==='tornado'?f.y:p.y;
+      for(let ty=Math.max(1,Math.floor((cy-reach)/T));ty<=Math.min(m.H-2,Math.ceil((cy+reach)/T));ty++)for(let tx=Math.max(1,Math.floor((cx-reach)/T));tx<=Math.min(m.W-2,Math.ceil((cx+reach)/T));tx++){
+        const i=ty*m.W+tx,inside=f.kind==='tornado'?Math.hypot(tx*T+T/2-f.x,ty*T+T/2-f.y)<=f.r+T/2:inFire(f,tx*T+T/2,ty*T+T/2-height,T/2);if(inside){if(m.t[i]===WALL)game.damageWall(i,f.damage,p);else if(m.t[i]===BUSH)game.burnBush(i,p);}
       }
     }
   }
@@ -240,15 +268,14 @@ export function animateClientPets(game,dt) {
 }
 export function drawPetFields(ctx,game,time,layer='back') {
   for(const f of game.petFields||[]) {
-    if(f.kind==='afterimage')continue;
-    if(layer==='front'&&!f.ultimate)continue;
+    if(f.kind==='afterimage'||f.kind==='tornado')continue;
+    if(layer==='front'&&!f.ultimate&&!f.mountedBreath)continue;
+    if(layer==='back'&&f.mountedBreath)continue;
     if(layer==='back'&&f.ultimate&&f.kind!=='snow')continue;
     if(f.t<f.delay)continue;
     const fade=Math.min(1,(f.t-f.delay)*8,f.life*4);ctx.save();ctx.globalAlpha=fade;
     if(f.kind==='fire') {
       const len=f.visibleLength||f.length,cs=Math.cos(f.a),sn=Math.sin(f.a),step=game.fx?.lite?8:5;
-      // A compact hot root attaches the flame to the common silhouette-centre pivot.
-      if(f.ultimate){ctx.fillStyle='#ff8b3b';ctx.beginPath();ctx.arc(f.x,f.y,6+Math.sin(time*21),0,Math.PI*2);ctx.fill();ctx.fillStyle='#fff3bc';ctx.beginPath();ctx.arc(f.x,f.y,3,0,Math.PI*2);ctx.fill();}
       // World-aligned blocks retain the pixel style at every aim angle; hot tongues travel outward.
       for(let d=2;d<len;d+=step) {
         const half=fireHalfWidth(f,d),shift=Math.sin(d*.055-time*19)*(2+d/f.length*5);

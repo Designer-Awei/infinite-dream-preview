@@ -16,6 +16,7 @@ export const meta = {
   options: {
     palette: ["#4a1712", "#8a1f17", "#c9281f", "#f2561d", "#ff8a2a", "#ffc23d", "#ffe26b", "#fff3a6", "#ffffff"],
     height: 80,
+    radius: 18,
     seed: 4,
   },
 };
@@ -23,12 +24,12 @@ export const meta = {
 const D = meta.duration, NL = noiseFor(D), SMOKE1 = hex("#5b5566"), SPIN = 3; // turns of the surface a loop
 
 export function draw(p, t, o) {
-  const F = fit(o.palette, 9), H = hotFirst(F), S = o.seed, HT = o.height, ph = t / D;
+  const F = fit(o.palette, 9), H = hotFirst(F), S = o.seed, HT = o.height, ph = t / D, width=(o.radius??18)/18;
   const N = (rate, seed = 0, off = 0) => NL(t, rate, seed, off);
   const GLOW = mix(mix(H[3], H[4], 0.5), WHITE, 0.25), SMOKE = mix(SMOKE1, H[6], 0.25), EMB = [H[1], H[2], H[4], H[6]];
   // the funnel: narrow at the foot, flaring at the top, its spine snaking as it turns
   const cx = (v, tt = t) => 3.2 * Math.sin(v * 4.2 - (tt / D) * TAU * 2) * v + 2 * Math.sin((tt / D) * TAU) * v;
-  const rad = (v) => 3.5 + 15 * Math.pow(v, 1.35);
+  const rad = (v) => (3.5 + 15 * Math.pow(v, 1.35))*width;
   const spin = (v, tt = t) => (tt / D) * TAU * SPIN + v * 5.5; // the surface turns, twisted up the column
 
   // embers orbiting: behind the column first, in front after it
@@ -52,7 +53,7 @@ export function draw(p, t, o) {
     for (let i = 0; i < 12; i++) {
       const a = (i / 12) * TAU + (t / D) * TAU * 2, z = Math.sin(a);
       if (z >= 0 !== front) continue;
-      const n = (S * 3 + i) * 19, R = 12 + 2 * N(2, n), x = Math.cos(a) * R, y = z * R * 0.25, h = (5 + 5 * (0.5 + 0.5 * N(5, n + 1))) * (front ? 1 : 0.8);
+      const n = (S * 3 + i) * 19, R = (12 + 2 * N(2, n))*width, x = Math.cos(a) * R, y = z * R * 0.25, h = (5 + 5 * (0.5 + 0.5 * N(5, n + 1))) * (front ? 1 : 0.8);
       flameTongue(p, x, y, h, 1.6, -Math.cos(a + Math.PI / 2) * 3, N, n, H, front ? LAYERS : BACK_LAYERS);
     }
   };

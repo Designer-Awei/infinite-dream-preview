@@ -60,8 +60,12 @@ try{
   const centre=await client.evaluate(`(()=>{a.game.fx.update(.01);const z=a.game.zones.find(z=>z.kind==='domain'),f=a.game.fx.list.find(f=>f.id==='holy/holy-pillar'&&f.follow?.id===z.id);return{bound:f.follow===z,x:f.options.x,y:f.options.y,zx:z.x,zy:z.y}})()`);
   assert(centre.bound&&Math.hypot(centre.x-centre.zx,centre.y-centre.zy)<.01,'Client pillar follows stable snapshot domain object');
   await client.shot('coop-claude-domain');
+  await host.evaluate(`(async()=>{const P=await import('./js/pets.js'),g=a.game,p=a.me;p.pet.id='dragon';p.pet.stage=3;p.mounted=true;p.pet.x=p.x;p.pet.y=p.y;P.mountedUlt(g,p,0,null);})()`);
+  await client.wait(`a.game.petFields.filter(f=>f.kind==='tornado').length===1`);
+  const tornado=await client.evaluate(`(()=>{a.game.fx.syncPetFields(a.game);const f=a.game.petFields.find(f=>f.kind==='tornado'),v=a.game.fx.petFx.get(f.id);return{radius:f.r,damage:f.damage,fx:!!v,height:v?.options.height,width:v?.options.radius};})()`);
+  assert(tornado.radius===40&&tornado.damage===36&&tornado.fx&&tornado.height===94&&tornado.width===40,'Actual cooperative snapshot renders one larger homing tornado');
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,largeDragonTornado:tornado,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

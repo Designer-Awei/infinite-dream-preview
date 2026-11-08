@@ -2,6 +2,7 @@
 import { T } from "./data.js";
 import { rng } from "./util.js";
 import { applyRoomRules, isCalmTile } from "./roomrules.js";
+import { paintWallWear } from './wallwear.js';
 
 export const F = 0, WALL = 1, WATER = 2, BUSH = 3, CRATE = 4, BARREL = 5;
 export const CRATE_HP = 30, DRAGON_WALL_HP = CRATE_HP * 2;
@@ -371,9 +372,9 @@ export function drawSpikes(g, X, Y, up) {
 }
 
 /** A wall block sprite for a neighbor mask. Returns canvas T x (T+LIFT), drawn at (X, Y - LIFT). */
-export function wallSprite(theme, mask, damage=0, art=null) {
-  damage=art?damage:0;
-  const key = "w" + theme + "_" + mask+'_'+damage;
+export function wallSprite(theme, mask, damage=0, art=null, wearSeed=0) {
+  const variant=Math.abs(wearSeed)%5;
+  const key = "w" + theme + "_" + mask+'_'+damage+'_'+(damage?variant:0);
   if (cache.has(key)) return cache.get(key);
   const th = THEMES[theme], c = cv(T, T + LIFT), g = c.getContext("2d");
   const L = mask & 1, Rr = mask & 2, U = mask & 4, D = mask & 8; // neighbors that are walls
@@ -392,13 +393,7 @@ export function wallSprite(theme, mask, damage=0, art=null) {
     px(g, 0, T, T, LIFT, th.top);
     for (let y = T + 4; y < T + LIFT; y += 8) px(g, 0, y, T, 1, th.topHi);
   }
-  // PixelLab damage changes the material itself (missing chips/planks and rubble).
-  // Keep connected-wall fronts and open-side outlines consistent with the room mask.
-  if(damage){
-    const sx=(theme*2+damage-1)*T;
-    g.clearRect(2,2,T-4,T-2);g.drawImage(art,sx+2,2,T-4,T-2,2,2,T-4,T-2);
-    if(!D){g.clearRect(2,T,T-4,LIFT-2);g.drawImage(art,sx+2,T,T-4,LIFT-2,2,T,T-4,LIFT-2);}
-  }
+  paintWallWear(g,th,mask,damage,variant*7);
   // outlines on open sides
   g.fillStyle = th.ink;
   if (!U) g.fillRect(0, 0, T, 2);
@@ -428,7 +423,7 @@ export function crateSprite(kind, dmg = 0, art=null) {
     px(g, 4, 25, 24, 2, "#8a5420");
     px(g, 6, 20, 2, 12, "#8a5420"); px(g, 24, 20, 2, 12, "#8a5420");
     px(g, 8, 8, 16, 2, "#b8742e"); px(g, 8, 12, 16, 2, "#b8742e");
-    if(stage){g.clearRect(0,0,T,T+10);g.drawImage(art,(8+stage-1)*T,0,T,T+10,0,0,T,T+10);}
+    if(stage){g.clearRect(0,0,T,T+10);g.drawImage(art,(stage-1)*T,0,T,T+10,0,0,T,T+10);}
   } else {
     // barrel: red with hazard band
     px(g, 6, 2, 20, 34, "#2a1010");

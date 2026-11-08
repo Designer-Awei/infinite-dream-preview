@@ -9,7 +9,7 @@ import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
 import { flyingMount } from './petcombat.js';
-import { FOX_RIDE_RANGE } from './petdata.js';
+import { FOX_RIDE_RANGE, DRAGON_BREATH } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
 
@@ -1373,7 +1373,7 @@ export class Game {
         if (p.buff.rage > 0) rate *= 1.6;
         if (p.cid === "grok") rate *= 1 + c.atk.ramp * (p.rampT / 2) * (p.buff.ultOn > 0 ? 1 : 1);
         if (p.cid === "grok" && p.buff.ultOn > 0) rate *= 1.6;
-        p.atkCd = 1 / rate;
+        p.atkCd = p.mounted&&p.pet?.id==='dragon'?Math.max(DRAGON_BREATH.interval,1/rate):1/rate;
       }
     } else {
       p.idleFire += dt;
