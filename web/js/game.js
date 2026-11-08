@@ -1151,11 +1151,11 @@ export class Game {
     this.sound("pickup");
     for (const q of this.players) this.offerCards(q);
     if (this.phase === "clear") this.phase = "cards";
+    if (this.phase === "cards" && !Object.keys(this.cardOffers).length) this.openPortal();
   }
-  /** roll 3 card offers for a player (host) */
-  offerCards(p, n = 3, rarityFloor = null) {
+  cardPool(p) {
     const meta = { cards: (p.kit && p.kit.cards) || [] };
-    const pool = [...CARDS, ...fusionCards(p.cid)].filter((c) => {
+    return [...CARDS, ...fusionCards(p.cid)].filter((c) => {
       if ((p.cards[c.id] || 0) >= c.max) return false;
       if (c.locked) {
         if (c.tag === "混搭" && c.kind === "skill") return meta.cards.includes("links");
@@ -1163,6 +1163,21 @@ export class Game {
       }
       return true;
     });
+  }
+  shopAvailable(p, item) {
+    // Shop slots remain stable for network price snapshots; hide the depleted
+    // machine per player without taking remaining cards away from teammates.
+    return item.id !== "gacha" || this.cardPool(p).length > 0;
+  }
+  /** roll 3 card offers for a player (host) */
+  offerCards(p, n = 3, rarityFloor = null) {
+    const pool = this.cardPool(p);
+    if (!pool.length) {
+      delete this.cardOffers[p.id];
+      p.startCards = 0;
+      if (p.local) this.onUi("cardsClosed");
+      return false;
+    }
     const out = [];
     const rr = rng((Math.random() * 1e9) | 0);
     while (out.length < n && pool.length) {
@@ -1203,6 +1218,7 @@ export class Game {
     this.banner = { text: "传送门已开启", sub: "所有存活角色进入传送门前往下一层", t: 2 };
   }
   buy(p, item) {
+    if (!this.shopAvailable(p, item) || (item.id === "gacha" && this.cardOffers[p.id]?.length)) return;
     if (p.coins < item.price) {
       this.text(p.x, p.y - 64, "金币不足", "#ff8080");
       return;
@@ -1408,6 +1424,7 @@ export class Game {
     if (this.chest && !this.chest.opened && dist(p.x, p.y, this.chest.x, this.chest.y) < 30) this.openChest(p);
     if (this.shop && this.room.kind === "shop") {
       for (const it of this.shop) {
+        if (!this.shopAvailable(p, it)) continue;
         const near = dist(p.x, p.y, it.x, it.y + 16) < 26;
         if (near && inp.atk && !p.buyLock) {
           p.buyLock = true;

@@ -132,7 +132,7 @@ export class Renderer {
     for (const e of game.enemies) if (e.spawnT <= 0.25) list.push({ y: e.y + (e.boss ? 20 : 0), k: 4, o: e });
     for (const q of game.pickups) list.push({ y: q.y, k: 5, o: q });
     for (const z of game.zones) if (z.kind === "station") list.push({ y: z.y, k: 6, o: z });
-    if (game.shop && game.room && game.room.kind === "shop") for (const it of game.shop) list.push({ y: it.y + 10, k: 7, o: it });
+    if (game.shop && game.room && game.room.kind === "shop") for (const it of game.shop) if (me && game.shopAvailable(me,it)) list.push({ y: it.y + 10, k: 7, o: it });
     if (game.chest && !game.chest.opened) list.push({ y: game.chest.y + 8, k: 8, o: game.chest });
     if (game.shovelItem && !game.shovelItem.got) list.push({ y: game.shovelItem.y, k: 9, o: game.shovelItem });
     list.sort((a, b) => a.y - b.y);

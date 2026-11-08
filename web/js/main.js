@@ -154,7 +154,13 @@ export const app = {
     if (kind === "cards") {
       if (pid !== this.me.id) return;
       const ids = g.cardOffers[pid];
-      if (!ids) return;
+      if (!ids?.length) {
+        delete g.cardOffers[pid];
+        UI.closeCards();
+        this.cardOpen = false;
+        if (g.host && g.phase === "cards" && !Object.keys(g.cardOffers).length) g.openPortal();
+        return;
+      }
       this.cardOpen = true;
       UI.showCards(g, this.me, ids, (id) => {
         this.cardOpen = false;

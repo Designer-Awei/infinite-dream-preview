@@ -365,6 +365,7 @@ export function updateHud(game, me) {
 // ------------------------------------------------------------------ cards
 export function showCards(game, me, ids, onPick) {
   closeCards();
+  if (!ids?.length) return;
   document.body.classList.add("cards-open");
   const md = el("div", "modal cards-modal");
   md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">选择一张技能卡</div><div class="cm-sub o1">清场奖励 · 构筑你的混搭流派</div><div class="cards"></div><div class="build o1"></div><div class="muted cm-hint">${document.body.classList.contains("touchmode") ? "点击卡牌选择" : "点击或按 1 / 2 / 3 选择"}</div></div>`;
