@@ -9,7 +9,7 @@ try{
   const report=await p.evaluate(`(async()=>{
     const {app}=await import('./js/main.js'),S=await import('./js/save.js'),PS=await import('./js/petsave.js'),PD=await import('./js/petdata.js'),P=await import('./js/pets.js'),UI=await import('./js/ui.js'),{Game}=await import('./js/game.js'),{A}=await import('./js/assets.js'),{FxLayer}=await import('./js/fx.js'),{fireAttack,castUlt}=await import('./js/skills.js');
     const check=(v,m)=>{if(!v)throw Error(m)},m=S.load(),results={};
-    check(Object.keys(A.riders.meta.actors).length===6 && A.riders.image.complete && A.riders.back.complete,'Six full seated riders and far-leg layers load');
+    check(['fox','dragon','phoenix'].every(id=>Object.keys(A.mounts[id].meta.actors).length===6&&A.mounts[id].image.complete),'Three full composite mounts load all six riders');
     results.completeRiders=6;results.farLegLayer=true;
     check(Object.keys(m.pets.owned).length===0 && m.characterXP.deepseek===560 && m.tokens===521,'Old save migrated without changing progress');
     check(!PS.exchangePet('bad','UR').ok && !PS.exchangePet('dragon','BAD').ok,'Invalid exchange refused');

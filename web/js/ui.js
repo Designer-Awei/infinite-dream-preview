@@ -84,7 +84,7 @@ export function showHelp() {
       ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 200 晶石。
       ${H("技能混搭")}每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他角色的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
     ["地图道具", `走过去自动拾取：${Object.values(ITEMS).map((i) => `<div class="hp-cur"><span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span><span>${i.desc}</span></div>`).join("")}
-      ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，每个让伤害 +6%，每 2 个最大生命 +1，持续到本局结束。打碎箱子、击败敌人会刷出。
+      ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，常规模式每个让伤害 +6%，每5个生命上限 +1；无尽前40个收益相同，之后伤害和生命收益逐渐递减，持续到本局结束。打碎箱子、击败敌人会刷出。
       ${H("地块")}草丛可以隐身；毒雾、泥沼、尖刺、炸药桶会伤人（也会伤敌）。`],
     ["模式与地图", `在大厅「开始冒险」上方左右滑动地图卡切换（全部支持离线单机）：${MAP_ORDER.map((k, i) => { const d = MAPS[k]; return `${H(`主线 ${i + 1} · ${d.name}`)}${d.desc} 敌人血量 ×${d.hp}，晶石奖励 ×${d.reward}${d.need ? `，通关【${MAPS[d.need].name}】后解锁` : ""}；首通 +200 晶石。`; }).join("")}
       ${H("稀有怪物与梦境藏品")}藏品首次获得后提供永久 PVE 加成，同一件重复获得不叠加；首领有 35% 概率掉落本图藏品。每张地图都有一只稀有怪物（带金色光圈），偶尔混在战斗房间里出现：草原的黄金缓存史莱姆、冰原的极光水母、熔炉的黑曜骷髅。打倒它必掉一件该地图的梦境藏品（已集齐则换成 40 晶石）。
@@ -99,7 +99,7 @@ export function showHelp() {
       ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
       ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉星砂金矿，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
-    ["梦境伙伴", `${H("兑换与解锁")}SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点。在扭蛋机点「积攒」进入兑换，自选火龙、灵狐或冰凰：UR 消耗 ${PET_COST.UR} 点获得幼年；不是随机抽取。宠物只能积累经验后进化，不能直接兑换或直升终极；HUR 兑换内容暂定、尚未开放。已拥有的宠物不可重复兑换。
+    ["梦境伙伴", `${H("兑换与解锁")}SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点；兑换卡也可每张换1点。在扭蛋机点「积攒」进入兑换，自选火龙、灵狐或冰凰：UR 消耗 ${PET_COST.UR} 点获得幼年；不是随机抽取。宠物只能积累经验后进化，不能直接兑换或直升终极；HUR 兑换内容暂定、尚未开放。已拥有的宠物不可重复兑换。
       ${H("大厅入口")}首次获得后自动携带，大厅人物右上方出现当前阶段的动画，点击进入面板；首次兑换前不显示这个入口。每次携带一只，可更换或取消。左侧点宠物，右侧切换三阶段及待机 / 行走 / 技能；预览未解锁形态不会获得它。
       ${H("跟随助战")}主线、无尽与合作模式中，伙伴会靠近附近敌人，到攻击距离后停步普攻并自动释放技能；火龙攻击距离 ${PET_ATTACK_RANGE.dragon}、灵狐 ${PET_ATTACK_RANGE.fox}、冰凰 ${PET_ATTACK_RANGE.phoenix}。没有敌人且离主人较远时自动回跟，到身边停下，小范围移动不会反复踱步；伙伴不承受伤害、不占传送人数。携带加成进入下一局生效，竞技场和矿场不出战、不提供加成。
       ${H("经验与进化")}携带出战的伙伴在正常结算时获得经验：有效游玩每 6 秒 +1，清理战斗房 +4，首领 +8；暂停和长时间无操作不计。幼年 → 成长需要累计 ${PET_EVOLVE[2].xp} 经验 + ${PET_EVOLVE[2].stars} 星砂，成长 → 终极需要累计 ${PET_EVOLVE[3].xp} 经验 + ${PET_EVOLVE[3].stars} 星砂。达到条件后在面板手动「进化」，只扣星砂、不扣累计经验；经验上限 ${PET_MAX_XP}，进度随存档保留。
@@ -426,10 +426,10 @@ export function showPause(game, opts) {
   const m = load();
   // top row: toggles; bottom row: 放弃本局 (left) and 继续 (right)
   md.innerHTML = `<div class="panel pause-p"><h2 class="outline">暂停</h2><div class="row r1"></div><div class="row r2"></div><div class="build o1"></div></div>`;
-  const tg = (label, get, flip) => btn(`${label}：${get() ? "开" : "关"}`, "gray small pz-tg", (e) => (flip(), save(), (e.target.closest("button").innerHTML = `${label}：${get() ? "开" : "关"}`)));
+  const tg = (label,get,flip,audio=false)=>btn(`${label}：${get()?"开":"关"}`,`${audio&&get()?"green":"gray"} small pz-tg`,e=>{flip();save();const b=e.target.closest("button");b.innerHTML=`${label}：${get()?"开":"关"}`;if(audio){b.classList.toggle("green",get());b.classList.toggle("gray",!get());}});
   $(".r1", md).append(
-    tg("音效", () => m.sound, () => ((m.sound = !m.sound), setSound(m.sound))),
-    tg("音乐", () => m.music, () => ((m.music = !m.music), setMusic(m.music))),
+    tg("音效", () => m.sound, () => ((m.sound = !m.sound), setSound(m.sound)),true),
+    tg("音乐", () => m.music, () => ((m.music = !m.music), setMusic(m.music)),true),
     tg("自动攻击", () => m.autoFire, () => (m.autoFire = !m.autoFire)),
   );
   $(".r2", md).append(btn(opts.quitLabel || "放弃本局", "red pz-act", () => (md.remove(), opts.quit())), btn("继续", "pz-act", () => (md.remove(), opts.resume())));

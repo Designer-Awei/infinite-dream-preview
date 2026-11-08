@@ -1,7 +1,7 @@
 // Loads images and prepares the sprite canvases the renderer draws from.
 import { CHAR_ORDER, ELEM, CHARS, SPR_K } from "./data.js";
 
-export const A = { girls: {}, critters: {}, portraits: {}, pets: null, riders: null, mounts: {}, ready: false };
+export const A = { girls: {}, critters: {}, portraits: {}, pets: null, mounts: {}, ready: false };
 
 function img(src) {
   return new Promise((res, rej) => {
@@ -100,8 +100,6 @@ export async function loadAll(progress = () => {}) {
   CHAR_ORDER.forEach((id, i) => (A.portraits[id] = ps[i]));
   const [petMeta, petImage] = await Promise.all([json(base + "pets/pets.json"), img(base + "pets/pets.png")]);
   A.pets = { meta: petMeta, image: petImage };
-  const [riderMeta,riderImage,riderBack]=await Promise.all([json(base+'pets/riders.json'),img(base+'pets/riders-front.png'),img(base+'pets/riders-back.png')]);
-  A.riders={meta:riderMeta,image:riderImage,back:riderBack,white:silhouette(riderImage,'#ffffff')};
   A.structureDamage=await img(base+'structure-damage.png');
   await Promise.all(['fox','dragon','phoenix'].map(async id=>{
     const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);

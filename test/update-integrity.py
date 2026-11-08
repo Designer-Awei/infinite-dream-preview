@@ -1,5 +1,6 @@
 """Check CRLF builds, published bytes, and optionally committed/online updates."""
 import argparse
+from contextlib import contextmanager
 from concurrent.futures import ThreadPoolExecutor
 import hashlib
 import json
@@ -7,7 +8,7 @@ from pathlib import Path
 import shutil
 import subprocess
 import sys
-import tempfile
+import uuid
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +35,23 @@ args = parser.parse_args()
 
 cache = ROOT.parent / ".cache"
 cache.mkdir(exist_ok=True)
-with tempfile.TemporaryDirectory(prefix="update-integrity-", dir=cache) as work:
+
+
+@contextmanager
+def manifest_fixture():
+    # Python's Windows tempfile mode 0700 drops the inherited workspace ACL.
+    # Keep this unique, project-local fixture under the parent's permissions.
+    work = cache / ("update-integrity-" + uuid.uuid4().hex)
+    work.mkdir(mode=0o777)
+    try:
+        yield work
+    finally:
+        if work.resolve().parent != cache.resolve():
+            raise RuntimeError("Fixture escaped project cache")
+        shutil.rmtree(work)
+
+
+with manifest_fixture() as work:
     fixture = Path(work)
     text = {"index.html": b"<html>\r\n</html>\r\n", "manifest.webmanifest": b"{\r\n}\r\n",
             "style.css": b"body {\r\n}\r\n", "game.js": b"// test\r\n", "meta.json": b"{}\r\n",

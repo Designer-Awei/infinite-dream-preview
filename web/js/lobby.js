@@ -1,6 +1,7 @@
 // Lobby (Brawl Stars-style home: hero on a stage in the middle, info on the left, play button bottom-right)
 // and the capsule gacha with a staged pull sequence (crank → capsule → open → card flips → summary).
 import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS, CORE_FX, CORE_DETAIL } from "./data.js";
+import { STASH_ITEM, redeemExchangeCard } from "./save.js";
 import { characterProgress } from "./save.js";
 import { claimable } from "./minequests.js";
 import { load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, exportSave, parseSave, importSave, mineState } from "./save.js";
@@ -506,7 +507,7 @@ function renderModes(s) {
     if (id === "endless")
       return `<div class="mcard pv${ok ? "" : " lock"}" data-id="endless"><img class="mc-map" src="${mapPreview("endless")}" alt="" draggable="false"><span class="mc-k">无尽</span><div class="mc-info"><b class="mc-t">无尽回廊</b><span class="mc-foot">${ok ? `最佳 ${m.stats.endlessBest || 0} 层` : "🔒 完成任意一局解锁"}</span></div></div>`;
     const d = MAPS[id], clears = (m.maps || {})[id] || 0;
-    return `<div class="mcard pv${ok ? "" : " lock"}" data-id="${id}"><img class="mc-map" src="${mapPreview(id)}" alt="" draggable="false"><span class="mc-k">主线 ${MAP_ORDER.indexOf(id) + 1}/${MAP_ORDER.length}</span><div class="mc-info"><b class="mc-t">${d.name}</b><span class="mc-foot">${ok ? (d.reward > 1 ? `奖励×${d.reward}` : "入门") + (clears ? ` · 通关${clears}` : "") : `🔒 先通关${MAPS[d.need].name}`}</span></div></div>`;
+    return `<div class="mcard pv${ok ? "" : " lock"}" data-id="${id}"><img class="mc-map" src="${mapPreview(id)}" alt="" draggable="false"><span class="mc-k">主线 ${MAP_ORDER.indexOf(id) + 1}/${MAP_ORDER.length}</span><div class="mc-info"><b class="mc-t">${d.name}</b><span class="mc-foot">${ok ? (id==="grass" ? "入门" + (clears ? ` · 通关${clears}` : "") : `通关${clears}`) : `🔒 先通关${MAPS[d.need].name}`}</span></div></div>`;
   }).join("");
   dots.innerHTML = MODE_IDS.map(() => "<i></i>").join("");
   const cards = [...track.children];
@@ -661,11 +662,11 @@ function showSettings() {
   // two even columns: toggles, save tools, then a full-width close; the version line sits clear below the buttons
   md.innerHTML = `<div class="panel set-p"><h2 class="outline">设置</h2><div class="set-g"></div><div class="muted set-v"></div></div>`;
   const tg = (label, key, fn) =>
-    btn(`${label}：${m[key] ? "开" : "关"}`, "gray", (ev) => {
+    btn(`${label}：${m[key] ? "开" : "关"}`, m[key] ? "green" : "gray", (ev) => {
       m[key] = !m[key];
       fn && fn(m[key]);
       save();
-      ev.target.closest("button").innerHTML = `${label}：${m[key] ? "开" : "关"}`;
+      const b=ev.target.closest("button");b.innerHTML = `${label}：${m[key] ? "开" : "关"}`;b.classList.toggle("green",m[key]);b.classList.toggle("gray",!m[key]);
     });
   q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("联系作者", "pink", () => showContact()));
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
@@ -962,25 +963,21 @@ function showPool() {
 /** SSR 兑换卡 (bought in 梦境工坊 with 星砂): same card grid as the pool; tap → effect preview with the 兑换 button */
 export function showExchange(after) {
   const m = load(), ms = mineState();
-  const list = GACHA.pool.filter((it) => it.r === "SSR");
+  const stash={...STASH_ITEM,desc:"消耗1张兑换卡，获得1积攒点；可用于兑换梦境伙伴。",exchangeStash:true};
+  const list = [...GACHA.pool.filter((it) => it.r === "SSR"),stash];
   const md = el("div", "modal pool-modal ex-modal");
   const draw = () => {
     md.innerHTML = `<div class="panel pool-panel"><div class="pl-head"><img class="ex-face" src="${iconURL("cardgold", 3)}" alt=""><h2 class="outline">兑换卡 ×${ms.cards}</h2><button class="btn gray small x-btn">×</button></div>
-      <div class="pl-rule o1">每张兑换卡可直接换 1 级任意未满级的 SSR · 点卡片查看效果并兑换 · 兑换卡在梦境工坊用星砂换</div>
-      <div class="pl-list"><div class="vgrid">${list.map((it) => { const lv = m.talents[it.id] || 0, full = lv >= it.max; return vcard(it, { dim: full, tag: full ? "已满级" : "", sub: lv ? `Lv${lv}/${it.max}` : "未拥有" }); }).join("")}</div></div></div>`;
+      <div class="pl-rule o1">每张兑换卡可换1级未满级SSR，或1积攒点 · 点卡片查看并兑换</div>
+      <div class="pl-list"><div class="vgrid">${list.map((it) => { if(it.exchangeStash)return vcard(it,{sub:`持有 ${m.stash||0} 点`,tag:"+1"});const lv = m.talents[it.id] || 0, full = lv >= it.max; return vcard(it, { dim: full, tag: full ? "已满级" : "", sub: lv ? `Lv${lv}/${it.max}` : "未拥有" }); }).join("")}</div></div></div>`;
     q(".x-btn", md).onclick = close;
     md.querySelectorAll(".vc").forEach((d) => (d.onclick = () => {
-      const it = GACHA.pool.find((p) => p.id === d.dataset.id), lv = m.talents[it.id] || 0, full = lv >= it.max;
+      const it = list.find((p) => p.id === d.dataset.id), lv=m.talents[it.id]||0,full=!it.exchangeStash&&lv>=it.max;
       sfx("card");
-      showItemPreview(it, { label: full ? "已满级" : ms.cards ? `兑换${it.max > 1 ? " → Lv" + (lv + 1) : ""}（兑换卡 ×${ms.cards}）` : "没有兑换卡", off: full || !ms.cards, fn: () => {
-        ms.cards--;
-        m.talents[it.id] = lv + 1;
-        if (it.card && !m.cards.includes(it.card)) m.cards.push(it.card);
-        save();
-        sfx("ssr");
-        toast(`兑换成功：${it.name}${it.max > 1 ? " Lv" + (lv + 1) : ""}`, 2400);
-        draw(); // stays open (and the entry stays) even when the last card is used
-      } });
+      showItemPreview(it,{exchange:true,label:full?"已满级":ms.cards?`兑换${it.exchangeStash?"积攒点 +1":it.max>1?" → Lv"+(lv+1):""}（兑换卡 ×${ms.cards}）`:"没有兑换卡",off:full||!ms.cards,fn:()=>{
+        const r=redeemExchangeCard(it.id);if(!r.ok){toast(r.reason);draw();return;}
+        sfx("ssr");toast(`兑换成功：${r.name}${r.level&&it.max>1?" Lv"+r.level:""}`,2400);draw();
+      }});
     }));
   };
   const close = () => (md.remove(), after && after());
@@ -1015,8 +1012,8 @@ function previewScene(it) {
 function showItemPreview(it, act) {
   const m = load(), lv = m.talents[it.id] || 0;
   const md = el("div", "modal pv-modal");
-  md.innerHTML = `<div class="pvm ${it.r}"><div class="pvm-card rc ${it.r}" style="--c:${RCOL[it.r]}"><div class="rc-front"><div class="rr o1">${it.r}</div><div class="ri">${ICON(it, 4)}</div><div class="rn">${it.name}</div><div class="rd">${it.desc}</div><div class="rl">${lv ? (it.max > 1 ? `已拥有 Lv${lv}/${it.max}` : "已拥有") : "未拥有"}</div></div></div>
-    <div class="pvm-r${it.r === "SSR" ? "" : " plain"}">${it.r === "SSR" ? `<div class="pvm-h outline">效果预览</div>${hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}` : `<div class="pvm-h outline">${it.name}</div><div class="pvm-desc o1">${it.desc}${it.max > 1 ? `<br><small>最高 Lv${it.max}，可叠加</small>` : ""}</div>`}<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
+  md.innerHTML = `<div class="pvm ${it.r}"><div class="pvm-card rc ${it.r}" style="--c:${RCOL[it.r]}"><div class="rc-front"><div class="rr o1">${it.r}</div><div class="ri">${ICON(it, 4)}</div><div class="rn">${it.name}</div><div class="rd">${it.desc}</div><div class="rl">${it.exchangeStash ? `持有 ${m.stash||0} 点` : lv ? (it.max > 1 ? `已拥有 Lv${lv}/${it.max}` : "已拥有") : "未拥有"}</div></div></div>
+    <div class="pvm-r${it.r === "SSR" ? "" : " plain"}">${it.r === "SSR" ? `<div class="pvm-h outline">效果预览</div>${hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}` : `<div class="pvm-h outline">${it.name}</div><div class="pvm-desc o1">${it.desc}${it.max > 1 ? `<br><small>最高 Lv${it.max}，可叠加</small>` : ""}</div>`}${act?.exchange?"":`<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>`}${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
   uiRoot().appendChild(md);
   // live demo: the selected girl actually using the item in a small real fight
   const live = md.querySelector(".sc-live");

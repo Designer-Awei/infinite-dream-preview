@@ -15,10 +15,11 @@ try{
    for(const cid of CHAR_ORDER){
     const a=m.meta.actors[cid],q={id:species,stage:3,x:0,y:0,face:0,anim:0,walkT:0,castT:0,castMax:0,moving:false},player={cid,mounted:true,pet:q};
     for(const clip of ['idle_e','move_e','cast_e']){
-     check(a[clip].length===13&&a.mouth_frames[clip].length===13,'Thirteen mapped frames');
-     for(let i=0;i<12;i++){
+     check(a[clip].length>=9&&a.mouth_frames[clip].length===a[clip].length,'Mapped native frames');
+     const count=a[clip].length-1;
+     for(let i=0;i<count;i++){
       const expected=clip==='cast_e'&&species==='phoenix'?'move_e':clip;
-      Object.assign(q,{anim:(i+.05)/9,walkT:(i+.05)/10.5,moving:clip==='move_e',castMax:4,castT:clip==='cast_e'?3:0});
+      Object.assign(q,{anim:(i+.05)/(6*count/8),walkT:(i+.05)/(7*count/8),moving:clip==='move_e',castMax:4,castT:clip==='cast_e'?3:0});
       let call;const draw=ctx.drawImage.bind(ctx);ctx.drawImage=(...args)=>{call=args;draw(...args)};check(P.drawMountedPet(ctx,player,0,false),'Whole pair rendered');ctx.drawImage=draw;
       const index=a[expected].findIndex(([x,y])=>x===call[1]&&y===call[2]);check(index===i,'Rendering correct action sample');
       const point=a.mouth_frames[expected][index],muzzle=P.petMuzzle(player);check(Math.abs(muzzle.x-(point[0]-128)*m.meta.scale)<.001&&Math.abs(muzzle.y-(point[1]-232)*m.meta.scale)<.001,'Muzzle follows displayed frame');

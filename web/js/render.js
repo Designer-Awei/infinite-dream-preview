@@ -6,7 +6,7 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawRider, drawMountedPet, mountedHeadHeight, mountedCenter, drawPetFields, drawPetAfterimages } from "./pets.js";
+import { drawPet, drawMountedPet, mountedHeadHeight, mountedCenter, drawPetFields, drawPetAfterimages } from "./pets.js";
 import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -312,13 +312,7 @@ export class Renderer {
   drawHero(g, p, me, game) {
     const set = A.girls[p.cid];
     if (!set) return;
-    if (p.mounted && p.pet && !p.downed) {
-      if(drawMountedPet(g,p,this.t))return;
-      drawRider(g,p,this.t,true);
-      drawPet(g,p,this.t,true);
-      drawRider(g,p,this.t);
-      return;
-    }
+    if (p.mounted && p.pet && !p.downed && drawMountedPet(g,p,this.t)) return;
     const inBush = tileAt(game.map, p.x, p.y) === BUSH;
     if (inBush && p !== me && p.pvpEnemy) return;
     // pick a view from the facing angle
@@ -434,8 +428,7 @@ export class Renderer {
     if (p.dead || p.downed) return;
     const set = A.girls[p.cid];
     if (tileAt(game.map, p.x, p.y) === BUSH && p !== me && p.pvpEnemy) return;
-    const riderTop=A.riders?.meta.actors[p.cid]?.top??26;
-    const y = p.y - (p.mounted ? mountedHeadHeight(p)??(30+(A.riders?.meta.anchor[1]??64)-riderTop) : (set.foot-(set.top||0))/(set.k||1)) - 8, w = 34, x = p.x - w / 2;
+    const y = p.y - (p.mounted ? mountedHeadHeight(p)??68 : (set.foot-(set.top||0))/(set.k||1)) - 8, w = 34, x = p.x - w / 2;
     const col = p === me ? "#5dff7a" : p.pvpEnemy ? "#ff4a5a" : "#4ab8ff";
     // name
     if (game.players.length > 1 || p !== me) this.text(g, p.name, p.x, y - 9, col, 10);

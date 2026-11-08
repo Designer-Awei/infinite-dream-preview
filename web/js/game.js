@@ -11,6 +11,8 @@ import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from 
 import { flyingMount } from './petcombat.js';
 import { FOX_RIDE_RANGE } from './petdata.js';
 
+import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
+
 export const RIFT_CHANCE = 0.25;
 export class Game {
   constructor({ mode = "solo", pvp = false, seed = (Math.random() * 1e9) | 0, fx, opt = {} }) {
@@ -284,8 +286,9 @@ export class Game {
   spawnEnemy(type, x, y, elite = false, delay = 0.8) {
     const d = ENEMIES[type], np = this.players.length;
     const mapK = this.endless ? 1 : this.mapDef.hp || 1;
-    const hpMul = 1.5 * (1 + BAL.roomHp * Math.max(0, this.roomIdx)) * (1 + BAL.coop.hp * (np - 1)) * (elite ? 3 : 1) * mapK;
-    const bossK = (1 + BAL.coop.hp * (np - 1)) * mapK * (this.endless ? 0.55 + 0.35 * Math.floor(this.roomIdx / 10) : 1);
+    const roomHP=this.endless?endlessEnemyHP(this.roomIdx+1):1.5*(1+BAL.roomHp*Math.max(0,this.roomIdx));
+    const hpMul = roomHP * (1 + BAL.coop.hp * (np - 1)) * (elite ? 3 : 1) * mapK;
+    const bossK = (1 + BAL.coop.hp * (np - 1)) * mapK * (this.endless ? .55*endlessEnemyHP(this.roomIdx+1)/endlessEnemyHP(10) : 1);
     const e = {
       id: nid(), kind: "enemy", type, def: d, x, y, r: d.r * (elite ? 1.2 : 1) * (d.scale || 1), hp: d.hp * (d.boss ? bossK : hpMul), elite, boss: !!d.boss,
       vx: 0, vy: 0, kbx: 0, kby: 0, t: 0, cd: 1 + Math.random() * 1.5, st: "idle", anim: Math.random() * 5, face: 1, flash: 0,
@@ -383,7 +386,7 @@ export class Game {
 
   // ------------------------------------------------------------ combat
   dmgMul(p) {
-    let m = p.st.dmg * (1 + 0.06 * p.cubes);
+    let m = p.st.dmg * cubeDamage(p.cubes,this.endless);
     if (p.buff.star > 0) m *= 1.3;
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
@@ -442,7 +445,7 @@ export class Game {
   }
   react(e, key, p, spreadElem) {
     const R0 = REACTIONS[key], amp = p && p.cards.reaction_amp ? 1 + 0.6 * p.cards.reaction_amp : 1;
-    const dmg = R0.dmg * amp * (1 + 0.08 * Math.max(0, this.roomIdx));
+    const dmg = R0.dmg * amp * (1 + 0.08 * reactionRoom(this.roomIdx,this.endless));
     this.runStats.reactions++;
     if (p) p.reactions = (p.reactions || 0) + 1;
     this.text(e.x, e.y - e.r * 2 - 22, R0.name + "!", "#ffffff", 1.25, 0.9);
@@ -664,17 +667,12 @@ export class Game {
     this.flowT = 0;
   }
 
-  /**
-   * 无尽回廊: enemies hit harder the deeper you go. Floor L (1-based): minions ×(1 + 0.05·(L-1)), elites another
-   * +3%/floor, bosses another +4%/floor (their base hits are already big). Damage stays whole hearts: the fraction
-   * is rolled (×1.6 on a 1-damage hit = 2 with 60% chance). Floor 20: minion ≈ ×1.95, elite ≈ ×2.5, boss ≈ ×2.7.
-   */
+  /** Stage-scaled enemy hits; projectiles retain their shooter reference. */
   scaleHurt(n, src) {
     if (!this.endless || this.pvp) return n;
     const e = src && (src.kind === "enemy" ? src : src.src && src.src.kind === "enemy" ? src.src : null);
     if (!e) return n;
-    const L = Math.max(0, this.roomIdx);
-    const k = 1 + 0.05 * L + (e.elite ? 0.03 * L : 0) + (e.boss ? 0.04 * L : 0);
+    const k = endlessEnemyHit(this.roomIdx+1)*(e.boss?1.35:e.elite?1.15:1);
     const v = n * k, w = Math.floor(v);
     return w + (Math.random() < v - w ? 1 : 0);
   }
@@ -1126,6 +1124,12 @@ export class Game {
       });
       return;
     }
+    const rewardPlayers=this.players.filter(p=>!p.dead);
+    if(this.endless&&rewardPlayers.length&&rewardPlayers.every(p=>this.cardPool(p).length===0)){
+      this.chest=null;this.openPortal();
+      for(const q of this.pickups)if(q.kind==='coin')q.magnet=true;
+      return;
+    }
     this.banner = { text: "清场完成！", sub: "打开补给箱选择技能卡", t: 2 };
     const c = this.map.center;
     this.chest = { x: c.x, y: c.y + 38, opened: false };
@@ -1525,10 +1529,11 @@ export class Game {
     this.sound("pickup");
     this.vfx("pickups/collect-burst", p.x, p.y - 12, {});
     switch (item) {
-      case "cube":
-        p.cubes++;
-        if (p.cubes % 5 === 0) (p.maxHp++), p.hp++;
+      case "cube": {
+        const before=cubeHealth(p.cubes,this.endless);p.cubes++;
+        const gain=cubeHealth(p.cubes,this.endless)-before;p.maxHp+=gain;p.hp+=gain;
         break;
+      }
       case "speed":
         p.buff.speed = 6;
         

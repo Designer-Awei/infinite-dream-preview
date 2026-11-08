@@ -36,14 +36,13 @@ export function mountedCenter(p){
 export function mountedVisualHeight(p){
   if(!p.mounted||!p.pet)return null;
   const m=mountAsset(p),a=m?.meta.actors[p.cid];if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
-  const rider=A.riders?.meta,top=rider?.actors[p.cid]?.top??26;
-  return flightLift(p)+Math.max(30+(rider?.anchor[1]??64)-top,(A.pets?.meta.actors[`${p.pet.id}-3`]?.anchor?.[1]??96)*petScale(p));
+  return flightLift(p)+Math.max(68,(A.pets?.meta.actors[`${p.pet.id}-3`]?.anchor?.[1]??96)*petScale(p));
 }
 export function mountedHeadHeight(p){
   if(!p.mounted||!p.pet)return null;
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
   if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
-  return 30+(A.riders?.meta.anchor[1]??64)-(A.riders?.meta.actors[p.cid]?.top??26);
+  return 68;
 }
 export function mountedShield(p){
   const head=mountedHeadHeight(p);if(!head)return null;
@@ -227,16 +226,6 @@ export function drawMountedPet(ctx,player,time,shadow=true) {
   ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
   if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
   ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
-}
-export function drawRider(ctx,player,time,back=false) {
-  const rider=A.riders,actor=rider?.meta.actors[player.cid];if(!actor)return;
-  const {cw,ch,anchor}=rider.meta,frames=actor.idle_e,frame=Math.floor(player.animT*(player.moving?7:5))%Math.max(1,frames.length-1),pos=frames[frame];
-  const flip=Math.cos(player.face)<0?-1:1,bob=Math.sin(player.animT*(player.moving?7:3))*(player.moving?.8:.35);
-  const offset=back?rider.meta.far_offset:[0,0];
-  ctx.save();ctx.translate(Math.round(player.x+(-6+offset[0])*flip),Math.round(player.y-30+offset[1]+bob-flightLift(player)));ctx.scale(flip,1);ctx.imageSmoothingEnabled=false;
-  ctx.drawImage(back?rider.back:rider.image,pos[0],pos[1],cw,ch,-anchor[0],-anchor[1],cw,ch);
-  if(!back && player.hurtT>0){ctx.globalAlpha=Math.min(.6,player.hurtT*2);ctx.drawImage(rider.white,pos[0],pos[1],cw,ch,-anchor[0],-anchor[1],cw,ch);}
-  ctx.restore();
 }
 // Clients only interpolate the host's companion state; damage and AI never run twice.
 export function animateClientPets(game,dt) {
