@@ -6,7 +6,7 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawRider, drawMountedPet, mountedVisualHeight, drawPetFields } from "./pets.js";
+import { drawPet, drawRider, drawMountedPet, mountedHeadHeight, drawPetFields, drawPetAfterimages } from "./pets.js";
 import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -119,6 +119,7 @@ export class Renderer {
 
     // y-sorted scene
     drawPetFields(g, game, this.t);
+    drawPetAfterimages(g,game,this.t);
     const list = [];
     for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) {
       const t = m.t[y * m.W + x];
@@ -185,13 +186,13 @@ export class Renderer {
     for(const p of game.players)if(flyingMount(p)&&!p.dead&&!p.downed)this.drawHero(g,p,me,game);
     // overlays
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
-    for (const p of game.players) this.drawHeroBar(g, p, me, game);
     this.drawAim(g, me);
     for (const f of game.floaters) {
       const a = clamp(f.life / f.max * 2, 0, 1);
       const pop = 1 + Math.max(0, (f.life / f.max - 0.8) * 2.5);
       this.text(g, f.s, f.x, f.y, f.color, Math.round(12 * f.size * pop), a);
     }
+    for (const p of game.players) this.drawHeroBar(g, p, me, game);
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.drawEdgeArrows(g, game, me, cx, cy);
     // vignette
@@ -431,7 +432,7 @@ export class Renderer {
     const set = A.girls[p.cid];
     if (tileAt(game.map, p.x, p.y) === BUSH && p !== me && p.pvpEnemy) return;
     const riderTop=A.riders?.meta.actors[p.cid]?.top??26;
-    const y = p.y - (p.mounted ? mountedVisualHeight(p)??(30+(A.riders?.meta.anchor[1]??64)-riderTop) : (set.foot-(set.top||0))/(set.k||1)) - 8, w = 34, x = p.x - w / 2;
+    const y = p.y - (p.mounted ? mountedHeadHeight(p)??(30+(A.riders?.meta.anchor[1]??64)-riderTop) : (set.foot-(set.top||0))/(set.k||1)) - 8, w = 34, x = p.x - w / 2;
     const col = p === me ? "#5dff7a" : p.pvpEnemy ? "#ff4a5a" : "#4ab8ff";
     // name
     if (game.players.length > 1 || p !== me) this.text(g, p.name, p.x, y - 9, col, 10);

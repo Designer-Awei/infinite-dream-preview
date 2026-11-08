@@ -429,7 +429,7 @@ function snapshot(g) {
     const fl = (p.moving ? 1 : 0) | (p.downed ? 2 : 0) | (p.dashT > 0 ? 4 : 0) | (p.hurtT > 0 ? 8 : 0) | (p.castT > 0 ? 16 : 0) | (p.input.atk ? 32 : 0);
     const bf = {};
     for (const k in p.buff) if (p.buff[k] > 0) bf[k] = Math.round(p.buff[k] * 10) / 10;
-    const pet=p.pet?{id:p.pet.id,stage:p.pet.stage,x:round2(p.pet.x),y:round2(p.pet.y),face:round2(p.pet.face),moving:p.pet.moving,castT:round2(p.pet.castT),castMax:round2(p.pet.castMax),anim:round2(p.pet.anim),blinkT:round2(p.pet.blinkT||0),warpSeq:p.pet.warpSeq||0}:null;
+    const pet=p.pet?{id:p.pet.id,stage:p.pet.stage,x:round2(p.pet.x),y:round2(p.pet.y),face:round2(p.pet.face),moving:p.pet.moving,castT:round2(p.pet.castT),castMax:round2(p.pet.castMax),anim:round2(p.pet.anim),walkT:round2(p.pet.walkT||0),blinkT:round2(p.pet.blinkT||0),warpSeq:p.pet.warpSeq||0}:null;
     return [p.id, r1(p.x), r1(p.y), round2(p.face), p.hp, p.maxHp, p.shield, p.maxShield, fl, Math.round(p.ult * 100), p.coins, p.cubes, Math.round(p.recoil), Math.round((Math.max(0, p.skillCd) / (CHARS[p.cid].skill.cd * p.st.cd)) * 100), Math.round((Math.max(0, p.dashCd) / 1.6) * 100), bf, p.target ? p.target.id : 0, p.cards, p.infuseElem || null, round2(p.reviveT), round2(p.respawnT || 0), p.barrier > 0 ? 1 : 0, p.st, p.fusions, pet, !!p.mounted];
   });
   const E = g.enemies.map((e) => [e.id, e.type, r1(e.x), r1(e.y), Math.ceil(e.hp), Math.ceil(e.maxHp), (e.elite ? 1 : 0) | (e.flash > 0 ? 4 : 0) | (e.freezeT > 0 ? 8 : 0) | (e.slowT > 0 ? 16 : 0) | (e.burnT > 0 ? 32 : 0), e.st, r1(e.z || 0), e.face, Object.keys(e.marks).filter((k) => e.marks[k] > g.time).join(","), e.lx != null ? r1(e.lx) : null, e.ly != null ? r1(e.ly) : null, round2(Math.max(0, e.spawnT)), round2(e.cd), e.bubble > g.time ? 1 : 0]);
@@ -443,7 +443,7 @@ function snapshot(g) {
     sh: g.shop ? g.shop.map((s) => s.price) : 0,
     bn: g.banner ? [g.banner.text, g.banner.sub, round2(g.banner.t)] : 0,
     cu: g.curiosFound, pf: (g.petFields||[]).map(f=>({...f})),
-    dw:g.map.brokenWalls||[],wh:g.map.wallHp||{},
+    dw:g.map.brokenWalls||[],wh:g.map.wallHp||{},bb:g.map.burnedBushes||[],
     sc: g.pvpScore, su: g.spikeUp || 0, cf: Object.keys(g.cardOffers).map(Number), rs: g.runStats,
   };
 }
@@ -471,6 +471,8 @@ function applySnapshot(app, s) {
     if(Number.isInteger(i)&&x>0&&y>0&&x<g.map.W-1&&y<g.map.H-1&&g.map.t[i]===1){g.map.t[i]=0;g.map.groundDirty=true;}
   }
   g.map.brokenWalls=[...(s.dw||[])];
+  for(const i of s.bb||[]){const x=i%g.map.W,y=Math.floor(i/g.map.W);if(Number.isInteger(i)&&x>0&&y>0&&x<g.map.W-1&&y<g.map.H-1&&g.map.t[i]===3){g.map.t[i]=0;g.map.groundDirty=true;}}
+  g.map.burnedBushes=[...(s.bb||[])];
   g.phase = s.ph;
   g.curiosFound = s.cu || [];
   g.serverTime = s.tm;
@@ -489,6 +491,7 @@ function applySnapshot(app, s) {
       if(Math.hypot(q.x-pet.x,q.y-pet.y)>120){q.x=pet.x;q.y=pet.y;}
       Object.assign(q,{id:pet.id,stage:pet.stage,tx:pet.x,ty:pet.y,face:pet.face,moving:pet.moving,castT:pet.castT,castMax:pet.castMax,blinkT:pet.blinkT||0,warpSeq:pet.warpSeq||0});
       if(q.anim==null)q.anim=pet.anim;
+      if(q.walkT==null)q.walkT=pet.walkT||0;
     } else p.pet=null;
     p.skillCdFrac = skf / 100; p.dashCdFrac = dkf / 100; p.buff = bf; p.cards = cards; p.infuseElem = inf; p.reviveT = rv; p.respawnT = rsp; p.barrier = bar;
     const wasDowned = p.downed;
@@ -542,7 +545,9 @@ function applySnapshot(app, s) {
     nb.push(b);
   }
   g.bullets = nb;
-  g.zones = s.Z.map((a) => ({ id: a[0], kind: a[1], x: a[2], y: a[3], r: a[4], life: a[5], t: a[6] }));
+  const oldZones=new Map(g.zones.map(z=>[z.id,z]));
+  g.zones=s.Z.map(a=>{const z=oldZones.get(a[0])||{};oldZones.delete(a[0]);return Object.assign(z,{id:a[0],kind:a[1],x:a[2],y:a[3],r:a[4],life:a[5],t:a[6]});});
+  for(const z of oldZones.values())z.gone=true;
   g.petFields=(s.pf||[]).map(f=>({...f}));
   g.pickups = s.Q.map((a) => ({ id: a[0], kind: a[1], item: a[2] || undefined, x: a[3], y: a[4], z: a[5], t: a[6], life: a[7], vx: 0, vy: 0, vz: 0 }));
   g.chest = s.ch ? { x: s.ch[0], y: s.ch[1], opened: !!s.ch[2] } : null;
@@ -558,6 +563,7 @@ function applySnapshot(app, s) {
       case "fx": {
         const o = { ...ev.o };
         if (o.followId) o.follow = g.player(o.followId) || g.enemies.find((e) => e.id === o.followId);
+        if(o.followZoneId)o.follow=g.zones.find(z=>z.id===o.followZoneId);
         g.fx.spawn(ev.id, ev.x, ev.y, o);
         break;
       }
@@ -566,6 +572,7 @@ function applySnapshot(app, s) {
       case "ln": g.lines.push({ x0: ev.a[0], y0: ev.a[1], x1: ev.a[2], y1: ev.a[3], color: ev.c, w: ev.w, life: ev.l, max: ev.l, kind: ev.k }); break;
       case "tile":
         if(ev.wall){if(g.map.t[ev.i]===1){g.map.t[ev.i]=0;g.map.groundDirty=true;}}
+        else if(ev.bush){if(g.map.t[ev.i]===3){g.map.t[ev.i]=0;g.map.groundDirty=true;}}
         else if(g.map.crates[ev.i]) (g.map.crates[ev.i].dead = true), (g.map.t[ev.i] = 0);
         break;
       case "cards": if (ev.pid === me.id) { g.cardOffers[ev.pid] = ev.ids; g.onUi("cards", ev.pid); } break;

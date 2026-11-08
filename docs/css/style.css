@@ -1937,7 +1937,7 @@ button.name-pill:active { transform: translateY(1px); }
 }
 
 /* Companion management stays within one landscape page. */
-.lb-pet { position:absolute;right:-2%;top:11%;width:27%;aspect-ratio:1;border:0;background:none;padding:0;cursor:pointer;pointer-events:auto;color:#fff;font:inherit; }
+.lb-pet { position:absolute;right:calc(100% + 8px);top:0;width:32%;aspect-ratio:1;border:0;background:none;padding:0;cursor:pointer;pointer-events:auto;color:#fff;font:inherit; }
 .lb-pet-preview { display:block;width:100%;height:100%; }.lb-pet canvas { width:100%;height:100%;image-rendering:pixelated; }
 
 .pet-panel { width:min(960px,96vw);height:min(540px,94vh);display:flex;flex-direction:column;gap:8px;animation:none;padding:14px 16px;overflow:hidden; }
@@ -1956,7 +1956,7 @@ button.name-pill:active { transform: translateY(1px); }
 .pet-identity h3 { margin:0;font-size:21px;line-height:1.2; }.pet-identity h3 small { display:block;font-size:11px;color:#e1d5ed;margin-top:3px; }.pet-passive { margin:4px 0 0;font-size:12px;color:#ffe36a; }
 .pet-skill-lines p { display:grid;grid-template-columns:32px minmax(0,1fr);gap:5px;margin:5px 0;font-size:12px;line-height:1.4; }.pet-skill-lines b { color:#ffe36a;font-weight:normal; }
 .pet-progress { display:flex;align-items:center;gap:6px;font-size:10px; }.pet-progress>div { position:relative;flex:1;height:13px;border:2px solid #1a1020;border-radius:20px;background:#201736;overflow:hidden;text-align:center; }.pet-progress i { position:absolute;inset:0 auto 0 0;border-radius:20px;background:#46c981; }.pet-progress b { position:relative;display:block;font-size:9px;line-height:9px;font-weight:normal;color:white;text-shadow:1px 1px #1a1020; }
-.pet-actions { display:flex;gap:5px;flex-wrap:wrap; }.pet-hint { color:#c1b5d8;font-size:10px;line-height:1.35;margin:0; }
+.pet-actions { display:flex;gap:5px;flex-wrap:wrap; }.pet-actions .pet-equip,.pet-actions .pet-evolve { width:100px;flex:0 0 100px; }.pet-hint { color:#c1b5d8;font-size:10px;line-height:1.35;margin:0; }
 .pet-panel footer { display:flex;align-items:center;gap:8px;flex:none;border-top:1px solid #766296;padding-top:6px; }.pet-scope { font-size:10px;color:#c7bedc;flex:1; }
 .pet-modal .btn { text-shadow:none;-webkit-text-stroke:2px var(--ink);paint-order:stroke fill;box-shadow:none; }.pet-modal .btn.gray { color:white; }.pet-modal .btn.small { font-size:13px;padding:5px 8px; }
 .pet-live-preview.evolved { animation:petEvolve .9s ease-out; }@keyframes petEvolve { 30%{filter:brightness(1.6)} }

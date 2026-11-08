@@ -8,12 +8,12 @@ export function petState() {
 }
 export function exchangePet(id, rarity) {
   if (!Object.hasOwn(PETS, id) || !Object.hasOwn(PET_COST, rarity)) return { ok: false, reason: "无效兑换" };
-  const m = load(), state = petState(), target = rarity === "HUR" ? 3 : 1;
+  const m = load(), state = petState(), target = 1;
   if (state.owned[id]?.stage >= target) return { ok: false, reason: "已拥有该形态" };
   const cost = PET_COST[rarity];
   if (!Number.isFinite(m.stash) || m.stash < cost) return { ok: false, reason: "积攒点不足" };
   m.stash -= cost;
-  state.owned[id] = { stage: target, xp: target === 3 ? PET_MAX_XP : state.owned[id]?.xp || 0 };
+  state.owned[id] = { stage: target, xp: 0 };
   if (!state.equipped) state.equipped = id;
   save();
   return { ok: true, first: Object.keys(state.owned).length === 1, stage: target };

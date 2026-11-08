@@ -29,16 +29,16 @@ try{
  for(let i=0;i<90;i++){dg.time+=1/60;P.updatePets(dg,1/60);}check(dg.map.crates[wood].dead&&dg.map.crates[barrel].dead&&!dg.map.crates[outside].dead,'Breath damages only in-range props');check(dg.pickups.length>0,'Destroyed wood retains loot');check(dp.ult===0,'Ultimate-triggered barrel chains cannot recharge ultimate');
  const f=dg.petFields.find(f=>f.kind==='fire');check(C.fireHalfWidth(f,f.visibleLength-1)<f.width*.3,'Rounded fire tip narrows');
  const [pg,pp]=make('phoenix');P.toggleMount(pg,pp);const frozen=put(pg,11,8,4);P.mountedUlt(pg,pp,0,null);for(let i=0;i<80;i++)P.updatePets(pg,1/60);check(pg.map.crates[frozen].dead,'Snow area damages props');
- for(const id of ['dragon','fox','phoenix']){const [g,p,fx]=make(id);P.toggleMount(g,p);const effect=fx.spawn('holy/divine-shield',p.x,p.y,{follow:p,life:5});check(!!effect,'Shield effect available');fx.update(.01);const h=P.mountedVisualHeight(p),cy=effect.options.y-22,r=effect.options.radius;check(cy-r<=p.y-h&&cy+r>=p.y,'Shield covers full mount '+id);p.mountCd=0;P.toggleMount(g,p);fx.update(.01);check(effect.options.radius===29&&effect.options.y===p.y,'Shield restores on foot '+id);}
+ for(const id of ['dragon','fox','phoenix']){const [g,p,fx]=make(id);P.toggleMount(g,p);const effect=fx.spawn('holy/divine-shield',p.x,p.y,{follow:p,life:5});check(!!effect,'Shield effect available');fx.update(.01);const h=P.mountedHeadHeight(p),cy=effect.options.y-22,r=effect.options.radius;check(cy-r<=p.y-h&&cy+r>=p.y,'Shield fits rider and body '+id);p.mountCd=0;P.toggleMount(g,p);fx.update(.01);check(effect.options.radius===29&&effect.options.y===p.y,'Shield restores on foot '+id);}
  window.revision={make,enemy,P};return{aura10s:true,nearestAOE:true,blinkHits:times.length,blinkTimes:times,blinkInvulnerability:true,flightAndSafeLanding:true,groundImmunityScoped:true,singleIceSpike:true,movingStormRadius:124,propDamageAndLoot:true,roundedBreath:true,mountedShield:true,oldMaterials:true};
  })()`);
  await p.evaluate(`(async()=>{const S=await import('./js/save.js'),PS=await import('./js/petsave.js'),L=await import('./js/lobby.js');PS.exchangePet('dragon','UR');L.showLobby();})()`);
  await p.wait(`!!document.querySelector('.lb-pet canvas')`);await sleep(250);
- assert(await p.evaluate(`!document.querySelector('.topbar .pet-entry')&&document.querySelector('.lb-pet').parentElement.classList.contains('lb-center')`));
+ assert(await p.evaluate(`!document.querySelector('.topbar .pet-entry')&&document.querySelector('.lb-pet').parentElement.classList.contains('lb-right')`));
  assert.equal(await p.evaluate(`document.querySelector('.lb-pet').textContent.trim()`),'','No visible companion label');
  const lobbyFrame=await p.evaluate(`document.querySelector('.lb-pet canvas').toDataURL()`);await sleep(450);assert.notEqual(await p.evaluate(`document.querySelector('.lb-pet canvas').toDataURL()`),lobbyFrame,'Lobby pet plays authored animation');
  await sleep(2000);await p.shot('lobby-804');await p.evaluate(`document.querySelector('.pet-entry').click()`);
- await p.evaluate(`(()=>{const b=[...document.querySelectorAll('.pet-actions button')].find(b=>b.textContent.includes('直升终极'));b.click()})()`);assert(await p.evaluate(`document.querySelector('[data-stage="3"]').classList.contains('chosen')`),'Exchange previews actual obtained final stage');
+ assert(!await p.evaluate(`document.querySelector('.pet-actions').textContent.includes('直升')`),'No direct final exchange');
  await p.evaluate(`(async()=>{const {load}=await import('./js/save.js');load().pets.owned.dragon={stage:1,xp:300};document.querySelector('.pet-choice').click();[...document.querySelectorAll('.pet-actions button')].find(b=>b.textContent==='进化').click()})()`);assert(await p.evaluate(`document.querySelector('[data-stage="2"]').classList.contains('chosen')`),'Evolution previews newly reached stage');
  const layouts=[];
  for(const [width,height] of [[804,360],[667,375]]){

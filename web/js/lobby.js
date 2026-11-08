@@ -120,8 +120,8 @@ export function showLobby() {
   const pets=petState(),petId=pets.equipped||Object.keys(pets.owned)[0];
   if(petId){
     const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
-    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-center',s).appendChild(entry);
-    petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true);
+    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-right',s).appendChild(entry);
+    petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true,false,true);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);
@@ -1298,7 +1298,7 @@ function pullSequence(screen, res) {
   });
 }
 
-/** 积攒点 exchange: UR (red) for 10 points, HUR (rainbow) for 20 — the items themselves are still to be decided */
+/** UR exchanges a young pet; HUR content is reserved and cannot be redeemed. */
 const ssrOwned = () => {
   const m = load(), list = GACHA.pool.filter((it) => it.r === "SSR");
   return `${list.filter((it) => (m.talents[it.id] || 0) >= it.max).length} / ${list.length}`;
@@ -1310,11 +1310,10 @@ function showStash() {
     <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换梦境伙伴，首次获得后解锁出战。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
     <div class="st-list">
       <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">幼年伙伴</b><span>三选一 · 自动助战，可养成进化</span></div><button class="btn small"><span>选择伙伴</span><small>积攒 10</small></button></div>
-      <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">终极伙伴</b><span>三选一 · 可骑乘，替换普攻和大招</span></div><button class="btn small"><span>选择伙伴</span><small>积攒 20</small></button></div>
-    </div><div class="row st-acts"></div></div>`;
+      <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">兑换内容待定</b><span>暂未开放</span></div><button class="btn small" disabled>敬请期待</button></div>
+    </div></div>`;
 
   md.onclick = (e) => e.target === md && md.remove();
-  md.querySelectorAll('.st-it button').forEach(b=>b.onclick=()=>{md.remove();showPets(()=>showGacha());});
-  md.querySelector('.st-acts').appendChild(btn('关闭','gray small',()=>md.remove()));
+  md.querySelector('.st-it.ur button').onclick=()=>{md.remove();showPets(()=>showGacha());};
   uiRoot().appendChild(md);
 }

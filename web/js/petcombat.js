@@ -2,8 +2,8 @@
 import { T } from './data.js';
 import { SOLID, tileAt } from './map.js';
 export const flyingMount=p=>!!(p.mounted&&p.pet?.id==='phoenix'&&p.pet.stage===3);
-// Visual height only: physics and the storm's damage centre remain on the ground.
-export const flightLift=p=>flyingMount(p)?18+Math.sin((p.pet.anim||0)*2.6)*2:0;
+// Keep the original authored height; flight uses a foreground layer rather than extra lift.
+export const flightLift=()=>0;
 export function clearLanding(map,x,y,r=12){
   if(x<T+r||y<T+r||x>map.pxW-T-r||y>map.pxH-T-r)return false;
   for(const [dx,dy] of [[0,0],[r,0],[-r,0],[0,r],[0,-r],[r*.71,r*.71],[-r*.71,r*.71],[r*.71,-r*.71],[-r*.71,-r*.71]])if(SOLID(tileAt(map,x+dx,y+dy)))return false;

@@ -7,7 +7,7 @@ import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
 import { LEVEL_REWARDS } from "./progression.js";
-import { PETS, PET_COST, PET_EVOLVE, PET_MAX_XP, petPortrait } from "./petdata.js";
+import { PETS, PET_COST, PET_EVOLVE, PET_MAX_XP, PET_ATTACK_RANGE, FOX_RIDE_RANGE, petPortrait } from "./petdata.js";
 import { input } from "./input.js";
 
 let root, app;
@@ -99,13 +99,13 @@ export function showHelp() {
       ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
       ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉星砂金矿，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
-    ["梦境伙伴", `${H("兑换与解锁")}SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点。在扭蛋机点「积攒」进入兑换，自选火龙、灵狐或冰凰：UR 消耗 ${PET_COST.UR} 点获得幼年，HUR 消耗 ${PET_COST.HUR} 点直接获得终极；不是随机抽取。已拥有的形态不可重复兑换。
+    ["梦境伙伴", `${H("兑换与解锁")}SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点。在扭蛋机点「积攒」进入兑换，自选火龙、灵狐或冰凰：UR 消耗 ${PET_COST.UR} 点获得幼年；不是随机抽取。宠物只能积累经验后进化，不能直接兑换或直升终极；HUR 兑换内容暂定、尚未开放。已拥有的宠物不可重复兑换。
       ${H("大厅入口")}首次获得后自动携带，大厅人物右上方出现当前阶段的动画，点击进入面板；首次兑换前不显示这个入口。每次携带一只，可更换或取消。左侧点宠物，右侧切换三阶段及待机 / 行走 / 技能；预览未解锁形态不会获得它。
-      ${H("跟随助战")}主线、无尽与合作模式中自动跟随、索敌普攻并释放技能，不需额外按键；伙伴不承受伤害、不占传送人数。携带加成进入下一局生效，竞技场和矿场不出战、不提供加成。
+      ${H("跟随助战")}主线、无尽与合作模式中，伙伴会靠近附近敌人，到攻击距离后停步普攻并自动释放技能；火龙攻击距离 ${PET_ATTACK_RANGE.dragon}、灵狐 ${PET_ATTACK_RANGE.fox}、冰凰 ${PET_ATTACK_RANGE.phoenix}。没有敌人且离主人较远时自动回跟，到身边停下，小范围移动不会反复踱步；伙伴不承受伤害、不占传送人数。携带加成进入下一局生效，竞技场和矿场不出战、不提供加成。
       ${H("经验与进化")}携带出战的伙伴在正常结算时获得经验：有效游玩每 6 秒 +1，清理战斗房 +4，首领 +8；暂停和长时间无操作不计。幼年 → 成长需要累计 ${PET_EVOLVE[2].xp} 经验 + ${PET_EVOLVE[2].stars} 星砂，成长 → 终极需要累计 ${PET_EVOLVE[3].xp} 经验 + ${PET_EVOLVE[3].stars} 星砂。达到条件后在面板手动「进化」，只扣星砂、不扣累计经验；经验上限 ${PET_MAX_XP}，进度随存档保留。
       ${H("终极骑乘")}只有终极可骑乘。电脑按 <b>R</b>，手机点右上角暂停旁的「骑乘」，再次操作下骑。骑乘移速 +25%，普攻与大招换成坐骑能力，角色小技能与闪避保留；下骑恢复自动助战。
       ${Object.values(PETS).map(d => `${H(d.name)}携带${d.passive} +${d.bonus.map(n => Math.round(n * 100) + "%").join(" / ")}（幼年 / 成长 / 终极）。助战：${d.attack}、${d.skill}。${d.trait}<br>骑乘：${d.rideDesc}`).join("")}
-      ${H("能力边界")}火龙骑乘大招穿墙喷射，可烧毁场景内墙体；墙体耐久是箱子的两倍，只有火龙骑乘大招能破坏，房间外边界保留。宠物范围技能可伤害木箱、火药桶，保留物品掉落和爆炸连锁；大招伤害不会为自身大招充能。灵狐光环每 10 秒清除全图敌方弹幕，保留友方弹幕。冰凰的穿障碍和地面免伤仅骑乘时生效，仍受房间边界限制、仍会被直接攻击命中；下骑会寻找安全地面。
+      ${H("能力边界")}火龙骑乘大招穿墙喷射，可烧毁场景内墙体；墙体耐久是箱子的两倍，只有火龙骑乘大招能破坏，房间外边界保留。宠物范围技能可伤害木箱、火药桶，保留物品掉落和爆炸连锁；大招伤害不会为自身大招充能。灵狐助战连锁限制在 ${FOX_RIDE_RANGE} 范围内；骑乘普攻索敌半径 ${FOX_RIDE_RANGE}，大招只攻击释放位置周围同样范围内的敌人，不会连续跳到全图；10 秒光环仍清除全图敌方弹幕，保留友方。冰凰的穿障碍和地面免伤仅骑乘时生效，仍受房间边界限制、仍会被直接攻击命中；下骑会寻找安全地面。
       ${H("免费试用")}面板右下「免费试用 · 终极骑乘」可试玩任意一只的终极能力，大招每 10 秒恢复；无需兑换，不扣积攒点或星砂，试用的货币、经验、图鉴等收益都不保存。`],
     ["角色养成", `<div class="hp-levels">${LEVEL_REWARDS.map(r => `<div class="hp-level"><b>Lv.${r.level}</b><em>${r.name}</em><span>${r.text}</span></div>`).join("")}</div>
       ${H("成长规则")}每位角色独立积累经验，最高 7 级；闯关奖励逐级累计，下局生效，竞技场禁用。蓄能按每次主动释放小技能计算，回响和联动不重复增加，进度最多 100%；矿场装备独立。

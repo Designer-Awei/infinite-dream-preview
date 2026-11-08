@@ -1,16 +1,17 @@
 // Host-authoritative companions; clients render plain snapshot state.
-import { PETS, validPet } from './petdata.js';
+import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS } from './petdata.js';
 import { A } from './assets.js';
-import { moveCircle, los, tileAt, BLOCKS_SHOT, WALL } from './map.js';
+import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
+import { updateCompanion, PET_MOTION } from './petai.js';
 import { CHARS, T } from './data.js';
 import { nid } from './util.js';
 import { flyingMount, flightLift, safeLanding, clearLanding, inFire, fireHalfWidth } from './petcombat.js';
 export function attachPet(game,p,value){
   const pet=!game.pvp&&validPet(value);if(!pet)return;
-  p.pet={...pet,x:p.x,y:p.y,r:8,face:0,anim:0,moving:false,castT:0,castMax:0,attackCd:.5,skillCd:2,auraCd:10,blinkT:0,warpSeq:0,route:[],room:-1};
+  p.pet={...pet,x:p.x,y:p.y,r:8,face:0,anim:0,walkT:0,moving:false,castT:0,castMax:0,attackCd:.5,skillCd:2,auraCd:10,blinkT:0,warpSeq:0,route:[],room:-1};
   const def=PETS[pet.id];p.st[def.stat]*=1+def.bonus[pet.stage-1];p.mounted=false;
 }
-export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,route:[],room:game.roomIdx,castT:0,moving:false,blinkT:0});}
+export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,route:[],room:game.roomIdx,castT:0,moving:false,blinkT:0,targetId:null,state:'idle',returning:false,nav:null,navCd:0,stuck:0});}
 export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];}
 function mountAsset(p){return p.mounted&&p.pet?.stage===3?A.mounts?.[p.pet.id]||null:null;}
 export function mountedVisualHeight(p){
@@ -18,6 +19,16 @@ export function mountedVisualHeight(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
   const rider=A.riders?.meta,top=rider?.actors[p.cid]?.top??26;
   return flightLift(p)+Math.max(30+(rider?.anchor[1]??64)-top,(A.pets?.meta.actors[`${p.pet.id}-3`]?.anchor?.[1]??96)*petScale(p));
+}
+export function mountedHeadHeight(p){
+  if(!p.mounted||!p.pet)return null;
+  const m=mountAsset(p),a=m?.meta.actors[p.cid];
+  if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
+  return 30+(A.riders?.meta.anchor[1]??64)-(A.riders?.meta.actors[p.cid]?.top??26);
+}
+export function mountedShield(p){
+  const head=mountedHeadHeight(p);if(!head)return null;
+  const bottom=5;return{radius:Math.ceil((head+bottom)/2+3),x:p.x,y:p.y+22+(bottom-head)/2};
 }
 export function petMuzzle(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
@@ -33,9 +44,9 @@ export function toggleMount(game,p){
   if(p.mounted)Object.assign(p.pet,{x:p.x,y:p.y,face:p.face});
   game.vfx('spawn/poof',p.x,p.y,{layer:'back',life:.45});return true;
 }
-function targetFor(game,x,y,range=Infinity,exclude,needSight=true){
+function targetFor(game,x,y,range=Infinity,exclude,needSight=true,bounds=null){
   let best=null,distance=range;
-  for(const e of game.enemies){if(e.dead||e.spawnT>0||exclude?.has(e.id))continue;const d=Math.hypot(e.x-x,e.y-y);if(d<distance&&(!needSight||los(game.map,x,y,e.x,e.y))){best=e;distance=d;}}
+  for(const e of game.enemies){if(e.dead||e.spawnT>0||exclude?.has(e.id)||(bounds&&Math.hypot(e.x-bounds.x,e.y-bounds.y)>bounds.r))continue;const d=Math.hypot(e.x-x,e.y-y);if(d<=distance&&(!needSight||los(game.map,x,y,e.x,e.y))){best=e;distance=d;}}
   return best;
 }
 function props(game,p,damage,contains,ultimate=false){
@@ -48,10 +59,10 @@ function props(game,p,damage,contains,ultimate=false){
 function pulse(game,p,kind,x,y,r,life=.35){
   game.petFields.push({id:nid(),owner:p.id,kind,x,y,r,t:0,life,max:life,delay:0});
 }
-function strike(game,p,x,y,r,damage,ultimate=false){
+function strike(game,p,x,y,r,damage,ultimate=false,bounds=null){
   game.line(x,y-110,x,y-8,'#fff4b2',3,.25,'zap');pulse(game,p,'zap',x,y,r);
-  for(const e of game.enemies){if(e.dead||e.spawnT>0||Math.hypot(e.x-x,e.y-y)>r+e.r)continue;game.hit(e,damage,{p,elem:'thunder',noUltGain:ultimate,noReact:true});if(!e.boss)e.stunT=Math.max(e.stunT||0,.18);}
-  props(game,p,damage,(cx,cy)=>Math.hypot(cx-x,cy-y)<=r+12,ultimate);
+  for(const e of game.enemies){if(e.dead||e.spawnT>0||Math.hypot(e.x-x,e.y-y)>r+e.r||(bounds&&Math.hypot(e.x-bounds.x,e.y-bounds.y)>bounds.r))continue;game.hit(e,damage,{p,elem:'thunder',noUltGain:ultimate,noReact:true});if(!e.boss)e.stunT=Math.max(e.stunT||0,.18);}
+  props(game,p,damage,(cx,cy)=>Math.hypot(cx-x,cy-y)<=r+12&&(!bounds||Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r),ultimate);
   game.sound('shoot_thunder',.1);
 }
 function shot(game,p,angle,mounted=false){
@@ -62,7 +73,7 @@ function shot(game,p,angle,mounted=false){
 export function mountedAttack(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
   p.pet.face=angle;
-  if(p.pet.id==='fox'){const e=targetFor(game,p.x,p.y,Infinity,null,false);if(e)strike(game,p,e.x,e.y,52,CHARS[p.cid].atk.dmg*1.25);return true;}
+  if(p.pet.id==='fox'){const e=targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false);if(e)strike(game,p,e.x,e.y,52,CHARS[p.cid].atk.dmg*1.25,false,{x:p.x,y:p.y,r:FOX_RIDE_RANGE});return true;}
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;
 }
 function channel(game,p,kind,options,duration,ultimate=false){
@@ -71,19 +82,19 @@ function channel(game,p,kind,options,duration,ultimate=false){
   game.petFields.push({id:nid(),owner:p.id,kind,...options,t:0,life:duration+.35,max:duration+.35,delay:.35,tick:0,ultimate});
 }
 function lightning(game,p,targets,damage,from){
-  const used=new Set();let x=from.x,y=from.y,groundY=p.pet.y;
-  for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:310,used);if(!e)break;used.add(e.id);game.line(x,y,e.x,e.y-e.r,'#fff2a0',3,.24,'zap');game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38);if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);x=e.x;y=e.y-e.r;groundY=e.y;}
+  const used=new Set(),bounds={x:p.pet.x,y:p.pet.y,r:FOX_RIDE_RANGE};let x=from.x,y=from.y,groundY=p.pet.y;
+  for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:FOX_RIDE_RANGE,used,true,bounds);if(!e)break;used.add(e.id);game.line(x,y,e.x,e.y-e.r,'#fff2a0',3,.24,'zap');game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38&&Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r);if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);x=e.x;y=e.y-e.r;groundY=e.y;}
 }
 function skill(game,p,target,angle,ultimate=false){
   const q=p.pet;q.face=angle;const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
   if(q.id==='dragon')channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length:ultimate?320:180+q.stage*18,width:ultimate?64:25+q.stage*5,damage:ultimate?22:5+q.stage*3},ultimate?3.2:1.6,ultimate);
-  else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?124:54+q.stage*10,damage:ultimate?18:5+q.stage*3,follow:ultimate},ultimate?5:3.2,ultimate);
+  else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:ultimate?18:5+q.stage*3,follow:ultimate},ultimate?5:3.2,ultimate);
   else{q.castT=q.castMax=1.1;game.after(.35,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,10+q.stage*5,petMuzzle(p));});game.vfx('lightning/thunderclap',m.x,m.y,{life:.7,size:35});}
 }
 export function mountedUlt(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
   game.text(p.x,p.y-95,PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);
-  if(p.pet.id==='fox'){Object.assign(p.pet,{blinkT:1,blinkHits:0,blinkRoom:game.roomIdx,castT:1,castMax:1});p.petWarpUntil=game.time+1.15;}
+  if(p.pet.id==='fox'){Object.assign(p.pet,{blinkT:1,blinkHits:0,blinkOrigin:{x:p.x,y:p.y,r:FOX_RIDE_RANGE},blinkRoom:game.roomIdx,castT:1,castMax:1});p.petWarpUntil=game.time+1.15;}
   else skill(game,p,target,angle,true);return true;
 }
 function blink(game,p,dt){
@@ -91,32 +102,29 @@ function blink(game,p,dt){
   if(q.blinkRoom!==game.roomIdx||!p.mounted){q.blinkT=0;return;}
   const elapsed=1-q.blinkT+dt;
   while(q.blinkHits<5&&elapsed>=q.blinkHits*.2){
-    const e=targetFor(game,p.x,p.y,Infinity,null,false);if(e){
+    const e=targetFor(game,p.x,p.y,FOX_RIDE_RANGE*2,null,false,q.blinkOrigin);if(e){
       const old={x:p.x,y:p.y};let spot=null;
       for(let j=0;j<8;j++){const a=q.blinkHits*Math.PI*.8+j*Math.PI/4,x=e.x+Math.cos(a)*(e.r+p.r+8),y=e.y+Math.sin(a)*(e.r+p.r+8);if(clearLanding(game.map,x,y,p.r)){spot={x,y};break;}}
       spot||=safeLanding(game.map,e.x,e.y,p.r);
-      if(spot){Object.assign(p,spot);q.x=p.x;q.y=p.y;q.warpSeq++;game.line(old.x,old.y-25,p.x,p.y-25,'#ffe7a1',4,.18,'zap');}
-      strike(game,p,e.x,e.y,64,30,true);
+      if(spot){
+        const length=Math.hypot(spot.x-old.x,spot.y-old.y),n=Math.max(2,Math.min(5,Math.ceil(length/25)));
+        for(let j=0;j<n;j++){const u=j/n;game.petFields.push({id:nid(),owner:p.id,kind:'afterimage',x:old.x+(spot.x-old.x)*u,y:old.y+(spot.y-old.y)*u,face:p.face,anim:q.anim,castT:q.castT,castMax:q.castMax,t:0,delay:0,life:.36,max:.36});}
+        Object.assign(p,spot);q.x=p.x;q.y=p.y;q.warpSeq++;game.line(old.x,old.y-25,p.x,p.y-25,'#ffe7a1',4,.18,'zap');
+      }
+      strike(game,p,e.x,e.y,64,30,true,q.blinkOrigin);
     }q.blinkHits++;
   }
   q.blinkT=Math.max(0,q.blinkT-dt);p.moving=false;
 }
-function follow(game,p,q,dt){
-  if(q.room!==game.roomIdx||Math.hypot(q.x-p.x,q.y-p.y)>260){resetPet(game,p);return;}
-  if(p.mounted){q.x=p.x;q.y=p.y;q.face=p.face;q.moving=p.moving;return;}
-  const route=q.route,last=route.at(-1);if(!last||Math.hypot(last.x-p.x,last.y-p.y)>10)route.push({x:p.x,y:p.y});while(route.length>24)route.shift();while(route.length>1&&Math.hypot(q.x-route[0].x,q.y-route[0].y)<14)route.shift();
-  const distance=Math.hypot(q.x-p.x,q.y-p.y);let goal=route[0]||p;if(los(game.map,q.x,q.y,p.x,p.y)&&distance<100){goal=p;route.splice(0,Math.max(0,route.length-1));}
-  const dx=goal.x-q.x,dy=goal.y-q.y,d=Math.hypot(dx,dy);q.moving=(distance>42||route.length>2)&&d>4&&!(q.castT>0);if(!q.moving)return;
-  const speed=(distance>100?230:160)*dt,ox=q.x,oy=q.y;moveCircle(game.map,q,dx/d*Math.min(speed,d),dy/d*Math.min(speed,d));if(Math.abs(dx)>2)q.face=Math.atan2(dy,dx);q.stuck=Math.hypot(q.x-ox,q.y-oy)<dt*5?(q.stuck||0)+dt:0;if(q.stuck>1.8&&distance>65){q.x=p.x;q.y=p.y;q.route=[];q.stuck=0;}
-}
 export function updatePets(game,dt){
   if(game.pvp)return;
   for(const p of game.players){const q=p.pet;if(!q)continue;p.mountCd=Math.max(0,(p.mountCd||0)-dt);q.anim+=dt;q.castT=Math.max(0,q.castT-dt);
-    if(p.dead||p.downed){p.mounted=false;q.moving=false;q.castT=0;q.blinkT=0;continue;}follow(game,p,q,dt);if(!game.host)continue;
+    if(p.dead||p.downed){p.mounted=false;q.moving=false;q.castT=0;q.blinkT=0;continue;}
+    const target=game.host?updateCompanion(game,p,dt):null;if(q.moving)q.walkT=(q.walkT||0)+dt;if(!game.host)continue;
     blink(game,p,dt);if(game.petTrial)p.ult=Math.min(1,p.ult+dt*.1);
     if(q.id==='fox'&&game.phase==='fight'){q.auraCd=(q.auraCd??10)-dt;if(q.auraCd<=0){q.auraCd+=10;game.bullets=game.bullets.filter(b=>b.side!=='e');pulse(game,p,'purge',q.x,q.y,Math.hypot(game.map.pxW,game.map.pxH),.7);}}
     q.attackCd-=dt;q.skillCd-=dt;if(p.mounted||q.castT>0||game.phase!=='fight')continue;
-    const target=targetFor(game,q.x,q.y,270);if(!target)continue;const facing=Math.atan2(target.y-q.y,target.x-q.x);q.face=facing;const m=petMuzzle(p),a=Math.atan2(target.y-target.r-m.y,target.x-m.x);
+    if(!target)continue;const facing=Math.atan2(target.y-q.y,target.x-q.x);q.face=facing;const m=petMuzzle(p),a=Math.atan2(target.y-target.r-m.y,target.x-m.x);
     if(q.skillCd<=0){skill(game,p,target,facing);q.skillCd=PETS[q.id].skillCd;}else if(q.attackCd<=0){shot(game,p,a);q.attackCd=q.id==='fox'?.7:1.1;}
   }
   for(const f of game.petFields){f.t+=dt;f.life-=dt;const p=game.player(f.owner);if(!p?.pet||p.dead||p.downed){f.life=0;continue;}
@@ -133,7 +141,7 @@ export function updatePets(game,dt){
     if(f.kind==='fire'&&f.ultimate&&p.mounted&&p.pet.id==='dragon'){
       const m=game.map;
       for(let ty=Math.max(1,Math.floor((p.y-f.length)/T));ty<=Math.min(m.H-2,Math.ceil((p.y+f.length)/T));ty++)for(let tx=Math.max(1,Math.floor((p.x-f.length)/T));tx<=Math.min(m.W-2,Math.ceil((p.x+f.length)/T));tx++){
-        const i=ty*m.W+tx;if(m.t[i]===WALL&&inFire(f,tx*T+T/2,ty*T+T/2-height,T/2))game.damageWall(i,f.damage,p);
+        const i=ty*m.W+tx;if(inFire(f,tx*T+T/2,ty*T+T/2-height,T/2)){if(m.t[i]===WALL)game.damageWall(i,f.damage,p);else if(m.t[i]===BUSH)game.burnBush(i,p);}
       }
     }
   }
@@ -148,7 +156,7 @@ export function drawPet(ctx,player,time,ride=false) {
     clip=clips.cast_e;const elapsed=q.castMax-q.castT;
     const [lo,hi]=actor.cast_hold_frames||[3,5],mid=Math.floor((lo+hi)/2);
     frame=elapsed<.35?Math.floor(elapsed*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):q.id==='phoenix'?Math.floor(elapsed*6)%8:[lo,mid,hi,mid][Math.floor(elapsed*6)%4];
-  } else if(q.moving && clips.move_e){clip=clips.move_e;frame=Math.floor(q.anim*(q.id==='phoenix'?6:10));}
+  } else if(q.moving && clips.move_e){clip=clips.move_e;frame=Math.floor((q.walkT||0)*(q.id==='phoenix'?6:PET_MOTION.walkFps));}
   const pos=clip[Math.min(clip.length-1,q.castT>0?frame:frame%Math.max(1,clip.length-1))];
   ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);
   if(!flyingMount(player)){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,ride?29:19,ride?9:6,0,0,Math.PI*2);ctx.fill();}
@@ -156,15 +164,15 @@ export function drawPet(ctx,player,time,ride=false) {
   const {cw,ch}=assets.meta,anchor=actor.anchor||[cw/2,ch-8];
   ctx.imageSmoothingEnabled=false;ctx.drawImage(assets.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
 }
-export function drawMountedPet(ctx,player,time) {
+export function drawMountedPet(ctx,player,time,shadow=true) {
   const mount=mountAsset(player),actor=mount?.meta.actors[player.cid];if(!actor)return false;
   const q=player.pet,{cw,ch,anchor,scale}=mount.meta;
   let clip=actor.idle_e,frame=Math.floor(q.anim*6);
   if(q.castT>0 && actor.cast_e){clip=actor.cast_e;const t=q.castMax-q.castT;frame=t<.35?Math.floor(t*8):q.castT<.375?6+Math.floor((.375-q.castT)*8):[3,4,5,4][Math.floor(t*6)%4];}
-  else if(q.moving && actor.move_e){clip=actor.move_e;frame=Math.floor(q.anim*10);}
+  else if(q.moving && actor.move_e){clip=actor.move_e;frame=Math.floor((q.walkT||0)*PET_MOTION.walkFps);}
   const pos=clip[Math.min(clip.length-1,q.castT>0?frame:frame%Math.max(1,clip.length-1))];
   ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
-  ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();
+  if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
   ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
 }
 export function drawRider(ctx,player,time,back=false) {
@@ -181,7 +189,7 @@ export function drawRider(ctx,player,time,back=false) {
 export function animateClientPets(game,dt) {
   for(const p of game.players) {
     const q=p.pet;if(!q)continue;
-    q.anim+=dt;q.castT=Math.max(0,q.castT-dt);q.blinkT=Math.max(0,(q.blinkT||0)-dt);
+    q.anim+=dt;if(q.moving)q.walkT=(q.walkT||0)+dt;q.castT=Math.max(0,q.castT-dt);q.blinkT=Math.max(0,(q.blinkT||0)-dt);
     if(p.mounted){q.x=p.x;q.y=p.y;q.face=p.face;q.moving=p.moving;}
     else if(q.tx!=null){q.x+=(q.tx-q.x)*Math.min(1,dt*16);q.y+=(q.ty-q.y)*Math.min(1,dt*16);}
   }
@@ -190,6 +198,7 @@ export function animateClientPets(game,dt) {
 }
 export function drawPetFields(ctx,game,time,layer='back') {
   for(const f of game.petFields||[]) {
+    if(f.kind==='afterimage')continue;
     if(layer==='front'&&!f.ultimate)continue;
     if(layer==='back'&&f.ultimate&&f.kind!=='snow')continue;
     if(f.t<f.delay)continue;
@@ -241,5 +250,12 @@ export function drawPetFields(ctx,game,time,layer='back') {
       for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.4+i*.22),time*3+i,time*3+i+1.8);ctx.stroke();}
     }
     ctx.restore();
+  }
+}
+export function drawPetAfterimages(ctx,game,time){
+  for(const f of game.petFields||[]){
+    if(f.kind!=='afterimage')continue;const p=game.player(f.owner);if(!p?.mounted||p.pet?.id!=='fox'||p.dead||p.downed)continue;
+    const ghost={...p,x:f.x,y:f.y,face:f.face,moving:false,hurtT:0,pet:{...p.pet,x:f.x,y:f.y,face:f.face,anim:f.anim,castT:f.castT,castMax:f.castMax,moving:false}};
+    ctx.save();ctx.globalAlpha=.22*Math.max(0,f.life/f.max);drawMountedPet(ctx,ghost,time,false);ctx.restore();
   }
 }

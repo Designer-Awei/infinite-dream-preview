@@ -9,6 +9,7 @@ import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount } from "./pets.js";
 import { flyingMount } from './petcombat.js';
+import { FOX_RIDE_RANGE } from './petdata.js';
 
 export const RIFT_CHANCE = 0.25;
 export class Game {
@@ -307,7 +308,7 @@ export class Game {
     const f = this.fx.spawn(id, x, y, o);
     if (this.mode === "host") {
       const oo = { ...o };
-      if (oo.follow) (oo.followId = oo.follow.id), delete oo.follow;
+      if (oo.follow) {if(this.zones.includes(oo.follow))oo.followZoneId=oo.follow.id;else oo.followId=oo.follow.id;delete oo.follow;}
       this.events.push({ t: "fx", id, x: Math.round(x), y: Math.round(y), o: oo });
     }
     return f;
@@ -350,6 +351,10 @@ export class Game {
   }
   /** lock-on: nearest visible enemy in range, sticky to the current target */
   findTarget(p) {
+    if(p.mounted&&p.pet?.id==='fox'){
+      let best=null,distance=FOX_RIDE_RANGE;
+      for(const e of this.enemies){if(e.dead||e.spawnT>0)continue;const d=dist(p.x,p.y,e.x,e.y);if(d<=distance){best=e;distance=d;}}return best;
+    }
     const range = CHARS[p.cid].atk.range * p.st.range;
     const cand = [];
     for (const e of this.enemies) {
@@ -620,6 +625,12 @@ export class Game {
         if (cone && Math.abs(((angTo(x, y, cx, cy) - cone[0] + Math.PI * 3) % TAU) - Math.PI) > cone[1]) continue;
         this.damageTile(i, dmg, p);
       }
+  }
+  burnBush(i,p){
+    const m=this.map,x=i%m.W,y=Math.floor(i/m.W);
+    if(!this.host||this.pvp||!p?.mounted||p.pet?.id!=='dragon'||p.pet.stage!==3||p.dead||p.downed||!Number.isInteger(i)||x<=0||y<=0||x>=m.W-1||y>=m.H-1||m.t[i]!==BUSH)return;
+    m.t[i]=0;(m.burnedBushes||(m.burnedBushes=[])).push(i);m.groundDirty=true;this.emit({t:'tile',i,bush:true});
+    this.vfx('spawn/poof',x*T+T/2,y*T+T/2,{layer:'back',palette:['#291c14','#633727','#a55b30','#d49342','#efc15c','#fff1b1']});
   }
   /** Only the mounted dragon's ultimate calls this; other attacks keep walls solid. */
   damageWall(i, dmg, p) {
@@ -1422,6 +1433,7 @@ export class Game {
         }
       }
       if (z.life <= 0) {
+        z.gone=true;
         if (z.onEnd && this.host) z.onEnd(z);
         if (z.fxh) z.fxh.stop();
         this.zones.splice(i, 1);

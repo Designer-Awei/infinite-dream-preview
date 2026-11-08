@@ -2,9 +2,9 @@
 import { A } from './assets.js';
 import { drawPetFields } from './pets.js';
 const live=new Set(),bounds=new Map();let frame=0;
-export function petPreview(host,id,stage,clip='idle',tight=false,wide=false){
+export function petPreview(host,id,stage,clip='idle',tight=false,wide=false,alignTop=false){
   const c=document.createElement('canvas');c.width=wide?512:256;c.height=wide?192:256;c.setAttribute('aria-label',`${id} ${stage} ${clip}`);
-  host.replaceChildren(c);live.add({c,id,stage,clip,tight,wide,start:performance.now(),last:null});if(!frame)frame=requestAnimationFrame(draw);return c;
+  host.replaceChildren(c);live.add({c,id,stage,clip,tight,wide,alignTop,start:performance.now(),last:null});if(!frame)frame=requestAnimationFrame(draw);return c;
 }
 function draw(now){
   frame=0;
@@ -26,7 +26,7 @@ function draw(now){
       if(hasEffects){x0=Math.min(x0,f.x-(f.kind==='fire'?0:f.r));x1=Math.max(x1,f.x+(f.kind==='fire'?f.length:f.r));y0=Math.min(y0,f.y-(f.kind==='fire'?f.width:f.r));y1=Math.max(y1,f.y+(f.kind==='fire'?f.width:f.r));}
       box=[x0,y0,x1-x0,y1-y0];bounds.set(cache,box);
     }
-    const [bx,by,w,h]=box,k=Math.min(W/(w+12),H/(h+12));ctx.save();ctx.translate((W-w*k)/2-bx*k,(H-h*k)/2-by*k);ctx.scale(k,k);
+    const [bx,by,w,h]=box,k=Math.min(W/(w+12),H/(h+12));ctx.save();ctx.translate((W-w*k)/2-bx*k,(v.alignTop?0:(H-h*k)/2)-by*k);ctx.scale(k,k);
     if(hasEffects&&v.id==='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
     ctx.drawImage(image,x,y,meta.cw,meta.ch,0,0,meta.cw,meta.ch);
     if(hasEffects&&v.id!=='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);

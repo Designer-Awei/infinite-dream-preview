@@ -19,8 +19,8 @@ try{
     check(PS.grantPetXP('dragon',300)===300 && PS.evolvePet('dragon').stage===2 && S.mineState().stars===160,'Growth evolution consumes40 stars');
     PS.grantPetXP('dragon',10000);check(PS.evolvePet('dragon').stage===3 && S.mineState().stars===40,'Final evolution capsXP1200 and consumes120stars');
     check(PS.grantPetXP('dragon',1)===0 && !PS.evolvePet('dragon').ok,'Final capped, no repeated charge');
-    check(PS.exchangePet('fox','HUR').stage===3 && m.stash===30,'HUR costs20, final ride-ready');
-    check(PS.exchangePet('phoenix','HUR').ok && m.stash===10,'All3 family exchange');
+    check(!PS.exchangePet('fox','HUR').ok && m.stash===50,'HUR direct exchange disabled without charging');check(PS.exchangePet('fox','UR').stage===1 && m.stash===40,'UR only grants young pet');S.mineState().stars+=160;PS.grantPetXP('fox',1200);check(PS.evolvePet('fox').stage===2 && PS.evolvePet('fox').stage===3,'Final form only through two evolutions');
+    check(PS.exchangePet('phoenix','UR').stage===1 && m.stash===30,'All3 family young exchange');
     check(!PS.equipPet('unknown') && PS.equipPet(null) && !S.makeKit('deepseek').pet,'Unequip prevents combat spawn');
     PS.equipPet('fox');const code=S.exportSave();S.importSave(code);check(S.makeKit('deepseek').pet.id==='fox' && S.load().characterXP.deepseek===560,'Export/import retains pets and existing XP');
     const meta=S.load();meta.stash=0;check(!PS.exchangePet('dragon','HUR').ok && meta.stash===0,'No currency below zero');
@@ -42,7 +42,7 @@ try{
       check(q.ult===0,'Mounted ult and secondary reactions cannot recharge itself');
       q.mountCd=0;P.toggleMount(g,q);check(!q.mounted && !g.petFields.length,'Dismount returns to follow and cancels channel');
       for(const stage of [1,2]){q.pet.stage=stage;q.mountCd=0;check(!P.toggleMount(g,q),'Only final stage can mount, rejected stage '+stage);}q.pet.stage=3;
-      q.pet.castT=0;q.pet.x=170;q.pet.y=270;q.pet.room=g.roomIdx;q.x=400;q.y=270;
+      g.enemies=[];q.pet.targetId=null;q.pet.state='idle';q.pet.returning=false;q.pet.castT=0;q.pet.x=170;q.pet.y=270;q.pet.room=g.roomIdx;q.x=400;q.y=270;
       for(let i=0;i<120;i++)P.updatePets(g,1/60);check(Math.hypot(q.pet.x-q.x,q.pet.y-q.y)<50,'Follower catches up');
       q.pet.x=-500;P.updatePets(g,.02);check(Math.hypot(q.pet.x-q.x,q.pet.y-q.y)<30,'Lost follower safely recovers');
       q.downed=true;P.updatePets(g,.02);check(!q.mounted&&!q.pet.moving&&!q.pet.castT,'Downed owner hides/disables pet');

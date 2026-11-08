@@ -330,10 +330,8 @@ export function castUlt(g, p, a, target) {
     }
     case "claude": {
       const cx = p.x, cy = p.y;
-      g.vfx("holy/holy-pillar", cx, cy, { palette: pal, speed2: 1.5 });
-      g.vfx("arcane/rune-circle", cx, cy + 6, { palette: pal, layer: "back", life: 6, opts: {} });
       for (const e of g.enemiesNear(cx, cy, 100)) g.hit(e, 20, { p, elem: "sun" });
-      g.addZone({
+      const domain=g.addZone({
         kind: "domain", x: cx, y: cy, r: 104, life: 6, side: "p", owner: p.id,
         update: (z, dt) => {
           if (p.core) {
@@ -362,6 +360,8 @@ export function castUlt(g, p, a, target) {
           }
         },
       });
+      g.vfx("holy/holy-pillar",cx,cy,{palette:pal,speed2:1.5,follow:domain,life:6});
+      g.vfx("arcane/rune-circle",cx,cy+6,{palette:pal,layer:"back",life:6,follow:domain,dy:6});
       break;
     }
     case "doubao": {

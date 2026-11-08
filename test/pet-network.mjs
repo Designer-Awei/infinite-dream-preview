@@ -47,12 +47,21 @@ try{
   // Damaged and destroyed walls are authoritative state, not only transient events.
   const wall=await host.evaluate(`(()=>{const g=a.game,p=g.player(1);p.mounted=true;p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=0;p.input.aim=0;g.enemies=[];const i=8*g.map.W+14;g.map.t[i]=1;g.damageWall(i,22,p);return i})()`);
   await client.evaluate(`a.game.map.t[${wall}]=1`);await client.wait(`a.game.map.wallHp?.[${wall}]===38`);
+  const grass=wall+1;await host.evaluate(`a.game.map.t[${grass}]=3`);await client.evaluate(`a.game.map.t[${grass}]=3`);
   await host.evaluate(`(async()=>{const P=await import('./js/pets.js');P.mountedUlt(a.game,a.game.player(1),0,null)})()`);
   await host.wait(`a.game.map.t[${wall}]===0`);await client.wait(`a.game.map.t[${wall}]===0`);
   await client.evaluate(`a.game.map.t[${wall}]=1`);await client.wait(`a.game.map.t[${wall}]===0`);
   assert(await client.evaluate(`a.game.map.brokenWalls.includes(${wall})`),'Full snapshot repairs a missed wall destruction event');
+  await client.wait(`a.game.map.t[${grass}]===0`);await client.evaluate(`a.game.map.t[${grass}]=3`);await client.wait(`a.game.map.t[${grass}]===0`);
+  assert(await client.evaluate(`a.game.map.burnedBushes.includes(${grass})`),'Burned grass persists in full snapshots');
+  await host.evaluate(`(async()=>{const {castUlt}=await import('./js/skills.js'),{toggleMount}=await import('./js/pets.js');const g=a.game,p=g.player(1);p.mountCd=0;toggleMount(g,p);p.cid='claude';p.core=1;g.enemies=[];const e=g.spawnEnemy('slime',p.x+170,p.y+30);e.spawnT=0;e.stunT=999;e.hp=e.maxHp=10000;castUlt(g,p,0,e);})()`);
+  await client.wait(`a.game.zones.some(z=>z.kind==='domain')&&a.game.fx.list.some(f=>f.id==='holy/holy-pillar'&&f.follow?.kind==='domain')`);
+  await sleep(300);
+  const centre=await client.evaluate(`(()=>{a.game.fx.update(.01);const z=a.game.zones.find(z=>z.kind==='domain'),f=a.game.fx.list.find(f=>f.id==='holy/holy-pillar'&&f.follow?.id===z.id);return{bound:f.follow===z,x:f.options.x,y:f.options.y,zx:z.x,zy:z.y}})()`);
+  assert(centre.bound&&Math.hypot(centre.x-centre.zx,centre.y-centre.zy)<.01,'Client pillar follows stable snapshot domain object');
+  await client.shot('coop-claude-domain');
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}
