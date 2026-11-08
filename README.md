@@ -42,7 +42,7 @@
 - 骑乘透明输入直接沿用原 PNG 的 alpha，以最近邻还原像素尺寸；不经会铺白底的 unzoom，也不按白色删除毛发/衣服。循环首尾已从透明原图重建，检查新增轮廓白边，避免首尾帧突然出现白色碎边。
 - 大肥鱼骑乘动作的头顶发丝间隙保持透明，修正部分生成帧误填白色导致的闪烁；邻近白色发饰保留。
 - 分割检查：灵狐原始矩形裁片有邻图小碎块，但实际生成参考已排除，162个游戏帧与已复查图集一致，旧灵狐运行资源不重做；可直接使用的完整轮廓另存于`art/pets/riding-approved/fox/clean-crops`。新火龙/冰凰12张参考逐个校验完整主体像素，不按格线硬切、不按白色抠图。
-- [火龙终极骑乘动画](art/pets/riding-v3/dragon/mounted-preview.png)为本轮运行资源真彩APNG；冰凰art工作区预览属于待验收试片。嘴部发射点随当前显示帧同步。
+- [火龙终极骑乘动画](art/pets/riding-v3/dragon/mounted-preview.png)为本轮运行资源真彩APNG；吉普缇冰凰已采用用户认可的完整翼拍循环，待机、移动及持续施法共用同一相位，避免切换重新改变坐姿；其余五名冰凰骑手保持既有运行像素。嘴部发射点随当前显示帧同步。
 - [原始256帧高清待机](art/pets/approved-v1/idle-original-256.png)保留完整颜色；普通GIF使用128px游戏运行帧。
 - [离线动作检查](art/pets/approved-v1/preview.html) · [待机动图](art/pets/approved-v1/idle-preview.gif) · [九形态](art/pets/approved-v1/evolution-overview.png) · [实现与验收规则](design/PET_SYSTEM_CONCEPT.md)。正式版未同步本轮宠物系统。
 
@@ -130,3 +130,5 @@ Android 预览包使用每次构建自动生成的调试签名，无需配置签
 Android 预览版名称为「无限梦境预览版」，应用 ID 为 `com.designerawei.infinitedream.preview`，可与原版同时安装，存档独立。APK 版本末位是本仓库的构建次数，不与原仓库构建次数对应。
 
 - 墙体采用用户确认的C方案：浅裂纹、自然旧痕，轻重两档保留原材质与轮廓，五个位置变体减少重复。运行包移除旧的密集墙裂图片，仅保留木箱两级损毁图。
+
+- 吉普缇冰凰：采用用户确认的r6完整翼拍，按像素坐标仅清理第4/5/6/7帧羽毛间186个灰粉残点（第6帧124个），不按白色抠图，白羽高光及首尾原图保持。原始任务与输入不改，图集重新打包移除旧吉普缇帧。[最终动作](art/pets/riding-v3/phoenix/gpt/accepted-flight-preview.png)。

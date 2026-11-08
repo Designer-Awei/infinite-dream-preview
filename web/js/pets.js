@@ -16,7 +16,8 @@ export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];
 function mountAsset(p){return p.mounted&&p.pet?.stage===3?A.mounts?.[p.pet.id]||null:null;}
 function mountedFrame(q,actor){
   let name='idle_e',clock=q.anim,fps=6,held=null;
-  if(q.castT>0&&q.id==='phoenix'&&actor.move_e){name='move_e';}
+  if(q.id==='phoenix'&&actor.shared_flight_cycle){name='idle_e';}
+  else if(q.castT>0&&q.id==='phoenix'&&actor.move_e){name='move_e';}
   else if(q.castT>0&&q.id==='dragon'){
     name=q.moving?(actor.cast_walk?'cast_e':'move_e'):'cast_e';clock=q.moving?(q.walkT||0):q.anim;fps=q.moving?PET_MOTION.walkFps:6;
   }else if(q.castT>0&&actor.cast_e){
