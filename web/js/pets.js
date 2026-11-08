@@ -4,7 +4,7 @@ import { A } from './assets.js';
 import { moveCircle, los, tileAt, BLOCKS_SHOT, WALL } from './map.js';
 import { CHARS, T } from './data.js';
 import { nid } from './util.js';
-import { flyingMount, safeLanding, clearLanding, inFire, fireHalfWidth } from './petcombat.js';
+import { flyingMount, flightLift, safeLanding, clearLanding, inFire, fireHalfWidth } from './petcombat.js';
 export function attachPet(game,p,value){
   const pet=!game.pvp&&validPet(value);if(!pet)return;
   p.pet={...pet,x:p.x,y:p.y,r:8,face:0,anim:0,moving:false,castT:0,castMax:0,attackCd:.5,skillCd:2,auraCd:10,blinkT:0,warpSeq:0,route:[],room:-1};
@@ -17,13 +17,13 @@ export function mountedVisualHeight(p){
   if(!p.mounted||!p.pet)return null;
   const m=mountAsset(p),a=m?.meta.actors[p.cid];if(a)return(m.meta.anchor[1]-a.top)*m.meta.scale;
   const rider=A.riders?.meta,top=rider?.actors[p.cid]?.top??26;
-  return Math.max(30+(rider?.anchor[1]??64)-top,(A.pets?.meta.actors[`${p.pet.id}-3`]?.anchor?.[1]??96)*petScale(p));
+  return flightLift(p)+Math.max(30+(rider?.anchor[1]??64)-top,(A.pets?.meta.actors[`${p.pet.id}-3`]?.anchor?.[1]??96)*petScale(p));
 }
 export function petMuzzle(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
   if(a)return{x:p.pet.x+(a.mouth[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.pet.face)>=0?1:-1),y:p.pet.y+(a.mouth[1]-m.meta.anchor[1])*m.meta.scale};
   const q=p.pet,a0=A.pets?.meta.actors[`${q.id}-${q.stage}`],point=(q.castT>0&&a0?.cast_mouth)||a0?.mouth||[89,60],anchor=a0?.anchor||[64,96],k=petScale(p);
-  return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k};
+  return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k-flightLift(p)};
 }
 export function toggleMount(game,p){
   if(game.pvp||!p.pet||p.pet.stage!==3||p.dead||p.downed||p.mountCd>0)return false;
@@ -122,7 +122,7 @@ export function updatePets(game,dt){
   for(const f of game.petFields){f.t+=dt;f.life-=dt;const p=game.player(f.owner);if(!p?.pet||p.dead||p.downed){f.life=0;continue;}
     if(f.follow){f.x=p.x;f.y=p.y;}
     if(f.kind==='fire'){const m=petMuzzle(p);f.x=m.x;f.y=m.y;if(p.mounted)f.a=p.input.aim==null&&p.target?Math.atan2(p.target.y-p.target.r-m.y,p.target.x-m.x):p.face;f.visibleLength=f.length;
-      for(let d=8;d<f.length;d+=8){const tile=tileAt(game.map,f.x+Math.cos(f.a)*d,f.y+Math.sin(f.a)*d+(p.pet.y-m.y));if(tile===WALL||(!f.ultimate&&BLOCKS_SHOT(tile))){f.visibleLength=d;break;}}
+      if(!f.ultimate)for(let d=8;d<f.length;d+=8){const tile=tileAt(game.map,f.x+Math.cos(f.a)*d,f.y+Math.sin(f.a)*d+(p.pet.y-m.y));if(BLOCKS_SHOT(tile)){f.visibleLength=d;break;}}
     }
     if(!game.host||f.t<f.delay||!['fire','snow'].includes(f.kind))continue;
     f.tick-=dt;if(f.tick>0)continue;f.tick=f.kind==='fire'?.25:.4;
@@ -130,6 +130,12 @@ export function updatePets(game,dt){
       game.hit(e,f.damage,{p,elem:f.kind==='fire'?'dragon':'water',noUltGain:f.ultimate,noReact:true});if(f.kind==='snow'){e.slowT=Math.max(e.slowT||0,.65);e.slowK=.45;if(!e.boss&&f.t%1.6<.5)e.freezeT=Math.max(e.freezeT||0,.35);}}
     const height=p.pet.y-petMuzzle(p).y;
     props(game,p,f.damage,(x,y)=>f.kind==='snow'?Math.hypot(x-f.x,y-f.y)<f.r+12&&(f.ultimate||los(game.map,f.x,f.y,x,y)):inFire(f,x,y-height,12),f.ultimate);
+    if(f.kind==='fire'&&f.ultimate&&p.mounted&&p.pet.id==='dragon'){
+      const m=game.map;
+      for(let ty=Math.max(1,Math.floor((p.y-f.length)/T));ty<=Math.min(m.H-2,Math.ceil((p.y+f.length)/T));ty++)for(let tx=Math.max(1,Math.floor((p.x-f.length)/T));tx<=Math.min(m.W-2,Math.ceil((p.x+f.length)/T));tx++){
+        const i=ty*m.W+tx;if(m.t[i]===WALL&&inFire(f,tx*T+T/2,ty*T+T/2-height,T/2))game.damageWall(i,f.damage,p);
+      }
+    }
   }
   game.petFields=game.petFields.filter(f=>f.life>0);
 }
@@ -145,7 +151,8 @@ export function drawPet(ctx,player,time,ride=false) {
   } else if(q.moving && clips.move_e){clip=clips.move_e;frame=Math.floor(q.anim*(q.id==='phoenix'?6:10));}
   const pos=clip[Math.min(clip.length-1,q.castT>0?frame:frame%Math.max(1,clip.length-1))];
   ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);
-  ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,ride?29:19,ride?9:6,0,0,Math.PI*2);ctx.fill();
+  if(!flyingMount(player)){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,ride?29:19,ride?9:6,0,0,Math.PI*2);ctx.fill();}
+  ctx.translate(0,-flightLift(player));
   const {cw,ch}=assets.meta,anchor=actor.anchor||[cw/2,ch-8];
   ctx.imageSmoothingEnabled=false;ctx.drawImage(assets.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
 }
@@ -165,7 +172,7 @@ export function drawRider(ctx,player,time,back=false) {
   const {cw,ch,anchor}=rider.meta,frames=actor.idle_e,frame=Math.floor(player.animT*(player.moving?7:5))%Math.max(1,frames.length-1),pos=frames[frame];
   const flip=Math.cos(player.face)<0?-1:1,bob=Math.sin(player.animT*(player.moving?7:3))*(player.moving?.8:.35);
   const offset=back?rider.meta.far_offset:[0,0];
-  ctx.save();ctx.translate(Math.round(player.x+(-6+offset[0])*flip),Math.round(player.y-30+offset[1]+bob));ctx.scale(flip,1);ctx.imageSmoothingEnabled=false;
+  ctx.save();ctx.translate(Math.round(player.x+(-6+offset[0])*flip),Math.round(player.y-30+offset[1]+bob-flightLift(player)));ctx.scale(flip,1);ctx.imageSmoothingEnabled=false;
   ctx.drawImage(back?rider.back:rider.image,pos[0],pos[1],cw,ch,-anchor[0],-anchor[1],cw,ch);
   if(!back && player.hurtT>0){ctx.globalAlpha=Math.min(.6,player.hurtT*2);ctx.drawImage(rider.white,pos[0],pos[1],cw,ch,-anchor[0],-anchor[1],cw,ch);}
   ctx.restore();
@@ -181,8 +188,10 @@ export function animateClientPets(game,dt) {
   for(const f of game.petFields||[]){f.t+=dt;f.life-=dt;if(f.follow){const p=game.player(f.owner);if(p){f.x=p.x;f.y=p.y;}}}
   game.petFields=(game.petFields||[]).filter(f=>f.life>0);
 }
-export function drawPetFields(ctx,game,time) {
+export function drawPetFields(ctx,game,time,layer='back') {
   for(const f of game.petFields||[]) {
+    if(layer==='front'&&!f.ultimate)continue;
+    if(layer==='back'&&f.ultimate&&f.kind!=='snow')continue;
     if(f.t<f.delay)continue;
     const fade=Math.min(1,(f.t-f.delay)*8,f.life*4);ctx.save();ctx.globalAlpha=fade;
     if(f.kind==='fire') {
@@ -203,6 +212,28 @@ export function drawPetFields(ctx,game,time) {
       ctx.strokeStyle='#fff4be';ctx.lineWidth=f.kind==='purge'?3:2;ctx.beginPath();
       for(let i=0;i<=64;i++){const a=i*Math.PI/32,rr=r+(i%2?3:-2),x=f.x+Math.cos(a)*rr,y=f.y+Math.sin(a)*rr*.7;(i?ctx.lineTo(x,y):ctx.moveTo(x,y));}ctx.stroke();
       if(f.kind==='zap'){ctx.fillStyle='rgba(255,225,143,.16)';ctx.beginPath();ctx.ellipse(f.x,f.y,f.r,f.r*.7,0,0,Math.PI*2);ctx.fill();}
+    } else if(f.kind==='snow'&&f.ultimate){
+      // A deep frost floor and bright orbiting ice ribbons remain readable over scenery.
+      if(layer==='back'){
+        const frost=ctx.createRadialGradient(f.x,f.y,8,f.x,f.y,f.r);
+        frost.addColorStop(0,'rgba(24,91,174,.48)');frost.addColorStop(.68,'rgba(70,169,229,.3)');frost.addColorStop(1,'rgba(158,236,255,.06)');
+        ctx.fillStyle=frost;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
+        ctx.strokeStyle='rgba(151,232,255,.45)';ctx.lineWidth=2;
+        for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.28+i*.19),time*1.8+i*1.6,time*1.8+i*1.6+2.2);ctx.stroke();}
+      }else{
+        ctx.lineCap='round';
+        for(let i=0;i<7;i++){
+          const a=time*(i%2?2.5:1.9)+i*2.4,r=f.r*(.46+(i%3)*.2),cy=f.y-12-(i%3)*9;
+          ctx.strokeStyle=i%2?'#73d8ff':'#d5f9ff';ctx.globalAlpha=fade*(i%2?.65:.85);ctx.lineWidth=i%2?3:2;
+          ctx.beginPath();ctx.ellipse(f.x,cy,r,r*.68,0,a,a+1.45);ctx.stroke();
+        }
+        ctx.globalAlpha=fade;
+        for(let i=0;i<(game.fx?.lite?30:58);i++){
+          const a=i*2.399+time*(1.4+(i%3)*.25),r=f.r*Math.sqrt((i*37%97)/97),x=f.x+Math.cos(a)*r,y=f.y+Math.sin(a)*r-((time*46+i*11)%46);
+          ctx.fillStyle=i%3?'#a8ecff':'#ffffff';ctx.fillRect(Math.round(x),Math.round(y),2,4);
+          if(i%6===0){ctx.fillRect(Math.round(x)-3,Math.round(y)+1,8,2);ctx.fillRect(Math.round(x),Math.round(y)-2,2,8);}
+        }
+      }
     } else {
       ctx.fillStyle='rgba(96,182,241,.14)';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
       for(let i=0;i<(game.fx?.lite?35:85);i++) {const a=i*2.4+time*(1+i%3*.3),r=Math.sqrt((i*37%97)/97)*f.r,x=Math.round(f.x+Math.cos(a)*r),y=Math.round(f.y+Math.sin(a)*r-((time*32+i*7)%23)+11);ctx.fillStyle=i%3?'#b7f1ff':'#fff';ctx.fillRect(x,y,i%4?2:3,i%4?2:3);}

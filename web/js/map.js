@@ -4,6 +4,7 @@ import { rng } from "./util.js";
 import { applyRoomRules, isCalmTile } from "./roomrules.js";
 
 export const F = 0, WALL = 1, WATER = 2, BUSH = 3, CRATE = 4, BARREL = 5;
+export const CRATE_HP = 30, DRAGON_WALL_HP = CRATE_HP * 2;
 export const SOLID = (t) => t === WALL || t === WATER || t === CRATE || t === BARREL;
 export const BLOCKS_SHOT = (t) => t === WALL || t === CRATE || t === BARREL;
 const LIFT = 14; // block height in px (3/4 view)
@@ -132,7 +133,7 @@ export function generateRoom(kind, seed, themeIdx = 0, gopt = {}) {
     }
     if (reached < open && attempt < 29) continue;
     for (let i = 0; i < W * H; i++) if (!SOLID(m.t[i]) && !seen[i]) m.t[i] = WALL;
-    for (let i = 0; i < W * H; i++) if (m.t[i] === CRATE || m.t[i] === BARREL) m.crates[i] = { hp: m.t[i] === CRATE ? 30 : 12 };
+    for (let i = 0; i < W * H; i++) if (m.t[i] === CRATE || m.t[i] === BARREL) m.crates[i] = { hp: m.t[i] === CRATE ? CRATE_HP : 12 };
     // decals (flowers, pebbles, tufts)
     for (let i = 0; i < W * H * 0.18; i++) {
       const x = r.int(1, W - 2), y = r.int(1, H - 2);

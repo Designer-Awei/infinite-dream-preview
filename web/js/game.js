@@ -1,7 +1,7 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
 import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES } from "./data.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
-import { generateRoom, renderGround, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT } from "./map.js";
+import { generateRoom, renderGround, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
 import { sfx } from "./audio.js";
 import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
@@ -620,6 +620,16 @@ export class Game {
         if (cone && Math.abs(((angTo(x, y, cx, cy) - cone[0] + Math.PI * 3) % TAU) - Math.PI) > cone[1]) continue;
         this.damageTile(i, dmg, p);
       }
+  }
+  /** Only the mounted dragon's ultimate calls this; other attacks keep walls solid. */
+  damageWall(i, dmg, p) {
+    const m=this.map,tx=i%m.W,ty=Math.floor(i/m.W);
+    if(!this.host||this.pvp||!p?.mounted||p.pet?.id!=='dragon'||p.pet.stage!==3||p.dead||p.downed||!(dmg>0)||!Number.isInteger(i)||tx<=0||ty<=0||tx>=m.W-1||ty>=m.H-1||m.t[i]!==WALL)return;
+    const hp=m.wallHp||(m.wallHp={});hp[i]=(hp[i]??DRAGON_WALL_HP)-dmg;
+    if(hp[i]>0)return;
+    delete hp[i];m.t[i]=0;(m.brokenWalls||(m.brokenWalls=[])).push(i);m.groundDirty=true;this.flowT=0;
+    const x=tx*T+T/2,y=ty*T+T/2;this.emit({t:'tile',i,wall:true});
+    this.vfx('spawn/poof',x,y,{palette:['#342b2c','#665054','#a18476','#d2b69c','#f3dbc1','#ffffff'],layer:'back'});this.sound('kill');
   }
   damageTile(i, dmg, p, source = {}) {
     const m = this.map, c = m.crates[i];

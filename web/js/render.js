@@ -1,12 +1,13 @@
 // Draws the world: ground, y-sorted blocks/bushes/characters, pixelfx layers, bullets, overlays.
 import { T, VIEW_W, VIEW_H, CHARS, ELEM, ITEMS, ENEMIES, RS } from "./data.js";
 import { A, silhouette } from "./assets.js";
-import { WALL, WATER, BUSH, CRATE, BARREL, wallSprite, wallMask, crateSprite, bushSprite, drawSpikes, tileAt, THEMES, LIFT } from "./map.js";
+import { WALL, WATER, BUSH, CRATE, BARREL, wallSprite, wallMask, crateSprite, bushSprite, drawSpikes, tileAt, THEMES, LIFT, renderGround, DRAGON_WALL_HP } from "./map.js";
 import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
 import { drawPet, drawRider, drawMountedPet, mountedVisualHeight, drawPetFields } from "./pets.js";
+import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -58,6 +59,7 @@ export class Renderer {
     const sh = game.shake, sx = sh ? (Math.random() - 0.5) * sh : 0, sy = sh ? (Math.random() - 0.5) * sh : 0;
     const cx = Math.round(this.cam.x + sx), cy = Math.round(this.cam.y + sy);
     const m = game.map;
+    if(m.groundDirty){game.ground=renderGround(m);m.groundDirty=false;}
     // ground
     const gx0 = Math.max(0, cx), gy0 = Math.max(0, cy);
     g.drawImage(game.ground, gx0, gy0, Math.min(VIEW_W, m.pxW - gx0), Math.min(VIEW_H, m.pxH - gy0), gx0 - cx, gy0 - cy, Math.min(VIEW_W, m.pxW - gx0), Math.min(VIEW_H, m.pxH - gy0));
@@ -101,7 +103,10 @@ export class Renderer {
     // zones on the floor (before the back fx layer)
     for (const z of game.zones) this.drawZone(g, z, game);
     // ground marks: own ring, lock-on reticle, telegraphs
-    for (const p of game.players) if (!p.dead) this.drawRing(g, p, me);
+    for (const p of game.players) if (!p.dead) {
+      if(flyingMount(p)&&!p.downed){g.fillStyle='rgba(15,30,45,.22)';g.beginPath();g.ellipse(p.x,p.y,30,8,0,0,TAU);g.fill();}
+      this.drawRing(g, p, me);
+    }
     if (me && me.target && !me.target.dead && !me.target.downed) this.drawReticle(g, me.target);
     for (const e of game.enemies) this.drawTelegraph(g, e);
 
@@ -121,7 +126,7 @@ export class Renderer {
       else if (t === BUSH) list.push({ y: y * T + T - 2, k: 1, x, ty: y });
       else if (t === CRATE || t === BARREL) list.push({ y: y * T + T, k: 2, x, ty: y, t });
     }
-    for (const p of game.players) if (!p.dead) list.push({ y: p.y, k: 3, o: p });
+    for (const p of game.players) if (!p.dead&&(!flyingMount(p)||p.downed)) list.push({ y: p.y, k: 3, o: p });
     for (const p of game.players) if (p.pet && !p.mounted && !p.dead && !p.downed) list.push({ y: p.pet.y, k: 10, o: p });
     for (const e of game.enemies) if (e.spawnT <= 0.25) list.push({ y: e.y + (e.boss ? 20 : 0), k: 4, o: e });
     for (const q of game.pickups) list.push({ y: q.y, k: 5, o: q });
@@ -132,7 +137,12 @@ export class Renderer {
     list.sort((a, b) => a.y - b.y);
     for (const d of list) {
       switch (d.k) {
-        case 0: g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty)), d.x * T, d.ty * T - LIFT); break;
+        case 0: {
+          const X=d.x*T,Y=d.ty*T-LIFT,hp=m.wallHp?.[d.ty*m.W+d.x];
+          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty)),X,Y);
+          if(hp!=null&&hp<DRAGON_WALL_HP){g.strokeStyle='#4e2924';g.lineWidth=2;g.beginPath();g.moveTo(X+13,Y+4);g.lineTo(X+19,Y+11);g.lineTo(X+14,Y+19);if(hp<DRAGON_WALL_HP/2)g.lineTo(X+22,Y+27);g.stroke();}
+          break;
+        }
         case 1: {
           const X = d.x * T, Y = d.ty * T;
           // players hiding inside: the bush goes see-through near them
@@ -165,11 +175,14 @@ export class Renderer {
         case 10: drawPet(g, d.o, this.t); break;
       }
     }
+    drawPetFields(g,game,this.t,'front');
     // lobbed bullets get a shadow on the ground (drawn already) - lines
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.fx.drawFront(g);
     g.translate(-cx, -cy);
     this.drawLines(g, game);
+    // Flying riders are the last world sprites, above walls, units and combat FX.
+    for(const p of game.players)if(flyingMount(p)&&!p.dead&&!p.downed)this.drawHero(g,p,me,game);
     // overlays
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     for (const p of game.players) this.drawHeroBar(g, p, me, game);

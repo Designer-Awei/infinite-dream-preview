@@ -443,6 +443,7 @@ function snapshot(g) {
     sh: g.shop ? g.shop.map((s) => s.price) : 0,
     bn: g.banner ? [g.banner.text, g.banner.sub, round2(g.banner.t)] : 0,
     cu: g.curiosFound, pf: (g.petFields||[]).map(f=>({...f})),
+    dw:g.map.brokenWalls||[],wh:g.map.wallHp||{},
     sc: g.pvpScore, su: g.spikeUp || 0, cf: Object.keys(g.cardOffers).map(Number), rs: g.runStats,
   };
 }
@@ -463,6 +464,13 @@ function applySnapshot(app, s) {
     g.onUi("room");
   }
   if (!g.map) return;
+  // Full room state makes destroyed walls survive a missed one-shot tile event.
+  g.map.wallHp={...(s.wh||{})};
+  for(const i of s.dw||[]){
+    const x=i%g.map.W,y=Math.floor(i/g.map.W);
+    if(Number.isInteger(i)&&x>0&&y>0&&x<g.map.W-1&&y<g.map.H-1&&g.map.t[i]===1){g.map.t[i]=0;g.map.groundDirty=true;}
+  }
+  g.map.brokenWalls=[...(s.dw||[])];
   g.phase = s.ph;
   g.curiosFound = s.cu || [];
   g.serverTime = s.tm;
@@ -556,7 +564,10 @@ function applySnapshot(app, s) {
       case "snd": if (!ev.n.startsWith("shoot_")) sfx(ev.n); break; // our own shots are predicted locally
       case "txt": g.floaters.push({ x: ev.x, y: ev.y, s: ev.s, color: ev.c, size: ev.z, life: 0.8, max: 0.8, vy: -38 }); break;
       case "ln": g.lines.push({ x0: ev.a[0], y0: ev.a[1], x1: ev.a[2], y1: ev.a[3], color: ev.c, w: ev.w, life: ev.l, max: ev.l, kind: ev.k }); break;
-      case "tile": if (g.map.crates[ev.i]) (g.map.crates[ev.i].dead = true), (g.map.t[ev.i] = 0); break;
+      case "tile":
+        if(ev.wall){if(g.map.t[ev.i]===1){g.map.t[ev.i]=0;g.map.groundDirty=true;}}
+        else if(g.map.crates[ev.i]) (g.map.crates[ev.i].dead = true), (g.map.t[ev.i] = 0);
+        break;
       case "cards": if (ev.pid === me.id) { g.cardOffers[ev.pid] = ev.ids; g.onUi("cards", ev.pid); } break;
       case "over": g.phase = "over"; setTimeout(() => g.onUi("over"), 1200); break;
       case "win": g.onUi("win"); break;

@@ -51,13 +51,14 @@ try{
     results.autoSkillDamage=damage;results.mountAndFollow=true;
     // The pet never counts as a player, a portal occupant, or an enemy collision body.
     const [g,q]=make('dragon');check(g.alivePlayers().length===1 && g.players.length===1,'Companion never changes party size');
-    // Barrier: neither helper AI nor the long breath can damage a target through a wall.
+      // Helper AI keeps line of sight; only mounted dragon ultimate burns through walls.
     const e=g.spawnEnemy('slime',q.x+150,q.y);e.hp=e.maxHp=10000;e.spawnT=0;g.enemies=[e];
     for(let y=0;y<g.map.H;y++)g.map.t[y*g.map.W+12]=1;
     q.pet.skillCd=0;for(let i=0;i<180;i++)P.updatePets(g,1/60);check(e.hp===10000,'Companion does not acquire target through walls');
     q.mountCd=0;P.toggleMount(g,q);q.face=0;castUlt(g,q,0,e);
     for(let i=0;i<90;i++)P.updatePets(g,1/60);
-    check(e.hp===10000 && g.petFields[0].visibleLength<100,'Mounted dragon breath stops visually and physically at walls');
+      check(e.hp<10000 && g.petFields[0].visibleLength===g.petFields[0].length,'Mounted dragon ultimate reaches through walls');
+      for(let y=0;y<g.map.H;y++)g.map.t[y*g.map.W+12]=1;
     q.mountCd=0;P.toggleMount(g,q);q.pet.castT=0;q.pet.x=350;q.pet.y=270;q.pet.route=[];q.x=430;q.y=270;
     for(let i=0;i<50;i++)P.updatePets(g,1/60);check(q.pet.x<384,'Follower collision respects wall before recovery fallback');
     results.wallAndParty=true;

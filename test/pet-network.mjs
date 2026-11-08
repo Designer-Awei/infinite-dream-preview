@@ -44,8 +44,15 @@ try{
   assert.equal(hostPos.hits,5);assert.equal(clientPos.seq,hostPos.seq);assert(Math.hypot(hostPos.x-clientPos.x,hostPos.y-clientPos.y)<3,'Fox blink remains authoritative after client acknowledgement');
   await client.shot('coop-fox-blink');
   await sleep(500);await client.evaluate(`a.me.input.mount=true`);await host.wait('!a.game.player(2).mounted');await client.wait('!a.me.mounted');
+  // Damaged and destroyed walls are authoritative state, not only transient events.
+  const wall=await host.evaluate(`(()=>{const g=a.game,p=g.player(1);p.mounted=true;p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=0;p.input.aim=0;g.enemies=[];const i=8*g.map.W+14;g.map.t[i]=1;g.damageWall(i,22,p);return i})()`);
+  await client.evaluate(`a.game.map.t[${wall}]=1`);await client.wait(`a.game.map.wallHp?.[${wall}]===38`);
+  await host.evaluate(`(async()=>{const P=await import('./js/pets.js');P.mountedUlt(a.game,a.game.player(1),0,null)})()`);
+  await host.wait(`a.game.map.t[${wall}]===0`);await client.wait(`a.game.map.t[${wall}]===0`);
+  await client.evaluate(`a.game.map.t[${wall}]=1`);await client.wait(`a.game.map.t[${wall}]===0`);
+  assert(await client.evaluate(`a.game.map.brokenWalls.includes(${wall})`),'Full snapshot repairs a missed wall destruction event');
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

@@ -1,6 +1,6 @@
 // Companion rules shared by save, UI and the authoritative battle simulation.
 export const PETS = {
-  dragon: { name: "赤焰火龙", color: "#ff9c56", elem: "dragon", passive: "伤害", stat: "dmg", bonus: [.08, .12, .18], attack: "焰弹", skill: "灼热龙息", rideAttack: "爆炎弹", rideUlt: "焚天龙息", desc: "长距离龙息，击碎木箱与火药桶。", trait:"龙息破坏木箱、火药桶，沿用场景掉落。", rideDesc:"拖尾火球 / 持续圆头龙息，扫过前方敌人。", skillCd: 9 },
+  dragon: { name: "赤焰火龙", color: "#ff9c56", elem: "dragon", passive: "伤害", stat: "dmg", bonus: [.08, .12, .18], attack: "焰弹", skill: "灼热龙息", rideAttack: "爆炎弹", rideUlt: "焚天龙息", desc: "骑乘大招穿墙喷射，烧毁场景内墙体。", trait:"骑乘大招可烧毁场景内墙体；墙体耐久为箱子两倍。", rideDesc:"拖尾火球 / 圆头龙息穿墙并破坏墙体，保留房间边界。", skillCd: 9 },
   fox: { name: "霆尾灵狐", color: "#ffe69a", elem: "thunder", passive: "攻速", stat: "rate", bonus: [.08, .12, .18], attack: "雷针", skill: "连锁雷击", rideAttack: "锁敌落雷", rideUlt: "雷影穿梭", desc: "每10秒释放光环，清空敌方弹幕。", trait:"出战每10秒释放雷电光环，清除全图敌方弹幕。", rideDesc:"普攻锁定最近敌人落雷；大招1秒内5次范围穿梭，期间无敌。", skillCd: 8 },
   phoenix: { name: "霜羽冰凰", color: "#9aeaff", elem: "water", passive: "大招蓄力", stat: "ultG", bonus: [.10, .15, .22], attack: "冰羽", skill: "范围暴风雪", rideAttack: "极寒冰锥", rideUlt: "极寒风暴", desc: "骑乘飞行越过障碍，免疫地面危害。", trait:"骑乘无视场景障碍，免疫毒圈、火焰、爆炸与冰面。", rideDesc:"单发冰锥 / 跟随自身的124范围极寒风暴。", skillCd: 10 },
 };
