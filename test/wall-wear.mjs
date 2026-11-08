@@ -23,10 +23,10 @@ try{
    for(let row=0;row<2;row++)for(let col=0;col<4;col++){const mask=(col?1:0)|(col<3?2:0)|(row?4:0)|(row<1?8:0);g.drawImage(wallSprite(theme,mask,stage,null,col+row*3),x+col*64,112+(stage-1)*190+row*64,64,92);}
   }
  }
- ok(A.structureDamage.width===64,'Published atlas has only two current crate tiles');
+ ok(!A.structureDamage,'Removed unused structure atlas');
  for(let stage=1;stage<=2;stage++){
-  const im=new Image();im.src='../art/structures/damage-v1/crate-damage-'+stage+'.png';await im.decode();const expected=document.createElement('canvas');expected.width=32;expected.height=42;expected.getContext('2d').drawImage(im,0,0);ok(expected.toDataURL()===crateSprite('crate',stage===1?.2:.7,A.structureDamage).toDataURL(),'Crate damage pixels preserved');
+  ok(crateSprite('crate').toDataURL()===crateSprite('crate',stage===1?.2:.7).toDataURL(),'Crate remains intact at any health');
  }
- return{count,maxChangedPixels:maxChanged,originalPixels:32*46,unchangedFootprint:true,cratePixelsPreserved:true,preview:c.toDataURL()};})()`);
+ return{count,maxChangedPixels:maxChanged,originalPixels:32*46,unchangedFootprint:true,cratesStayIntact:true,preview:c.toDataURL()};})()`);
  const out='E:/Rouge-Game/context/wall-wear-2026-11-09';await mkdir(out,{recursive:true});await writeFile(out+'/approved-c.png',Buffer.from(r.preview.split(',')[1],'base64'));delete r.preview;assert.deepEqual(b.errors,[]);await writeFile(b.out+'/report.json',JSON.stringify(r,null,2));console.log(JSON.stringify(r));
 }finally{await b.close();}

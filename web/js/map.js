@@ -409,9 +409,8 @@ export function wallMask(m, x, y) {
   return (at(x - 1, y) ? 1 : 0) | (at(x + 1, y) ? 2 : 0) | (at(x, y - 1) ? 4 : 0) | (at(x, y + 1) ? 8 : 0);
 }
 
-export function crateSprite(kind, dmg = 0, art=null) {
-  const stage=kind==='crate'&&art&&dmg>0?(dmg>=.5?2:1):0;
-  const key = "c" + kind + (dmg > 0.5 ? "d" : "")+'_'+stage;
+export function crateSprite(kind) {
+  const key = "c" + kind;
   if (cache.has(key)) return cache.get(key);
   const c = cv(T, T + 10), g = c.getContext("2d");
   if (kind === "crate") {
@@ -423,7 +422,6 @@ export function crateSprite(kind, dmg = 0, art=null) {
     px(g, 4, 25, 24, 2, "#8a5420");
     px(g, 6, 20, 2, 12, "#8a5420"); px(g, 24, 20, 2, 12, "#8a5420");
     px(g, 8, 8, 16, 2, "#b8742e"); px(g, 8, 12, 16, 2, "#b8742e");
-    if(stage){g.clearRect(0,0,T,T+10);g.drawImage(art,(stage-1)*T,0,T,T+10,0,0,T,T+10);}
   } else {
     // barrel: red with hazard band
     px(g, 6, 2, 20, 34, "#2a1010");

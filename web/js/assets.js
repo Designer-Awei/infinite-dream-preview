@@ -100,7 +100,6 @@ export async function loadAll(progress = () => {}) {
   CHAR_ORDER.forEach((id, i) => (A.portraits[id] = ps[i]));
   const [petMeta, petImage] = await Promise.all([json(base + "pets/pets.json"), img(base + "pets/pets.png")]);
   A.pets = { meta: petMeta, image: petImage };
-  A.structureDamage=await img(base+'structure-damage.png');
   await Promise.all(['fox','dragon','phoenix'].map(async id=>{
     const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);
     A.mounts[id]={meta,image};

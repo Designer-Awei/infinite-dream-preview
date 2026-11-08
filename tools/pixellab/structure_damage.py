@@ -30,7 +30,8 @@ def pack():
  # Walls now use the approved code-native wear; publish only the two crate tiles.
  atlas=Image.new('RGBA',(64,48))
  for stage in [1,2]:atlas.paste(Image.open(OUT/('crate-damage-'+str(stage)+'.png')),((stage-1)*32,0))
- atlas.save(OUT/'damage-atlas.png');atlas.save(ROOT/'web/assets/structure-damage.png')
+ # Historical source board only: current runtime uses native wall wear, no crate damage art.
+ atlas.save(OUT/'damage-atlas.png')
  # Separate rows for original, moderate and heavy, readable at 4x.
  board=Image.new('RGBA',(640,640),'#181329')
  for k,name in enumerate(['wall-0','wall-1','wall-2','wall-3','crate']):

@@ -213,7 +213,7 @@ export function updatePets(game,dt){
       f.x=Math.max(T+f.r,Math.min(game.map.pxW-T-f.r,f.x));f.y=Math.max(T+f.r,Math.min(game.map.pxH-T-f.r,f.y));
     }
     if(f.kind==='fire'){const m=petMuzzle(p);f.x=m.x;f.y=m.y;f.height=p.pet.y-m.y;if(p.mounted)f.a=p.input.aim==null&&p.target?Math.atan2(p.target.y-p.target.r-m.y,p.target.x-m.x):p.face;f.visibleLength=f.length;
-      if(!f.ultimate)for(let d=8;d<f.length;d+=8){const tile=tileAt(game.map,f.x+Math.cos(f.a)*d,f.y+Math.sin(f.a)*d+(p.pet.y-m.y));if(BLOCKS_SHOT(tile)){f.visibleLength=d;break;}}
+      if(!f.ultimate&&!f.mountedBreath)for(let d=8;d<f.length;d+=8){const tile=tileAt(game.map,f.x+Math.cos(f.a)*d,f.y+Math.sin(f.a)*d+(p.pet.y-m.y));if(BLOCKS_SHOT(tile)){f.visibleLength=d;break;}}
     }
     if(!game.host||f.life<=0||f.t<f.delay||!['fire','snow','tornado'].includes(f.kind))continue;
     f.tick-=dt;if(f.tick>0)continue;f.tick=f.mountedBreath?DRAGON_BREATH.interval:f.kind==='fire'?.25:DRAGON_TORNADO.interval;
@@ -223,7 +223,7 @@ export function updatePets(game,dt){
     props(game,p,f.damage,(x,y)=>f.kind==='tornado'?Math.hypot(x-f.x,y-f.y)<f.r+12:f.kind==='snow'?Math.hypot(x-f.x,y-f.y)<f.r+12&&(f.ultimate||los(game.map,f.x,f.y,x,y)):inFire(f,x,y-height,12),f.ultimate);
     if((f.kind==='tornado'||f.mountedBreath)&&p.mounted&&p.pet.id==='dragon'){
       const m=game.map;
-      const reach=f.length||f.r+T,cx=f.kind==='tornado'?f.x:p.x,cy=f.kind==='tornado'?f.y:p.y;
+      const reach=f.length||f.r+T,cx=f.x,cy=f.kind==='tornado'?f.y:f.y+height;
       for(let ty=Math.max(1,Math.floor((cy-reach)/T));ty<=Math.min(m.H-2,Math.ceil((cy+reach)/T));ty++)for(let tx=Math.max(1,Math.floor((cx-reach)/T));tx<=Math.min(m.W-2,Math.ceil((cx+reach)/T));tx++){
         const i=ty*m.W+tx,inside=f.kind==='tornado'?Math.hypot(tx*T+T/2-f.x,ty*T+T/2-f.y)<=f.r+T/2:inFire(f,tx*T+T/2,ty*T+T/2-height,T/2);if(inside){if(m.t[i]===WALL)game.damageWall(i,f.damage,p);else if(m.t[i]===BUSH)game.burnBush(i,p);}
       }

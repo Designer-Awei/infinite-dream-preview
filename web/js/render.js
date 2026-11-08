@@ -8,7 +8,7 @@ import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages } from "./pets.js";
 import { DRAGON_BREATH } from './petdata.js';
-import { flyingMount } from './petcombat.js';
+import { flyingMount, fireHalfWidth } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -158,7 +158,7 @@ export class Renderer {
         }
         case 2: {
           const c = m.crates[d.ty * m.W + d.x];
-          const s = crateSprite(d.t === CRATE ? "crate" : "barrel", c ? 1 - c.hp / (d.t === CRATE ? 30 : 12) : 0,A.structureDamage);
+          const s = crateSprite(d.t === CRATE ? "crate" : "barrel");
           g.drawImage(s, d.x * T, d.ty * T - 8);
           if (c && c.flash > 0) {
             g.globalAlpha = 0.6;
@@ -454,20 +454,27 @@ export class Renderer {
   }
   drawAim(g, me) {
     if (!me || me.dead || me.downed) return;
-    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16}) => {
+    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16},breath=false) => {
       g.save();
       g.translate(origin.x, origin.y);
       g.rotate(ang);
       g.globalAlpha = 0.28;
       g.fillStyle = col;
-      g.fillRect(8, -wid / 2, len, wid);
-      g.globalAlpha = 0.7;
-      g.fillRect(8, -wid / 2, len, 1);
-      g.fillRect(8, wid / 2 - 1, len, 1);
+      if(breath){
+        const f={length:len,width:DRAGON_BREATH.width};g.beginPath();g.moveTo(0,0);
+        for(let d=0;d<=len;d+=6)g.lineTo(d,-fireHalfWidth(f,d));
+        for(let d=len;d>=0;d-=6)g.lineTo(d,fireHalfWidth(f,d));
+        g.closePath();g.fill();g.globalAlpha=.7;g.strokeStyle=col;g.lineWidth=1;g.stroke();
+      }else{
+        g.fillRect(8, -wid / 2, len, wid);
+        g.globalAlpha = 0.7;
+        g.fillRect(8, -wid / 2, len, 1);
+        g.fillRect(8, wid / 2 - 1, len, 1);
+      }
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_BREATH.length:c.atk.range * me.st.range, 8, "#ffffff",mountedAttackOrigin(me));
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_BREATH.length:c.atk.range * me.st.range, 8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
     if (input.skillAim != null) show(input.skillAim, 160, 24, "#7fd0ff");
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }

@@ -833,6 +833,20 @@ function vcard(it, o = {}) {
 const ICON = (it, s = 3) => `<img class="pxi" src="${iconURL(it.id, s)}" alt="">`;
 const CAP_COLORS = ["#ffd84a", "#5fb4ff", "#c27bff", "#5dff7a", "#ff7cc8", "#ff8a5a"];
 
+function stashFraction(n) {
+  return n<=10?n/10*.3:n<=20?.3+(n-10)/10*.25:Math.min(1,.55+(n-20)/30*.45);
+}
+function stashBarContent(n, animated=false) {
+  return `<div class="sb-h outline">积攒</div><div class="sb-tube"><i class="sb-fill" style="height:${stashFraction(n)*100}%"></i>
+    <b class="sb-t ur" style="bottom:30%"><em>10</em></b><b class="sb-t hur" style="bottom:55%"><em>20</em></b><b class="sb-t" style="bottom:100%"><em>50</em></b></div><div class="sb-n outline">${animated?`<span class="sp-old">${n}<small>/∞</small></span><span class="sp-next">${n+1}<small>/∞</small></span>`:`${n}<small>/∞</small>`}</div>`;
+}
+function stashPreview(n) {
+  return `<div class="sc sc-stash-preview" style="--stash-before:${stashFraction(n)*100}%;--stash-after:${stashFraction(n+1)*100}%">
+    <div class="sp-side"><div class="sp-caption o1">当前</div><div class="stashbar sp-before" aria-label="当前积攒点 ${n}">${stashBarContent(n)}</div></div>
+    <div class="sp-count o1"><div>${n} → <b>${n+1}</b></div><small>积攒点 +1</small></div>
+    <div class="sp-side"><div class="sp-caption o1">增加后</div><div class="stashbar sp-after" aria-label="积攒点 ${n} 增加至 ${n+1}">${stashBarContent(n,true)}</div></div></div>`;
+}
+
 export function showGacha() {
   clear();
   playMusic("lobby");
@@ -902,9 +916,8 @@ export function showGacha() {
   }
   // 积攒条: always shown; once every SSR is maxed, SSR pulls fill it (ticks at 10 / 20 / 50; past 50 only the number grows)
   {
-    const n = m.stash || 0, f = n <= 10 ? (n / 10) * 0.3 : n <= 20 ? 0.3 + ((n - 10) / 10) * 0.25 : Math.min(1, 0.55 + ((n - 20) / 30) * 0.45);
-    const sb = el("button", "stashbar", `<div class="sb-h outline">积攒</div><div class="sb-tube"><i class="sb-fill" style="height:${f * 100}%"></i>
-      <b class="sb-t ur" style="bottom:30%"><em>10</em></b><b class="sb-t hur" style="bottom:55%"><em>20</em></b><b class="sb-t" style="bottom:100%"><em>50</em></b></div><div class="sb-n outline">${n}<small>/∞</small></div>`);
+    const n = m.stash || 0;
+    const sb = el("button", "stashbar", stashBarContent(n));
     sb.onclick = () => (sfx("click"), showStash());
     s.appendChild(sb);
     s.classList.add("has-stash");
@@ -989,6 +1002,7 @@ export function showExchange(after) {
 /** a little looping stage that demonstrates what the item does */
 function previewScene(it) {
   const m = load();
+  if(it.exchangeStash)return stashPreview(m.stash||0);
   const me = CHARS[m.sel] ? m.sel : "deepseek";
   const mate = me === "gpt" ? "deepseek" : "gpt";
   const hero = (id, cls = "") => `<img class="sc-hero ${cls}" src="assets/hero_${id}.png" alt="">`;
@@ -1013,7 +1027,7 @@ function showItemPreview(it, act) {
   const m = load(), lv = m.talents[it.id] || 0;
   const md = el("div", "modal pv-modal");
   md.innerHTML = `<div class="pvm ${it.r}"><div class="pvm-card rc ${it.r}" style="--c:${RCOL[it.r]}"><div class="rc-front"><div class="rr o1">${it.r}</div><div class="ri">${ICON(it, 4)}</div><div class="rn">${it.name}</div><div class="rd">${it.desc}</div><div class="rl">${it.exchangeStash ? `持有 ${m.stash||0} 点` : lv ? (it.max > 1 ? `已拥有 Lv${lv}/${it.max}` : "已拥有") : "未拥有"}</div></div></div>
-    <div class="pvm-r${it.r === "SSR" ? "" : " plain"}">${it.r === "SSR" ? `<div class="pvm-h outline">效果预览</div>${hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}` : `<div class="pvm-h outline">${it.name}</div><div class="pvm-desc o1">${it.desc}${it.max > 1 ? `<br><small>最高 Lv${it.max}，可叠加</small>` : ""}</div>`}${act?.exchange?"":`<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>`}${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
+    <div class="pvm-r${it.r === "SSR" ? "" : " plain"}">${it.r === "SSR" ? `<div class="pvm-h outline">效果预览</div>${!it.exchangeStash&&hasLiveDemo(it) ? `<div class="sc sc-live"></div>` : previewScene(it)}` : `<div class="pvm-h outline">${it.name}</div><div class="pvm-desc o1">${it.desc}${it.max > 1 ? `<br><small>最高 Lv${it.max}，可叠加</small>` : ""}</div>`}${act?.exchange?"":`<div class="pvm-odds o1">单抽获得概率 <b>${pct(itemRate(it))}</b>${it.r === "SSR" ? ` · ${GACHA.pity} 抽保底必出 SSR` : ""}</div>`}${act ? `<button class="btn ${act.off ? "gray" : ""} pvm-act"><span>${act.label}</span></button>` : ""}<div class="pvm-close o1">点击其他地方关闭</div></div></div>`;
   uiRoot().appendChild(md);
   // live demo: the selected girl actually using the item in a small real fight
   const live = md.querySelector(".sc-live");
