@@ -1,0 +1,10 @@
+{
+  "job": "810cb967-dfff-4c54-a2df-c1e20517459b",
+  "endpoint": "/edit-image-pixen",
+  "source_sha256": "d308d175e4d6872f789e7c4ef57782adfc5fe940f06c13fcbe0ed043a48d5c35",
+  "prompt": "Edit this exact game wood planks block in place. Heavily damaged: large ragged holes and MISSING plank/slab sections, hanging splinters, exposed deep interior, chipped corners and small rubble at base; retain about 55 percent of volume. Same 3/4 top and front perspective, palette, scale, rectangular footprint and pixel grid. Do NOT just draw zigzag lines. No fire, text, shadow or background. Keep all fragments inside original canvas.",
+  "sha256": "4b50bc5b8e49a0969f2879179329185e3125df3fdc7f36afcf4ea27dda731c11",
+  "usage": {
+    "seconds": 21.050093412399292
+  }
+}

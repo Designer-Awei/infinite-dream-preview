@@ -1,0 +1,3 @@
+import {writeFile,mkdir} from 'node:fs/promises';
+import {browserSession} from './browser-session.mjs';
+const b=await browserSession('wall-art-reference');try{const p=await b.page('http://127.0.0.1:8785/web/');await p.wait(`!!document.querySelector('.lb-hero')`);const data=await p.evaluate(`(async()=>{const M=await import('./js/map.js');return [...M.THEMES.map((_,i)=>({name:'wall-'+i,data:M.wallSprite(i,0).toDataURL().split(',')[1]})),{name:'crate',data:M.crateSprite('crate',0).toDataURL().split(',')[1]}]})()`);await mkdir('art/structures/damage-v1',{recursive:true});for(const a of data)await writeFile('art/structures/damage-v1/'+a.name+'-reference.png',Buffer.from(a.data,'base64'));console.log('Saved original wall and crate references');}finally{await b.close();}

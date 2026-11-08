@@ -1,6 +1,6 @@
 // Smoke test the bundled /docs build without importing development modules.
 import assert from 'node:assert/strict';
-import {browserSession} from './browser-session.mjs';
+import {browserSession,sleep} from './browser-session.mjs';
 const b=await browserSession('pet-published');
 try {
  for(const species of ['fox','dragon','phoenix']){
@@ -13,6 +13,7 @@ try {
  await p.wait(`document.querySelector('.pet-ride-btn span')?.textContent==='下骑'`);
  assert(await p.evaluate(`!!document.querySelector('.pet-trial-tag')`));
  await p.shot('bundled-'+species+'-mounted');
+ await sleep(500); // Respect the existing 0.4s mount toggle cooldown.
  await p.evaluate(`document.querySelector('.pet-ride-btn').click()`);
  await p.wait(`document.querySelector('.pet-ride-btn span')?.textContent==='骑乘'`);
  }

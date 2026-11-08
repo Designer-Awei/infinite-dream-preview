@@ -1,0 +1,10 @@
+{
+  "job": "4a1e6a34-8096-4708-858f-4dfc6d7e27d3",
+  "endpoint": "/edit-image-pixen",
+  "source_sha256": "70ddb082767759afa264a7e7b86bdd647c69a83b699c4684a589d09f86df48d2",
+  "prompt": "Edit this exact game stone slabs block in place. Moderately damaged: several BROKEN pieces, missing corner chips and splintered planks with exposed dark interior and scattered tiny fragments; retain about 80 percent of volume. Same 3/4 top and front perspective, palette, scale, rectangular footprint and pixel grid. Do NOT just draw zigzag lines. No fire, text, shadow or background. Keep all fragments inside original canvas.",
+  "sha256": "2cec13c8e8d691b21a50ebf39f82065dbd633fae3c804ba2855b25855613ada2",
+  "usage": {
+    "seconds": 17.63530921936035
+  }
+}

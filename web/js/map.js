@@ -371,8 +371,9 @@ export function drawSpikes(g, X, Y, up) {
 }
 
 /** A wall block sprite for a neighbor mask. Returns canvas T x (T+LIFT), drawn at (X, Y - LIFT). */
-export function wallSprite(theme, mask) {
-  const key = "w" + theme + "_" + mask;
+export function wallSprite(theme, mask, damage=0, art=null) {
+  damage=art?damage:0;
+  const key = "w" + theme + "_" + mask+'_'+damage;
   if (cache.has(key)) return cache.get(key);
   const th = THEMES[theme], c = cv(T, T + LIFT), g = c.getContext("2d");
   const L = mask & 1, Rr = mask & 2, U = mask & 4, D = mask & 8; // neighbors that are walls
@@ -391,6 +392,13 @@ export function wallSprite(theme, mask) {
     px(g, 0, T, T, LIFT, th.top);
     for (let y = T + 4; y < T + LIFT; y += 8) px(g, 0, y, T, 1, th.topHi);
   }
+  // PixelLab damage changes the material itself (missing chips/planks and rubble).
+  // Keep connected-wall fronts and open-side outlines consistent with the room mask.
+  if(damage){
+    const sx=(theme*2+damage-1)*T;
+    g.clearRect(2,2,T-4,T-2);g.drawImage(art,sx+2,2,T-4,T-2,2,2,T-4,T-2);
+    if(!D){g.clearRect(2,T,T-4,LIFT-2);g.drawImage(art,sx+2,T,T-4,LIFT-2,2,T,T-4,LIFT-2);}
+  }
   // outlines on open sides
   g.fillStyle = th.ink;
   if (!U) g.fillRect(0, 0, T, 2);
@@ -406,8 +414,9 @@ export function wallMask(m, x, y) {
   return (at(x - 1, y) ? 1 : 0) | (at(x + 1, y) ? 2 : 0) | (at(x, y - 1) ? 4 : 0) | (at(x, y + 1) ? 8 : 0);
 }
 
-export function crateSprite(kind, dmg = 0) {
-  const key = "c" + kind + (dmg > 0.5 ? "d" : "");
+export function crateSprite(kind, dmg = 0, art=null) {
+  const stage=kind==='crate'&&art&&dmg>0?(dmg>=.5?2:1):0;
+  const key = "c" + kind + (dmg > 0.5 ? "d" : "")+'_'+stage;
   if (cache.has(key)) return cache.get(key);
   const c = cv(T, T + 10), g = c.getContext("2d");
   if (kind === "crate") {
@@ -419,7 +428,7 @@ export function crateSprite(kind, dmg = 0) {
     px(g, 4, 25, 24, 2, "#8a5420");
     px(g, 6, 20, 2, 12, "#8a5420"); px(g, 24, 20, 2, 12, "#8a5420");
     px(g, 8, 8, 16, 2, "#b8742e"); px(g, 8, 12, 16, 2, "#b8742e");
-    if (dmg > 0.5) { px(g, 12, 6, 2, 10, "#2a1a10"); px(g, 14, 20, 2, 8, "#2a1a10"); px(g, 18, 22, 4, 2, "#2a1a10"); }
+    if(stage){g.clearRect(0,0,T,T+10);g.drawImage(art,(8+stage-1)*T,0,T,T+10,0,0,T,T+10);}
   } else {
     // barrel: red with hazard band
     px(g, 6, 2, 20, 34, "#2a1010");

@@ -6,7 +6,7 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawRider, drawMountedPet, mountedHeadHeight, drawPetFields, drawPetAfterimages } from "./pets.js";
+import { drawPet, drawRider, drawMountedPet, mountedHeadHeight, mountedCenter, drawPetFields, drawPetAfterimages } from "./pets.js";
 import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -140,8 +140,8 @@ export class Renderer {
       switch (d.k) {
         case 0: {
           const X=d.x*T,Y=d.ty*T-LIFT,hp=m.wallHp?.[d.ty*m.W+d.x];
-          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty)),X,Y);
-          if(hp!=null&&hp<DRAGON_WALL_HP){g.strokeStyle='#4e2924';g.lineWidth=2;g.beginPath();g.moveTo(X+13,Y+4);g.lineTo(X+19,Y+11);g.lineTo(X+14,Y+19);if(hp<DRAGON_WALL_HP/2)g.lineTo(X+22,Y+27);g.stroke();}
+          const damage=hp!=null&&hp<DRAGON_WALL_HP?(hp<=DRAGON_WALL_HP/2?2:1):0;
+          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty),damage,A.structureDamage),X,Y);
           break;
         }
         case 1: {
@@ -156,7 +156,7 @@ export class Renderer {
         }
         case 2: {
           const c = m.crates[d.ty * m.W + d.x];
-          const s = crateSprite(d.t === CRATE ? "crate" : "barrel", c ? 1 - c.hp / (d.t === CRATE ? 30 : 12) : 0);
+          const s = crateSprite(d.t === CRATE ? "crate" : "barrel", c ? 1 - c.hp / (d.t === CRATE ? 30 : 12) : 0,A.structureDamage);
           g.drawImage(s, d.x * T, d.ty * T - 8);
           if (c && c.flash > 0) {
             g.globalAlpha = 0.6;
@@ -461,7 +461,8 @@ export class Renderer {
     if (!me || me.dead || me.downed) return;
     const show = (ang, len, wid, col) => {
       g.save();
-      g.translate(me.x, me.y - 16);
+      const origin=me.mounted&&me.pet?.id==='dragon'?mountedCenter(me):{x:me.x,y:me.y-16};
+      g.translate(origin.x, origin.y);
       g.rotate(ang);
       g.globalAlpha = 0.28;
       g.fillStyle = col;

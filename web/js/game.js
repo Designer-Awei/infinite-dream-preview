@@ -7,7 +7,7 @@ import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
-import { attachPet, resetPet, updatePets, toggleMount } from "./pets.js";
+import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
 import { flyingMount } from './petcombat.js';
 import { FOX_RIDE_RANGE } from './petdata.js';
 
@@ -632,7 +632,7 @@ export class Game {
     m.t[i]=0;(m.burnedBushes||(m.burnedBushes=[])).push(i);m.groundDirty=true;this.emit({t:'tile',i,bush:true});
     this.vfx('spawn/poof',x*T+T/2,y*T+T/2,{layer:'back',palette:['#291c14','#633727','#a55b30','#d49342','#efc15c','#fff1b1']});
   }
-  /** Only the mounted dragon's ultimate calls this; other attacks keep walls solid. */
+  /** Mounted dragon fireballs and breath can break internal walls; borders stay solid. */
   damageWall(i, dmg, p) {
     const m=this.map,tx=i%m.W,ty=Math.floor(i/m.W);
     if(!this.host||this.pvp||!p?.mounted||p.pet?.id!=='dragon'||p.pet.stage!==3||p.dead||p.downed||!(dmg>0)||!Number.isInteger(i)||tx<=0||ty<=0||tx>=m.W-1||ty>=m.H-1||m.t[i]!==WALL)return;
@@ -855,6 +855,7 @@ export class Game {
         if (this.host && b.side === "p") {
           const ti = Math.floor(gy / T) * m.W + Math.floor(b.x / T);
           if (m.crates[ti]) this.damageTile(ti, b.dmg, this.player(b.owner));
+          else if(t===WALL&&b.kind==='pet_dragon')this.damageWall(ti,b.dmg,this.player(b.owner));
         }
         if (b.side === "p" && b.kind !== "fire") this.fx.spawn("impacts/hit-spark", b.x - b.vx * 0.012, b.y - b.vy * 0.012, { angle: Math.atan2(b.vy, b.vx) + Math.PI, palette: ELEM[b.elem]?.ramp?.slice(1, 8), light: 0.6, opts: { height: 0 } });
       } else if (!gone && b.wave && t === WALL) b.life = Math.min(b.life, 0.05);
@@ -1262,6 +1263,7 @@ export class Game {
       p.moving = false;
       return;
     }
+    releaseEmptyBlink(this,p);
     if(p.pet?.blinkT>0&&p.mounted){p.moving=false;p.atkCd-=dt;p.skillCd-=dt;p.dashCd-=dt;p.castT-=dt;p.input.skill=p.input.ult=p.input.dash=false;return;}
     const flying=flyingMount(p);
     if(flying){p.buff.burn=0;p.buff.poison=0;p.poisonT=p.lavaT=p.burnTick=0;}

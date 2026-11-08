@@ -102,6 +102,7 @@ export async function loadAll(progress = () => {}) {
   A.pets = { meta: petMeta, image: petImage };
   const [riderMeta,riderImage,riderBack]=await Promise.all([json(base+'pets/riders.json'),img(base+'pets/riders-front.png'),img(base+'pets/riders-back.png')]);
   A.riders={meta:riderMeta,image:riderImage,back:riderBack,white:silhouette(riderImage,'#ffffff')};
+  A.structureDamage=await img(base+'structure-damage.png');
   await Promise.all(['fox','dragon','phoenix'].map(async id=>{
     const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);
     A.mounts[id]={meta,image};
