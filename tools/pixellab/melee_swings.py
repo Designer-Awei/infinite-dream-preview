@@ -7,7 +7,7 @@
 # The swings start from the weapon-holding ready pose (a 512 px edit-images-v2 still, brought to 96 px), so the
 # weapon is drawn by the model in every frame; nothing is overlaid in game.
 # Clean-up per frame: colours close to the girl's own palette snap onto it (steady colours between frames), the
-# weapon / light trail keep their drawn colours, floating specks under 4 px go. Idempotent: the melee rows are rebuilt.
+# weapon / light trail keep their drawn colours, floating specks and detached trail bits under 30 px go. Idempotent: the melee rows are rebuilt.
 # Run it again after tools/build_girls.py (which rebuilds the atlas without these rows).
 import json, os, sys
 import numpy as np
@@ -34,7 +34,7 @@ def clean(img, pal_rgb, pal_lab):
     lab, n = ndimage.label(m)
     if n:
         sizes = ndimage.sum(m, lab, range(1, n + 1))
-        m = np.isin(lab, [k + 1 for k, s in enumerate(sizes) if s >= 4])
+        m = np.isin(lab, [k + 1 for k, s in enumerate(sizes) if s >= 30])  # floating specks / detached trail bits go
     px = a[..., :3][m].astype(np.float64)
     L = color.rgb2lab(px[None] / 255)[0]
     d = ((L[:, None, :] - pal_lab[None]) ** 2).sum(-1)
