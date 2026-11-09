@@ -304,11 +304,11 @@ export function updateHud(game, me) {
   });
   // buffs
   const bl = [];
-  for (const k of ["speed", "rage", "star", "infuse", "ultOn", "slow", "burn", "poison"]) if (me.buff[k] > 0) bl.push(k + Math.ceil(me.buff[k]));
+  for (const k of ["speed", "rage", "star", "infuse", "ultOn", "phase", "slow", "burn", "poison"]) if (me.buff[k] > 0) bl.push(k + Math.ceil(me.buff[k]));
   set("buffs", bl.join(","), () => {
     const b = hud.querySelector(".buffs");
     b.innerHTML = "";
-    for (const k of ["speed", "rage", "star", "infuse", "ultOn", "slow", "burn", "poison"]) if (me.buff[k] > 0) {
+    for (const k of ["speed", "rage", "star", "infuse", "ultOn", "phase", "slow", "burn", "poison"]) if (me.buff[k] > 0) {
       const d = el("div", "buff o1", `${k === "infuse" && me.infuseElem ? "灌注·" + ELEM[me.infuseElem].name : STATUS[k].name} ${Math.ceil(me.buff[k])}s`);
       d.style.background = STATUS[k].color;
       b.appendChild(d);

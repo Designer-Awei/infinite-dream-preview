@@ -8,7 +8,7 @@ import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
-import { flyingMount, visualTilesIn } from './petcombat.js';
+import { flyingMount, visualTilesIn, safeLanding } from './petcombat.js';
 import { FOX_RIDE_RANGE, DRAGON_FIREBALL } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
@@ -388,6 +388,7 @@ export class Game {
   // ------------------------------------------------------------ combat
   dmgMul(p) {
     let m = p.st.dmg * cubeDamage(p.cubes,this.endless);
+    if (p.buff.ultOn > 0 && p.cid === "gpt") m *= 1.3; // 白龙觉醒
     if (p.buff.star > 0) m *= 1.3;
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
@@ -695,6 +696,13 @@ export class Game {
       return false;
     }
     n = this.scaleHurt(n, src);
+    // 雷影虚化 halves damage: half-points carry over, so every other 1-point hit is shrugged off
+    if (p.buff.phase > 0) {
+      p.phaseCarry = (p.phaseCarry || 0) + n * 0.5;
+      n = Math.floor(p.phaseCarry);
+      p.phaseCarry -= n;
+      if (n <= 0) { p.invuln = 0.4; this.text(p.x, p.y - 60, "虚化", ELEM.thunder.glow, 0.9); return false; }
+    }
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
     p.invuln = BAL.hurtInvuln;
@@ -1308,6 +1316,7 @@ export class Game {
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) spd *= 1.15; // SSR 混合专家
     if (p.buff.speed > 0) spd *= 1.4;
     if (p.buff.ultOn > 0 && p.cid === "grok") spd *= 1.4;
+    if (p.buff.ultOn > 0 && p.cid === "gpt") spd *= 1.35; // 白龙觉醒
     if (p.buff.inkHaste > 0) spd *= 1.3;
     if (p.buff.slow > 0) spd *= 0.6;
     const onHz = !flying && mudAt(this.map, p.x, p.y);
@@ -1318,7 +1327,11 @@ export class Game {
     const ml = Math.hypot(mx, my);
     if (ml > 1) (mx /= ml), (my /= ml);
     p.moving = ml > 0.1;
-    if ((p.buff.speed > 0 || (p.buff.ultOn > 0 && p.cid === "grok")) && p.moving && Math.random() < 0.35) p.trail = (p.trail || []).concat([{ x: p.x, y: p.y, t: 0.22 }]).slice(-5);
+    // 雷影虚化: walls and crates don't stop her; stepping out of it inside one puts her on the nearest free spot
+    const phasing = p.buff.phase > 0;
+    if (p.wasPhasing && !phasing) { const spot = safeLanding(this.map, p.x, p.y, p.r); if (spot) Object.assign(p, spot); }
+    p.wasPhasing = phasing;
+    if ((p.buff.speed > 0 || phasing || (p.buff.ultOn > 0 && (p.cid === "grok" || p.cid === "gpt"))) && p.moving && Math.random() < 0.35) p.trail = (p.trail || []).concat([{ x: p.x, y: p.y, t: 0.22 }]).slice(-5);
     // online: remote players' positions come from their own client (client-authoritative movement).
     // The host only counts their dash timer down (invulnerability) and never moves them itself,
     // otherwise the dash is applied twice and the client gets yanked back.
@@ -1335,7 +1348,8 @@ export class Game {
       p.ivx = (p.ivx || 0) + (mx * spd - (p.ivx || 0)) * k;
       p.ivy = (p.ivy || 0) + (my * spd - (p.ivy || 0)) * k;
       moveCircle(this.map, p, p.ivx * dt, p.ivy * dt);
-    } else {if(flying)p.ivx=p.ivy=0;moveCircle(this.map, p, mx * spd * dt, my * spd * dt, flying, flying);}
+    } else {if(flying)p.ivx=p.ivy=0;moveCircle(this.map, p, mx * spd * dt, my * spd * dt, flying, flying || phasing);}
+    if (phasing) { const m = this.map; p.x = Math.max(T + p.r, Math.min((m.W - 1) * T - p.r, p.x)); p.y = Math.max(T + p.r, Math.min((m.H - 1) * T - p.r, p.y)); }
     if (remote) p.moving = ml > 0.1;
     if (p.trail) for (const q of p.trail) q.t -= dt;
     if (!this.host && !p.local) return;
@@ -1409,7 +1423,7 @@ export class Game {
       if (p.idleFire > 0.5) p.rampT = 0;
     }
     // skill
-    p.skillCd -= dt;
+    p.skillCd -= dt * (p.buff.ultOn > 0 && p.cid === "gpt" ? 2 : 1); // 白龙觉醒: the skill recovers twice as fast
     if (inp.skill) {
       inp.skill = false;
       if (p.skillCd <= 0) {

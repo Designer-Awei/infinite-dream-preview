@@ -72,20 +72,33 @@ export const CHARS = {
     name: "吉普缇", short: "吉普缇", title: "白龙枪姬", role: "龙枪战士 / 突刺穿透", elem: "dragon", color: "#a98cff",
     hp: 6, shield: 4, speed: 112,
     // melee: a straight spear thrust (reach × half-width) that pierces everything on the line; range = lock-on radius
-    atk: { name: "白龙枪", melee: "thrust", dmg: 9.5, rate: 2.1, reach: 82, width: 15, combo: 3, lunge: 26, spd: 270, range: 170, size: 5, splash: 24, splashDmg: 2.6 },
+    // melee 3-hit combo (a swing within 1 s of the last continues it): 突刺 → 横扫 → 连戳. range = lock-on radius.
+    // shape thrust: reach × half-width line; arc: reach × arc (radians); k: damage × dmg; hits/gap: quick pokes
+    atk: { name: "白龙枪", melee: true, dmg: 9.5, rate: 2.1, lunge: 26, spd: 270, range: 170, size: 5, splash: 24, splashDmg: 2.6, reach: 82,
+      combo: [
+        { name: "突刺", shape: "thrust", reach: 84, width: 14, k: 1 },
+        { name: "横扫", shape: "arc", reach: 72, arc: 2.7, k: 0.9, knock: 140, sweep: 1 },
+        { name: "连戳", shape: "thrust", reach: 80, width: 12, k: 0.6, hits: 3, gap: 0.08, knock: 190 },
+      ] },
     skill: { name: "龙跃突刺", cd: 6, desc: "向前跃刺穿过敌群，沿途伤害并留下灼印，落点爆发龙焰；跃刺中无敌" },
-    ult: { name: "白龙觉醒", need: 230, desc: "获得护盾并击退周围敌人，6秒内枪芒化为穿透龙束，可消耗灼印追加伤害" },
-    passive: "枪尖命中爆发小范围龙焰；每第3枪为重刺",
+    ult: { name: "白龙觉醒", need: 230, desc: "龙怒7秒：移速+35%、伤害+30%、小技能立即刷新且冷却加倍恢复；开启时震退周围敌人" },
+    passive: "三段连击：突刺、横扫、连戳；枪尖命中爆发小范围龙焰",
     lore: "好奇博学，喜欢收集冒险故事，遇到新事物会主动探索。",
   },
   grok: {
     name: "格洛克", short: "格洛克", title: "叛逆剑客", role: "光刃剑客 / 贴身连斩", elem: "thunder", color: "#ffd84a",
     hp: 6, shield: 3, speed: 124,
     // melee: a wide arc slash in front of her (reach × arc radians); range = lock-on radius, lunge = step-in
-    atk: { name: "雷光刃", melee: "arc", dmg: 6.2, rate: 2.9, reach: 60, arc: 2.1, combo: 3, lunge: 24, spd: 360, range: 160, size: 5, ramp: 0.7 },
-    skill: { name: "离轨弹幕", cd: 5, desc: "向移动方向冲刺（短暂无敌），并射出5枚弹射能量弹" },
-    ult: { name: "越界时刻", need: 200, desc: "6秒内移速、攻速大幅提升，每次挥斩飞出穿透光刃剑气" },
-    passive: "连续挥斩攻速逐渐提升，最高+70%；每第3斩为重斩并击退",
+    // melee 3-hit combo (within 1 s): 斜斩 → 回斩 → 回旋斩; arc: reach × arc radians, sweep = swing direction
+    atk: { name: "雷光刃", melee: true, dmg: 6.2, rate: 2.9, lunge: 24, spd: 360, range: 160, size: 5, ramp: 0.7, reach: 60,
+      combo: [
+        { name: "斜斩", shape: "arc", reach: 60, arc: 2.1, k: 1, sweep: 1 },
+        { name: "回斩", shape: "arc", reach: 62, arc: 2.1, k: 1, sweep: -1 },
+        { name: "回旋斩", shape: "arc", reach: 68, arc: 6.3, k: 1.5, knock: 230, sweep: 1 },
+      ] },
+    skill: { name: "雷影虚化", cd: 10, desc: "进入虚化5秒：可穿越障碍物，受到的伤害减半" },
+    ult: { name: "越界时刻", need: 200, desc: "6秒内移速、攻速大幅提升，每次挥斩额外飞出穿透的月牙剑气" },
+    passive: "三段连击：斜斩、回斩、回旋斩；连续挥斩攻速逐渐提升，最高+70%",
     lore: "胆大敏捷，爱吐槽，面对危险时习惯先行动。",
   },
   claude: {
@@ -255,6 +268,7 @@ export const STATUS = {
   star: { name: "无敌", color: "#ffe14a" },
   infuse: { name: "灌注", color: "#ff9cf2" },
   ultOn: { name: "大招", color: "#ffffff" },
+  phase: { name: "虚化", color: "#ffe98a" },
 };
 
 // ---------------------------------------------------------------- skill cards (in-run)

@@ -2111,3 +2111,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .pp .pp-view.demo .pp-arw:disabled { opacity: .2; }
 .pp .pp-short { display: none; }
 @media (max-width: 720px) { .pp .pp-long { display: none; } .pp .pp-short { display: inline; } .pp .pp-btns { gap: 6px; } .pp .pp-btns .pp-own { gap: 6px; } }
+/* 暂停：放弃本局 / 继续 — one clean black ring around the letters (was a stacked 8-way shadow) */
+.pause-modal .pz-act { text-shadow: none; -webkit-text-stroke: 3px #000; paint-order: stroke fill; }
+@media (max-height: 420px) { .pause-modal .pz-act { -webkit-text-stroke: 2.5px #000; } }

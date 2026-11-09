@@ -18,52 +18,62 @@ function baseBullet(g, p, cid, a, o = {}) {
 const atkBullet = (...a) => Object.assign(baseBullet(...a), { atk: true });
 
 /**
- * 近战普攻 (格洛克 光刃 arc slash / 吉普缇 白龙枪 thrust). One swing hits every foe in its shape once, through the
- * normal on-hit path (crits, marks, reactions, passives), cuts crates, and knocks enemy shots out of the air.
- * Every combo-th swing is a heavy one (bigger, harder, knocks back). A foe just beyond reach pulls her a step in.
- * Extra projectiles (multi) widen the arc / thicken the thrust; range talents lengthen it.
+ * 近战普攻 (格洛克 光刃 / 吉普缇 白龙枪): a 3-hit combo — a swing within COMBO_WINDOW of the last one continues it,
+ * otherwise it starts over. Each stage has its own shape (thrust line / arc / full spin) and the third is the finisher.
+ * Every foe in the shape is hit once through the normal on-hit path (crits, marks, reactions, passives); crates are
+ * cut and enemy shots inside the swing are knocked out of the air. A foe just beyond reach pulls her a step in.
+ * Extra projectiles (multi) widen arcs / thicken thrusts; range talents lengthen them.
  */
-function meleeSwing(g, p, a, target, elem, n) {
-  const A = CHARS[p.cid].atk, s = p.st;
+export const COMBO_WINDOW = 1;
+export function meleeShape(p, stage) {
+  const A = CHARS[p.cid].atk, S = A.combo[stage] || A.combo[0], n = 1 + (p.st?.multi || 0);
+  return { ...S, reach: S.reach * Math.min(1.6, p.st?.range || 1), arc: (S.arc || 0) + (S.arc < 6 ? (n - 1) * 0.35 : 0), width: (S.width || 0) + (n - 1) * 5 };
+}
+function meleeSwing(g, p, a, target, elem) {
+  const A = CHARS[p.cid].atk;
+  p.comboStage = g.time - (p.lastSwingT ?? -9) <= COMBO_WINDOW ? ((p.comboStage ?? -1) + 1) % A.combo.length : 0;
+  p.lastSwingT = g.time;
   p.swingSeq = (p.swingSeq || 0) + 1;
   p.swingA = a;
   p.swingAt = g.time;
-  const heavy = A.combo && p.swingSeq % A.combo === 0, K = heavy ? 1.6 : 1;
-  const reach = A.reach * Math.min(1.6, s.range) * (heavy ? 1.18 : 1);
+  const S = meleeShape(p, p.comboStage), last = p.comboStage === A.combo.length - 1;
   // step in toward a target just out of reach (the local player predicts it; the host agrees)
   if (target && !target.dead) {
     const d = dist(p.x, p.y, target.x, target.y) - (target.r || 10);
-    if (d > reach * 0.7 && d < reach + A.lunge * 2.5) {
-      const step = Math.min(A.lunge, d - reach * 0.6), ta = angTo(p.x, p.y, target.x, target.y);
+    if (d > S.reach * 0.7 && d < S.reach + A.lunge * 2.5) {
+      const step = Math.min(A.lunge, d - S.reach * 0.6), ta = angTo(p.x, p.y, target.x, target.y);
       moveCircle(g.map, p, Math.cos(ta) * step, Math.sin(ta) * step);
     }
   }
-  const x0 = p.x, y0 = p.y - 14;
-  const arc = (A.arc || 0) + (n - 1) * 0.35 + (heavy ? 0.4 : 0), half = A.melee === "arc" ? arc / 2 : 0;
-  const width = (A.width || 0) + (n - 1) * 5 + (heavy ? 5 : 0);
+  g.sound(CHARS[p.cid].elem === "thunder" ? "shoot_thunder" : "shoot_dragon", 0.05);
+  if (!g.host) return;
+  const x0 = p.x, y0 = p.y - 14, half = S.shape === "arc" ? S.arc / 2 : 0;
   const inside = (x, y, r) => {
-    if (A.melee === "arc") {
-      if (dist(x0, y0, x, y) > reach + r) return false;
-      return Math.abs(((angTo(x0, y0, x, y) - a + Math.PI * 3) % TAU) - Math.PI) <= half + Math.min(0.5, r / Math.max(12, dist(x0, y0, x, y)));
+    if (S.shape === "arc") {
+      const d = dist(x0, y0, x, y);
+      if (d > S.reach + r) return false;
+      return S.arc >= 6 || Math.abs(((angTo(x0, y0, x, y) - a + Math.PI * 3) % TAU) - Math.PI) <= half + Math.min(0.5, r / Math.max(12, d));
     }
     const dx = x - x0, dy = y - y0, along = dx * Math.cos(a) + dy * Math.sin(a);
-    return along > -r && along < reach + r && Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) < width + r;
+    return along > -r && along < S.reach + r && Math.abs(-dx * Math.sin(a) + dy * Math.cos(a)) < S.width + r;
   };
-  g.sound(A.melee === "arc" ? "shoot_thunder" : "shoot_dragon", 0.05);
-  if (!g.host) return;
-  for (const e of g.enemies) {
-    if (e.dead || e.spawnT > 0 || !inside(e.x, e.y - e.r, e.r)) continue;
-    const hx = e.x, hy = e.y - e.r;
-    const b = { kind: p.cid, elem, dmg: A.dmg * K, x: hx, y: hy, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, splash: A.splash || 0, splashDmg: (A.splashDmg || 0) * K, atk: true, melee: true };
-    onBulletHit(g, b, e, p);
-    g.fx.spawn("impacts/hit-spark", hx, hy, { angle: a + Math.PI, palette: ELEM[elem]?.ramp?.slice(1, 8), light: 0.7, opts: { height: 0 } });
-    if (heavy && !e.dead) g.knock(e, p.x, p.y, A.melee === "arc" ? 230 : 160);
-  }
-  if (g.pvp) for (const o of g.players) if (o !== p && !o.downed && !o.dead && inside(o.x, o.y - 16, 12)) g.hit(o, A.dmg * K, { p, elem });
-  g.hitTilesIn(x0, y0, reach, A.dmg * K * 1.5, p, [a, A.melee === "arc" ? half : 0.3]);
-  // a blade parries: enemy shots inside the swing are cut out of the air
-  g.bullets = g.bullets.filter((q) => q.side !== "e" || !inside(q.x, q.y, q.r || 4));
-  if (heavy) g.shake = Math.max(g.shake || 0, 2);
+  const strike = (final) => {
+    if (p.dead || p.downed) return;
+    for (const e of g.enemies) {
+      if (e.dead || e.spawnT > 0 || !inside(e.x, e.y - e.r, e.r)) continue;
+      const b = { kind: p.cid, elem, dmg: A.dmg * S.k, x: e.x, y: e.y - e.r, vx: Math.cos(a) * 300, vy: Math.sin(a) * 300, splash: A.splash || 0, splashDmg: (A.splashDmg || 0) * S.k, atk: true, melee: true };
+      onBulletHit(g, b, e, p);
+      g.fx.spawn("impacts/hit-spark", e.x, e.y - e.r, { angle: a + Math.PI, palette: ELEM[elem]?.ramp?.slice(1, 8), light: 0.7, opts: { height: 0 } });
+      if (final && S.knock && !e.dead) g.knock(e, p.x, p.y, S.knock);
+    }
+    if (g.pvp) for (const o of g.players) if (o !== p && !o.downed && !o.dead && inside(o.x, o.y - 16, 12)) g.hit(o, A.dmg * S.k, { p, elem });
+    g.hitTilesIn(x0, y0, S.reach, A.dmg * S.k * 1.5, p, S.arc >= 6 ? undefined : [a, S.shape === "arc" ? half : 0.3]);
+    // a blade parries: enemy shots inside the swing are cut out of the air
+    g.bullets = g.bullets.filter((q) => q.side !== "e" || !inside(q.x, q.y, q.r || 4));
+  };
+  const hits = S.hits || 1;
+  for (let i = 0; i < hits; i++) i ? g.after(i * S.gap, () => strike(i === hits - 1)) : strike(hits === 1);
+  if (last) g.shake = Math.max(g.shake || 0, 2);
 }
 
 /** one trigger of the normal attack */
@@ -74,41 +84,15 @@ export function fireAttack(g, p, a, target) {
   let elem = c.elem;
   if (p.buff.infuse > 0 && p.infuseElem && p.atkCount % 2 === 0) elem = p.infuseElem;
   const n = 1 + s.multi, k = n > 1 ? 0.8 : 1;
-  // GPT ult: piercing dragon beam (hitscan)
-  if (p.cid === "gpt" && p.buff.ultOn > 0) {
-    const len = c.atk.range * s.range * 1.1, x0 = p.x, y0 = p.y - MUZZLE;
-    let x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len;
-    // stop at walls
-    for (let d = 8; d < len; d += 8) {
-      const x = x0 + Math.cos(a) * d, y = y0 + Math.sin(a) * d;
-      if (BLOCKS_SHOT(tileAt(g.map, x, y))) {
-        x1 = x;
-        y1 = y;
-        // the beam stops at the first blocking tile: a crate or barrel there takes the hit
-        const ti = Math.floor(y / 32) * g.map.W + Math.floor(x / 32);
-        if (g.host && g.map.crates[ti]) g.damageTile(ti, c.atk.dmg * 1.6 * k, p);
-        break;
-      }
-    }
-    g.line(x0, y0, x1, y1, "#e8dcff", 4, 0.12, "beam");
-    for (const e of g.enemies) {
-      if (e.dead || e.spawnT > 0) continue;
-      if (segDist(e.x, e.y - e.r, x0, y0, x1, y1) < e.r + 6) {
-        let dmg = c.atk.dmg * 1.6 * k;
-        if (e.marks.dragon > g.time) dmg += 6;
-        if (g.host) g.hit(e, dmg, { p, elem });
-      }
-    }
-    g.sound("shoot_dragon", 0.05);
-    return;
-  }
-  if (c.atk.melee) meleeSwing(g, p, a, target, elem, n);
+  if (c.atk.melee) meleeSwing(g, p, a, target, elem);
   else for (let i = 0; i < n; i++) {
     const aa = a + (i - (n - 1) / 2) * 0.13;
     g.bullets.push(atkBullet(g, p, p.cid, aa, { dmgK: k, elem }));
   }
-  // Grok ult: every slash also throws a piercing blade wave (the core makes it a twin wave)
-  if (p.cid === "grok" && p.buff.ultOn > 0) for (const d of p.core ? [-0.12, 0.12] : [0]) g.bullets.push(atkBullet(g, p, "grok", a + d, { dmgK: p.core ? 0.6 : 0.8, pierce: 2 }));
+  // Grok ult: every slash also throws a crescent sword wave that cuts through everything in its path (twin with the core)
+  if (p.cid === "grok" && p.buff.ultOn > 0)
+    for (const d of p.core ? [-0.14, 0.14] : [0])
+      g.bullets.push(g.mkBullet(p, { x: p.x + Math.cos(a + d) * 14, y: p.y - 14 + Math.sin(a + d) * 8, h: 14, a: a + d, spd: 330, dmg: c.atk.dmg * (p.core ? 0.6 : 0.8), elem, kind: "crescent", r: 13, life: 0.62, pierce: 99, from: "grok" }));
   // SSR 模型集成: every 4th attack adds a 3-bullet spread
   if (p.kit && p.kit.eq && p.kit.eq.t_ensemble && p.atkCount % 4 === 0)
     for (const d of [-0.32, 0, 0.32]) g.bullets.push(atkBullet(g, p, p.cid, a + d, { dmgK: 0.4, elem }));
@@ -267,23 +251,12 @@ export function castSkill(g, p, cid, a, target, pw = 1) {
       break;
     }
     case "grok": {
-      let dx = p.input.mx, dy = p.input.my;
-      if (Math.hypot(dx, dy) < 0.1) (dx = Math.cos(a)), (dy = Math.sin(a));
-      const l = Math.hypot(dx, dy);
-      p.dashDx = dx / l;
-      p.dashDy = dy / l;
-      p.dashT = 0.2;
-      p.invuln = Math.max(p.invuln, 0.3);
-      g.after(0.12, () => {
-        const tg = p.target;
-        const aa = tg ? angTo(p.x, p.y - 18, tg.x, tg.y - 10) : a;
-        for (let i = 0; i < 5; i++) {
-          const b = g.mkBullet(p, { x: p.x, y: p.y - 18, h: 18, a: aa + (i - 2) * 0.2, spd: 330, dmg: 5 * pw, elem: "thunder", kind: "grokb", r: 4, life: 0.9, bounce: 3 });
-          g.bullets.push(b);
-        }
-        g.sound("shoot_thunder");
-      });
+      // 雷影虚化: 5 s (3.5 s as a linked skill) of phase — she walks through walls, crates and water, and takes half
+      // damage; when it ends inside an obstacle she steps out to the nearest free spot
+      p.buff.phase = Math.max(p.buff.phase || 0, 5 * Math.min(1, pw + 0.3));
       g.vfx("lightning/zap-hit", p.x, p.y - 16, { palette: pal });
+      g.line(p.x, p.y - 14, p.x, p.y - 14, ELEM.thunder.glow, 22, 0.3, "spark");
+      g.sound("shoot_thunder");
       break;
     }
     case "claude": {
@@ -370,18 +343,20 @@ export function castUlt(g, p, a, target) {
       break;
     }
     case "gpt": {
-      p.buff.ultOn = p.core ? 9 : 6;
-      p.shield = Math.min(p.maxShield + 2, p.shield + 3);
+      // 白龙觉醒 (龙怒): speed, damage and skill cooldown for 7 s (9 with the core); the skill is ready at once; the
+      // dragon's roar knocks the nearest foes back
+      p.buff.ultOn = p.core ? 9 : 7;
+      p.skillCd = Math.min(p.skillCd, 0);
       g.vfx("explosions/plasma-explosion", p.x, p.y - 16, { palette: ELEM.dragon.ramp.slice(1) });
-      g.vfx("holy/divine-shield", p.x, p.y, { palette: pal, follow: p, life: 6 });
-      for (const e of g.enemiesNear(p.x, p.y, p.core ? 130 : 90)) (g.hit(e, 10, { p, elem: "dragon" })), g.knock(e, p.x, p.y, 320);
-      g.hitTilesIn(p.x, p.y, p.core ? 130 : 90, 30, p);
+      for (const e of g.enemiesNear(p.x, p.y, p.core ? 110 : 80)) (g.hit(e, 10, { p, elem: "dragon" })), g.knock(e, p.x, p.y, 300);
+      g.hitTilesIn(p.x, p.y, p.core ? 110 : 80, 30, p);
+      g.shake = Math.max(g.shake || 0, 6);
       break;
     }
     case "grok": {
       p.buff.ultOn = 6;
-      g.vfx("lightning/thunderclap", p.x, p.y, { palette: pal });
-      
+      g.line(p.x + 6, p.y - 140, p.x, p.y - 16, ELEM.thunder.color, 4, 0.3, "bolt", null, 0.05);
+      g.line(p.x, p.y - 14, p.x, p.y - 14, ELEM.thunder.color, 36, 0.32, "spark");
       for (const e of g.enemiesNear(p.x, p.y, 80)) g.hit(e, 8, { p, elem: "thunder" });
       break;
     }

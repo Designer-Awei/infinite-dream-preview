@@ -9,7 +9,7 @@ import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
-const SWING_FPS = 26; // melee swing clips: 8 frames ≈ 0.3 s, started at each swing
+const SWING_FPS = 18; // melee combo clips: each stage's PixelLab frames play once from the swing (the motion is the effect)
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -185,7 +185,6 @@ export class Renderer {
     this.fx.drawFront(g);
     g.translate(-cx, -cy);
     this.drawLines(g, game);
-    this.drawSwings(g, game);
     // Flying riders are the last world sprites, above walls, units and combat FX.
     for(const p of game.players)if(flyingMount(p)&&!p.dead&&!p.downed)this.drawHero(g,p,me,game);
     g.setTransform(RS,0,0,RS,0,0);
@@ -333,7 +332,10 @@ export class Renderer {
     let clip = null, fps = 13, frameAt = null;
     // melee girls play their swing once per swing (from its start), even while running
     const melee = CHARS[p.cid].atk.melee, swingAge = melee && p.swingAt != null ? (this.gameTime ?? 0) - p.swingAt : Infinity;
-    if (!p.downed && melee && CL["atk" + dk] && swingAge >= 0 && swingAge < CL["atk" + dk].length / SWING_FPS) (clip = CL["atk" + dk]), (frameAt = Math.floor(swingAge * SWING_FPS));
+    // melee girls swing in side view only (front / back views just carry the weapon): left or right by her aim
+    const sideK = Math.cos(p.swingA ?? p.face) >= 0 ? "_e" : "_eL";
+    const swingClip = melee ? CL["atk" + ((p.comboStage || 0) + 1) + sideK] || CL["atk" + sideK] : null;
+    if (!p.downed && swingClip && swingAge >= 0 && swingAge < swingClip.length / SWING_FPS) (clip = swingClip), (frameAt = Math.floor(swingAge * SWING_FPS));
     else if (!p.downed) {
       if (p.moving && CL["run" + dk]) (clip = CL["run" + dk]), (fps = p.dashT > 0 ? 24 : 13);
       else if (melee && CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
@@ -380,10 +382,21 @@ export class Renderer {
       return;
     }
     const blink = p.invuln > 0 && p.hurtT < 0.5 && p.invuln < 0.9 && Math.floor(this.t * 20) % 2 === 0 && p.dashT <= 0;
-    g.globalAlpha = inBush ? 0.55 : blink ? 0.45 : 1;
+    const phase = p.buff && p.buff.phase > 0;
+    g.globalAlpha = inBush ? 0.55 : blink ? 0.45 : phase ? 0.5 + 0.1 * Math.sin(this.t * 12) : 1;
     // procedural animation: bob, sway of hair/skirt rows, stepping legs (rows sliced from the hi-res sprite)
     const t = p.animT, mv = p.moving;
     const bob = half(mv ? -Math.abs(Math.sin(t * 9)) * 2 : Math.sin(t * 2.2) * 0.6);
+    if (p.buff && p.buff.ultOn > 0 && p.cid === "gpt") {
+      // 龙怒: a flickering violet flame outline around her whole body, drawn behind her so she stays readable
+      const yy = y0 + (runF ? 0 : bob), fl = 0.55 + 0.25 * Math.sin(this.t * 14), keep = g.globalAlpha;
+      const src = runF || img, c = src.__rage || (src.__rage = silhouette(src, "#9b6cf0"));
+      for (const [dx, dy, al] of [[-2, 0, 0.7], [2, 0, 0.7], [0, 2, 0.6], [0, -2, 0.8], [-1, -4, 0.55], [1, -5, 0.45], [0, -7, 0.3]]) {
+        g.globalAlpha = fl * al;
+        g.drawImage(c, 0, 0, SW, set.h, x0 + dx + (Math.sin(this.t * 23 + dy) > 0.7 ? 1 : 0), yy + dy, W, SH);
+      }
+      g.globalAlpha = keep;
+    }
     const rec = p.recoil ? -Math.cos(p.face) * p.recoil : 0;
     if (runF) {
       // a real run cycle: draw the frame whole (no sliced bob / sway / legs)
@@ -414,7 +427,23 @@ export class Renderer {
       g.globalAlpha = Math.min(1, flashA);
       g.drawImage(p.buff.star > 0 ? silT : silW, x0, y0 + (runF ? 0 : bob), W, SH);
     }
-    if (p.buff && p.buff.ultOn > 0) {
+    if (phase) {
+      // 雷影虚化: a see-through thunder ghost with a flickering electric rim
+      const yy = y0 + (runF ? 0 : bob);
+      g.globalCompositeOperation = "lighter";
+      g.globalAlpha = 0.3 + 0.2 * Math.sin(this.t * 17);
+      g.drawImage(silT, x0 + (Math.sin(this.t * 31) > 0.6 ? 1 : 0), yy, W, SH);
+      g.globalCompositeOperation = "source-over";
+    }
+    if (p.buff && p.buff.ultOn > 0 && p.cid === "gpt") {
+      // 龙怒 (the flame outline is drawn behind her, above): embers rising off her body
+      g.globalCompositeOperation = "lighter";
+      for (let i = 0; i < 10; i++) {
+        const u = (this.t * 1.6 + i * 0.137) % 1, ex = p.x + Math.sin(i * 2.3 + this.t * 3) * 13, ey = p.y - 6 - u * 62;
+        g.globalAlpha = (1 - u) * 0.9; g.fillStyle = i % 3 ? "#c9a8ff" : "#ffffff"; g.fillRect(Math.round(ex), Math.round(ey), i % 2 ? 2 : 3, i % 2 ? 2 : 3);
+      }
+      g.globalCompositeOperation = "source-over";
+    } else if (p.buff && p.buff.ultOn > 0) {
       g.globalAlpha = 0.18 + 0.12 * Math.sin(this.t * 10);
       g.globalCompositeOperation = "lighter";
       g.drawImage(silT, x0, y0 + (runF ? 0 : bob), W, SH);
@@ -475,8 +504,8 @@ export class Renderer {
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
-    if (input.skillAim != null) show(input.skillAim, 160, 24, "#7fd0ff");
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.melee?c.atk.reach*Math.min(1.6,me.st.range):c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
+    if (input.skillAim != null) show(input.skillAim, me.cid === "gpt" ? 115 : 160, 24, "#7fd0ff"); // 龙跃突刺 shows its leap length
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }
 
@@ -916,6 +945,19 @@ export class Renderer {
           for (let i = -4; i <= 4; i++) for (let j = -2; j <= 2; j++) P.dot(x + cs * i - sn * j, y + sn * i + cs * j, H(Math.abs(j) === 2 || Math.abs(i) === 4 ? "#1a1430" : i === 0 ? el.color : "#f0eaff"));
           break;
         }
+        case "crescent": {
+          // 月牙剑气: a crescent bowed forward, thick in the middle, thinning to its horns
+          const cs = Math.cos(ang), sn = Math.sin(ang), R = 15, cxx = x - cs * R * 0.7, cyy = y - sn * R * 0.7;
+          for (let i = -12; i <= 12; i++) {
+            const t = ang + (i / 12) * 1.25, th = Math.round(4 * (1 - Math.abs(i) / 13)) + 1;
+            for (let j = 0; j < th; j++) {
+              const rr = R - j;
+              P.dot(cxx + Math.cos(t) * rr, cyy + Math.sin(t) * rr * 0.85, H(j === 0 ? "#ffffff" : j === 1 ? el.glow : el.color));
+            }
+          }
+          P.glow(x, y, 20, H(el.glow), 0.55);
+          continue;
+        }
         case "grok":
         case "grokb":
           P.line(x - Math.cos(ang) * 6, y - Math.sin(ang) * 6, x, y, H(el.color), 1);
@@ -927,58 +969,6 @@ export class Renderer {
           P.circle(x - 1, y - 1, Math.max(1, r - 2), H("#e8f8ff"), 1);
       }
       P.glow(x, y, r + 7, H(el.glow), 0.5);
-    }
-  }
-  /** melee slashes: 格洛克's crescent of light, 吉普缇's spear thrust; heavy swings are bigger and doubled */
-  drawSwings(g, game) {
-    for (const p of game.players) {
-      const A = CHARS[p.cid]?.atk;
-      if (!A?.melee || p.swingAt == null || p.dead || p.downed || p.mounted) continue;
-      const age = game.time - p.swingAt, life = 0.2;
-      if (age < 0 || age > life) continue;
-      const heavy = A.combo && p.swingSeq % A.combo === 0, a = p.swingA ?? p.face, k = clamp(age / 0.07), fade = 1 - clamp((age - 0.07) / (life - 0.07));
-      const reach = A.reach * Math.min(1.6, p.st?.range || 1) * (heavy ? 1.18 : 1), x0 = p.x, y0 = p.y - 14;
-      const col = ELEM[CHARS[p.cid].elem];
-      g.save();
-      g.lineCap = "round";
-      if (A.melee === "arc") {
-        const half = (A.arc + (heavy ? 0.4 : 0)) / 2, a0 = a - half, a1 = a0 + half * 2 * (1 - (1 - k) ** 2);
-        const band = (r, w, c, al) => {
-          g.strokeStyle = c; g.lineWidth = w; g.globalAlpha = al * fade;
-          g.beginPath();
-          for (let i = 0; i <= 18; i++) { const t = a0 + (a1 - a0) * (i / 18), rr = r * (0.8 + 0.2 * Math.sin((i / 18) * Math.PI)); const x = x0 + Math.cos(t) * rr, y = y0 + Math.sin(t) * rr * 0.78; i ? g.lineTo(x, y) : g.moveTo(x, y); }
-          g.stroke();
-        };
-        // dark rim, then thunder-gold body, then white edge: a crisp crescent on any floor
-        band(reach * 0.8, heavy ? 15 : 11, "#3a2a06", 0.35);
-        g.globalCompositeOperation = "lighter";
-        band(reach * 0.8, heavy ? 12 : 9, col.color, 0.75);
-        band(reach * 0.86, heavy ? 5 : 3.5, "#ffffff", 0.95);
-        if (heavy) band(reach * 0.55, 5, col.glow, 0.6);
-        // the leading tip: a bright spark
-        const tx = x0 + Math.cos(a1) * reach * 0.86, ty = y0 + Math.sin(a1) * reach * 0.86 * 0.78;
-        g.globalAlpha = fade; g.fillStyle = "#ffffff"; g.fillRect(Math.round(tx) - 2, Math.round(ty) - 2, 4, 4);
-      } else {
-        // the thrust shoots out fast, then the streak thins and fades
-        const len = reach * (1 - (1 - k) ** 3), w = (A.width + (heavy ? 5 : 0)) * 0.5, cs = Math.cos(a), sn = Math.sin(a);
-        const x1 = x0 + cs * len, y1 = y0 + sn * len;
-        const streak = (ww, c, al, from = 0.15) => {
-          g.strokeStyle = c; g.lineWidth = ww; g.globalAlpha = al * fade;
-          g.beginPath(); g.moveTo(x0 + cs * len * from, y0 + sn * len * from); g.lineTo(x1, y1); g.stroke();
-        };
-        streak(w + 5, "#24103e", 0.35);
-        g.globalCompositeOperation = "lighter";
-        streak(w + 2, col.color, 0.7, 0.3);
-        streak(Math.max(2, w * 0.45), "#ffffff", 0.95, 0.45);
-        // the spearhead: a white diamond with a lavender flare
-        g.globalAlpha = fade;
-        g.fillStyle = col.glow;
-        g.beginPath(); g.moveTo(x1 + cs * 9, y1 + sn * 9); g.lineTo(x1 - sn * 5, y1 + cs * 5); g.lineTo(x1 - cs * 6, y1 - sn * 6); g.lineTo(x1 + sn * 5, y1 - cs * 5); g.closePath(); g.fill();
-        g.fillStyle = "#ffffff";
-        g.beginPath(); g.moveTo(x1 + cs * 6, y1 + sn * 6); g.lineTo(x1 - sn * 2.5, y1 + cs * 2.5); g.lineTo(x1 - cs * 3, y1 - sn * 3); g.lineTo(x1 + sn * 2.5, y1 - cs * 2.5); g.closePath(); g.fill();
-        if (heavy) { g.globalAlpha = fade * 0.5; g.strokeStyle = col.glow; g.lineWidth = 2; g.beginPath(); g.ellipse(x1, y1, 10 + k * 8, (10 + k * 8) * 0.7, 0, 0, TAU); g.stroke(); }
-      }
-      g.restore();
     }
   }
   /** a forked lightning bolt: a stable jagged path that re-rolls 20×/s, glow + core, grows over l.grow seconds */
