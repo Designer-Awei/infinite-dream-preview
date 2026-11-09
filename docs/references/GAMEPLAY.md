@@ -43,10 +43,10 @@
 - 冰凰六名骑手已按用户确认的完整翼拍接入；火龙、冰凰已确认的骑乘素材保持原像素。
 - 骑乘透明输入直接沿用原 PNG 的 alpha；灵狐256重制直接取高分辨率原图，不再经过128中间图；不经会铺白底的 unzoom，也不按白色删除毛发/衣服。循环首尾已从透明原图重建，检查新增轮廓白边，避免首尾帧突然出现白色碎边。
 - 大肥鱼骑乘动作的头顶发丝间隙保持透明，修正部分生成帧误填白色导致的闪烁；邻近白色发饰保留。
-- 分割检查：灵狐原始矩形裁片有邻图小碎块，但实际生成参考已排除，162个游戏帧与已复查图集一致，旧灵狐运行资源不重做；可直接使用的完整轮廓另存于`art/pets/riding-approved/fox/clean-crops`。新火龙/冰凰12张参考逐个校验完整主体像素，不按格线硬切、不按白色抠图。
-- [火龙终极骑乘动画](../../art/pets/riding-v3/dragon/mounted-preview.png)为本轮运行资源真彩APNG；六名冰凰骑手均采用同款完整翼拍；另外五名用吉普缇已确认的r6提示词，仅替换各自外观描述后生成，待机、移动及持续施法共用连续相位，吉普缇已确认素材保持原样。嘴部发射点随当前显示帧同步。
-- [六形态原生256待机](../../art/pets/followers-hd-v1/idle-preview.png) · [行走/飞行](../../art/pets/followers-hd-v1/move-preview.png) · [施法](../../art/pets/followers-hd-v1/cast-preview.png)。旧approved-v1动图保留作历史对照，火龙与冰凰当前运行图不再二次缩成128px。
-- [离线动作检查](../../art/pets/approved-v1/preview.html) · [待机动图](../../art/pets/approved-v1/idle-preview.gif) · [九形态](../../art/pets/approved-v1/evolution-overview.png) · [实现与验收规则](PET_SYSTEM_CONCEPT.md)。本轮已获用户确认同步正式版，对应代码为[正式仓5cd5991](https://github.com/Designer-Awei/infinite-dream/commit/5cd5991aa2edba3c06770666c1052050955ad4a3)；后续新改动仍先预览、再按当前确认同步。
+- 分割检查：六角色参考逐个校验完整主体像素，不按格线硬切、不按白色抠图。原始整图在[原图目录索引](../../art/references/catalog.json)，裁片与检查板仅留本地。
+- 六名冰凰骑手均采用同款完整翼拍；另外五名用吉普缇已确认的r6提示词，仅替换各自外观描述后生成，待机、移动及持续施法共用连续相位。火龙采用稳定龙嘴瞄准锚点；灵狐嘴部发射点随当前显示帧与位置同步。
+- 九形态跟随与三家族六角色骑乘的原生256最终素材均在`web/assets/pets/`；不重复上传动图、逐帧板和条带。使用[动画流程与离线导出](PIXELLAB_PET_WORKFLOW.md)查看已确认动作及提示词。
+- [实现与验收规则](PET_SYSTEM_CONCEPT.md)。游戏功能已获用户确认同步正式版，对应代码为[正式仓5cd5991](https://github.com/Designer-Awei/infinite-dream/commit/5cd5991aa2edba3c06770666c1052050955ad4a3)；后续新改动仍先预览、再按当前确认同步。
 
 ## 矿场收益与藏品
 
@@ -115,7 +115,7 @@ GitHub Pages：仓库 Settings → Pages → Deploy from branch → `main` / `do
 
 - `web/js`：游戏代码（`game.js` 模拟、`skills.js` 角色技能、`enemies.js` 敌人与首领、`render.js` 渲染、`net.js` 联机、`mine.js` 梦境矿场、`codex.js` 怪物图鉴与藏品、`ui.js` 界面、`data.js` 全部数值）
 - `web/pixelfx`：[patch-gg/pixelfx](https://github.com/patch-gg/pixelfx)（MIT）特效库
-- `art/`：角色、大厅动画与新怪物的源帧（PixelLab 生成）
+- `art/references/`：去重后的原始参考图；其他`art/`生成过程仅留本地，见[素材规则](../rules/ASSETS.md)
 - `tools/`：角色抠图像素化、角色 / 大厅 / 怪物动画打包、字体裁剪、打包脚本
 - `test/`：Playwright 自动试玩（整局机器人、联机双开、手机触屏、矿场、界面核对、性能）
 - `docs/references/DESIGN.md`：元气骑士玩法拆解、框架选择、数值设计
@@ -133,8 +133,8 @@ Android 预览版名称为「无限梦境预览版」，应用 ID 为 `com.desig
 
 - 墙体损伤改为原图逐渐变暗（最多32%）和降低不透明度（最低60%），按剩余耐久变化，不添加裂纹或磨痕；保留原轮廓连接，木箱保持完整外观。旧墙裂与木箱损毁图不进入运行包。
 
-- 吉普缇冰凰：采用用户确认的r6完整翼拍，按像素坐标仅清理第4/5/6/7帧羽毛间186个灰粉残点（第6帧124个），不按白色抠图，白羽高光及首尾原图保持。原始任务与输入不改，图集重新打包移除旧吉普缇帧。[最终动作](../../art/pets/riding-v3/phoenix/gpt/accepted-flight-preview.png)。
+- 吉普缇冰凰：采用用户确认的r6完整翼拍，按像素坐标仅清理第4/5/6/7帧羽毛间186个灰粉残点（第6帧124个），不按白色抠图，白羽高光及首尾原图保持。原始任务与输入在本地保留；[配方查询与最终动作导出](PIXELLAB_PET_WORKFLOW.md)使用`ride/phoenix/gpt/flight`。
 
-- 冰凰其余五名骑手已更新为吉普缇同款完整翼拍：大肥鱼采用用户指定的第5版，克劳德第2版，格洛克/奶糖包/吉拉姆第1版均已获用户确认。所有角色三种状态共享连续相位，吉普缇原像素不改；新图集3072×1792、78个独立帧格，不保留旧五角色帧。[六角色完整循环](../../art/pets/riding-v3/phoenix/full-flight-preview.png)。
+- 冰凰其余五名骑手已更新为吉普缇同款完整翼拍：大肥鱼采用用户指定的第5版，克劳德第2版，格洛克/奶糖包/吉拉姆第1版均已获用户确认。所有角色三种状态共享连续相位，吉普缇原像素不改；[最终图集](../../web/assets/pets/phoenix-mounted.png)为3072×1792、78个独立帧格。
 
-- 跟随高清资源：[来源与说明](../../art/pets/followers-hd-v1/NOTES.md)。高分辨率底图各形态直接裁切后准备256参考，不经过96/128中间图；运行图集按角色帧尺寸读取，主页/伙伴面板和逐帧嘴部同步适配，旧六形态帧不进入新图集。
+- 跟随高清资源：[来源、提示词与制作流程](PIXELLAB_PET_WORKFLOW.md)。高分辨率底图各形态直接裁切后准备256参考，不经过96/128中间图；运行图集按角色帧尺寸读取，主页/伙伴面板和逐帧嘴部同步适配，旧六形态帧不进入新图集。

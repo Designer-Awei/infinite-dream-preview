@@ -5,3 +5,8 @@ package-lock.json
 /android/
 /out/
 test/--*/
+
+# Only canonical original references belong in Git. Generated working art stays local.
+/art/*
+!/art/references/
+/.cache/

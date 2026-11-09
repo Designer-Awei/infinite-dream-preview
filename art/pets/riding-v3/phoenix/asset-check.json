@@ -1,9 +1,0 @@
-{
-  "species": "phoenix",
-  "frames": 234,
-  "passed": true,
-  "flags": [],
-  "native_resolution": 256,
-  "source_endpoints_exact": true,
-  "provider_frames_original_order": true
-}

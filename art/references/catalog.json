@@ -1,0 +1,432 @@
+{
+  "schema_version": 1,
+  "baseline_commit": "59c47573224d2374d49980cc493470354017cba2",
+  "policy": "One byte-identical canonical copy per original; intermediates remain locally, ignored.",
+  "files": [
+    {
+      "file": "art/references/pets/approved-v1-dragon-evolution.png",
+      "sha256": "db6dd13ea8119e2000c8a6a6f256b71a6063b6856fe561b8a12fc1c945c6e7d3",
+      "bytes": 1009564,
+      "size": [
+        2172,
+        724
+      ],
+      "roles": [
+        "pet evolution original or approved replacement"
+      ],
+      "original_locations": [
+        "art/pets/approved-v1/sources/dragon-evolution.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/approved-v1-fox-evolution.png",
+      "sha256": "0f200981149a541229b116e5170f4c4d3dedb192a490558826c30566437834fb",
+      "bytes": 1139859,
+      "size": [
+        2172,
+        724
+      ],
+      "roles": [
+        "pet evolution original or approved replacement"
+      ],
+      "original_locations": [
+        "art/pets/approved-v1/sources/fox-evolution.png",
+        "art/pets/followers-hd-v1/sources/fox-evolution.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/approved-v1-phoenix-evolution-before-20261109.png",
+      "sha256": "9d2335fbd1246e39bdcb1a4d5af55683ccaef0f63e81c68c7873157d0511dfbf",
+      "bytes": 1355545,
+      "size": [
+        1983,
+        793
+      ],
+      "roles": [
+        "pet evolution original or approved replacement"
+      ],
+      "original_locations": [
+        "art/pets/approved-v1/sources/phoenix-evolution-before-20261109.png",
+        "art/pets/followers-hd-v1/sources/phoenix-evolution-before-adult-replacement.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/approved-v1-phoenix-evolution.png",
+      "sha256": "17a41a6ea87e5d60ef79a88608fdc208b14b5dbbe5f4ab289b9a1e90d9fce066",
+      "bytes": 1574116,
+      "size": [
+        1983,
+        793
+      ],
+      "roles": [
+        "pet evolution original or approved replacement"
+      ],
+      "original_locations": [
+        "art/pets/approved-v1/sources/phoenix-evolution.png",
+        "art/pets/followers-hd-v1/sources/phoenix-evolution.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/followers-hd-v1-dragon-evolution.png",
+      "sha256": "220f606c3d3af1061e876be4b0c6dbaa33d9a7b5454800113ae02385529e9393",
+      "bytes": 1533589,
+      "size": [
+        2172,
+        724
+      ],
+      "roles": [
+        "pet evolution original or approved replacement"
+      ],
+      "original_locations": [
+        "art/pets/followers-hd-v1/sources/dragon-evolution.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/riding-approved-dragon-riders.png",
+      "sha256": "7d870067badad8a5e35a9de366870d92a444c8831edee860ae26999a974e68a7",
+      "bytes": 2496530,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "whole rider+mount source sheet"
+      ],
+      "original_locations": [
+        "art/pets/riding-approved/dragon/source-six.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/riding-approved-fox-riders.png",
+      "sha256": "923e987e3dbef35ebc9ca0d7611b5be2d70192db360262c4968ae5c0f50f242a",
+      "bytes": 2670599,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "whole rider+mount source sheet"
+      ],
+      "original_locations": [
+        "art/pets/riding-approved/fox/source-six.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/riding-approved-phoenix-riders.png",
+      "sha256": "3ab2ab3671015a1bce7f1fddaf742c8d3918dc233a733710aabb956e84a364e8",
+      "bytes": 2098803,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "whole rider+mount source sheet"
+      ],
+      "original_locations": [
+        "art/pets/riding-approved/phoenix/source-six.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/riding-v3-dragon-riders.png",
+      "sha256": "5ccae711e6958e4aa73ca50a896672fc5ad5e2d7aee4bdfdf896655f24c7717c",
+      "bytes": 2233423,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "whole rider+mount source sheet",
+        "approved character design sheet"
+      ],
+      "original_locations": [
+        "art/pets/riding-v3/dragon/source-six.png",
+        "../assets/characters/ai-girls/sheets/ai-girls-fire-dragon-ride-3x2-v15.png"
+      ]
+    },
+    {
+      "file": "art/references/pets/riding-v3-phoenix-riders.png",
+      "sha256": "a02a6c0e0446845bd9454a3e775f7f7446a4161320867a52775caf91c873e515",
+      "bytes": 1684553,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "whole rider+mount source sheet"
+      ],
+      "original_locations": [
+        "art/pets/riding-v3/phoenix/source-six.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/sheets/ai-girls-back-3x2-v1.png",
+      "sha256": "a15afaa73f78fe86a797801507ca5b87053b1788a7e75a6ce32ea13ae574f0e2",
+      "bytes": 2121992,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "approved character design sheet"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/sheets/ai-girls-back-3x2-v1.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/sheets/ai-girls-front-3x2-v1.png",
+      "sha256": "d90f20a8e6f31165ba8e1b1d87e65b9430630b34cf949a2af3c4100929896d15",
+      "bytes": 2198319,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "approved character design sheet"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/sheets/ai-girls-front-3x2-v1.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/sheets/ai-girls-ice-phoenix-ride-grid-v3.png",
+      "sha256": "cbd5b99eb64170d955ac6ebac38b8ea161739e55b8cc51aae2b3690bc8509030",
+      "bytes": 2259963,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "approved character design sheet"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/sheets/ai-girls-ice-phoenix-ride-grid-v3.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/sheets/ai-girls-side-right-3x2-v1.png",
+      "sha256": "277213ca45e0000c35d469b54acdd66af2cd3a2024f185a5d9672a925746a107",
+      "bytes": 2188278,
+      "size": [
+        1536,
+        1024
+      ],
+      "roles": [
+        "approved character design sheet"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/sheets/ai-girls-side-right-3x2-v1.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-1e476670-2a1c-43de-a6c2-505d502f6c15.png",
+      "sha256": "fbd6980791901e6bd278ad95eac099a8e122ee1ec53566c70f1918c0bc535a28",
+      "bytes": 106322,
+      "size": [
+        375,
+        210
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-1e476670-2a1c-43de-a6c2-505d502f6c15.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-4d96414c-a205-4df1-9cb9-b111777cd912.png",
+      "sha256": "90f4a920f627213bc45e9df23e3012d8f9dbab2305e07114d32a7076491f279f",
+      "bytes": 466763,
+      "size": [
+        519,
+        640
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-4d96414c-a205-4df1-9cb9-b111777cd912.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-4ee573af-d674-4307-86cc-1242f359a909.png",
+      "sha256": "d227a7698845c8cee572c7a97f8818946c82866f65be0d15bb521e0c8c6fbe98",
+      "bytes": 63375,
+      "size": [
+        168,
+        300
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-4ee573af-d674-4307-86cc-1242f359a909.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-50f85957-fcc0-4651-b8fb-3261da8990b1.png",
+      "sha256": "602ea385e19a89ad67336fb6f6447f3ca53ccf41d4499e122de11bbf3e9de819",
+      "bytes": 210692,
+      "size": [
+        335,
+        597
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-50f85957-fcc0-4651-b8fb-3261da8990b1.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-7a41c36c-08e7-453c-92d2-797fdeca38f4.png",
+      "sha256": "05d35c6db1ecdf32301a28382af6c4e98f061fc42711355c1a028aeca97fe305",
+      "bytes": 403641,
+      "size": [
+        415,
+        739
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-7a41c36c-08e7-453c-92d2-797fdeca38f4.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-d08e4a15-bc8a-45c2-82da-b096d1b2abdb.png",
+      "sha256": "32ef0c42efb5fa258294d11edfdf5d8c8d630554849d63e72162f73adf89c2a2",
+      "bytes": 257844,
+      "size": [
+        384,
+        512
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-d08e4a15-bc8a-45c2-82da-b096d1b2abdb.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-e20a3b2c-3180-440e-b310-866be5969af7.png",
+      "sha256": "37a054bb745d8b3823e334a53301b22768151019da343da56dddd5bae22234a6",
+      "bytes": 85567,
+      "size": [
+        213,
+        237
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-e20a3b2c-3180-440e-b310-866be5969af7.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/references/codex-clipboard-e8e49db6-bda7-4272-b3b5-6e1c31d62f22.png",
+      "sha256": "e1f0fd15930e51686da2cbb9d919f9cf60953736fd2b011da0ecafc0d92eda5d",
+      "bytes": 230645,
+      "size": [
+        451,
+        475
+      ],
+      "roles": [
+        "original character reference"
+      ],
+      "original_locations": [
+        "../assets/characters/ai-girls/references/codex-clipboard-e8e49db6-bda7-4272-b3b5-6e1c31d62f22.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_claude.png",
+      "sha256": "551c23cb62326999b40cdd17232cb57d3d5d1be0916b1b490f01387b08dd38af",
+      "bytes": 81940,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_claude.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_deepseek.png",
+      "sha256": "5d1f6e52dc1c65f31dd468e003942b2501614033e0968101907611880e2f17fa",
+      "bytes": 85991,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_deepseek.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_doubao.png",
+      "sha256": "97aae178778b07cfbe9961089faea10f3bef223f2fab09e467d355f3e1f5bf62",
+      "bytes": 44043,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_doubao.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_glm.png",
+      "sha256": "21f9563aa5cb2466b9128200af9f7f5bdbe9df48dde179278837fe5d283348a3",
+      "bytes": 87307,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_glm.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_gpt.png",
+      "sha256": "5d5094f94e2ba611eaf7873fc29352d50fa4581dfd33ed58c6775004f72c4fdc",
+      "bytes": 104139,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_gpt.png"
+      ]
+    },
+    {
+      "file": "art/references/characters/lobby/base_grok.png",
+      "sha256": "bb12f94f2aae112477fa22cd44a2a1abbde9609694e41640aab6738a3412d5c6",
+      "bytes": 71961,
+      "size": [
+        256,
+        256
+      ],
+      "roles": [
+        "lobby animation input"
+      ],
+      "original_locations": [
+        "art/lobby/base_grok.png"
+      ]
+    }
+  ]
+}

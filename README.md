@@ -4,6 +4,7 @@
 - [工作日志](worklog.jsonl)：唯一持续维护的变更记录，包含 worker 和完整历史。
 - [玩法与项目说明](docs/references/GAMEPLAY.md) · [设计参考](docs/references/DESIGN.md)
 - [开发与发布规则](docs/rules/WORKFLOW.md) · [日志字段及查询](docs/rules/WORKLOG.md)
+- [素材入库规则](docs/rules/ASSETS.md) · [宠物动画制作流程](docs/references/PIXELLAB_PET_WORKFLOW.md)
 
 Agent 先读 AGENTS.md，按需查询日志，避免整篇载入历史。
 
