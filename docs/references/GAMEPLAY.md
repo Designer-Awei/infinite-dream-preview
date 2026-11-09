@@ -46,7 +46,7 @@
 - 分割检查：灵狐原始矩形裁片有邻图小碎块，但实际生成参考已排除，162个游戏帧与已复查图集一致，旧灵狐运行资源不重做；可直接使用的完整轮廓另存于`art/pets/riding-approved/fox/clean-crops`。新火龙/冰凰12张参考逐个校验完整主体像素，不按格线硬切、不按白色抠图。
 - [火龙终极骑乘动画](../../art/pets/riding-v3/dragon/mounted-preview.png)为本轮运行资源真彩APNG；六名冰凰骑手均采用同款完整翼拍；另外五名用吉普缇已确认的r6提示词，仅替换各自外观描述后生成，待机、移动及持续施法共用连续相位，吉普缇已确认素材保持原样。嘴部发射点随当前显示帧同步。
 - [六形态原生256待机](../../art/pets/followers-hd-v1/idle-preview.png) · [行走/飞行](../../art/pets/followers-hd-v1/move-preview.png) · [施法](../../art/pets/followers-hd-v1/cast-preview.png)。旧approved-v1动图保留作历史对照，火龙与冰凰当前运行图不再二次缩成128px。
-- [离线动作检查](../../art/pets/approved-v1/preview.html) · [待机动图](../../art/pets/approved-v1/idle-preview.gif) · [九形态](../../art/pets/approved-v1/evolution-overview.png) · [实现与验收规则](PET_SYSTEM_CONCEPT.md)。正式版未同步本轮宠物系统。
+- [离线动作检查](../../art/pets/approved-v1/preview.html) · [待机动图](../../art/pets/approved-v1/idle-preview.gif) · [九形态](../../art/pets/approved-v1/evolution-overview.png) · [实现与验收规则](PET_SYSTEM_CONCEPT.md)。本轮已获用户确认同步正式版，对应代码为[正式仓5cd5991](https://github.com/Designer-Awei/infinite-dream/commit/5cd5991aa2edba3c06770666c1052050955ad4a3)；后续新改动仍先预览、再按当前确认同步。
 
 ## 矿场收益与藏品
 
