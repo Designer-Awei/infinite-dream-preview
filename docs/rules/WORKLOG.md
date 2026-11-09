@@ -43,6 +43,26 @@ python tools/worklog.py --all --validate
 
 ## 追加与交接
 
-先提交实际变更，再追加引用真实hash的条目。新执行者显式填写worker和依据，不修改过去的worker来伪造接手历史。修复状态和发布状态分别更新；详细证据单独引用。人工可直接编辑JSONL，保存后运行校验。
+先提交实际变更，再通过写入接口追加引用真实hash的条目。新执行者显式填写worker和依据，不修改过去的worker来伪造接手历史。修复状态和发布状态分别更新；详细证据单独引用。Agent不直接重写JSONL源文件，人工确需手动编辑后也必须运行校验。
+
+## 精确写入接口
+
+Python函数：build_entry(root, fields)、append_entry(root, fields)、get_entry(root, id)、update_entry(root, id, patch, expected_revision=...)。append_entry接受单个对象或对象数组；批量写入整体成功或整体拒绝。worker、module、title、solution、commit_ids由执行者明确提供；编号、北京时间日期、来源、默认状态等机械字段由函数补齐，源commit必须已经存在。
+
+```sh
+python tools/worklog.py --append ../.cache/new-entry.json --dry-run
+python tools/worklog.py --append ../.cache/new-entry.json
+python tools/worklog.py --get 条目编号
+python tools/worklog.py --update 条目编号 --input ../.cache/patch.json --expect-revision 上一步返回的revision --dry-run
+python tools/worklog.py --update 条目编号 --input ../.cache/patch.json --expect-revision 上一步返回的revision
+```
+
+JSON输入也可用“-”从标准输入读取。--repo可指定同级目标仓库，写入不接受--all，避免一次操作误改两仓。
+
+新增时提供worker、module、title、solution、commit_ids这五项即可；建议同时提供problem和validation。更新按唯一id定位，只替换patch指定字段；validation子字段合并保留其他证据。id和repository不能通过更新更换，修正worker必须同时提供worker_basis。
+
+get_entry返回条目及整份日志的revision。更新必须携带这个revision；期间即使只新增了其他条目，也会拒绝旧revision，重新读取后再更新。写入前检查全部字段、commit、来源、替代关系及历史覆盖；项目.cache内的互斥锁防止同时写入，临时文件写完后原子替换。新增保持全部旧行原字节，更新保持其他行原字节。重复编号、无效字段/commit、来源越界或关系循环均拒绝，--dry-run不改日志。
+
+函数只提交数据，不执行git commit或push。仍遵守先实际变更commit、再用函数写日志、再提交日志并推送的顺序；不会自动编造验证或发布成功。
 
 本次迁移覆盖两仓全部可达主线历史。旧MD每个有效变更拆为条目；未覆盖的commit从Git补全，缺少验证的保留not_recorded。历史MD只归档，不维护第二套日志。migration.json记录迁移时的提交边界、覆盖数量及原文哈希。

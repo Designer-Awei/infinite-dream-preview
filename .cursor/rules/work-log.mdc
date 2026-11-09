@@ -4,3 +4,5 @@ alwaysApply: true
 ---
 
 遵守AGENTS.md和docs/rules/WORKFLOW.md。唯一持续维护日志是根目录worklog.jsonl；字段和查询见docs/rules/WORKLOG.md。旧WORK_LOG.md仅归档，不继续维护。每条变更填写worker、日期、问题/方案、真实commit和验证；先提交实际修改，再追加引用已生成hash的条目，纯日志提交不自引用。默认用tools/worklog.py限量检索，写入后--validate。
+
+数据新增走--append，更新走--get取得revision后--update，先--dry-run，不手工重写源文件。写接口只提交数据，git提交/推送仍按已有流程执行。
