@@ -184,7 +184,14 @@ function lightning(game,p,targets,damage,from){
 }
 function skill(game,p,target,angle,ultimate=false){
   const q=p.pet;q.face=angle;const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
-  if(q.id==='dragon')channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length:ultimate?320:180+q.stage*18,width:ultimate?64:25+q.stage*5,damage:ultimate?22:5+q.stage*3},ultimate?3.2:1.6,ultimate);
+  if(q.id==='dragon'){
+    const length=ultimate?320:180+q.stage*18,width=ultimate?64:25+q.stage*5,duration=ultimate?3.2:1.6;
+    // the hit area stays the pixel cone; what you see is pixelfx's living fire-breath (billows, tongues, smoke),
+    // started after the wind-up and sized to the cone
+    channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length,width,damage:ultimate?22:5+q.stage*3,fx:true},duration,ultimate);
+    game.after(.33,()=>{if(q!==p.pet||p.dead||p.downed||!(q.castT>0))return;const n=petMuzzle(p);
+      game.vfx('fire/fire-breath',n.x,n.y,{angle:aim,life:duration,opts:{speed:length*1.5,spread:Math.atan(width/length)*1.3}});});
+  }
   else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:ultimate?18:5+q.stage*3,follow:ultimate},ultimate?5:3.2,ultimate);
   else{q.castT=q.castMax=1.1;game.line(m.x,m.y,m.x+4,m.y-56,'#ffe36a',2,.3,'bolt',null,.08);game.line(m.x,m.y,m.x,m.y,'#ffe36a',10,.3,'spark');game.after(.3,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,10+q.stage*5,petMuzzle(p));});}
 }
@@ -249,8 +256,8 @@ function blink(game,p,dt){
 }
 /** y of a big over-head label (skill names): above the rider or girl and her health bar */
 export function overheadY(p){
-  if(p.mounted&&p.pet)return p.y-(mountedHeadHeight(p)??68)-30;
-  const set=A.girls?.[p.cid];return p.y-(set?(set.foot-(set.top||0))/(set.k||1):60)-30;
+  if(p.mounted&&p.pet)return p.y-(mountedHeadHeight(p)??68)-22;
+  const set=A.girls?.[p.cid];return p.y-(set?(set.foot-(set.top||0))/(set.k||1):60)-22;
 }
 export function updatePets(game,dt){
   if(game.pvp)return;
@@ -331,6 +338,7 @@ export function drawPetFields(ctx,game,time,layer='back') {
     if(layer==='back'&&f.ultimate&&f.kind!=='snow')continue;
     if(f.t<f.delay)continue;
     const fade=Math.min(1,(f.t-f.delay)*8,f.life*4);ctx.save();ctx.globalAlpha=fade;
+    if(f.kind==='fire'&&f.fx)continue; // drawn by the pixelfx breath
     if(f.kind==='fire') {
       const len=f.visibleLength||f.length,cs=Math.cos(f.a),sn=Math.sin(f.a),step=game.fx?.lite?8:5;
       // World-aligned blocks retain the pixel style at every aim angle; hot tongues travel outward.

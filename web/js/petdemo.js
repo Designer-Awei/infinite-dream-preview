@@ -96,7 +96,7 @@ export function mountPetDemo(box, opt) {
     const ctx = view.getContext("2d"), W = view.width, H = view.height;
     const S = scene(), cw = S.ride ? 330 : 250, ch = Math.round((cw * H) / W);
     // fixed camera: the crop is centred on the scene, a little above the ground line so tall sprites fit
-    const cx = center.x + (S.ride ? -8 : 10), cy = center.y + (S.ride ? 18 : -16);
+    const cx = center.x + (S.ride ? -8 : 10), cy = center.y + (S.ride ? 8 : -16);
     rnd.cam.x = Math.round(cx - VIEW_W / 2);
     rnd.cam.y = Math.round(cy - VIEW_H / 2);
     rnd.draw(g, p, 0);

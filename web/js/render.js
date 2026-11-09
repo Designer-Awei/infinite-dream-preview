@@ -9,6 +9,7 @@ import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
+const SWING_FPS = 26; // melee swing clips: 8 frames ≈ 0.3 s, started at each swing
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -184,6 +185,7 @@ export class Renderer {
     this.fx.drawFront(g);
     g.translate(-cx, -cy);
     this.drawLines(g, game);
+    this.drawSwings(g, game);
     // Flying riders are the last world sprites, above walls, units and combat FX.
     for(const p of game.players)if(flyingMount(p)&&!p.dead&&!p.downed)this.drawHero(g,p,me,game);
     g.setTransform(RS,0,0,RS,0,0);
@@ -328,13 +330,17 @@ export class Renderer {
     // place, breathing when idle; the sliced procedural sway is only a fallback for missing clips
     const dk = { front: "_s", back: "_n", side: "_e", sideL: "_eL" }[v], CL = set.clips || {};
     const firing = (p.input && p.input.atk && p.target) || p.castT > 0;
-    let clip = null, fps = 13;
-    if (!p.downed) {
+    let clip = null, fps = 13, frameAt = null;
+    // melee girls play their swing once per swing (from its start), even while running
+    const melee = CHARS[p.cid].atk.melee, swingAge = melee && p.swingAt != null ? (this.gameTime ?? 0) - p.swingAt : Infinity;
+    if (!p.downed && melee && CL["atk" + dk] && swingAge >= 0 && swingAge < CL["atk" + dk].length / SWING_FPS) (clip = CL["atk" + dk]), (frameAt = Math.floor(swingAge * SWING_FPS));
+    else if (!p.downed) {
       if (p.moving && CL["run" + dk]) (clip = CL["run" + dk]), (fps = p.dashT > 0 ? 24 : 13);
+      else if (melee && CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
       else if (firing && CL["atk" + dk]) (clip = CL["atk" + dk]), (fps = 16);
       else if (CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
     }
-    const runF = clip ? clip[Math.floor(p.animT * fps) % clip.length] : null;
+    const runF = clip ? clip[frameAt ?? Math.floor(p.animT * fps) % clip.length] : null;
     const img = runF || set.views[v];
     const wht = (c) => c.__w || (c.__w = silhouette(c, "#ffffff")), tnt = (c) => c.__t || (c.__t = silhouette(c, ELEM[CHARS[p.cid].elem].glow));
     const silW = runF ? wht(runF) : set.white[v], silT = runF ? tnt(runF) : set.tint[v];
@@ -921,6 +927,58 @@ export class Renderer {
           P.circle(x - 1, y - 1, Math.max(1, r - 2), H("#e8f8ff"), 1);
       }
       P.glow(x, y, r + 7, H(el.glow), 0.5);
+    }
+  }
+  /** melee slashes: 格洛克's crescent of light, 吉普缇's spear thrust; heavy swings are bigger and doubled */
+  drawSwings(g, game) {
+    for (const p of game.players) {
+      const A = CHARS[p.cid]?.atk;
+      if (!A?.melee || p.swingAt == null || p.dead || p.downed || p.mounted) continue;
+      const age = game.time - p.swingAt, life = 0.2;
+      if (age < 0 || age > life) continue;
+      const heavy = A.combo && p.swingSeq % A.combo === 0, a = p.swingA ?? p.face, k = clamp(age / 0.07), fade = 1 - clamp((age - 0.07) / (life - 0.07));
+      const reach = A.reach * Math.min(1.6, p.st?.range || 1) * (heavy ? 1.18 : 1), x0 = p.x, y0 = p.y - 14;
+      const col = ELEM[CHARS[p.cid].elem];
+      g.save();
+      g.lineCap = "round";
+      if (A.melee === "arc") {
+        const half = (A.arc + (heavy ? 0.4 : 0)) / 2, a0 = a - half, a1 = a0 + half * 2 * (1 - (1 - k) ** 2);
+        const band = (r, w, c, al) => {
+          g.strokeStyle = c; g.lineWidth = w; g.globalAlpha = al * fade;
+          g.beginPath();
+          for (let i = 0; i <= 18; i++) { const t = a0 + (a1 - a0) * (i / 18), rr = r * (0.8 + 0.2 * Math.sin((i / 18) * Math.PI)); const x = x0 + Math.cos(t) * rr, y = y0 + Math.sin(t) * rr * 0.78; i ? g.lineTo(x, y) : g.moveTo(x, y); }
+          g.stroke();
+        };
+        // dark rim, then thunder-gold body, then white edge: a crisp crescent on any floor
+        band(reach * 0.8, heavy ? 15 : 11, "#3a2a06", 0.35);
+        g.globalCompositeOperation = "lighter";
+        band(reach * 0.8, heavy ? 12 : 9, col.color, 0.75);
+        band(reach * 0.86, heavy ? 5 : 3.5, "#ffffff", 0.95);
+        if (heavy) band(reach * 0.55, 5, col.glow, 0.6);
+        // the leading tip: a bright spark
+        const tx = x0 + Math.cos(a1) * reach * 0.86, ty = y0 + Math.sin(a1) * reach * 0.86 * 0.78;
+        g.globalAlpha = fade; g.fillStyle = "#ffffff"; g.fillRect(Math.round(tx) - 2, Math.round(ty) - 2, 4, 4);
+      } else {
+        // the thrust shoots out fast, then the streak thins and fades
+        const len = reach * (1 - (1 - k) ** 3), w = (A.width + (heavy ? 5 : 0)) * 0.5, cs = Math.cos(a), sn = Math.sin(a);
+        const x1 = x0 + cs * len, y1 = y0 + sn * len;
+        const streak = (ww, c, al, from = 0.15) => {
+          g.strokeStyle = c; g.lineWidth = ww; g.globalAlpha = al * fade;
+          g.beginPath(); g.moveTo(x0 + cs * len * from, y0 + sn * len * from); g.lineTo(x1, y1); g.stroke();
+        };
+        streak(w + 5, "#24103e", 0.35);
+        g.globalCompositeOperation = "lighter";
+        streak(w + 2, col.color, 0.7, 0.3);
+        streak(Math.max(2, w * 0.45), "#ffffff", 0.95, 0.45);
+        // the spearhead: a white diamond with a lavender flare
+        g.globalAlpha = fade;
+        g.fillStyle = col.glow;
+        g.beginPath(); g.moveTo(x1 + cs * 9, y1 + sn * 9); g.lineTo(x1 - sn * 5, y1 + cs * 5); g.lineTo(x1 - cs * 6, y1 - sn * 6); g.lineTo(x1 + sn * 5, y1 - cs * 5); g.closePath(); g.fill();
+        g.fillStyle = "#ffffff";
+        g.beginPath(); g.moveTo(x1 + cs * 6, y1 + sn * 6); g.lineTo(x1 - sn * 2.5, y1 + cs * 2.5); g.lineTo(x1 - cs * 3, y1 - sn * 3); g.lineTo(x1 + sn * 2.5, y1 - cs * 2.5); g.closePath(); g.fill();
+        if (heavy) { g.globalAlpha = fade * 0.5; g.strokeStyle = col.glow; g.lineWidth = 2; g.beginPath(); g.ellipse(x1, y1, 10 + k * 8, (10 + k * 8) * 0.7, 0, 0, TAU); g.stroke(); }
+      }
+      g.restore();
     }
   }
   /** a forked lightning bolt: a stable jagged path that re-rolls 20×/s, glow + core, grows over l.grow seconds */

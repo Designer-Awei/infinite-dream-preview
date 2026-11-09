@@ -647,7 +647,10 @@ export function icon(name) {
 }
 /** data URL at an integer upscale, for <img> in HTML */
 const urls = new Map();
+// PixelLab-drawn 64×64 skill icons (闪避 + every girl's 小技能 / 大招) replace the hand-built ones wherever an <img> shows them
+const PNG_ICONS = new Set(["dash", ...Object.keys(CHARS).flatMap((c) => [c + "_skill", c + "_ult"])]);
 export function iconURL(name, scale = 4) {
+  if (PNG_ICONS.has(name)) return `assets/skills/${name}.png`;
   const k = name + "@" + scale;
   if (urls.has(k)) return urls.get(k);
   const src = icon(name), c = document.createElement("canvas");
