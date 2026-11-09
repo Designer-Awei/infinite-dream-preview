@@ -43,7 +43,15 @@ try{
   const hostPos=await host.evaluate(`(()=>{const p=a.game.player(2);return{x:p.x,y:p.y,seq:p.pet.warpSeq,hits:p.pet.blinkHits}})()`),clientPos=await client.evaluate(`({x:a.me.x,y:a.me.y,seq:a.me.pet.warpSeq})`);
   assert.equal(hostPos.hits,5);assert.equal(clientPos.seq,hostPos.seq);assert(Math.hypot(hostPos.x-clientPos.x,hostPos.y-clientPos.y)<3,'Fox blink remains authoritative after client acknowledgement');
   await client.shot('coop-fox-blink');
-  await sleep(500);await client.evaluate(`a.me.input.mount=true`);await host.wait('!a.game.player(2).mounted');await client.wait('!a.me.mounted');
+  await sleep(500);
+  await host.evaluate(`clearInterval(window.pump)`);await client.evaluate(`clearInterval(window.pump)`);
+  await host.evaluate(`(async()=>{const P=await import('./js/pets.js'),g=a.game,p=g.player(2);g.lines=[];g.events=[];p.pet.blinkT=0;p.pet.blinkHits=0;P.mountedAttack(g,p,0,null);a.net.hostTick(.1)})()`);
+  await client.wait(`a.game.lines.some(l=>l.anchorOwner===2)`);
+  assert(await client.evaluate(`(async()=>{const P=await import('./js/pets.js'),p=a.me,l=a.game.lines.find(l=>l.anchorOwner===2);p.x+=17;p.y+=9;p.pet.x-=40;p.pet.y+=20;const mouth=P.petMuzzle(p),line=P.petLine(a.game,l);return Math.hypot(mouth.x-line.x0,mouth.y-line.y0)<1e-8})()`),'Received fox arc stays attached to the moving client mouth');
+  await host.evaluate(`window.pump=setInterval(()=>{a.game.update(.02);a.net.hostTick(.02)},20)`);await client.evaluate(`window.pump=setInterval(()=>a.net.clientTick(.02),20)`);
+  await host.evaluate(`(async()=>{const {castSkill}=await import('./js/skills.js');castSkill(a.game,a.game.player(2),'gpt',0,null)})()`);
+  await client.wait(`a.me.buff.breath>0`);await client.wait(`!(a.me.buff.breath>0)`);
+  await client.evaluate(`a.me.input.mount=true`);await host.wait('!a.game.player(2).mounted');await client.wait('!a.me.mounted');
   // Damaged and destroyed walls are authoritative state, not only transient events.
   const wall=await host.evaluate(`(()=>{const g=a.game,p=g.player(1);p.mounted=true;p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=0;p.input.aim=0;g.enemies=[];const i=8*g.map.W+14;g.map.t[i]=1;g.damageWall(i,22,p);return i})()`);
   await client.evaluate(`a.game.map.t[${wall}]=1`);await client.wait(`a.game.map.wallHp?.[${wall}]===38`);
@@ -64,7 +72,7 @@ try{
   await client.wait(`a.game.petFields.filter(f=>f.kind==='tornado').length===1`);
   const tornado=await client.evaluate(`(()=>{a.game.fx.syncPetFields(a.game);const f=a.game.petFields.find(f=>f.kind==='tornado'),v=a.game.fx.petFx.get(f.id);return{radius:f.r,damage:f.damage,fx:!!v,height:v?.options.height,width:v?.options.radius};})()`);
   assert(tornado.radius===40&&tornado.damage===36&&tornado.fx&&tornado.height===94&&tornado.width===40,'Actual cooperative snapshot renders one larger homing tornado');
-  const ballWall=await host.evaluate(`(()=>{const g=a.game,p=a.me;g.petFields=[];g.enemies=[];g.bullets=[];g.map.t.fill(0);g.map.crates={};p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=p.pet.face=0;p.input.aim=0;p.input.atk=true;p.atkCd=0;const i=8*g.map.W+14;g.map.t[i]=1;return i})()`);
+  const ballWall=await host.evaluate(`(async()=>{const P=await import('./js/pets.js'),g=a.game,p=a.me;g.petFields=[];g.enemies=[];g.bullets=[];g.map.t.fill(0);g.map.crates={};p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=p.pet.face=0;p.input.aim=0;p.input.atk=true;p.atkCd=0;const mouth=P.mountedAttackOrigin(p),i=Math.floor((mouth.y+14)/32)*g.map.W+14;g.map.t[i]=1;return i})()`);
   await client.evaluate(`a.game.map.t.fill(0);a.game.map.crates={};a.game.map.t[${ballWall}]=1`);
   await client.wait(`a.game.bullets.some(b=>b.kind==='pet_dragon'&&b.big&&b.r===12&&!b.pred)`);
   await client.wait(`a.game.map.wallHp?.[${ballWall}]<60`);
@@ -72,6 +80,6 @@ try{
   await host.evaluate(`a.me.input.atk=false`);
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,largeDragonTornado:tornado,largeFireballAndWallDamageSync:true,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,movingFoxMouthSync:true,breathSlowExpirySync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,largeDragonTornado:tornado,largeFireballAndWallDamageSync:true,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

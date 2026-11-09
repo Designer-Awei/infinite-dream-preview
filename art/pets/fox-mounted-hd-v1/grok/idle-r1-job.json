@@ -1,0 +1,22 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "1baf89a8-6880-4668-b787-5a25d2220794",
+  "reference_sha256": "4aaa9b7cf9d2abdbdcb41983d1281d56322ac917f196f829eff4c38c17e59aa0",
+  "request": {
+    "description": "This exact rider and fox remain together in a living idle LOOP facing right. The fox gently breathes through the chest and belly, shifts weight naturally through bent leg joints, blinks, and its existing tails sway with soft delayed waves. The rider stays seated astride, gently balances and breathes, hair softly follows, hands retain the reins or book exactly. Preserve the exact character, clothes, tail count, anatomy, proportions and NEAR/FAR LEG OCCLUSION. The far leg stays behind the fox body. No dismounting or floating feet. Entire pair remains in place. Empty space stays empty. No symbols, sparks, rings or effects. Return to the same pose. Fine clear native sprite detail, original ivory/gold/plum fur and coloured rider eyes. Transparent empty background, complete silhouette with padding.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9121000
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "2412e9b27a2f0e378b13b77c5dbfc066a291f223396049c4b7f2c53f09477bb0",
+  "sha256": "94fbd6e75e184a8ceb1fdf7ab79c374b7b1e83ea2c6dfaaee2b7f26f022217e5",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=128 plus three visually reviewed external rings; no RGB colour key; exact reference endpoints",
+  "native_component_cleanup": []
+}

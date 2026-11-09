@@ -1,0 +1,22 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "392cbadd-59ec-4795-8fd6-5a319c2c63e4",
+  "reference_sha256": "fac4218d64fb3936f63db0550157b727a4d6fdfaad5ff85bc78ba8c537e94b7f",
+  "request": {
+    "description": "A clear four-legged TROT IN PLACE facing right. Alternate diagonal paw pairs, lift and plant each weight-bearing paw, bend elbows and knees; shoulders and hips rise and fall naturally. Existing tails stream and sway with delayed follow-through, ears remain alert. Fixed screen position, smooth return to the supplied pose. Preserve the exact supplied ivory, gold and dark-plum fox, its face, eyes, fur markings, life stage, body proportions and EXACTLY 3 existing tails. Four paws and natural joints, grounded throughout. Sharp fine fur detail at native resolution. Entire silhouette inside canvas with generous padding, fixed right-facing camera and constant size. Transparent empty background, only the physical creature. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9121610
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "cc53097f91cafe2003c533902e4bf22e8c730584a1e3f12bbb801ce3b033c734",
+  "sha256": "eaf00b14c787d4760e01d75fd7c7da5ac608be1a7d413d7f502fe2efc84fd26c",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=128; no RGB colour key; exact reference endpoints",
+  "native_component_cleanup": []
+}

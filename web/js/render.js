@@ -6,8 +6,8 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages } from "./pets.js";
-import { DRAGON_FIREBALL } from './petdata.js';
+import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
+import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -454,12 +454,13 @@ export class Renderer {
   }
   drawAim(g, me) {
     if (!me || me.dead || me.downed) return;
-    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16}) => {
+    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16},capsule=false) => {
       g.save();
       g.translate(origin.x, origin.y);
       g.rotate(ang);
       g.globalAlpha = 0.28;
       g.fillStyle = col;
+      if(capsule){const r=wid/2;g.beginPath();g.moveTo(0,-r);g.lineTo(len,-r);g.arc(len,0,r,-Math.PI/2,Math.PI/2);g.lineTo(0,r);g.arc(0,0,r,Math.PI/2,Math.PI*1.5);g.closePath();g.fill();g.globalAlpha=.7;g.strokeStyle=col;g.lineWidth=1;g.stroke();g.restore();return;}
       g.fillRect(8, -wid / 2, len, wid);
       g.globalAlpha = 0.7;
       g.fillRect(8, -wid / 2, len, 1);
@@ -467,7 +468,7 @@ export class Renderer {
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me));
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
     if (input.skillAim != null) show(input.skillAim, 160, 24, "#7fd0ff");
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }
@@ -922,7 +923,8 @@ export class Renderer {
     }
   }
   drawLines(g, game) {
-    for (const l of game.lines) {
+    for (const original of game.lines) {
+      const l=petLine(game,original);if(!l)continue;
       const a = clamp(l.life / l.max);
       g.save();
       if (l.kind === "warn") {

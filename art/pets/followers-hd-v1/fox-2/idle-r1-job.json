@@ -1,0 +1,22 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "391111db-2c90-40cb-a978-811a7c19e566",
+  "reference_sha256": "fac4218d64fb3936f63db0550157b727a4d6fdfaad5ff85bc78ba8c537e94b7f",
+  "request": {
+    "description": "A grounded living idle loop. Chest and belly clearly breathe, shoulders and hips gently settle, leg joints flex with a subtle weight shift. Existing tails sway in delayed soft waves, ears twitch and eyes blink. The body and legs participate, not only the tails. Return smoothly to the supplied standing pose. Preserve the exact supplied ivory, gold and dark-plum fox, its face, eyes, fur markings, life stage, body proportions and EXACTLY 3 existing tails. Four paws and natural joints, grounded throughout. Sharp fine fur detail at native resolution. Entire silhouette inside canvas with generous padding, fixed right-facing camera and constant size. Transparent empty background, only the physical creature. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9121600
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "3b79c01a35ce5a9b8d2e51696b34b2c77967ac0f8a2487a4f540cc37a1367347",
+  "sha256": "9800c810a485ddbec94d4669beb21a857ce92a0cb45a5d9f1ae6ad6df531915c",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=128; no RGB colour key; exact reference endpoints",
+  "native_component_cleanup": []
+}

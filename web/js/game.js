@@ -8,7 +8,7 @@ import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
-import { flyingMount } from './petcombat.js';
+import { flyingMount, visualTilesIn } from './petcombat.js';
 import { FOX_RIDE_RANGE, DRAGON_FIREBALL } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
@@ -75,7 +75,7 @@ export class Game {
       coins: 15 * talent("t_start_coin"), cubes: 0,
       downed: false, reviveT: 0, dead: false, revives: kit.eq.t_revive ? 1 : 0, kit, fwCd: 0,
       target: null, input: { mx: 0, my: 0, atk: false, aim: null, skill: false, ult: false, dash: false, castAim: {} },
-      dodgeCrit: 0, sunCd: 0, barrier: 0, breathT: 0, orbs: 0, kills: 0, pvpAcc: 0, respawnT: 0,
+      dodgeCrit: 0, sunCd: 0, barrier: 0, orbs: 0, kills: 0, pvpAcc: 0, respawnT: 0,
     };
     if (!this.pvp) {
       // Accept only known, bounded bonuses; the host applies each player's own kit.
@@ -324,9 +324,9 @@ export class Game {
     this.floaters.push({ x, y, s: String(s), color, size, life, max: life, vy: -38 });
     if (this.mode === "host") this.events.push({ t: "txt", x: Math.round(x), y: Math.round(y), s: String(s), c: color, z: size });
   }
-  line(x0, y0, x1, y1, color, w = 2, life = 0.18, kind = "zap") {
-    this.lines.push({ x0, y0, x1, y1, color, w, life, max: life, kind, seed: Math.random() * 1000 });
-    if (this.mode === "host") this.events.push({ t: "ln", a: [x0, y0, x1, y1].map(Math.round), c: color, w, l: life, k: kind });
+  line(x0, y0, x1, y1, color, w = 2, life = 0.18, kind = "zap", anchorOwner = null) {
+    this.lines.push({ x0, y0, x1, y1, color, w, life, max: life, kind, anchorOwner, seed: Math.random() * 1000 });
+    if (this.mode === "host") this.events.push({ t: "ln", a: [x0, y0, x1, y1].map(Math.round), c: color, w, l: life, k: kind, o:anchorOwner });
   }
   after(t, fn) {
     this.timers.push({ t, fn });
@@ -827,22 +827,28 @@ export class Game {
   }
   dragonFireballImpact(b) {
     if(!this.host)return;
-    const p=this.player(b.owner),r=DRAGON_FIREBALL.splash,m=this.map,gy=b.y+b.h;
+    const p=this.player(b.owner),r=DRAGON_FIREBALL.splash,m=this.map;
     this.vfx('explosions/small-explosion',b.x,b.y+8,{opts:{size:.8},speed2:1.3});
     this.sound('explode',.15);this.shake=Math.max(this.shake,3);
     for(const e of this.enemies){
       if(e.dead||e.spawnT>0||Math.hypot(e.x-b.x,e.y-e.r-b.y)>r+e.r)continue;
       this.hit(e,b.dmg,{p,elem:'dragon',noReact:true});
     }
-    for(let ty=Math.max(0,Math.floor((gy-r)/T));ty<=Math.min(m.H-1,Math.floor((gy+r)/T));ty++)
-      for(let tx=Math.max(0,Math.floor((b.x-r)/T));tx<=Math.min(m.W-1,Math.floor((b.x+r)/T));tx++){
-        const dx=Math.max(tx*T-b.x,0,b.x-(tx+1)*T),dy=Math.max(ty*T-gy,0,gy-(ty+1)*T);
-        if(dx*dx+dy*dy>r*r)continue;
-        const i=ty*m.W+tx;
+    for(const {i} of visualTilesIn(m,b.x,b.y,r,true)){
         if(m.crates[i])this.damageTile(i,b.dmg,p);
         else if(m.t[i]===WALL)this.damageWall(i,b.dmg,p);
         else if(m.t[i]===BUSH)this.burnBush(i,p);
-      }
+    }
+  }
+  stepDragonFireball(b,dt){
+    const elapsed=Math.min(dt,Math.max(0,b.life+dt)),steps=Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy)*elapsed/4));
+    for(let n=0;n<steps;n++){
+      b.x+=b.vx*elapsed/steps;b.y+=b.vy*elapsed/steps;
+      const blocked=visualTilesIn(this.map,b.x,b.y,b.r).length>0;
+      const target=this.enemies.some(e=>!e.dead&&!(e.spawnT>0)&&dist2(b.x,b.y,e.x,e.y-e.r)<=(b.r+e.r)**2);
+      if(blocked||target){if(this.host)this.dragonFireballImpact(b);return true;}
+    }
+    return b.life<=0;
   }
   updateBullets(dt) {
     const m = this.map;
@@ -862,6 +868,7 @@ export class Game {
         }
         continue;
       }
+      if(b.kind==='pet_dragon'&&b.big){if(this.stepDragonFireball(b,dt))this.bullets.splice(i,1);continue;}
       b.x += b.vx * dt;
       b.y += b.vy * dt;
       let gone = b.life <= 0;
@@ -1305,7 +1312,7 @@ export class Game {
     const onHz = !flying && mudAt(this.map, p.x, p.y);
     if (onHz && this.hazard === "mud") spd *= 0.55;
     if (onHz && this.hazard === "ice") spd *= 1.12;
-    if (p.breathT > 0) spd *= 0.7;
+    if (p.buff.breath > 0) spd *= 0.7;
     let mx = inp.mx || 0, my = inp.my || 0;
     const ml = Math.hypot(mx, my);
     if (ml > 1) (mx /= ml), (my /= ml);

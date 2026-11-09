@@ -1,0 +1,16 @@
+{
+  "source_sha256": "9cfc52dd01c9824511ae9d13970d097c8069055310bbd829b72f36b2c5224e5e",
+  "reference_sha256": "dc61d916517e220588eaa54b95655ddf3a669ed373939afcbb10007af48a53b8",
+  "native_resolution": 256,
+  "no_low_resolution_intermediate": true,
+  "previous_extent": 122.0,
+  "scale": 0.4875,
+  "anchor": [
+    128,
+    232
+  ],
+  "mouth": [
+    222,
+    125
+  ]
+}

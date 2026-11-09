@@ -1,0 +1,29 @@
+{
+  "source": "sources/fox-evolution.png",
+  "source_sha256": "0f200981149a541229b116e5170f4c4d3dedb192a490558826c30566437834fb",
+  "source_box": [
+    587,
+    159,
+    1131,
+    641
+  ],
+  "source_crop_sha256": "67c3d0eeaad74af1dc70ee8c1193c159b77f5efc301b134a67b812a837225e2c",
+  "reference_sha256": "fac4218d64fb3936f63db0550157b727a4d6fdfaad5ff85bc78ba8c537e94b7f",
+  "native_resolution": 256,
+  "reference_body": [
+    192,
+    170
+  ],
+  "anchor": [
+    128,
+    232
+  ],
+  "render_scale": 0.2864583333333333,
+  "previous_body_extent": 55,
+  "mouth": [
+    221,
+    130
+  ],
+  "no_low_resolution_intermediate": true,
+  "tail_count": 3
+}

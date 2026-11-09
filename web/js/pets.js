@@ -28,6 +28,7 @@ function mountAsset(p){return p.mounted&&p.pet?.stage===3?A.mounts?.[p.pet.id]||
 function mountedFrame(q,actor){
   let name='idle_e',clock=q.anim,fps=6,held=null;
   if(q.id==='phoenix'&&actor.shared_flight_cycle){name='idle_e';}
+  else if(q.castT>0&&q.id==='fox'&&actor.native_resolution){name='cast_e';clock=q.castMax-q.castT;}
   else if(q.castT>0&&q.id==='phoenix'&&actor.move_e){name='move_e';}
   else if(q.castT>0&&q.id==='dragon'){
     name=q.moving?(actor.cast_walk?'cast_e':'move_e'):'cast_e';clock=q.moving?(q.walkT||0):q.anim;fps=q.moving?PET_MOTION.walkFps:6;
@@ -36,7 +37,7 @@ function mountedFrame(q,actor){
   }else if(q.moving&&actor.move_e){name='move_e';clock=q.walkT||0;fps=PET_MOTION.walkFps;}
   const clip=actor[name],count=Math.max(1,clip.length-1);
   // More native samples improve smoothness without slowing down the authored cycle.
-  const index=held==null?Math.floor(clock*fps*count/8)%count:Math.max(0,Math.min(clip.length-1,held));
+  const index=held==null?Math.floor(clock*fps*count/8)%count:Math.max(0,Math.min(clip.length-1,Math.floor(held*(actor.native_resolution?count/8:1))));
   return{name,index,pos:clip[index]};
 }
 // Whole-silhouette centre remains available for body overlays.
@@ -62,11 +63,23 @@ export function mountedShield(p){
 }
 export function petMuzzle(p){
   const m=mountAsset(p),a=m?.meta.actors[p.cid];
-  if(a){const f=mountedFrame(p.pet,a),mouth=a.mouth_frames?.[f.name]?.[f.index]||a.mouth;return{x:p.pet.x+(mouth[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.pet.face)>=0?1:-1),y:p.pet.y+(mouth[1]-m.meta.anchor[1])*m.meta.scale};}
+  if(a){const f=mountedFrame(p.pet,a),mouth=a.mouth_frames?.[f.name]?.[f.index]||a.mouth;return{x:(p.x??p.pet.x)+(mouth[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.face??p.pet.face)>=0?1:-1),y:(p.y??p.pet.y)+(mouth[1]-m.meta.anchor[1])*m.meta.scale};}
   const q=p.pet,id=`${q.id}-${q.stage}`,a0=A.pets?.meta.actors[id],clips=A.pets?.meta.clips[id],f=a0&&clips?followerFrame(q,a0,clips):null,point=a0?.mouth_frames?.[f?.name]?.[f?.index]||(q.castT>0&&a0?.cast_mouth)||a0?.mouth||[89,60],anchor=a0?.anchor||[64,96],k=petScale(p)*(a0?.render_scale??1);
   return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k-flightLift(p)};
 }
-export function mountedAttackOrigin(p){return p.mounted&&p.pet?.id==='dragon'?petMuzzle(p):{x:p.x,y:p.y-16};}
+export function mountedAttackOrigin(p){
+ if(p.mounted&&p.pet?.id==='dragon'){
+  const m=mountAsset(p),a=m?.meta.actors[p.cid],point=a?.attack_origin||a?.mouth;
+  if(point)return{x:p.x+(point[0]-m.meta.anchor[0])*m.meta.scale*(Math.cos(p.face)>=0?1:-1),y:p.y+(point[1]-m.meta.anchor[1])*m.meta.scale};
+  return petMuzzle(p);
+ }
+ return p.mounted&&p.pet?.id==='fox'?petMuzzle(p):{x:p.x,y:p.y-16};
+}
+export function petLine(game,line){
+ if(line.anchorOwner==null)return line;
+ const p=game.player(line.anchorOwner);if(!p?.mounted||p.pet?.id!=='fox'||p.dead||p.downed)return null;
+ const m=petMuzzle(p);return{...line,x0:m.x,y0:m.y};
+}
 export function toggleMount(game,p){
   if(game.pvp||!p.pet||p.pet.stage!==3||p.dead||p.downed||p.mountCd>0)return false;
   if(flyingMount(p)){const spot=safeLanding(game.map,p.x,p.y,p.r);if(!spot)return false;Object.assign(p,spot);p.pet.warpSeq++;p.petWarpUntil=game.time+.2;}
@@ -103,12 +116,12 @@ function shot(game,p,angle,mounted=false){
 }
 export function mountedAttack(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
-  p.pet.face=angle;
+  p.pet.face=p.face=angle;
   if(p.pet.id==='fox'){foxArc(game,p,angle);return true;}
   if(p.pet.id==='dragon'){
     p.pet.castT=Math.max(p.pet.castT,.3);p.pet.castMax=Math.max(p.pet.castMax,.3);
-    const m=petMuzzle(p),a=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
-    game.bullets.push(game.mkBullet(p,{x:m.x,y:m.y,h:p.pet.y-m.y,a,spd:DRAGON_FIREBALL.speed,dmg:CHARS[p.cid].atk.dmg*DRAGON_FIREBALL.damageScale,elem:'dragon',kind:'pet_dragon',r:DRAGON_FIREBALL.radius,life:DRAGON_FIREBALL.range/DRAGON_FIREBALL.speed,big:true}));
+    const m=mountedAttackOrigin(p),a=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
+    game.bullets.push(game.mkBullet(p,{x:m.x,y:m.y,h:0,a,spd:DRAGON_FIREBALL.speed,dmg:CHARS[p.cid].atk.dmg*DRAGON_FIREBALL.damageScale,elem:'dragon',kind:'pet_dragon',r:DRAGON_FIREBALL.radius,life:DRAGON_FIREBALL.range/DRAGON_FIREBALL.speed,big:true}));
     game.sound('shoot_dragon',.08);return true;
   }
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;
@@ -134,9 +147,9 @@ function foxArc(game,p,angle){
       for(let d=2;d<=FOX_RIDE_RANGE;d+=2)if(tileAt(game.map,x+Math.cos(angle)*d,y+Math.sin(angle)*d)===WALL){wall=d;break;}
       distance=wall;
       for(const v of candidates()){const dx=v.x-x,dy=v.y-y,along=dx*Math.cos(angle)+dy*Math.sin(angle),across=Math.abs(-dx*Math.sin(angle)+dy*Math.cos(angle));if(along>=0&&across<=v.r+4){const entry=Math.max(0,along-Math.sqrt(Math.max(0,(v.r+4)**2-across**2)));if(entry<distance){hit=v;distance=entry;}}}
-      if(!hit){game.line(vx,vy,vx+Math.cos(angle)*distance,vy+Math.sin(angle)*distance,'#fff2a0',3,.22,'zap');break;}
+      if(!hit){game.line(vx,vy,vx+Math.cos(angle)*distance,vy+Math.sin(angle)*distance,'#fff2a0',3,.22,'zap',p.id);break;}
     }
-    const endY=hit.y-(hit.e?.r||p.y-m.y);game.line(vx,vy,hit.x,endY,'#fff2a0',3,.24,'zap');used.add(hit.key);
+    const endY=hit.y-(hit.e?.r||p.y-m.y);game.line(vx,vy,hit.x,endY,'#fff2a0',3,.24,'zap',bounce===0?p.id:null);used.add(hit.key);
     if(hit.e){game.hit(hit.e,damage,{p,elem:'thunder',noReact:true});if(!hit.e.boss)hit.e.stunT=Math.max(hit.e.stunT||0,.12);}
     else game.damageTile(hit.i,damage,p);
     x=hit.x;y=hit.y;vx=x;vy=endY;
@@ -248,13 +261,13 @@ export function drawPet(ctx,player,time,ride=false) {
   if(!flyingMount(player)){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,ride?29:19,ride?9:6,0,0,Math.PI*2);ctx.fill();}
   ctx.translate(0,-flightLift(player));
   const cw=actor.cw||assets.meta.cw,ch=actor.ch||assets.meta.ch,anchor=actor.anchor||[cw/2,ch-8];
-  ctx.imageSmoothingEnabled=!!actor.native_resolution;if(actor.native_resolution)ctx.imageSmoothingQuality='high';ctx.drawImage(assets.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
+  ctx.imageSmoothingEnabled=!!actor.native_resolution;if(actor.native_resolution)ctx.imageSmoothingQuality='high';ctx.drawImage(assets.images?.[actor.page||0]||assets.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
 }
 export function drawMountedPet(ctx,player,time,shadow=true) {
   const mount=mountAsset(player),actor=mount?.meta.actors[player.cid];if(!actor)return false;
   const q=player.pet,{cw,ch,anchor,scale}=mount.meta;
   const {pos}=mountedFrame(q,actor);
-  ctx.save();ctx.translate(Math.round(q.x),Math.round(q.y));if(Math.cos(q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
+  ctx.save();ctx.translate(player.x??q.x,player.y??q.y);if(Math.cos(player.face??q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
   if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
   ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
 }

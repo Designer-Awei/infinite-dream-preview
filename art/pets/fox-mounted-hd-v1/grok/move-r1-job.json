@@ -1,0 +1,169 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "7bc30008-af2b-4609-ad19-a7c62133f215",
+  "reference_sha256": "4aaa9b7cf9d2abdbdcb41983d1281d56322ac917f196f829eff4c38c17e59aa0",
+  "request": {
+    "description": "This exact fox and rider perform a smooth four-legged WALK cycle IN PLACE facing right. All four fox legs step naturally in diagonal pairs with weight-bearing paws, shoulders and hips rise and fall a little, tails follow the movement. The rider remains seated astride, hips stay attached to the back, knees gently absorb each step, hair follows naturally. Preserve exact rider identity, costume, book/reins, fox shape and tail count. Keep the far rider leg HIDDEN BEHIND the animal, near leg visible in front. No standing up, sliding or drifting. Empty space stays empty. No effects. Seamless return to the original pose. Fine clear native sprite detail, original ivory/gold/plum fur and coloured rider eyes. Transparent empty background, complete silhouette with padding.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9121010
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "12ce5666ed3861eb310f32c2de4ec04f1738ae1628d9644973f7a56389259a84",
+  "sha256": "f1ecb109d8a76c8ebbc2ac21c476801f39587e6ce5479c800aa12329de70551f",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=128 plus three visually reviewed external rings; no RGB colour key; exact reference endpoints",
+  "native_component_cleanup": [
+    {
+      "frame": 11,
+      "count": 35,
+      "pixels": [
+        [
+          226,
+          155
+        ],
+        [
+          226,
+          156
+        ],
+        [
+          227,
+          156
+        ],
+        [
+          226,
+          157
+        ],
+        [
+          227,
+          157
+        ],
+        [
+          226,
+          158
+        ],
+        [
+          227,
+          158
+        ],
+        [
+          226,
+          159
+        ],
+        [
+          227,
+          159
+        ],
+        [
+          226,
+          160
+        ],
+        [
+          227,
+          160
+        ],
+        [
+          225,
+          161
+        ],
+        [
+          226,
+          161
+        ],
+        [
+          227,
+          161
+        ],
+        [
+          225,
+          162
+        ],
+        [
+          226,
+          162
+        ],
+        [
+          227,
+          162
+        ],
+        [
+          225,
+          163
+        ],
+        [
+          226,
+          163
+        ],
+        [
+          227,
+          163
+        ],
+        [
+          225,
+          164
+        ],
+        [
+          226,
+          164
+        ],
+        [
+          227,
+          164
+        ],
+        [
+          225,
+          165
+        ],
+        [
+          226,
+          165
+        ],
+        [
+          227,
+          165
+        ],
+        [
+          226,
+          166
+        ],
+        [
+          227,
+          166
+        ],
+        [
+          226,
+          167
+        ],
+        [
+          227,
+          167
+        ],
+        [
+          226,
+          168
+        ],
+        [
+          227,
+          168
+        ],
+        [
+          227,
+          169
+        ],
+        [
+          227,
+          170
+        ],
+        [
+          227,
+          171
+        ]
+      ]
+    }
+  ]
+}

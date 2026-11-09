@@ -979,10 +979,21 @@ export function showExchange(after) {
   const stash={...STASH_ITEM,desc:"消耗1张兑换卡，获得1积攒点；可用于兑换梦境伙伴。",exchangeStash:true};
   const list = [...GACHA.pool.filter((it) => it.r === "SSR"),stash];
   const md = el("div", "modal pool-modal ex-modal");
+  const full = it => !it.exchangeStash && (m.talents[it.id] || 0) >= it.max;
+  const fit = () => {
+    if(!md.isConnected)return;
+    const panel=q('.pool-panel',md),featured=document.querySelector('.gacha2 .gp-feat .vc');
+    // Measure the original compact panel before increasing only its internal rows.
+    md.style.removeProperty('--exchange-card-height');panel.style.height='';
+    const height=getComputedStyle(panel).height;
+    panel.style.height=height;
+    if(featured)md.style.setProperty('--exchange-card-height',getComputedStyle(featured).height);
+  };
   const draw = () => {
+    const ordered=[...list].sort((a,b)=>Number(full(a))-Number(full(b)));
     md.innerHTML = `<div class="panel pool-panel"><div class="pl-head"><img class="ex-face" src="${iconURL("cardgold", 3)}" alt=""><h2 class="outline">兑换卡 ×${ms.cards}</h2><button class="btn gray small x-btn">×</button></div>
       <div class="pl-rule o1">每张兑换卡可换1级未满级SSR，或1积攒点 · 点卡片查看并兑换</div>
-      <div class="pl-list"><div class="vgrid">${list.map((it) => { if(it.exchangeStash)return vcard(it,{sub:`持有 ${m.stash||0} 点`,tag:"+1"});const lv = m.talents[it.id] || 0, full = lv >= it.max; return vcard(it, { dim: full, tag: full ? "已满级" : "", sub: lv ? `Lv${lv}/${it.max}` : "未拥有" }); }).join("")}</div></div></div>`;
+      <div class="pl-list"><div class="vgrid">${ordered.map((it) => { if(it.exchangeStash)return vcard(it,{sub:`持有 ${m.stash||0} 点`,tag:"+1"});const lv = m.talents[it.id] || 0, done = full(it); return vcard(it, { dim: done, tag: done ? "已满级" : "", sub: lv ? `Lv${lv}/${it.max}` : "未拥有" }); }).join("")}</div></div></div>`;
     q(".x-btn", md).onclick = close;
     md.querySelectorAll(".vc").forEach((d) => (d.onclick = () => {
       const it = list.find((p) => p.id === d.dataset.id), lv=m.talents[it.id]||0,full=!it.exchangeStash&&lv>=it.max;
@@ -992,11 +1003,18 @@ export function showExchange(after) {
         sfx("ssr");toast(`兑换成功：${r.name}${r.level&&it.max>1?" Lv"+r.level:""}`,2400);draw();
       }});
     }));
+    fit();
   };
-  const close = () => (md.remove(), after && after());
+  let resize,removal;
+  const cleanup=()=>{resize?.disconnect();removal?.disconnect();};
+  const close = () => (cleanup(),md.remove(), after && after());
   md.addEventListener("click", (e) => e.target === md && close());
   draw();
   uiRoot().appendChild(md);
+  fit();
+  resize=new ResizeObserver(fit);resize.observe(uiRoot());
+  const featured=document.querySelector('.gacha2 .gp-feat .vc');if(featured)resize.observe(featured);
+  removal=new MutationObserver(()=>{if(!md.isConnected)cleanup();});removal.observe(uiRoot(),{childList:true});
 }
 
 /** a little looping stage that demonstrates what the item does */

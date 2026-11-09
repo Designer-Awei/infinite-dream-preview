@@ -176,7 +176,7 @@ export function castSkill(g, p, cid, a, target, pw = 1) {
       break;
     }
     case "gpt": {
-      p.breathT = 1.2;
+      p.buff.breath = 1.2;
       const f = g.vfx("fire/fire-breath", p.x + Math.cos(a) * 8, p.y - 18, { palette: ["#0e0618", "#24103e", "#3e1e6e", "#6a3eb0", "#9b6cf0", "#c9a8ff", "#efe4ff", "#ffffff", "#ffffff"], angle: a, life: 1.2, opts: { speed: 260 } });
       let tick = 0;
       g.addZone({

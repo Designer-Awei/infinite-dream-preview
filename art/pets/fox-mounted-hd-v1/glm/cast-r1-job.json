@@ -1,0 +1,22 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "59308701-0f0d-467c-a542-6cae1fb76ec7",
+  "reference_sha256": "97b48d8aa4afd498f8fb7923b7bc0c8c7ee7a2f1a40dab35a4a4f025aafabe2c",
+  "request": {
+    "description": "This exact fox and rider perform a restrained physical casting gesture, facing right. The fox plants all four paws, lowers its chest a little, extends its head and lifts its existing tails in a natural wave, then recovers. The rider leans slightly forward while STAYING SEATED, keeps the same grip on reins/book and balances naturally. Preserve exact anatomy, face, costume, tail count, size and position. The far rider leg stays hidden behind the animal, near leg in front. ONLY physical body movement. Empty space stays empty. Absolutely no magic, glow, bolts, sparks, circles or effects. Return to the starting pose. Fine clear native sprite detail, original ivory/gold/plum fur and coloured rider eyes. Transparent empty background, complete silhouette with padding.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9121420
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "e28c8128cc2635d7870ce5d7d92a80e74a47a114ba5cd530b71cb0dc670b8aac",
+  "sha256": "e28a067266132ba5320304b0b743c17f16a2a8a6d7b5b21d8b6bb9b42fad45f0",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=128 plus three visually reviewed external rings; no RGB colour key; exact reference endpoints",
+  "native_component_cleanup": []
+}

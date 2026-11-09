@@ -1,12 +1,20 @@
 {
   "native_resolution": 256,
-  "followers": 6,
-  "clips": 18,
-  "unique_native_tiles": 204,
-  "unchanged_fox_tiles": 84,
-  "atlas": [
-    4096,
-    3712
+  "followers": 9,
+  "clips": 27,
+  "unique_native_tiles": [
+    204,
+    102
+  ],
+  "pages": [
+    [
+      4096,
+      3328
+    ],
+    [
+      4096,
+      1792
+    ]
   ],
   "flags": [],
   "no_frame_resampling": true

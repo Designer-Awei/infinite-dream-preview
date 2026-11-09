@@ -1,6 +1,20 @@
 // Shared mount physics and attack geometry, also used by movement/FX.
 import { T } from './data.js';
-import { SOLID, tileAt } from './map.js';
+import { SOLID, tileAt, WALL, CRATE, BARREL, BUSH, LIFT } from './map.js';
+// Projected sprite-space geometry: bullets, obstacles and the aim ribbon share it.
+export function visualTilesIn(map,x,y,r,includeGrass=false){
+ const hits=[];
+ for(let ty=Math.max(0,Math.floor((y-r)/T));ty<=Math.min(map.H-1,Math.floor((y+r+LIFT)/T));ty++)
+  for(let tx=Math.max(0,Math.floor((x-r-4)/T));tx<=Math.min(map.W-1,Math.floor((x+r+4)/T));tx++){
+   const i=ty*map.W+tx,t=map.t[i];let left=tx*T,top=ty*T-LIFT,w=T,h=T+LIFT;
+   if(t===CRATE||t===BARREL){left+=t===BARREL?6:2;top=ty*T-6;w=t===BARREL?20:28;h=34;}
+   else if(t===BUSH&&includeGrass){left-=4;top=ty*T-12;w=T+8;h=T+14;}
+   else if(t!==WALL)continue;
+   const dx=Math.max(left-x,0,x-left-w),dy=Math.max(top-y,0,y-top-h);
+   if(dx*dx+dy*dy<=r*r)hits.push({i,t});
+  }
+ return hits;
+}
 export const flyingMount=p=>!!(p.mounted&&p.pet?.id==='phoenix'&&p.pet.stage===3);
 // Keep the original authored height; flight uses a foreground layer rather than extra lift.
 export const flightLift=()=>0;

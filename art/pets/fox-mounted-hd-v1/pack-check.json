@@ -1,0 +1,11 @@
+{
+  "native_resolution": 256,
+  "riders": 6,
+  "clips": 18,
+  "samples": 234,
+  "atlas": [
+    4096,
+    3840
+  ],
+  "flags": []
+}

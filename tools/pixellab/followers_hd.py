@@ -7,9 +7,13 @@ from PIL import Image,ImageDraw
 import animate_riding_v2 as b
 
 ROOT=b.ROOT;OUT=ROOT/'art/pets/followers-hd-v1';EVIDENCE=ROOT.parent/'context/followers-hd-2026-11-09'
-IDS=[f'{family}-{stage}' for family in ['dragon','phoenix'] for stage in [1,2,3]]
+IDS=[f'{family}-{stage}' for family in ['dragon','phoenix','fox'] for stage in [1,2,3]]
 CLIPS=['idle','move','cast'];sha=b.sha;dump=b.dump
 PROMPTS={
+ 'fox':{
+  'idle':'A grounded living idle loop. Chest and belly clearly breathe, shoulders and hips gently settle, leg joints flex with a subtle weight shift. Existing tails sway in delayed soft waves, ears twitch and eyes blink. The body and legs participate, not only the tails. Return smoothly to the supplied standing pose.',
+  'move':'A clear four-legged TROT IN PLACE facing right. Alternate diagonal paw pairs, lift and plant each weight-bearing paw, bend elbows and knees; shoulders and hips rise and fall naturally. Existing tails stream and sway with delayed follow-through, ears remain alert. Fixed screen position, smooth return to the supplied pose.',
+  'cast':'Physical spellcasting gesture IN PLACE facing right. Forelegs bend, shoulders lower into a grounded braced crouch, chest inhales, head extends forward and ears prick up. Existing tails lift in a coordinated wave. Hold briefly then straighten the legs and recover. Only physical body movement, empty space stays transparent.'},
  'dragon':{
   'idle':'A clearly VISIBLE LARGE WING FLAP while grounded: BOTH red bat wings lift together, unfold their membranes widely, sweep DOWN together showing the darker underside, then fold edge-on on recovery and return to reference height. Animate shoulders, elbows and tips, not a tiny twitch. All FOUR paws remain planted, chest breathes, tail and existing flame sway. No takeoff, rearing or begging.',
   'move':'A natural four-legged WALK cycle IN PLACE facing right, WITH LARGE SYNCHRONIZED WING FLAPS. Both wings unfold upward and outward, sweep DOWN TOGETHER showing membrane undersides, fold edge-on and recover. Clearly visible wing motion, not rigid wings or a small twitch. Alternate diagonal weight-bearing paw pairs with bending joints, shoulders and hips rise and fall, tail balances. No takeoff, sliding, bipedal pose or rearing.',
@@ -20,13 +24,13 @@ PROMPTS={
   'cast':'A physical flying casting loop. Neck extends slightly, beak opens, both feathered wings sweep down TOGETHER and recover up TOGETHER while the body remains level. Tail feathers follow with gentle lag. Recover to the supplied pose. No snow, glow, rings, beams, projectiles, trails or exterior spell effects.'}}
 COMMON=' Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.'
 
-def clean(im):
+def clean(im,max_fragment=32):
  a=np.array(im.convert('RGBA'));a[a[:,:,3]<=8]=0
  labels,n=b.ndimage.label(a[:,:,3]>8,np.ones((3,3)));sizes=np.bincount(labels.ravel());sizes[0]=0
  if n:
   main=int(sizes.argmax())
   for k in range(1,n+1):
-   if k!=main and sizes[k]<=32:a[labels==k]=0
+   if k!=main and sizes[k]<=max_fragment:a[labels==k]=0
  return Image.fromarray(a)
 
 def prepare(dragon):
@@ -55,7 +59,7 @@ def prepare(dragon):
    dump(folder/'reference.json',record);records[pid]=record
  dump(OUT/'sources.json',records)
  board=Image.new('RGBA',(1024,840),'#202632');d=ImageDraw.Draw(board)
- for n,pid in enumerate(IDS):
+ for n,pid in enumerate(IDS[:6]):
   x=n%3*336;y=n//3*410;ref=Image.open(OUT/pid/'reference-256.png');board.alpha_composite(ref,(x+40,y+24));d.text((x+8,y+4),pid+' native 256',fill='#ffe36a')
   ox,oy,w,h=old['frames'][pid]['side'];oldbase=atlas.crop((ox,oy,ox+w,oy+h));oldbase=oldbase.crop(oldbase.getbbox());oldbase.thumbnail((96,96),Image.Resampling.NEAREST);board.alpha_composite(oldbase,(x+20,y+304));d.text((x+130,y+318),'old runtime crop',fill='white')
  board.save(EVIDENCE/'references-and-old.png');print('Prepared six references directly from full-resolution sheets',flush=True)
@@ -82,10 +86,26 @@ def replace_phoenix_source(source):
  records['phoenix-3'].update(source='sources/phoenix-evolution.png',source_sha256=sha(canonical),source_box=[left+box[0],box[1],left+box[2],box[3]],source_crop_sha256=sha(folder/'source-crop.png'),reference_sha256=sha(folder/'reference-256.png'),reference_body=size,render_scale=previous_extent/max(bounds[2]-bounds[0],height),mouth=[bounds[2]-3,round(bounds[1]+height*.32)],user_replaced_adult_wing_reference=True)
  dump(folder/'reference.json',records['phoenix-3']);dump(OUT/'sources.json',records);dump(folder/'selected.json',{clip:2 for clip in CLIPS});print('Replaced canonical phoenix sheet; only adult follower reference regenerated',flush=True)
 
+def prepare_fox():
+ records=json.loads((OUT/'sources.json').read_text(encoding='utf-8'))
+ if all(pid in records for pid in ['fox-1','fox-2','fox-3']):print('Reuse prepared fox references',flush=True);return
+ source=ROOT/'art/pets/approved-v1/sources/fox-evolution.png';dest=OUT/'sources/fox-evolution.png';shutil.copy2(source,dest);im=Image.open(dest).convert('RGBA');a=np.array(im);xs=np.where((a[:,:,3]>32).sum(axis=0)>2)[0];spans=[]
+ for x in xs:
+  if spans and x-spans[-1][1]<30:spans[-1][1]=int(x)
+  else:spans.append([int(x),int(x)])
+ assert len(spans)==3,spans
+ meta=json.loads((ROOT/'web/assets/pets/pets.json').read_text(encoding='utf-8'));atlas=Image.open(ROOT/'web/assets/pets/pets.png').convert('RGBA')
+ for stage,(left,right) in enumerate(spans,1):
+  pid=f'fox-{stage}';folder=OUT/pid;folder.mkdir(exist_ok=True);crop=clean(im.crop((left,0,right+1,im.height)));box=crop.getbbox();crop=crop.crop(box);crop.save(folder/'source-crop.png');k=192/max(crop.size);size=tuple(round(v*k) for v in crop.size);offset=((256-size[0])//2,232-size[1]);ref=Image.new('RGBA',(256,256));ref.paste(crop.resize(size,Image.Resampling.LANCZOS),offset);ref=clean(ref);ref.save(folder/'reference-256.png');bb=ref.getbbox();x,y,w,h=meta['frames'][pid]['side'];old=atlas.crop((x,y,x+w,y+h)).getbbox();extent=max(old[2]-old[0],old[3]-old[1]);height=bb[3]-bb[1]
+  rec={'source':'sources/fox-evolution.png','source_sha256':sha(dest),'source_box':[left+box[0],box[1],left+box[2],box[3]],'source_crop_sha256':sha(folder/'source-crop.png'),'reference_sha256':sha(folder/'reference-256.png'),'native_resolution':256,'reference_body':size,'anchor':[128,232],'render_scale':extent/max(bb[2]-bb[0],height),'previous_body_extent':extent,'mouth':[bb[2]-3,round(bb[1]+height*[.43,.4,.36][stage-1])],'no_low_resolution_intermediate':True,'tail_count':[1,3,9][stage-1]};records[pid]=rec;dump(folder/'reference.json',rec);dump(folder/'selected.json',{clip:1 for clip in CLIPS})
+ dump(OUT/'sources.json',records);print('Prepared three native fox references',flush=True)
+
 def generate(pid,clip,revision):
  folder=OUT/pid;stem=f'{clip}-r{revision}';target=folder/(stem+'.png');state=folder/(stem+'-job.json');ref=folder/'reference-256.png'
  if target.exists():print('Reuse',pid,stem,flush=True);return
  request={'description':PROMPTS[pid.split('-')[0]][clip]+COMMON,'frame_count':12,'no_background':True,'direction':'east','view':'side','enhance_prompt':False,'seed':9110900+IDS.index(pid)*100+CLIPS.index(clip)*10+revision*10000}
+ if pid.startswith('fox'):
+  count=[1,3,9][int(pid[-1])-1];request['description']=PROMPTS['fox'][clip]+f' Preserve the exact supplied ivory, gold and dark-plum fox, its face, eyes, fur markings, life stage, body proportions and EXACTLY {count} existing tail'+('s.' if count>1 else '.')+' Four paws and natural joints, grounded throughout. Sharp fine fur detail at native resolution. Entire silhouette inside canvas with generous padding, fixed right-facing camera and constant size. Transparent empty background, only the physical creature. Seamless loop.'
  if pid.startswith('dragon') and clip=='move' and revision>=3:
   request['description']='Four-legged WALK IN PLACE with large synchronized wing flaps, facing right. Alternate diagonal weight-bearing paws, bend elbows and knees, shoulders and hips rise and fall, tail balances. Both wings unfold, sweep down TOGETHER, fold edge-on and recover. WING COLOUR IS LOCKED: inner AND outer membranes stay RED/CRIMSON like the supplied reference in EVERY frame. Dark red underside, red lit surfaces. NEVER yellow, orange, beige, cream or gold wing membranes, even during a twist. Gold stays only on original horns, belly, claws and tail flame. Preserve exact creature design, face, life stage, sharp scale detail and size. Fixed camera, no takeoff, rearing or sliding. Transparent background; no floor, shadow, grey blobs, new effects or rider. Full silhouette inside the canvas. Seamlessly return to the supplied pose.'
  if pid.startswith('dragon') and clip=='move' and revision>=4:
@@ -136,16 +156,28 @@ def mouth_frame(im,point):
  if not len(xx):return point
  right=int(xx.max());ys=yy[xx>=right-1];return[right-2,int(np.median(ys))]
 
+def cleanup_fox():
+ for pid in ['fox-1','fox-2','fox-3']:
+  folder=OUT/pid;selected=json.loads((folder/'selected.json').read_text(encoding='utf-8'));ref=Image.open(folder/'reference-256.png').convert('RGBA')
+  for clip,rev in selected.items():
+   raw=Image.open(folder/f'{clip}-r{rev}-raw.png').convert('RGBA');sheet=Image.new('RGBA',raw.size);removed=[]
+   for i in range(13):
+    frame=ref if i in [0,12] else clean(raw.crop((i*256,0,(i+1)*256,256)),128);before=ref if i in [0,12] else clean(raw.crop((i*256,0,(i+1)*256,256)),32);yy,xx=np.where(np.any(np.array(before)!=np.array(frame),axis=2))
+    if len(xx):removed.append({'frame':i,'count':len(xx),'pixels':[[int(x),int(y)] for x,y in zip(xx,yy)]})
+    sheet.paste(frame,(i*256,0))
+   path=folder/f'{clip}-r{rev}.png';sheet.save(path);recordpath=folder/f'{clip}-r{rev}-job.json';record=json.loads(recordpath.read_text(encoding='utf-8'));record.update(sha256=sha(path),native_component_cleanup=removed,alpha_cleanup='alpha<=8 and detached components<=128; no RGB colour key; exact reference endpoints');dump(recordpath,record)
+ print('Cleaned fox follower fragments; other species preserved',flush=True)
+
 def pack(revision):
- legacy=json.loads((ROOT/'web/assets/pets/pets.json').read_text(encoding='utf-8'));old=Image.open(ROOT/'web/assets/pets/pets.png').convert('RGBA');meta={'cw':128,'ch':128,'k':1,'fps':8,'frames':{},'clips':{},'actors':{},'world_fx_included':False,'native_followers':256};tiles=[];seen={};flags=[]
+ legacy=json.loads((ROOT/'web/assets/pets/pets.json').read_text(encoding='utf-8'));meta={'cw':256,'ch':256,'k':1,'fps':8,'frames':{},'clips':{},'actors':{},'world_fx_included':False,'native_followers':256,'pages':[]};tiles=[[],[]];seen=[{},{}];flags=[]
  for key,lock in json.loads((OUT/'user-confirmed.json').read_text(encoding='utf-8')).items():
   pid,clip=key.split('/');assert sha(OUT/pid/f'{clip}-r{lock["revision"]}.png')==lock['sha256'],'User-confirmed source changed'
  def add(frame):
   key=hashlib.sha256(frame.tobytes()).hexdigest()
-  if key not in seen:seen[key]=len(tiles);tiles.append(frame)
-  i=seen[key];return[i%16*256,i//16*256]
+  if key not in seen[page]:seen[page][key]=len(tiles[page]);tiles[page].append(frame)
+  i=seen[page][key];return[i%16*256,i//16*256]
  for pid in IDS:
-  folder=OUT/pid;ref=json.loads((folder/'reference.json').read_text(encoding='utf-8'));base=Image.open(folder/'reference-256.png').convert('RGBA');family,stage=pid.split('-');coords=add(base);actor={**legacy['actors'][pid],**{k:ref[k] for k in ['anchor','render_scale','mouth']},'cw':256,'ch':256,'native_resolution':256,'cast_mouth':ref['mouth'],'mouth_frames':{},'idle_fps':6,'clip_samples':12};meta['frames'][pid]={'side':coords+[256,256]};meta['clips'][pid]={}
+  folder=OUT/pid;ref=json.loads((folder/'reference.json').read_text(encoding='utf-8'));base=Image.open(folder/'reference-256.png').convert('RGBA');family,stage=pid.split('-');page=1 if family=='fox' else 0;coords=add(base);actor={**legacy['actors'][pid],**{k:ref[k] for k in ['anchor','render_scale','mouth']},'cw':256,'ch':256,'page':page,'native_resolution':256,'cast_mouth':ref['mouth'],'mouth_frames':{},'idle_fps':6,'clip_samples':12};meta['frames'][pid]={'side':coords+[256,256]};meta['clips'][pid]={}
   for clip in CLIPS:
    selected=json.loads((folder/'selected.json').read_text(encoding='utf-8')) if (folder/'selected.json').exists() else {};rev=selected.get(clip,revision);stem=f'{clip}-r{rev}';record=json.loads((folder/(stem+'-job.json')).read_text(encoding='utf-8'));path=folder/(stem+'.png');assert sha(path)==record['sha256'] and ref['reference_sha256']==record['reference_sha256'];sheet=Image.open(path).convert('RGBA');positions=[];mouth=[]
    for i in range(13):
@@ -156,30 +188,23 @@ def pack(revision):
     positions.append(add(f));mouth.append(mouth_frame(f,ref['mouth']))
    meta['clips'][pid][clip+'_e']=positions;actor['mouth_frames'][clip+'_e']=mouth
   meta['actors'][pid]=actor
- highrows=math.ceil(len(tiles)/16);low=[]
- for pid in ['fox-1','fox-2','fox-3']:
-  meta['actors'][pid]=legacy['actors'][pid];meta['clips'][pid]={};x,y,w,h=legacy['frames'][pid]['side'];i=len(low);low.append(old.crop((x,y,x+w,y+h)));meta['frames'][pid]={'side':[i%32*128,highrows*256+i//32*128,128,128]}
-  for clip,coords in legacy['clips'][pid].items():
-   positions=[]
-   for x,y in coords:i=len(low);low.append(old.crop((x,y,x+128,y+128)));positions.append([i%32*128,highrows*256+i//32*128])
-   meta['clips'][pid][clip]=positions
- height=highrows*256+math.ceil(len(low)/32)*128;assert height<=4096,(len(tiles),len(low),height)
  assert not flags,flags
- atlas=Image.new('RGBA',(4096,height))
- for i,f in enumerate(tiles):atlas.paste(f,(i%16*256,i//16*256))
- for i,f in enumerate(low):atlas.paste(f,(i%32*128,highrows*256+i//32*128))
- atlas.save(OUT/'pets.png',optimize=True);meta['sha256']=sha(OUT/'pets.png');dump(OUT/'pets.json',meta)
- for name in ['pets.png','pets.json']:shutil.copy2(OUT/name,ROOT/'web/assets/pets'/name)
+ sizes=[]
+ for page,frames in enumerate(tiles):
+  height=math.ceil(len(frames)/16)*256;assert height<=4096,(page,len(frames),height);atlas=Image.new('RGBA',(4096,height))
+  for i,frame in enumerate(frames):atlas.paste(frame,(i%16*256,i//16*256))
+  name='pets.png' if page==0 else 'pets-fox.png';atlas.save(OUT/name,optimize=True);meta['pages'].append({'file':name,'sha256':sha(OUT/name)});sizes.append(atlas.size);shutil.copy2(OUT/name,ROOT/'web/assets/pets'/name)
+ meta['sha256']=meta['pages'][0]['sha256'];dump(OUT/'pets.json',meta);shutil.copy2(OUT/'pets.json',ROOT/'web/assets/pets/pets.json')
  for pid in IDS:
   ref=Image.open(OUT/pid/'reference-256.png');crop=ref.crop(ref.getbbox());k=84/max(crop.size);size=tuple(round(v*k) for v in crop.size);portrait=Image.new('RGBA',(96,96));portrait.paste(crop.resize(size,Image.Resampling.LANCZOS),((96-size[0])//2,(96-size[1])//2));portrait.save(ROOT/'web/assets/pets'/f'{pid}.png')
- dump(OUT/'pack-check.json',{'native_resolution':256,'followers':6,'clips':18,'unique_native_tiles':len(tiles),'unchanged_fox_tiles':len(low),'atlas':atlas.size,'flags':flags,'no_frame_resampling':True});print('Packed',atlas.size,'native tiles',len(tiles),'fox tiles',len(low),flush=True)
+ dump(OUT/'pack-check.json',{'native_resolution':256,'followers':9,'clips':27,'unique_native_tiles':[len(page) for page in tiles],'pages':sizes,'flags':flags,'no_frame_resampling':True});print('Packed native256 follower pages',sizes,flush=True)
  previews()
 
 def previews():
  for clip in CLIPS:
   frames=[]
   for i in range(12):
-   board=Image.new('RGBA',(768,560),'#202632');d=ImageDraw.Draw(board)
+   board=Image.new('RGBA',(768,840),'#202632');d=ImageDraw.Draw(board)
    for n,pid in enumerate(IDS):
     selected=json.loads((OUT/pid/'selected.json').read_text(encoding='utf-8'));im=Image.open(OUT/pid/f'{clip}-r{selected[clip]}.png').convert('RGBA');board.alpha_composite(im.crop((i*256,0,(i+1)*256,256)),(n%3*256,n//3*280+20));d.text((n%3*256+6,n//3*280+3),pid+' '+clip,fill='#ffe36a')
    frames.append(board.convert('RGB'))
@@ -200,11 +225,13 @@ def archive_unselected():
  dump(manifest,records);print('Archived unselected files',len(records),'with verified hashes',flush=True)
 
 if __name__=='__main__':
- p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','replace-phoenix','generate','collect','review','cleanup','pack','archive']);p.add_argument('--dragon');p.add_argument('--phoenix');p.add_argument('--only',nargs='+',default=IDS);p.add_argument('--clips',nargs='+',default=CLIPS);p.add_argument('--revision',type=int,default=1);p.add_argument('--workers',type=int,default=3);a=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('mode',choices=['prepare','prepare-fox','replace-phoenix','generate','collect','review','cleanup','cleanup-fox','pack','archive']);p.add_argument('--dragon');p.add_argument('--phoenix');p.add_argument('--only',nargs='+',default=IDS);p.add_argument('--clips',nargs='+',default=CLIPS);p.add_argument('--revision',type=int,default=1);p.add_argument('--workers',type=int,default=3);a=p.parse_args()
  if a.mode=='prepare':prepare(a.dragon)
+ elif a.mode=='prepare-fox':prepare_fox()
  elif a.mode=='replace-phoenix':replace_phoenix_source(a.phoenix)
  elif a.mode=='pack':pack(a.revision)
  elif a.mode=='cleanup':cleanup_reviewed_fragments()
+ elif a.mode=='cleanup-fox':cleanup_fox()
  elif a.mode=='archive':archive_unselected()
  else:
   fn=generate if a.mode in ['generate','collect'] else review
