@@ -1,0 +1,16 @@
+{
+  "source_head": "6a825b5f9b99ba1c3dd3d4113e0c47df2d4a230f",
+  "archive": "docs/references/history/WORK_LOG.before-jsonl.md",
+  "archive_sha256": "ffda70e6abe847409479c36630e79234272e0e03c63c9cdb676c0718770bb84a",
+  "legacy_sections": 107,
+  "historical_commits": 296,
+  "records": 467,
+  "workers": {
+    "Codex": 218,
+    "Claude": 249
+  },
+  "unresolved_commit_refs": [],
+  "handoff_base": "19f2d855f4fe1d376e4e44ef4ce8e31e12f6a5eb",
+  "worker_policy": "Before verified handoff Claude per user confirmation; verified subsequent agent work Codex; explicit overrides take precedence.",
+  "imported_validation": "Historical source reports, not newly rerun tests; release success is not inferred."
+}

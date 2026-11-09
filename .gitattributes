@@ -1,2 +1,6 @@
 # Published bytes must match update.json on Windows and on GitHub's Linux runners.
 /docs/** text=auto eol=lf
+
+# Structured journal stays diffable; preserve the original archived MD bytes.
+worklog.jsonl text eol=lf
+docs/references/history/WORK_LOG.before-jsonl.md -text -diff

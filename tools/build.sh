@@ -21,4 +21,4 @@ touch "$ROOT/dist/.nojekyll"
 python3 -I "$ROOT/tools/manifest.py" "$ROOT/dist"
 echo "built: $(du -sh "$ROOT/dist" | cut -f1), $(find "$ROOT/dist" -type f | wc -l) files"
 # GitHub Pages serves /docs from the main branch
-rm -rf "$ROOT/docs" && cp -r "$ROOT/dist" "$ROOT/docs"
+python3 -I "$ROOT/tools/publish_docs.py"

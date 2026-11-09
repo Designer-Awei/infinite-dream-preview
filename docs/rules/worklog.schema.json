@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Infinite Dream worklog entry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "date",
+    "repository",
+    "worker",
+    "worker_basis",
+    "kind",
+    "module",
+    "title",
+    "problem",
+    "solution",
+    "commit_ids",
+    "related_commits",
+    "status",
+    "validation",
+    "release_status",
+    "superseded_by",
+    "source",
+    "order"
+  ],
+  "properties": {
+    "id": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "repository": {
+      "enum": [
+        "infinite-dream-preview",
+        "infinite-dream"
+      ]
+    },
+    "worker": {
+      "enum": [
+        "Codex",
+        "Claude",
+        "human",
+        "mixed",
+        "unknown"
+      ]
+    },
+    "worker_basis": {
+      "type": "string"
+    },
+    "kind": {
+      "enum": [
+        "change",
+        "historical_commit",
+        "log_commit"
+      ]
+    },
+    "module": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string",
+      "maxLength": 120
+    },
+    "problem": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "solution": {
+      "type": "string",
+      "maxLength": 300
+    },
+    "commit_ids": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[0-9a-f]{40}$"
+      }
+    },
+    "related_commits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "repository",
+          "id"
+        ]
+      }
+    },
+    "status": {
+      "enum": [
+        "committed",
+        "verified",
+        "reverted",
+        "superseded",
+        "pending"
+      ]
+    },
+    "validation": {
+      "type": "object",
+      "required": [
+        "status",
+        "summary",
+        "refs"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_recorded",
+            "reported",
+            "passed",
+            "failed"
+          ]
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "refs": {
+          "type": "array"
+        }
+      }
+    },
+    "release_status": {
+      "enum": [
+        "unknown",
+        "reported_success",
+        "reported_failure",
+        "not_released"
+      ]
+    },
+    "superseded_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "object"
+    },
+    "order": {
+      "type": "integer"
+    }
+  }
+}

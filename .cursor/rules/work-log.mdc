@@ -1,8 +1,6 @@
 ---
-description: 每次推送前记录所有更新项及对应 commit
+description: 按worker记录结构化变更，默认只检索匹配条目
 alwaysApply: true
 ---
 
-遵守根目录 `AGENTS.md` 的工作记录约定。每个更新项必须写入根目录 `WORK_LOG.md`，包括日期（北京时间）、更新内容、已生成的 commit 哈希及链接、真实验证结果。
-
-先提交实际更新，再提交引用这些 commit 的工作记录，最后一起推送。仅补记日志的 commit 不另建条目，避免自引用。每次推送前检查本次更新项是否全部记录，且引用的 commit 均存在。
+遵守AGENTS.md和docs/rules/WORKFLOW.md。唯一持续维护日志是根目录worklog.jsonl；字段和查询见docs/rules/WORKLOG.md。旧WORK_LOG.md仅归档，不继续维护。每条变更填写worker、日期、问题/方案、真实commit和验证；先提交实际修改，再追加引用已生成hash的条目，纯日志提交不自引用。默认用tools/worklog.py限量检索，写入后--validate。

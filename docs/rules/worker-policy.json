@@ -1,0 +1,6 @@
+{
+  "legacy_default": "Claude",
+  "handoff_base": "19f2d855f4fe1d376e4e44ef4ce8e31e12f6a5eb",
+  "basis": "用户于2026-11-09确认：11月6日前除Codex提交外全部为Claude，包括以用户Git身份提交；接手基线已核对本地交接文档。",
+  "commit_overrides": {}
+}

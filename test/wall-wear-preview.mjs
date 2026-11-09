@@ -5,7 +5,7 @@ const b=await browserSession('wall-wear-preview');
 try{
  const p=await b.page(process.env.GAME_TEST_URL||'http://127.0.0.1:8791/web/');await p.wait(`!!document.querySelector('.lb-hero')`);
  const data=await p.evaluate(`(async()=>{
- const {wallSprite,THEMES}=await import('./js/map.js'),{paintWallWear}=await import('../design/previews/wall-wear-options.js');
+ const {wallSprite,THEMES}=await import('./js/map.js'),{paintWallWear}=await import('../docs/references/previews/wall-wear-options.js');
  const c=document.createElement('canvas');c.width=1440;c.height=930;const g=c.getContext('2d');g.imageSmoothingEnabled=false;g.fillStyle='#171a21';g.fillRect(0,0,c.width,c.height);g.fillStyle='#f7edcf';g.font='bold 30px sans-serif';g.fillText('墙体做旧 · 三种候选',34,46);g.font='18px sans-serif';g.fillStyle='#aeb4c2';g.fillText('每组左半轻损、右半重损；原有材质、连接与轮廓保留。仅效果预览，尚未替换游戏。',34,80);
  const variants=['A','B','C'],names=['轻磨损 / 保留大面','局部磕边 / 少量缺口','浅裂纹 / 自然旧痕'];
  for(let col=0;col<3;col++){

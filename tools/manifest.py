@@ -5,7 +5,9 @@ files = {}
 # Git normalizes published text to LF. Normalize the build output BEFORE hashing,
 # so Windows CRLF checkouts cannot produce hashes that differ from GitHub Pages.
 text_extensions = {".html", ".js", ".css", ".json", ".webmanifest", ".txt", ".md", ".svg"}
-for d, _, fs in os.walk(root):
+for d, directories, fs in os.walk(root):
+    if os.path.abspath(d) == os.path.abspath(root):
+        directories[:] = [name for name in directories if name not in {"references", "rules"}]
     for f in fs:
         p = os.path.join(d, f)
         rel = os.path.relpath(p, root).replace(os.sep, "/")
