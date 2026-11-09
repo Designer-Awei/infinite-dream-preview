@@ -40,11 +40,13 @@
     "prompt-109ecc9f4f03e13f": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated purple-haired witch-hat girl, exact eyes, dark outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop.",
     "prompt-64df439ae7315f49": "Gentle living idle loop in place: adolescent red dragon breathes, blinks, and shifts its weight. Elbows and knees softly bend, shoulders and hips settle, tail sways. Small wings remain mostly folded so the four legs are easy to read. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
     "prompt-f3c4b44f6a644b92": "A clear four-legged TROT IN PLACE, facing right. LEG MOTION IS THE PRIORITY: lift each paw well off the ground, bend its elbow or knee, swing the paw forward, plant it and push backwards. Alternate diagonal pairs: near front with far rear, then far front with near rear. All FOUR paws must visibly change positions. Shoulder and hip bob follows footfalls. NO frozen feet, sliding, skating or wing-only motion. Keep the small wings folded and stable, tail balances the trot. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
-    "prompt-0299c137226ef5d8": "Attack WHILE STEPPING IN PLACE: near forepaw lifts, elbow bends and paw steps forward to brace; opposite hind leg bends, pushes and recovers. Both front legs and both rear legs must visibly change pose during the cycle, not remain frozen. Crouch the body, extend neck and OPEN jaws wide, then close and recover with a backward step. Small wings partly open without hiding paws. No external flames, particles, orb or beam; these are rendered by game code. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose."
+    "prompt-0299c137226ef5d8": "Attack WHILE STEPPING IN PLACE: near forepaw lifts, elbow bends and paw steps forward to brace; opposite hind leg bends, pushes and recovers. Both front legs and both rear legs must visibly change pose during the cycle, not remain frozen. Crouch the body, extend neck and OPEN jaws wide, then close and recover with a backward step. Small wings partly open without hiding paws. No external flames, particles, orb or beam; these are rendered by game code. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
+    "prompt-914954f362805919": "Natural HORSE/DOG DIAGONAL TROT, never a camel pace. NEAR legs are the bright outer foreleg in front of cream belly and outer hindleg on big thigh. Phase A: near FORELEG reaches FORWARD RIGHT while near HINDLEG stretches BACKWARD LEFT. Phase B: near FORELEG reaches BACKWARD LEFT while near HINDLEG swings FORWARD RIGHT. These TWO visible legs must always swing in OPPOSITE directions. The DARKER legs behind them move in opposite phase. Thus near front + far hind advance together; then far front + near hind. Flex knees and lift paws. No same-side pace or paired front hops. Quiet wings, in-place loop. Preserve the exact supplied youthful dragon, face, horns, colours, anatomy and fine stylized shading. Fixed right-facing side camera, constant size and canvas position. Full silhouette with padding, transparent background. No realistic skin, floor, shadow, aura, rider, text or new objects. Seamlessly return to source pose.",
+    "prompt-1af708eba8431891": "Stationary grounded fire-breath casting loop, matching the other dragon stages. All FOUR PAWS remain PLANTED in their exact original spots for the ENTIRE animation. NO walking, stepping, foot lifting, jumping, pawing or leg swing. Legs only brace with tiny joint flex. Animate the head, neck and chest: inhale, extend neck, OPEN jaws wide, hold a powerful breathing pose, close and recover. Both wings gently unfold and flap TOGETHER, tail sways. Only animate the creature: no external flame, orb, beam, particles or magical effects. Preserve the exact supplied youthful dragon, face, horns, colours, anatomy and fine stylized shading. Fixed right-facing side camera, constant size and canvas position. Full silhouette with padding, transparent background. No realistic skin, floor, shadow, aura, rider, text or new objects. Seamlessly return to source pose."
   },
   "atlases": {
     "web/assets/pets/pets.png": {
-      "sha256": "15c53f6c72b65faea18f62c74e2c3ac6f2aa34ab1ec788d184997f2bf93dfbd8",
+      "sha256": "421c7cf1fa39c0eb64fb480e562f6a078633a542428c22e1617cc0d209c024a2",
       "size": [
         4096,
         3328
@@ -578,7 +580,7 @@
     },
     {
       "id": "follow/dragon-2/move",
-      "prompt_id": "prompt-f3c4b44f6a644b92",
+      "prompt_id": "prompt-914954f362805919",
       "provider": "PixelLab",
       "endpoint": "/animate-pixminimax",
       "request": {
@@ -587,10 +589,10 @@
         "direction": "east",
         "view": "side",
         "enhance_prompt": false,
-        "seed": 9112003
+        "seed": 9112005
       },
-      "selected_job": "art/work/dragon-growth-20261109/move-r3-job.json",
-      "selected_job_sha256": "8866cc5d84d46460b37f9e990f36e4d4611a24042eb22860a4e79569a6c49cbe",
+      "selected_job": "art/work/dragon-growth-20261109/move-r5-job.json",
+      "selected_job_sha256": "892d9906b8ddda1dae8d25b53ce20e2d00f65837847528a2c59a43dd5aaabe41",
       "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
         "art/references/pets/dragon-growth-user-20261109.png"
@@ -684,24 +686,24 @@
         ],
         "frame_rgba_sha256": [
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
-          "734ab531e4fc63dcdcf7b5e117bc11f862dd113ceb543368804d0b31e460f0a1",
-          "b33df33c840e79e2528b0487e912542c089f5e705d51461cbd8044dc257219e6",
-          "005a8f4085ec811c2a8b31c5da4d62f50d1d8e33c2eed2ead9ef3e8067bda33a",
-          "3cb667825f4ff567fc078412d7939eb4aab6c1220e3c2476d0232843245b5da0",
-          "a3bb5be0ff7b796e91aad0e0edf34fa1a8a25ee9f20106e0b10723de57126517",
-          "2afc6dd39506f928dc508910cbfc791f7f2e9bb403b634bc9c24279093a68c60",
-          "bf5c43164d44a670fe620b7a64dd2cac3869d3fc92489dc8c1a64aa3911ab325",
-          "2831cf3b0113306dcd6995511e21685b9e95577fca78346d5a65e77c96b794c3",
-          "ce1c396c5e25d1a1c719aba7cebe2bf240f1031ed5df9858ded454afced8380e",
-          "816db04d0dee93f56f2eae5263dd219e1e6f0d8934107e416edb776da90f4206",
-          "2dc0865071ea89aab6eb17684c4ddf27997a9935690893172cd9b5aed822b7b7",
+          "dceb0cc45f1e3de784972349f30d6670fe6afc577cde4a7b3434c4b412695cb0",
+          "eea291c51022ab5fc549ce58620d4850882b1078973bfbcd5ef7e17a348d3ccc",
+          "032fc82d12677c91a1bf7b585f3fb35a969bb400f5bf236b420c11e66eac73af",
+          "6ff5a82e04630361abc9df61e69b6481242ffba6c605b06d28f9e7e526e5d8f2",
+          "326d187b8ba75ef590e27dd2a2ef6b77df99eec34956fe6f5856ee719e1d2aff",
+          "1c7bc09e7ef266a406f5d5e19c66fef18e4711de185c8b48bff3220d9fe8bef3",
+          "203087a3012e261d3533c79715e30e0f780f17f24c5a9887c7d3dd6f8e340f96",
+          "8ec3ee3cfcff39c806108217a6cba93198b4390cdff010d319359b48913ac82a",
+          "4775e68fb120ca12b72e8e39e302c0531e5b657c3bc042fed4be9be93629fafd",
+          "0d562b45272dca3cbbd423f26f5baecac83aacfda61976c3cabce23749ba2a54",
+          "121671745317c8b88e9ade37064a5743620783bcb25301c5017244bba0f96fa2",
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       }
     },
     {
       "id": "follow/dragon-2/cast",
-      "prompt_id": "prompt-0299c137226ef5d8",
+      "prompt_id": "prompt-1af708eba8431891",
       "provider": "PixelLab",
       "endpoint": "/animate-pixminimax",
       "request": {
@@ -710,10 +712,10 @@
         "direction": "east",
         "view": "side",
         "enhance_prompt": false,
-        "seed": 9112103
+        "seed": 9112104
       },
-      "selected_job": "art/work/dragon-growth-20261109/cast-r3-job.json",
-      "selected_job_sha256": "ce443d5a681206f52c1b4cd47ec5af05d7d992e915860c737d308a2a3c986a25",
+      "selected_job": "art/work/dragon-growth-20261109/cast-r4-job.json",
+      "selected_job_sha256": "eef1a4c740f2c698cafe7fc7857bcee3954cbf699ed62aca8843bf2f6701a4eb",
       "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
         "art/references/pets/dragon-growth-user-20261109.png"
@@ -807,17 +809,17 @@
         ],
         "frame_rgba_sha256": [
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
-          "8be69c7b3155c4af38a0fc7aa8ed22e5f3f3d29ba8b4c62b0763721ba499ca15",
-          "54dbf09639282bf4167b119f910be1a966e271e30c813b4be291c2eae11dcd4d",
-          "b33c031e4cf5f6e4ec26e8a74f160c5926dda4c740be9c3648d31de22b962f54",
-          "e452135fe8eb51e844989a7ac7adc14f5aaa8a6762fe67b4db0fd2ed8e34d642",
-          "e1aac338019304c946245ebfb6032afb2e19599be3220b0ebc2468736b769938",
-          "b6307f2fcf93144f53984c6962ed9317172a0975b4cb96c492a7a40e9a8c1a63",
-          "73f58f7ecff6d0f64f1f224d5fe7239bb16cfcb8173786d3da5024e113ce3957",
-          "99ef7031d109c3575374203a56135c1c49ef39a9e1e33660e10cb7d70be5f047",
-          "26daea10e6d619d2ae1ba5ef5e0ec95f718e3ade451c6cecfd4859c42aeb91c7",
-          "7842b6165653e6e3d0398fcaafcad7ab23741d834e90039ae8cf806e7a0516a9",
-          "0aa4e25363d66ec5e691c01e5d80daf457b26ec6e512656548a13cd89ba21cb5",
+          "f629a15be8b396e57dd797daf34dcac1f0721a2f8885e61243836e8681284982",
+          "7e52585d4147be3966ab5cea5a2df4a1e32f5153d945b8722362fbd973068f79",
+          "7eec725d09ced6dbd49ca0f095f5cb4ebd299b9b4a3d8b35396182f61d4baf29",
+          "dcb57a430cdc5f60d59bc4631ebfc9feba895db42b54eb53f6fd3c7a65aa41bf",
+          "44ddd7b7275fca0bb22c70bf4b9ab110d47ec68592b61f0be4ee9ff3e294173f",
+          "22a048e66eeaa370bc94876bec6c4e1ad10ae6ec791a5667cdce280d9d279f54",
+          "42b8ca0c7e4dee3568926b91cda096e35ec593576099656244cee9e62e5901ad",
+          "5712de55b95ffef2069dc5616a4868a6a4825e91190a8dde5c16dd474f9f7829",
+          "2967d6e48741a7377e3f1e3a8c3105769b99a261b8bf63ebb6b19ac07f612330",
+          "8c54cc81936d62a137138904758f516932c486677bfb0efe98b776e9b6a2507d",
+          "deee2b315353ccce7964c94105de9e98d2e8a97c48ae58b0243e43ea37e750a2",
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       }
