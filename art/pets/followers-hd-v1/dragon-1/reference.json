@@ -1,0 +1,28 @@
+{
+  "source": "sources/dragon-evolution.png",
+  "source_sha256": "220f606c3d3af1061e876be4b0c6dbaa33d9a7b5454800113ae02385529e9393",
+  "source_box": [
+    90,
+    383,
+    469,
+    670
+  ],
+  "source_crop_sha256": "b7958ee9b42655dd43808f46c028bac2d47e6af4071ec83418cc4ccc710541bb",
+  "reference_sha256": "f1da923772cd865ae69e6a3409f4ed7dffd3a4fb06ede7b8d73d2338866e6964",
+  "native_resolution": 256,
+  "reference_body": [
+    192,
+    145
+  ],
+  "anchor": [
+    128,
+    232
+  ],
+  "render_scale": 0.171875,
+  "previous_body_extent": 33,
+  "mouth": [
+    221,
+    157
+  ],
+  "no_low_resolution_intermediate": true
+}

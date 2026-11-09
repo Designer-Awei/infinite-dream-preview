@@ -1,0 +1,21 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "1ec20217-e1dc-4a11-aaf0-fb830ff4c240",
+  "reference_sha256": "a104c63e67cae7998f46586ba4b7a706f95c57b0475e74a28b735fe09598fac9",
+  "request": {
+    "description": "Grounded breathing-attack with LARGE SYNCHRONIZED WING FLAPS: both wings unfold widely, sweep DOWN together showing darker membrane undersides, fold edge-on and recover to reference height. Keep all four paws planted. Chest expands, neck extends and jaws open, briefly hold then close. Tail and its existing flame sway. No takeoff or rearing. Only physical creature motion, no outward fire, projectile, orb, beam, ring, sparks or new spell effects. Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9131120
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "44ede59d5d9f0715248515fe3c0e3b1ccc6b881cf55a609bbeffe4fb9359d843",
+  "sha256": "9e7f35461291750d764837634a4f79c63bc345693a343977b6241fad7b8ba085",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}

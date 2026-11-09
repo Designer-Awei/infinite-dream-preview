@@ -1,0 +1,13 @@
+{
+  "native_resolution": 256,
+  "followers": 6,
+  "clips": 18,
+  "unique_native_tiles": 204,
+  "unchanged_fox_tiles": 84,
+  "atlas": [
+    4096,
+    3712
+  ],
+  "flags": [],
+  "no_frame_resampling": true
+}

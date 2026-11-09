@@ -1,0 +1,21 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "707d0240-9876-4775-b91d-bee7c26554e1",
+  "reference_sha256": "acdae4836fea6273bb92ba1c64bef55bc2cbf08009477e0a7bd42a9e9f44d680",
+  "request": {
+    "description": "A physical flying casting loop. Neck extends slightly, beak opens, both feathered wings sweep down TOGETHER and recover up TOGETHER while the body remains level. Tail feathers follow with gentle lag. Recover to the supplied pose. No snow, glow, rings, beams, projectiles, trails or exterior spell effects. Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9141420
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "f023b19fe92c00f3daeb0ced2b8e288a3c7ab27d4a1a75e98daea3d6b9b39e74",
+  "sha256": "59167da950e330588b607d0fbeb2b251b9b13b772af6c08524afd9e3e43e1c5e",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}

@@ -1,0 +1,21 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "a7a4f55a-a9c3-4d9c-8bff-6136d730527d",
+  "reference_sha256": "f1da923772cd865ae69e6a3409f4ed7dffd3a4fb06ede7b8d73d2338866e6964",
+  "request": {
+    "description": "A clearly VISIBLE LARGE WING FLAP while grounded: BOTH red bat wings lift together, unfold their membranes widely, sweep DOWN together showing the darker underside, then fold edge-on on recovery and return to reference height. Animate shoulders, elbows and tips, not a tiny twitch. All FOUR paws remain planted, chest breathes, tail and existing flame sway. No takeoff, rearing or begging. Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9140900
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "7834dd697b5af10e1cfc2a2c95579b81b86305b84a816c9d74e82fb7b09782f8",
+  "sha256": "75d8898bc73df0164f0b54dd35ba3953d7cd6380d6dd540fc9863754e8a0e370",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}

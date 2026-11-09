@@ -1,0 +1,22 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "ff2520c3-2ed4-4313-8816-a7c13a6339c7",
+  "reference_sha256": "f1da923772cd865ae69e6a3409f4ed7dffd3a4fb06ede7b8d73d2338866e6964",
+  "request": {
+    "description": "Four-legged walking loop IN PLACE, facing right. Alternating diagonal weight-bearing paws step with bending joints; shoulders and hips rise and fall, tail follows. Both bat wings lift, unfold, sweep down together, fold edge-on and recover. BOTH SURFACES OF BOTH WINGS ARE CRIMSON RED MEMBRANES, with deep RED shadows and rose RED highlights, exactly matching the supplied reference. This single RED membrane palette stays identical through lift, downstroke, turning and recovery in EVERY frame. Preserve the exact supplied face, horns, belly, tail flame, anatomy, life stage, sharp detail and size. All empty gaps between horns, head, back and wings remain completely transparent. Only the physical creature moves, four-legged and grounded. Entire silhouette fits the canvas with padding. Fixed camera, seamless return to the supplied pose.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9150910,
+    "drift_threshold": 0
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "d781041c814f57b8a90df885dcc4b2034f220e84de2861a6a724748f8e015532",
+  "sha256": "9740778b8660839bcbd5788e4971dfb819cc46191b7b1834a976e0abce905ca7",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}

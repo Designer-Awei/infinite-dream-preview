@@ -1,0 +1,21 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "43f99f3c-56be-4d21-8b1d-d6cac8c1c9fc",
+  "reference_sha256": "acdae4836fea6273bb92ba1c64bef55bc2cbf08009477e0a7bd42a9e9f44d680",
+  "request": {
+    "description": "Steady forward flight IN PLACE facing right. Both wings beat down TOGETHER and recover up TOGETHER in the same phase, with natural feather folding and delayed flowing tail sway. Gentle body rise and fall; do not translate across the canvas. No seesaw wings, roll, spin, flip or extra wings. Seamlessly return to the supplied pose. Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9131410
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "c1de056f85912a69c0ad3a1513320bf98858d655e294e36b868c57cab04ead7b",
+  "sha256": "98add4f75cd6420950169ad0ed27226aa5c9ae47e74c2d34c6988eb09b8a9e89",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}

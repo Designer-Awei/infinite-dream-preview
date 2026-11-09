@@ -1,0 +1,21 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "53e573c2-ab73-44c7-ba48-1b00998cb60e",
+  "reference_sha256": "acdae4836fea6273bb92ba1c64bef55bc2cbf08009477e0a7bd42a9e9f44d680",
+  "request": {
+    "description": "A smooth in-place flying wingbeat loop. BOTH feathered wings sweep DOWN together and recover UP together in the same phase. Feathers twist to show undersides on the downstroke, fold edge-on on recovery, then return to the supplied pose. Body gently bobs with delayed flowing tail feathers. No alternating seesaw wings, rolling, flipping or loops. Preserve the exact supplied creature, life stage, face, horns or crest, colours, anatomy and fine scales or feather edges. Sharp detailed sprite, no chunky enlarged pixels or blur. Fixed right-facing camera, same size and position, complete silhouette with clear canvas padding throughout. Transparent background, no floor, shadow, rider, saddle, text or new objects. No grey blobs, beige patches or opaque scraps in gaps between wings, horns and back. Seamless loop.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "seed": 9131400
+  },
+  "frames": 13,
+  "native_resolution": 256,
+  "raw_sha256": "495c86a8259dd26619a4f9ac14456fd2723705ea036d2a1c21edeaa9c779d2b0",
+  "sha256": "41c425d3b2de38fba3797f2783030f5dd4b0d171a3969aae7de297124b5a1021",
+  "usage": null,
+  "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+}
