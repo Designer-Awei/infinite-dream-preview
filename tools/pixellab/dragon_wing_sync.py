@@ -1,4 +1,8 @@
-"""Wing-only edits on approved body motion. Native 256; preserve the fox-guided legs."""
+"""Rejected r8 batch experiment retained for provenance.
+
+Interleaved edits broke wing timing and the fixed ROI clipped the downstroke.
+Use dragon_wing_redraw.py for complete temporal clips instead.
+"""
 import argparse,base64,hashlib,io,json,time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path

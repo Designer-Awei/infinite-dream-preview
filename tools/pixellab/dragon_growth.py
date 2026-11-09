@@ -111,7 +111,9 @@ def publish(revision,idle_revision=None,cast_revision=None):
   recipe=next(x for x in library['recipes'] if x['id']==f'follow/{pid}/{clip}')
   prompt=record.get('prompt') or record['request']['description'];prompt_id='prompt-'+hashlib.sha256(prompt.encode()).hexdigest()[:16];library['prompts'][prompt_id]=prompt
   if transfer:recipe['motion_reference']=record['motion_reference']
+  else:recipe.pop('motion_reference',None)
   if 'wing_reference' in record:recipe['wing_reference']=record['wing_reference']
+  else:recipe.pop('wing_reference',None)
   recipe.update(prompt_id=prompt_id,provider='PixelLab',endpoint=record.get('endpoint','/animate-pixminimax'),request={k:v for k,v in record['request'].items() if k!='description'},selected_job=str((OUT/(stem+'-job.json')).relative_to(ROOT)),selected_job_sha256=sha(OUT/(stem+'-job.json')),reference_png_sha256=sha(OUT/'reference-256.png'),originals=[str(SOURCE.relative_to(ROOT))],preparation=ref,cleanup={'alpha_cleanup':'alpha<=8 and detached components<=32; never RGB key; '+('duplicate transferred phase0 cycle endpoint' if transfer else 'exact source endpoints')},runtime={'atlas':'web/assets/pets/pets.png','cw':256,'ch':256,'coordinates':positions,'frame_rgba_sha256':hashes})
  if foot_centres:
   drift=float(np.max(np.abs(np.array(foot_centres)-np.array(foot_centres[0]))));assert drift<=2,('Planted paw drift',drift)

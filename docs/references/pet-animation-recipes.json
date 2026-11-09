@@ -48,7 +48,7 @@
   },
   "atlases": {
     "web/assets/pets/pets.png": {
-      "sha256": "7aea8ee7f92acd1fc536c909f0889fd98dd811bea4bcb7efea5a4f822e50af03",
+      "sha256": "f3950497cd86e014125007a9007811ae03f1ab95154a199b2d7f3c3b0d2150d7",
       "size": [
         4096,
         3328
@@ -459,145 +459,19 @@
     },
     {
       "id": "follow/dragon-2/idle",
-      "prompt_id": "prompt-2d449705aeef7018",
+      "prompt_id": "prompt-bd5c36a9ef95a60b",
       "provider": "PixelLab",
-      "endpoint": "/edit-animation-v2",
+      "endpoint": "/animate-pixminimax",
       "request": {
         "frame_count": 12,
-        "batches": [
-          {
-            "job": "e8298a08-94d6-40b2-bee6-9a505cd97054",
-            "phase_indices": [
-              0,
-              3,
-              6,
-              9
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings at original raised resting pose; frame 2: both wings starting DOWN together; frame 3: both wings fully DOWN together, membranes folding; frame 4: both wings nearly raised together. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "3125c6efc5887009bba83ae934214b08e0bd6114b22c4d4c9ec5d272f8531e32",
-            "output_sha256": "4cc43055891ad1f9d64ce388989df84802573839300d82f7051b34f8915bebe5"
-          },
-          {
-            "job": "77d043b7-11c7-4d03-97c0-15f60555481a",
-            "phase_indices": [
-              1,
-              4,
-              7,
-              10
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings lifting together; frame 2: both wings halfway DOWN together; frame 3: both wings beginning recovery UP together; frame 4: both wings settling to original raised pose. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "3125c6efc5887009bba83ae934214b08e0bd6114b22c4d4c9ec5d272f8531e32",
-            "output_sha256": "23bc8e12e7a675dc5904cab7f3f40f63dfbd7e6a2b531ed3a185cfcf556b29cc"
-          },
-          {
-            "job": "967499f8-f6d1-4516-8e23-d5f6473f2828",
-            "phase_indices": [
-              2,
-              5,
-              8,
-              11
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings fully UP and spread together; frame 2: both wings near bottom of downstroke; frame 3: both wings halfway UP together; frame 4: both wings back at original raised pose. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "3125c6efc5887009bba83ae934214b08e0bd6114b22c4d4c9ec5d272f8531e32",
-            "output_sha256": "e14963f658c540f1e37804d9bcac412a138e7a29195eaed00721e4652609ecd9"
-          }
-        ],
-        "assembly": "wing-region-only RGBA replacement; all source pixels outside polygon retained; phase 0 repeated at end",
-        "wing_region": [
-          [
-            0,
-            0
-          ],
-          [
-            162,
-            0
-          ],
-          [
-            162,
-            85
-          ],
-          [
-            150,
-            102
-          ],
-          [
-            143,
-            120
-          ],
-          [
-            135,
-            142
-          ],
-          [
-            125,
-            149
-          ],
-          [
-            112,
-            162
-          ],
-          [
-            98,
-            165
-          ],
-          [
-            85,
-            160
-          ],
-          [
-            68,
-            166
-          ],
-          [
-            0,
-            180
-          ]
-        ],
-        "protected_leg_rows": [
-          180,
-          256
-        ],
-        "idle_source_endpoint": true,
-        "body_source": {
-          "endpoint": "/animate-pixminimax",
-          "prompt": "Gentle living idle loop in place: adolescent red dragon breathes, blinks, and shifts its weight. Elbows and knees softly bend, shoulders and hips settle, tail sways. Small wings remain mostly folded so the four legs are easy to read. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
-          "request": {
-            "description": "Gentle living idle loop in place: adolescent red dragon breathes, blinks, and shifts its weight. Elbows and knees softly bend, shoulders and hips settle, tail sways. Small wings remain mostly folded so the four legs are easy to read. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
-            "frame_count": 12,
-            "no_background": true,
-            "direction": "east",
-            "view": "side",
-            "enhance_prompt": false,
-            "seed": 9111903
-          }
-        }
+        "no_background": true,
+        "direction": "east",
+        "view": "side",
+        "enhance_prompt": false,
+        "seed": 9111909
       },
-      "selected_job": "art/work/dragon-growth-20261109/idle-r8-job.json",
-      "selected_job_sha256": "2f8c9c44780ac0184d1204bd47128ac7e01954328228f277f80ee79eb766c495",
+      "selected_job": "art/work/dragon-growth-20261109/idle-r9-job.json",
+      "selected_job_sha256": "caaaf22653b96e97f00b25c40ac66b6eb0a6414c3496ccd65e8339f3a7be8c62",
       "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
         "art/references/pets/dragon-growth-user-20261109.png"
@@ -691,235 +565,41 @@
         ],
         "frame_rgba_sha256": [
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
-          "a4c3fde746137eac93d08619cec73d0d088d8723d5689835ad9d5e3663165a39",
-          "da2e951e36f57be8a1c0c5ec68bf58cd10cedaf953b5eb224707b5751a70ecd0",
-          "f8bd7e7fcac5eca5b249292128941451af2771f17436600a146f563db6db92d3",
-          "da92dd73814db9044894cab0c28bb10bc2e0e6c8d286737a320b68b668f98f13",
-          "7f7a4306800501f1fbafaa8b73891beca206b4e574da1133f7c776256ea9f7e6",
-          "68d8be8e914973e2535334839b35527146e5215ab33d17ed95ad1d73c3cff6d4",
-          "9d4d7858f7c2dbc24ac8c1a831f52789da17a54d489c244e55f94b6948c11553",
-          "644e0acd863784d5d5ab7b93fe3831a11b5fb3ebd3e30cd63beb74c84dd1c6fc",
-          "11feb426bfd6d33511a7c6f54a4bfe60a637b5f3cca76003399ce36af745f13b",
-          "458d3ab196271f11c8976ade9c3abbdbfbe1a315c7d507b559582641c685d751",
-          "6af1174b30e4d13411f2802431cbaa9265306f475fe09fe41bed63be8d2185cc",
+          "c31880013923895e91eb24e55265ee20fa260dd6f75ab85d4b578fa6837c3ec8",
+          "5532246169de0ffb78b391c523c5a12b42ac38b7ddad50567595a32799d4f0b6",
+          "2f55a551b5c2bd10a0242b97a9ce7e1a4c3ed21830ce47f338e8f0d9a15e6485",
+          "49b7ca0018ba49d5682f2ae12718fb1e5adb604942b3927d5a8df4645d9b10af",
+          "6720836cd5e74c813aecba7328b7f2787004e5f7d1b7202d70158de6b133c0fb",
+          "a2d3033772d553559e5b328d9b8549f1b945b30b2e3cdc8acc5129fe4717dbd2",
+          "dd9b11c6c64120655ad79269d62b677162bef8cfc940a8f9a2b09043519150fb",
+          "3d7e62144b41e8cc3fe4af7d72712269fc24fafa11ba683d89b2620f55c7ca27",
+          "df57f4b25accfc1bf5787d41c1b3e0e45b6e323d1722f8704092fab04fb081c9",
+          "8271e07d0da9be2a1cfdbb29e9d515cb915cae7096ca299eedbbe8c00c87ab8c",
+          "d48e6074dfb7a659cb217eb49a1ae2abcc591c1b84b1dd3b3c9cff02364391b4",
           "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       },
       "wing_reference": {
-        "recipe_id": "follow/dragon-3/move",
-        "role": "visual phase reference; not an API image input"
+        "recipe_id": "follow/dragon-3/idle",
+        "prompt_id": "prompt-bd5c36a9ef95a60b",
+        "role": "exact approved adult prompt; juvenile reference supplied to API"
       }
     },
     {
       "id": "follow/dragon-2/move",
-      "prompt_id": "prompt-2d449705aeef7018",
+      "prompt_id": "prompt-8acdf8fe6f36f910",
       "provider": "PixelLab",
-      "endpoint": "/edit-animation-v2",
+      "endpoint": "/animate-pixminimax",
       "request": {
         "frame_count": 12,
-        "batches": [
-          {
-            "job": "1ade02f4-d7a5-4ad1-b949-a7bf2020434f",
-            "phase_indices": [
-              0,
-              3,
-              6,
-              9
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings at original raised resting pose; frame 2: both wings starting DOWN together; frame 3: both wings fully DOWN together, membranes folding; frame 4: both wings nearly raised together. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "fb2af6575328e8fbe711dae89a1b997b13e5aab1acc71e732f2624ae231ae442",
-            "output_sha256": "8cc3896d521a805612a9e68574be64f55fd9a66753787a57d9191014b9a2daec"
-          },
-          {
-            "job": "73f54cca-f92b-4121-8ab7-dc210f70c351",
-            "phase_indices": [
-              1,
-              4,
-              7,
-              10
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings lifting together; frame 2: both wings halfway DOWN together; frame 3: both wings beginning recovery UP together; frame 4: both wings settling to original raised pose. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "fb2af6575328e8fbe711dae89a1b997b13e5aab1acc71e732f2624ae231ae442",
-            "output_sha256": "790ba897a31c7b21cc3b96e95637590a16f6ef93f98470164532af570a8f3ddb"
-          },
-          {
-            "job": "c3fe7bc5-0d87-428b-9b67-93e2ddc79498",
-            "phase_indices": [
-              2,
-              5,
-              8,
-              11
-            ],
-            "request": {
-              "description": "Edit ONLY the TWO BAT WINGS of this same juvenile red dragon. All four leg outlines, foot positions, diagonal gait, face, horns, neck, torso, tail and flame MUST remain EXACTLY as in each input frame. Do not re-pose, re-animate, move, rescale or redesign the body. Both wings flap synchronously in the SAME phase like the final adult dragon: rise together, sweep down together, fold and recover together. NEVER seesaw, alternate, or keep one high while the other is low. Far wing is foreshortened but follows the same up/down phase. Preserve CRIMSON RED membranes on BOTH surfaces, red shadows, no yellow/gold wing undersides. Clear wing motion, not just a twitch. Fixed camera and full silhouette in the 256 canvas with padding, clean transparent background, no new objects, external effects, shadow or glow. The four frames have the following exact wing poses, in this order: frame 1: both wings fully UP and spread together; frame 2: both wings near bottom of downstroke; frame 3: both wings halfway UP together; frame 4: both wings back at original raised pose. Keep every paw from the corresponding input frame unchanged.",
-              "image_size": {
-                "width": 256,
-                "height": 256
-              },
-              "seed": 9113908,
-              "no_background": true
-            },
-            "source_sha256": "fb2af6575328e8fbe711dae89a1b997b13e5aab1acc71e732f2624ae231ae442",
-            "output_sha256": "844a84bc0dbd7d0a4dc963ea5a6be3f588010a34089918b4194b235f57e63110"
-          }
-        ],
-        "assembly": "wing-region-only RGBA replacement; all source pixels outside polygon retained; phase 0 repeated at end",
-        "wing_region": [
-          [
-            0,
-            0
-          ],
-          [
-            162,
-            0
-          ],
-          [
-            162,
-            85
-          ],
-          [
-            150,
-            102
-          ],
-          [
-            143,
-            120
-          ],
-          [
-            135,
-            142
-          ],
-          [
-            125,
-            149
-          ],
-          [
-            112,
-            162
-          ],
-          [
-            98,
-            165
-          ],
-          [
-            85,
-            160
-          ],
-          [
-            68,
-            166
-          ],
-          [
-            0,
-            180
-          ]
-        ],
-        "protected_leg_rows": [
-          180,
-          256
-        ],
-        "idle_source_endpoint": false,
-        "body_source": {
-          "endpoint": "/transfer-outfit-v2",
-          "prompt": "Transfer the COMPLETE APPEARANCE of the reference red juvenile dragon onto each motion frame. Input animation fox is ONLY a motion/pose guide: replace it entirely with the exact red dragon, NOT a fox wearing accessories. Preserve the reference dragon face, horns, cream belly, crimson bat wings, red tail with flame and short youthful proportions. No fox ears, fur or fluffy tail. MOST IMPORTANT: keep the input frame four leg poses and relative foot placements EXACTLY; do not invent a different gait. Its diagonal pairs step simultaneously, the two near-side legs move opposite directions. Near front and far rear share a phase; far front and near rear share the opposite phase. Retain which legs are near/far, bending joints, paw lift and contact timing from each fox frame. Fold dragon wings quietly above back without hiding legs. Same right-facing side view, stationary canvas position, full silhouette, native 256x256 transparent canvas. ALL four paws retain clear IVORY CLAW TIPS exactly like the dragon reference, NEVER plain dark fox boots. Keep the dragon tail thin, red and extending LOW BACKWARDS behind the hips with its flame; do NOT copy the fox upright curled bushy-tail shape or its tail motion. Transfer only leg/body gait, not tail, ears or fox anatomy. Original sharp stylized shading, no additional realistic skin texture, glow, floor, shadow or text.",
-          "request": {
-            "frame_count": 12,
-            "assembly": "four native 256x256 three-frame transfer requests; duplicate phase 0 as cycle endpoint",
-            "batches": [
-              {
-                "job": "7c20dfee-b762-44c9-862a-8406760ad213",
-                "phase_indices": [
-                  0,
-                  4,
-                  8
-                ],
-                "request": {
-                  "image_size": {
-                    "width": 256,
-                    "height": 256
-                  },
-                  "seed": 9112907,
-                  "no_background": true,
-                  "additional_instructions": "Transfer the COMPLETE APPEARANCE of the reference red juvenile dragon onto each motion frame. Input animation fox is ONLY a motion/pose guide: replace it entirely with the exact red dragon, NOT a fox wearing accessories. Preserve the reference dragon face, horns, cream belly, crimson bat wings, red tail with flame and short youthful proportions. No fox ears, fur or fluffy tail. MOST IMPORTANT: keep the input frame four leg poses and relative foot placements EXACTLY; do not invent a different gait. Its diagonal pairs step simultaneously, the two near-side legs move opposite directions. Near front and far rear share a phase; far front and near rear share the opposite phase. Retain which legs are near/far, bending joints, paw lift and contact timing from each fox frame. Fold dragon wings quietly above back without hiding legs. Same right-facing side view, stationary canvas position, full silhouette, native 256x256 transparent canvas. ALL four paws retain clear IVORY CLAW TIPS exactly like the dragon reference, NEVER plain dark fox boots. Keep the dragon tail thin, red and extending LOW BACKWARDS behind the hips with its flame; do NOT copy the fox upright curled bushy-tail shape or its tail motion. Transfer only leg/body gait, not tail, ears or fox anatomy. Original sharp stylized shading, no additional realistic skin texture, glow, floor, shadow or text."
-                },
-                "motion_strip_sha256": "0e53cdcb6c74d4c9da31c23f05ddc4f6ffbdbc4667ab2a81035f52977b6dbc2c"
-              },
-              {
-                "job": "bc20138d-6c0f-442e-a827-b6dc2723049a",
-                "phase_indices": [
-                  1,
-                  5,
-                  9
-                ],
-                "request": {
-                  "image_size": {
-                    "width": 256,
-                    "height": 256
-                  },
-                  "seed": 9112907,
-                  "no_background": true,
-                  "additional_instructions": "Transfer the COMPLETE APPEARANCE of the reference red juvenile dragon onto each motion frame. Input animation fox is ONLY a motion/pose guide: replace it entirely with the exact red dragon, NOT a fox wearing accessories. Preserve the reference dragon face, horns, cream belly, crimson bat wings, red tail with flame and short youthful proportions. No fox ears, fur or fluffy tail. MOST IMPORTANT: keep the input frame four leg poses and relative foot placements EXACTLY; do not invent a different gait. Its diagonal pairs step simultaneously, the two near-side legs move opposite directions. Near front and far rear share a phase; far front and near rear share the opposite phase. Retain which legs are near/far, bending joints, paw lift and contact timing from each fox frame. Fold dragon wings quietly above back without hiding legs. Same right-facing side view, stationary canvas position, full silhouette, native 256x256 transparent canvas. ALL four paws retain clear IVORY CLAW TIPS exactly like the dragon reference, NEVER plain dark fox boots. Keep the dragon tail thin, red and extending LOW BACKWARDS behind the hips with its flame; do NOT copy the fox upright curled bushy-tail shape or its tail motion. Transfer only leg/body gait, not tail, ears or fox anatomy. Original sharp stylized shading, no additional realistic skin texture, glow, floor, shadow or text."
-                },
-                "motion_strip_sha256": "0e53cdcb6c74d4c9da31c23f05ddc4f6ffbdbc4667ab2a81035f52977b6dbc2c"
-              },
-              {
-                "job": "55e9c11e-7906-4ca6-a348-1e7814c4e5ab",
-                "phase_indices": [
-                  2,
-                  6,
-                  10
-                ],
-                "request": {
-                  "image_size": {
-                    "width": 256,
-                    "height": 256
-                  },
-                  "seed": 9112907,
-                  "no_background": true,
-                  "additional_instructions": "Transfer the COMPLETE APPEARANCE of the reference red juvenile dragon onto each motion frame. Input animation fox is ONLY a motion/pose guide: replace it entirely with the exact red dragon, NOT a fox wearing accessories. Preserve the reference dragon face, horns, cream belly, crimson bat wings, red tail with flame and short youthful proportions. No fox ears, fur or fluffy tail. MOST IMPORTANT: keep the input frame four leg poses and relative foot placements EXACTLY; do not invent a different gait. Its diagonal pairs step simultaneously, the two near-side legs move opposite directions. Near front and far rear share a phase; far front and near rear share the opposite phase. Retain which legs are near/far, bending joints, paw lift and contact timing from each fox frame. Fold dragon wings quietly above back without hiding legs. Same right-facing side view, stationary canvas position, full silhouette, native 256x256 transparent canvas. ALL four paws retain clear IVORY CLAW TIPS exactly like the dragon reference, NEVER plain dark fox boots. Keep the dragon tail thin, red and extending LOW BACKWARDS behind the hips with its flame; do NOT copy the fox upright curled bushy-tail shape or its tail motion. Transfer only leg/body gait, not tail, ears or fox anatomy. Original sharp stylized shading, no additional realistic skin texture, glow, floor, shadow or text."
-                },
-                "motion_strip_sha256": "0e53cdcb6c74d4c9da31c23f05ddc4f6ffbdbc4667ab2a81035f52977b6dbc2c"
-              },
-              {
-                "job": "df5b1784-ff03-413b-8649-9cbf4355a334",
-                "phase_indices": [
-                  3,
-                  7,
-                  11
-                ],
-                "request": {
-                  "image_size": {
-                    "width": 256,
-                    "height": 256
-                  },
-                  "seed": 9112907,
-                  "no_background": true,
-                  "additional_instructions": "Transfer the COMPLETE APPEARANCE of the reference red juvenile dragon onto each motion frame. Input animation fox is ONLY a motion/pose guide: replace it entirely with the exact red dragon, NOT a fox wearing accessories. Preserve the reference dragon face, horns, cream belly, crimson bat wings, red tail with flame and short youthful proportions. No fox ears, fur or fluffy tail. MOST IMPORTANT: keep the input frame four leg poses and relative foot placements EXACTLY; do not invent a different gait. Its diagonal pairs step simultaneously, the two near-side legs move opposite directions. Near front and far rear share a phase; far front and near rear share the opposite phase. Retain which legs are near/far, bending joints, paw lift and contact timing from each fox frame. Fold dragon wings quietly above back without hiding legs. Same right-facing side view, stationary canvas position, full silhouette, native 256x256 transparent canvas. ALL four paws retain clear IVORY CLAW TIPS exactly like the dragon reference, NEVER plain dark fox boots. Keep the dragon tail thin, red and extending LOW BACKWARDS behind the hips with its flame; do NOT copy the fox upright curled bushy-tail shape or its tail motion. Transfer only leg/body gait, not tail, ears or fox anatomy. Original sharp stylized shading, no additional realistic skin texture, glow, floor, shadow or text."
-                },
-                "motion_strip_sha256": "0e53cdcb6c74d4c9da31c23f05ddc4f6ffbdbc4667ab2a81035f52977b6dbc2c"
-              }
-            ]
-          }
-        }
+        "no_background": true,
+        "direction": "east",
+        "view": "side",
+        "enhance_prompt": false,
+        "seed": 9112010
       },
-      "selected_job": "art/work/dragon-growth-20261109/move-r8-job.json",
-      "selected_job_sha256": "ae24c03529d3e6de303ed3a1eeb779b32652be5783ab998366652068c01bc207",
+      "selected_job": "art/work/dragon-growth-20261109/move-r10-job.json",
+      "selected_job_sha256": "7b3db206ed0dc4d410d26a6b2820767104e25feeec3d0d75991e4fd91cc4cc68",
       "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
         "art/references/pets/dragon-growth-user-20261109.png"
@@ -951,7 +631,7 @@
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32; never RGB key; duplicate transferred phase0 cycle endpoint"
+        "alpha_cleanup": "alpha<=8 and detached components<=32; never RGB key; exact source endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -1012,56 +692,25 @@
           ]
         ],
         "frame_rgba_sha256": [
-          "ee653e23efbc85d71d7e4a76e29ca754228dc77727e5cffbb622022dd41254ca",
-          "fd5e5c31cd56030fd44715faa0cd51dfa7729e857965878b95af86a6752a976e",
-          "e9cc00de166a98504d3ed8a4b0eadff855e7616516a4829d0e5b22553bb64ed4",
-          "b641f75ef2dbc894c927d7d0c654a1304aa1cedc2b259d4c8e3e52b2cf234125",
-          "6e9ad14fc16a8fe856d3e4c6308e7e3086584ad609a3637210a26b7b7807bd43",
-          "4c72ef9776fb85e190236526a9c8eab17571b098c68f788f9c9f863c1e7a7641",
-          "4f2d7976881573fabdf8447b12c64f781cf42ade04f8fdc1188496a65958f6ee",
-          "5bfb9aba7d0dbc795637717bc5563a7e26c14bbc84c6b9e40a305b0c03ce3d8e",
-          "eacbd719f8e8a63d4f55867d3594b8cfaedf32beb096065604030c282ff97044",
-          "5e87484b5c70be7288a025a40526cd911c84cbb16d8c7f1dd636dbece98417cc",
-          "f26828724de06b1b503a9396e4227a58948bbdd3435ef0d904ae3e327e0f5d9a",
-          "c4f6ceec91f087916c9f200ecb65335b37ed472f4bfa2a5c20314aedcaeaeb5b",
-          "ee653e23efbc85d71d7e4a76e29ca754228dc77727e5cffbb622022dd41254ca"
-        ]
-      },
-      "motion_reference": {
-        "recipe_id": "follow/fox-1/move",
-        "strip_sha256": "0e53cdcb6c74d4c9da31c23f05ddc4f6ffbdbc4667ab2a81035f52977b6dbc2c",
-        "phases": [
-          0,
-          1,
-          2,
-          3,
-          4,
-          5,
-          6,
-          7,
-          8,
-          9,
-          10,
-          11
-        ],
-        "frame_rgba_sha256": [
-          "e023362a8b1b2deb5bfd6b67cc94ff1d8931af0ed2b9e91737464b2ac17a141a",
-          "f66a1b0b857d96db2ec27e71b1e9766e24c8b84b2b9e8e6861a8ce321f35f640",
-          "be764ad805c707731495388027cebb7ed2231dfb6aa70f50d14392891d9039bb",
-          "9044ac1d54ebd457ed9eaede1241a07f3158e5f1de33ed19f1622ec960f88cce",
-          "e524d4c2ce9688269a5dce5954e6f5a713076f7b3619c531b9ecd0c3fa5cdb48",
-          "01af0008774ea4a82a31e676cae37aa9cf7dd1f45ae1f11b2482c9b98e39d528",
-          "513f95d7717fe8fd876e6790f9fa15c909dc4f7be7cd641936c021be4fbf4e48",
-          "879bd47ce89265e8540f834a4ef4a21509703565237a98c2d005ed875c9e0a3c",
-          "c99df4e6de9f285b9396a08b4d4ad8f19e3ed69836042915e8da2c2a210fbfdd",
-          "fe53f81b95056d14eb9575a5d23306f25b43ba9b454bb91dc5b25a5f3be6755b",
-          "f2cc3e89cfb3d87176a463871d2f855879cff78546e370a4681bbf41d9555473",
-          "a933a6c49bd2806ee43846f9a977e7318530938069205a625b1ebd2b7b3156e5"
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
+          "044b5d2c04dd3c546173334f647597889737ee4176a0e1402640976c427c236a",
+          "62d27d79f0abf467654426609c92767fa3041d13d5053876d70c3c4ddd2c7dd6",
+          "e9f56f2f1541a58644ed0b8a848a32e808e9168b66e8b36b3e31c83e20df5048",
+          "73c9517a6b64e422ab6c22ef68581669d70d958b937b7c524cbadda2473c4732",
+          "1506de4e9ca00d85f0998f0ea037115d964dcb517d6f49aca3a2817db7b34c4e",
+          "a058dd85d33724ad226ce2054ee619597beefa9b5069f9ee2b45d13b9f3ae201",
+          "fbb48bb1a187e2185e95167c16d6a726c7ddf14865ad7e33305b971ce29269a4",
+          "c978baa23917058e6afe1063d3e62b0abef90a8b80853bc8184a753dd97bb8fa",
+          "2723c3a0e5618d362cf63fba742143c96a40cac4723e0e6683162f4e332978f8",
+          "ab37bd531e5ebe1cb1f72c3cac6f473941fab2d9e1afeb0917d1ee78b8b5c40c",
+          "b56797ed21f2d10ad0b18a30b763ec61144c2ba44bf9eb188fbf8dc8732c3335",
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       },
       "wing_reference": {
         "recipe_id": "follow/dragon-3/move",
-        "role": "visual phase reference; not an API image input"
+        "prompt_id": "prompt-8acdf8fe6f36f910",
+        "role": "exact approved adult prompt; juvenile reference supplied to API"
       }
     },
     {
