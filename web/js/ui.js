@@ -234,7 +234,20 @@ export function showHud(game, me) {
   root.appendChild(hud);
   if(me.pet?.stage===3) {
     const ride=el('button','btn small pet-ride-btn',`<img src="${petPortrait(me.pet.id,3)}" alt=""><span>骑乘</span><small>R</small>`);
-    ride.onclick=()=>{input.pressed.mount=true;sfx('click');};hud.querySelector('.tr').insertBefore(ride,hud.querySelector('.pausebtn'));
+    // The joystick prevents compatibility clicks while another finger is down.
+    // Consume the ride button's own pointer press, independently of that touch.
+    let touchClickUntil=0,ridePointer=null;
+    const toggleRide=()=>{if(!ride.disabled){input.pressed.mount=true;sfx('click');}};
+    ride.addEventListener('pointerdown',e=>{
+      if(e.pointerType!=='touch'&&e.pointerType!=='pen')return;
+      e.preventDefault();e.stopPropagation();
+      if(ridePointer!==null||ride.disabled)return;
+      ridePointer=e.pointerId;touchClickUntil=performance.now()+800;toggleRide();
+    });
+    const releaseRide=e=>{if(e.pointerId===ridePointer){ridePointer=null;touchClickUntil=performance.now()+800;}};
+    ride.addEventListener('pointerup',releaseRide);ride.addEventListener('pointercancel',releaseRide);
+    ride.addEventListener('click',e=>{if(performance.now()<touchClickUntil){e.preventDefault();return;}toggleRide();});
+    hud.querySelector('.tr').insertBefore(ride,hud.querySelector('.pausebtn'));
     hud.querySelector('.keys').textContent+=' · R 骑乘';
   }
   if(game.petTrial)hud.appendChild(el('div','pet-trial-tag o1','伙伴试用 · 大招10秒恢复 · 收益不保存'));

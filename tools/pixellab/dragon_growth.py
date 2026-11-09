@@ -70,18 +70,23 @@ def generate(clip,revision):
  for i in range(12):board.alpha_composite(sheet.crop((i*256,0,(i+1)*256,256)),(i%4*256,i//4*280+20));d.text((i%4*256+5,i//4*280+2),clip+' '+str(i),fill='white')
  board.save(OUT/(stem+'-review.png'));print('Completed',stem,flush=True)
 def publish(revision,idle_revision=None,cast_revision=None):
- """Replace the existing 34 adolescent-only cells; all other actors remain byte-identical."""
+ """Replace adolescent-only cells; all other actors remain byte-identical."""
  meta_path=ROOT/'web/assets/pets/pets.json';meta=json.loads(meta_path.read_text());pid='dragon-2'
  atlas_path=ROOT/'web/assets/pets/pets.png';atlas=Image.open(atlas_path).convert('RGBA')
  old=atlas.copy();coords={tuple(x) for c in meta['clips'][pid].values() for x in c}
  others={tuple(x) for k,clips in meta['clips'].items() if k!=pid and meta['actors'][k].get('page',0)==0 for c in clips.values() for x in c}
- assert not coords&others and len(coords)==34
+ assert not coords&others and len(coords) in [34,35]
  ref=json.loads((OUT/'reference.json').read_text());reference=Image.open(OUT/'reference-256.png').convert('RGBA')
  writes={};foot_centres=[];library_path=ROOT/'docs/references/pet-animation-recipes.json';library=json.loads(library_path.read_text())
  actor=meta['actors'][pid];actor.update({k:ref[k] for k in ['anchor','mouth','render_scale','native_resolution']});actor['cast_mouth']=ref['mouth'];actor.update(cast_release_frame=4,cast_hold_frames=[4,7],cast_timeline={'windup':.24,'hold':[4,7],'recovery':.3})
  for clip in CLIPS:
   selected=idle_revision if clip=='idle' and idle_revision is not None else cast_revision if clip=='cast' and cast_revision is not None else revision
   stem=f'{clip}-r{selected}';record=json.loads((OUT/(stem+'-job.json')).read_text());strip=Image.open(OUT/(stem+'.png')).convert('RGBA');positions=meta['clips'][pid][clip+'_e'];hashes=[];mouths=[]
+  transfer='motion_reference' in record
+  if transfer and tuple(positions[0])==tuple(meta['frames'][pid]['side'][:2]):
+   occupied=coords|others
+   free=next((x,y) for y in range(0,atlas.height,256) for x in range(0,atlas.width,256) if (x,y) not in occupied)
+   positions[0]=list(free);positions[-1]=list(free);coords.add(free)
   for i,(x,y) in enumerate(positions):
    frame=strip.crop((i*256,0,(i+1)*256,256));bb=frame.getbbox();assert bb and min(bb[:2])>=1 and max(bb[2:])<=255,(clip,i,bb)
    raw=frame.tobytes()
@@ -104,13 +109,14 @@ def publish(revision,idle_revision=None,cast_revision=None):
    else:mouths.append(ref['mouth'])
   actor['mouth_frames'][clip+'_e']=mouths
   recipe=next(x for x in library['recipes'] if x['id']==f'follow/{pid}/{clip}')
-  prompt=record['request']['description'];prompt_id='prompt-'+hashlib.sha256(prompt.encode()).hexdigest()[:16];library['prompts'][prompt_id]=prompt
-  recipe.update(prompt_id=prompt_id,provider='PixelLab',endpoint='/animate-pixminimax',request={k:v for k,v in record['request'].items() if k!='description'},selected_job=str((OUT/(stem+'-job.json')).relative_to(ROOT)),selected_job_sha256=sha(OUT/(stem+'-job.json')),reference_png_sha256=sha(OUT/'reference-256.png'),originals=[str(SOURCE.relative_to(ROOT))],preparation=ref,cleanup={'alpha_cleanup':'alpha<=8 and detached components<=32; never RGB key; exact source endpoints'},runtime={'atlas':'web/assets/pets/pets.png','cw':256,'ch':256,'coordinates':positions,'frame_rgba_sha256':hashes})
+  prompt=record.get('prompt') or record['request']['description'];prompt_id='prompt-'+hashlib.sha256(prompt.encode()).hexdigest()[:16];library['prompts'][prompt_id]=prompt
+  if transfer:recipe['motion_reference']=record['motion_reference']
+  if 'wing_reference' in record:recipe['wing_reference']=record['wing_reference']
+  recipe.update(prompt_id=prompt_id,provider='PixelLab',endpoint=record.get('endpoint','/animate-pixminimax'),request={k:v for k,v in record['request'].items() if k!='description'},selected_job=str((OUT/(stem+'-job.json')).relative_to(ROOT)),selected_job_sha256=sha(OUT/(stem+'-job.json')),reference_png_sha256=sha(OUT/'reference-256.png'),originals=[str(SOURCE.relative_to(ROOT))],preparation=ref,cleanup={'alpha_cleanup':'alpha<=8 and detached components<=32; never RGB key; '+('duplicate transferred phase0 cycle endpoint' if transfer else 'exact source endpoints')},runtime={'atlas':'web/assets/pets/pets.png','cw':256,'ch':256,'coordinates':positions,'frame_rgba_sha256':hashes})
  if foot_centres:
   drift=float(np.max(np.abs(np.array(foot_centres)-np.array(foot_centres[0]))));assert drift<=2,('Planted paw drift',drift)
  else:drift=None
- if idle_revision is not None:
-  for x,y in meta['clips'][pid]['idle_e']:assert old.crop((x,y,x+256,y+256)).tobytes()==atlas.crop((x,y,x+256,y+256)).tobytes()
+ idle_preserved=all(old.crop((x,y,x+256,y+256)).tobytes()==atlas.crop((x,y,x+256,y+256)).tobytes() for x,y in meta['clips'][pid]['idle_e'])
  for x,y in others:assert old.crop((x,y,x+256,y+256)).tobytes()==atlas.crop((x,y,x+256,y+256)).tobytes()
  atlas.save(atlas_path,optimize=True);digest=sha(atlas_path);meta['sha256']=digest;meta['pages'][0]['sha256']=digest;dump(meta_path,meta)
  library['atlases']['web/assets/pets/pets.png'].update(sha256=digest,size=list(atlas.size));dump(library_path,library)
@@ -119,7 +125,7 @@ def publish(revision,idle_revision=None,cast_revision=None):
  if existing:assert existing['sha256']==sha(SOURCE)
  else:catalog['files'].append({'file':source_name,'sha256':sha(SOURCE),'bytes':SOURCE.stat().st_size,'size':list(Image.open(SOURCE).size),'roles':['User-selected middle-stage dragon reference supplied 2026-11-09'],'original_locations':[]})
  dump(catalog_path,catalog)
- dump(OUT/'publish-check.json',{'replacement_cells':len(writes),'changed_cells':sum(old.crop((x,y,x+256,y+256)).tobytes()!=atlas.crop((x,y,x+256,y+256)).tobytes() for x,y in coords),'planted_paw_max_horizontal_drift':drift,'idle_preserved':idle_revision is not None,'other_actor_cells_preserved':len(others),'native_resolution':256,'clip_count':3,'reference_source':source_name,'atlas_sha256':digest})
+ dump(OUT/'publish-check.json',{'replacement_cells':len(writes),'changed_cells':sum(old.crop((x,y,x+256,y+256)).tobytes()!=atlas.crop((x,y,x+256,y+256)).tobytes() for x,y in coords),'planted_paw_max_horizontal_drift':drift,'idle_preserved':idle_preserved,'other_actor_cells_preserved':len(others),'native_resolution':256,'clip_count':3,'reference_source':source_name,'atlas_sha256':digest})
  print('Published adolescent dragon only:',len(writes),'cells; other actor cells preserved:',len(others),flush=True)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--source',type=Path);p.add_argument('--publish',action='store_true');p.add_argument('--clip',choices=CLIPS);p.add_argument('--revision',type=int,default=1);p.add_argument('--idle-revision',type=int);p.add_argument('--cast-revision',type=int);p.add_argument('--clips',nargs='+',choices=CLIPS);a=p.parse_args()
