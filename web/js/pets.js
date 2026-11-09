@@ -14,13 +14,19 @@ export function attachPet(game,p,value){
 export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,route:[],room:game.roomIdx,castT:0,moving:false,blinkT:0,targetId:null,state:'idle',returning:false,nav:null,navCd:0,stuck:0});}
 export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];}
 function followerFrame(q,actor,clips){
-  let name='idle_e',frame=q.anim*6;
+  let name='idle_e',frame=q.anim*6,absoluteFrame=false;
   if(q.castT>0&&clips.cast_e){
     name='cast_e';const elapsed=q.castMax-q.castT,[lo,hi]=actor.cast_hold_frames||[3,5],mid=Math.floor((lo+hi)/2);
-    frame=actor.native_resolution?(elapsed*6)%8:elapsed<.35?elapsed*8:q.castT<.375?6+(.375-q.castT)*8:q.id==='phoenix'?(elapsed*6)%8:[lo,mid,hi,mid][Math.floor(elapsed*6)%4];
+    const timeline=actor.cast_timeline;
+    if(timeline){
+      absoluteFrame=true;const count=clips.cast_e.length-1,[start,end]=timeline.hold;
+      if(elapsed<timeline.windup)frame=elapsed/timeline.windup*start;
+      else if(q.castT<timeline.recovery)frame=end+(count-end)*(1-q.castT/timeline.recovery);
+      else{const span=end-start,step=Math.floor((elapsed-timeline.windup)*9)%(span*2);frame=start+(step<=span?step:span*2-step);}
+    }else frame=actor.native_resolution?(elapsed*6)%8:elapsed<.35?elapsed*8:q.castT<.375?6+(.375-q.castT)*8:q.id==='phoenix'?(elapsed*6)%8:[lo,mid,hi,mid][Math.floor(elapsed*6)%4];
   }else if(q.moving&&clips.move_e){name='move_e';frame=(q.walkT||0)*(q.id==='phoenix'?6:PET_MOTION.walkFps);}
   const clip=clips[name],count=Math.max(1,clip.length-1);
-  frame=Math.floor(frame*(actor.native_resolution?count/8:1));
+  frame=Math.floor(frame*(actor.native_resolution&&!absoluteFrame?count/8:1));
   const index=Math.min(clip.length-1,q.castT>0?frame:frame%count);
   return{name,index,pos:clip[index]};
 }

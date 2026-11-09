@@ -37,11 +37,14 @@
     "prompt-371d62039a6a08f1": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated orange-haired girl with flower hair ornament, exact eyes, red-and-white outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop. Keep a solid saddle back under hips; retain near-wing depth and original clothes.",
     "prompt-8da3fe75fc2f0d47": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated white-haired horned girl, violet eyes, short hair tips, white dress and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra white fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop.",
     "prompt-fcba8663aa9e0804": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated short brown-haired girl, exact eyes, dark outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop.",
-    "prompt-109ecc9f4f03e13f": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated purple-haired witch-hat girl, exact eyes, dark outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop."
+    "prompt-109ecc9f4f03e13f": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated purple-haired witch-hat girl, exact eyes, dark outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop.",
+    "prompt-64df439ae7315f49": "Gentle living idle loop in place: adolescent red dragon breathes, blinks, and shifts its weight. Elbows and knees softly bend, shoulders and hips settle, tail sways. Small wings remain mostly folded so the four legs are easy to read. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
+    "prompt-f3c4b44f6a644b92": "A clear four-legged TROT IN PLACE, facing right. LEG MOTION IS THE PRIORITY: lift each paw well off the ground, bend its elbow or knee, swing the paw forward, plant it and push backwards. Alternate diagonal pairs: near front with far rear, then far front with near rear. All FOUR paws must visibly change positions. Shoulder and hip bob follows footfalls. NO frozen feet, sliding, skating or wing-only motion. Keep the small wings folded and stable, tail balances the trot. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose.",
+    "prompt-0299c137226ef5d8": "Attack WHILE STEPPING IN PLACE: near forepaw lifts, elbow bends and paw steps forward to brace; opposite hind leg bends, pushes and recovers. Both front legs and both rear legs must visibly change pose during the cycle, not remain frozen. Crouch the body, extend neck and OPEN jaws wide, then close and recover with a backward step. Small wings partly open without hiding paws. No external flames, particles, orb or beam; these are rendered by game code. Preserve EXACT supplied adolescent dragon design, youthful face, eyes, horns, wing size, body proportions, tail flame and colours. Keep the original stylized shading; do not add realistic skin texture or extra scales. Fixed right-facing side camera, stationary position and constant size, complete silhouette with padding. Transparent background, no ground, shadow, aura, glow, rider, props or text. Seamlessly return to the source pose."
   },
   "atlases": {
     "web/assets/pets/pets.png": {
-      "sha256": "4cd37f1009024a4a6554b102855c54faca4d00c923a741f81b77e4fce6381abf",
+      "sha256": "15c53f6c72b65faea18f62c74e2c3ac6f2aa34ab1ec788d184997f2bf93dfbd8",
       "size": [
         4096,
         3328
@@ -452,7 +455,7 @@
     },
     {
       "id": "follow/dragon-2/idle",
-      "prompt_id": "prompt-bd5c36a9ef95a60b",
+      "prompt_id": "prompt-64df439ae7315f49",
       "provider": "PixelLab",
       "endpoint": "/animate-pixminimax",
       "request": {
@@ -461,43 +464,42 @@
         "direction": "east",
         "view": "side",
         "enhance_prompt": false,
-        "seed": 9131000
+        "seed": 9111903
       },
-      "selected_job": "art/pets/followers-hd-v1/dragon-2/idle-r2-job.json",
-      "selected_job_sha256": "e77f6e2a96c957f836454b48fb809170b64d4dcc28986ec3632da5850875dc76",
-      "reference_png_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
+      "selected_job": "art/work/dragon-growth-20261109/idle-r3-job.json",
+      "selected_job_sha256": "fc5ae83bc25b7e9114c82a1d22b2e1089df8ee207bb8a4a45ae0e1ed50b40521",
+      "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
-        "art/references/pets/followers-hd-v1-dragon-evolution.png"
+        "art/references/pets/dragon-growth-user-20261109.png"
       ],
       "preparation": {
-        "source_sha256": "220f606c3d3af1061e876be4b0c6dbaa33d9a7b5454800113ae02385529e9393",
+        "source": "art/references/pets/dragon-growth-user-20261109.png",
+        "source_sha256": "3c5ca717c57492c2947b25e8157ab00cd7d1a8016be3946e417215cbd998ba0f",
         "source_box": [
-          573,
-          187,
-          1164,
-          672
+          617,
+          226,
+          1133,
+          673
         ],
-        "source_crop_sha256": "a6c65237aee3fe14bfd746d7290d30d8ec2ddfa348e3e2813492e5cec293e227",
-        "reference_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
         "native_resolution": 256,
+        "reference_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
         "reference_body": [
           192,
-          158
+          166
         ],
         "anchor": [
           128,
           232
         ],
         "render_scale": 0.2552083333333333,
-        "previous_body_extent": 49,
         "mouth": [
-          221,
-          129
+          220,
+          132
         ],
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+        "alpha_cleanup": "alpha<=8 and detached components<=32; never RGB key; exact source endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -558,25 +560,25 @@
           ]
         ],
         "frame_rgba_sha256": [
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497",
-          "5757081b31b60acea5c2768a9c8a0979b9d5f315c05a79c09e40d2086aa575b9",
-          "c9500996d3c7c9b4bb1694afc58ec789edb1bae971c2ab4d799e9f4e737393e5",
-          "ecbc32023d6c69b4575cefc320a47d79e80ca39eb239419142820617ea53dc32",
-          "140fd0d3ab8e535ee68e9992ca943e0b5ccbb283fdbba1a7c2b7e659b212dd74",
-          "95d8bbc389729fe951901e3f7ee4d4bf1f25713727a7d83bb72b7ac5e16b2cad",
-          "60127969522e7da9dfc80a4db3a8dd907229d67feff951243eec9a5d8dff8a07",
-          "1f0c192491d65bf197cd706187ef87e244fd88b5032aefc8d394cfda8705c413",
-          "09718daef731ad0a6bc930ec97fd257a800a9afb34b9e447c19ae0bd0ae3bbf2",
-          "f716f02e8b8fe06692c785cdada33b3f78e82edc2bf0eb4038f52e4225a10c37",
-          "2499dc65399eae3bbf68499c1bf420037636b39a8223db93b0a378a285e33842",
-          "70503a87f8051ad42996dc5c68fb7776aae8f6c967e3f55659c9f6ea6cec8820",
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497"
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
+          "c9ae3e076565e61cef579af2b67ededa265273230620731a89f21b50ea634f79",
+          "c4ab066f3bd171be3ea89423ea49ddab10086099aac8f3b272b5314f7865f058",
+          "a79326a38dee5748b3257da702270c387b7283b6dc4c5e7762a9f06f4c2020ae",
+          "108e1153ed7d9be669f743c52df33b7a8cf7ec7f20208563c99cea13e947e9b1",
+          "75f8f838c9f79e041f7a7766da27310dccca5b4eacaa46977bb89993de39dcb8",
+          "1a70418316421a4953840e17f6b7c3667086ffb8f26501f36862503fac4ca117",
+          "0d7a273073a8092674208b854bf631017d096bda56d36931855010540f0aa31a",
+          "b90bf6d9f326d1f88e6f63a3323233499207198c550fffb71b73871a38e18e04",
+          "4f9385b35437f7520e62ff4ac92b47fe95db1a5e9df7de54e63a1dc566e1e49e",
+          "863f6726f3ab93617ceacafb7b815481edc5b61e3aca718ee12931588f58acd6",
+          "f030f8c9b6c4c129ffa840f96cef57bcd4d9361682be88e153273eb95e366bae",
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       }
     },
     {
       "id": "follow/dragon-2/move",
-      "prompt_id": "prompt-30f6f5b1688eb0a8",
+      "prompt_id": "prompt-f3c4b44f6a644b92",
       "provider": "PixelLab",
       "endpoint": "/animate-pixminimax",
       "request": {
@@ -585,44 +587,42 @@
         "direction": "east",
         "view": "side",
         "enhance_prompt": false,
-        "seed": 9151010,
-        "drift_threshold": 0
+        "seed": 9112003
       },
-      "selected_job": "art/pets/followers-hd-v1/dragon-2/move-r4-job.json",
-      "selected_job_sha256": "20408183b41f2858b20b94627be61570e32e87b2168d71f5de6f556cc6dbbd37",
-      "reference_png_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
+      "selected_job": "art/work/dragon-growth-20261109/move-r3-job.json",
+      "selected_job_sha256": "8866cc5d84d46460b37f9e990f36e4d4611a24042eb22860a4e79569a6c49cbe",
+      "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
-        "art/references/pets/followers-hd-v1-dragon-evolution.png"
+        "art/references/pets/dragon-growth-user-20261109.png"
       ],
       "preparation": {
-        "source_sha256": "220f606c3d3af1061e876be4b0c6dbaa33d9a7b5454800113ae02385529e9393",
+        "source": "art/references/pets/dragon-growth-user-20261109.png",
+        "source_sha256": "3c5ca717c57492c2947b25e8157ab00cd7d1a8016be3946e417215cbd998ba0f",
         "source_box": [
-          573,
-          187,
-          1164,
-          672
+          617,
+          226,
+          1133,
+          673
         ],
-        "source_crop_sha256": "a6c65237aee3fe14bfd746d7290d30d8ec2ddfa348e3e2813492e5cec293e227",
-        "reference_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
         "native_resolution": 256,
+        "reference_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
         "reference_body": [
           192,
-          158
+          166
         ],
         "anchor": [
           128,
           232
         ],
         "render_scale": 0.2552083333333333,
-        "previous_body_extent": 49,
         "mouth": [
-          221,
-          129
+          220,
+          132
         ],
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+        "alpha_cleanup": "alpha<=8 and detached components<=32; never RGB key; exact source endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -683,25 +683,25 @@
           ]
         ],
         "frame_rgba_sha256": [
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497",
-          "cf25b2b90c79954ada5257d151cc8b782662759ca53ce0576859883d26955871",
-          "7e295747025c4bbdc3c31d19a16f550269b5b6219a355ecf959145c3404deefb",
-          "30b36ead66ba1095447c7d2596cb07fc0e2ef703fc450421c803192c1c8cd8dd",
-          "51c77ec1c2db7b830738e28f3e461d942d696db070b20214e893deff2338fe7c",
-          "fba5d31817d2088a20f32eb15b84524d6482392dd95f126c6631d2db7dd3b9d4",
-          "28a1777f54ca58b444c4a404080b7a9b17b346c3507f81ee35098509a8ef866f",
-          "c0a4199229232bbdb52bee00b409818d25604b39bda796b2a538e60f909dd2b6",
-          "e88dfe3e25cd4df3e05cfaaa43598c3a6741f6d8458c646c13c8e23ecb3a5448",
-          "07f4637a33caeee2772a42f2be5a3e5fc42971cf74cdf1d1f36a78858bce23ce",
-          "a084f7ab196f1cdee5bdab51d4c8596a305bc207b2b929f7288cd102e4c63d43",
-          "1ba6e1f3339df5f76fcdd3b5d359c5f62a39adf12d95286b7692ad0a53bdc2e4",
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497"
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
+          "734ab531e4fc63dcdcf7b5e117bc11f862dd113ceb543368804d0b31e460f0a1",
+          "b33df33c840e79e2528b0487e912542c089f5e705d51461cbd8044dc257219e6",
+          "005a8f4085ec811c2a8b31c5da4d62f50d1d8e33c2eed2ead9ef3e8067bda33a",
+          "3cb667825f4ff567fc078412d7939eb4aab6c1220e3c2476d0232843245b5da0",
+          "a3bb5be0ff7b796e91aad0e0edf34fa1a8a25ee9f20106e0b10723de57126517",
+          "2afc6dd39506f928dc508910cbfc791f7f2e9bb403b634bc9c24279093a68c60",
+          "bf5c43164d44a670fe620b7a64dd2cac3869d3fc92489dc8c1a64aa3911ab325",
+          "2831cf3b0113306dcd6995511e21685b9e95577fca78346d5a65e77c96b794c3",
+          "ce1c396c5e25d1a1c719aba7cebe2bf240f1031ed5df9858ded454afced8380e",
+          "816db04d0dee93f56f2eae5263dd219e1e6f0d8934107e416edb776da90f4206",
+          "2dc0865071ea89aab6eb17684c4ddf27997a9935690893172cd9b5aed822b7b7",
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       }
     },
     {
       "id": "follow/dragon-2/cast",
-      "prompt_id": "prompt-09d9a6b68ae61c2b",
+      "prompt_id": "prompt-0299c137226ef5d8",
       "provider": "PixelLab",
       "endpoint": "/animate-pixminimax",
       "request": {
@@ -710,43 +710,42 @@
         "direction": "east",
         "view": "side",
         "enhance_prompt": false,
-        "seed": 9131020
+        "seed": 9112103
       },
-      "selected_job": "art/pets/followers-hd-v1/dragon-2/cast-r2-job.json",
-      "selected_job_sha256": "cd618414b3a652dacd7c802bd652a125c9e4356cf0a56c1813f55d0256e8d249",
-      "reference_png_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
+      "selected_job": "art/work/dragon-growth-20261109/cast-r3-job.json",
+      "selected_job_sha256": "ce443d5a681206f52c1b4cd47ec5af05d7d992e915860c737d308a2a3c986a25",
+      "reference_png_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
       "originals": [
-        "art/references/pets/followers-hd-v1-dragon-evolution.png"
+        "art/references/pets/dragon-growth-user-20261109.png"
       ],
       "preparation": {
-        "source_sha256": "220f606c3d3af1061e876be4b0c6dbaa33d9a7b5454800113ae02385529e9393",
+        "source": "art/references/pets/dragon-growth-user-20261109.png",
+        "source_sha256": "3c5ca717c57492c2947b25e8157ab00cd7d1a8016be3946e417215cbd998ba0f",
         "source_box": [
-          573,
-          187,
-          1164,
-          672
+          617,
+          226,
+          1133,
+          673
         ],
-        "source_crop_sha256": "a6c65237aee3fe14bfd746d7290d30d8ec2ddfa348e3e2813492e5cec293e227",
-        "reference_sha256": "e4f8960a6a935e46203841b33b3b6868b752aa816de7b4b1a7d5826168374b3c",
         "native_resolution": 256,
+        "reference_sha256": "5b374071acbf9be0174e3e203d1f3cb25a59db11eb47d4d971552436dd36d87f",
         "reference_body": [
           192,
-          158
+          166
         ],
         "anchor": [
           128,
           232
         ],
         "render_scale": 0.2552083333333333,
-        "previous_body_extent": 49,
         "mouth": [
-          221,
-          129
+          220,
+          132
         ],
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
+        "alpha_cleanup": "alpha<=8 and detached components<=32; never RGB key; exact source endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -807,19 +806,19 @@
           ]
         ],
         "frame_rgba_sha256": [
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497",
-          "5d5c0e3ae505de96a48a8016a39f03b22e49b805a683475b0f2dcd5e1b572e0a",
-          "a7105db111113265aa2f6b645c605b9e0b343b027f372879d806518fc9478e09",
-          "7fcbe89dad144ddb7bbc8551aa8700990a176862095cc74309562cefa3180b7c",
-          "b913942bf8748a20dbe4431c8a60c417f321795b356553b9d95980c464cf4d63",
-          "49cae18837d966317a5f5649e8e74e5cda15a56b6a6c0350c738b0a17c50cc2d",
-          "6248d34ca1e079c3e6e48c51bd5e01b5e071b3e0d6f8d35d3be52f1590df1ed9",
-          "db0155238e750b16fbe8aa5cbb83710353dc46ef523ee3c37c7f1381933fc713",
-          "192ab22f946e501e88e79eb474db95cf142c86ef85b654cb29bd79a28a05f760",
-          "2f9a7dd39a947027c2b90f99f7f2d7582847c72c0a2b2e23ec1f2d0b907ae7fd",
-          "9edc11003b4def21321fdc6c316bb54f9139949e2d1142436a472beeab771394",
-          "5425c851745fef430de409a82c0403b2c043b177a02cd84ec73b5c6cc3877d95",
-          "6a98650a32738718d9f42dd02c625f160eb395120792a68b6719bc5469be8497"
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a",
+          "8be69c7b3155c4af38a0fc7aa8ed22e5f3f3d29ba8b4c62b0763721ba499ca15",
+          "54dbf09639282bf4167b119f910be1a966e271e30c813b4be291c2eae11dcd4d",
+          "b33c031e4cf5f6e4ec26e8a74f160c5926dda4c740be9c3648d31de22b962f54",
+          "e452135fe8eb51e844989a7ac7adc14f5aaa8a6762fe67b4db0fd2ed8e34d642",
+          "e1aac338019304c946245ebfb6032afb2e19599be3220b0ebc2468736b769938",
+          "b6307f2fcf93144f53984c6962ed9317172a0975b4cb96c492a7a40e9a8c1a63",
+          "73f58f7ecff6d0f64f1f224d5fe7239bb16cfcb8173786d3da5024e113ce3957",
+          "99ef7031d109c3575374203a56135c1c49ef39a9e1e33660e10cb7d70be5f047",
+          "26daea10e6d619d2ae1ba5ef5e0ec95f718e3ade451c6cecfd4859c42aeb91c7",
+          "7842b6165653e6e3d0398fcaafcad7ab23741d834e90039ae8cf806e7a0516a9",
+          "0aa4e25363d66ec5e691c01e5d80daf457b26ec6e512656548a13cd89ba21cb5",
+          "a27ce885a46ad7d0d1a8a68a6ae0f03297082f5569e7cdd360fc15137e3e706a"
         ]
       }
     },

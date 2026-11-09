@@ -427,6 +427,19 @@
       "original_locations": [
         "art/lobby/base_grok.png"
       ]
+    },
+    {
+      "file": "art/references/pets/dragon-growth-user-20261109.png",
+      "sha256": "3c5ca717c57492c2947b25e8157ab00cd7d1a8016be3946e417215cbd998ba0f",
+      "bytes": 1320733,
+      "size": [
+        2172,
+        724
+      ],
+      "roles": [
+        "User-selected middle-stage dragon reference supplied 2026-11-09"
+      ],
+      "original_locations": []
     }
   ]
 }
