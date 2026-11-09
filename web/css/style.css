@@ -476,7 +476,7 @@ body.touchmode .keys, body.touchmode .pcskills { display: none; }
 .b-ult.ready > .bface, .s-ult.ready > .bface { background: radial-gradient(circle at 40% 32%, #fff6b0, #ffd84a 50%, #d88a10); }
 .b-dash > .bface, .s-dash > .bface { background: radial-gradient(circle at 40% 32%, #b8ffc8, #3ad06a 55%, #187a3a); }
 .tbtn .ico, .pcs .ico { position: absolute; left: 50%; top: 48%; width: 62%; height: 62%; transform: translate(-50%, -50%); image-rendering: pixelated; z-index: 2; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); transition: transform .12s; }
-.b-ult:not(.ready) .ico, .s-ult:not(.ready) .ico { filter: grayscale(.85) brightness(.75); }
+body:not(.mining) .b-ult:not(.ready) .ico, body:not(.mining) .s-ult:not(.ready) .ico { filter: grayscale(.85) brightness(.75); }
 .tbtn .lb { position: absolute; left: 50%; bottom: -17px; transform: translateX(-50%); font-size: 10px; white-space: nowrap; z-index: 3; opacity: .9; }
 .b-atk .lb { bottom: -15px; }
 .tbtn .cd, .pcs .cdm { position: absolute; inset: 3px; border-radius: 50%; background: conic-gradient(rgba(10,6,24,.72) var(--p, 0%), transparent 0); z-index: 3; pointer-events: none; }
@@ -1388,6 +1388,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .bc-p { width: min(380px, 90vw); padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; text-align: center; }
 .bc-p h2 { margin: 0; color: #7dffb0; } .bc-p p { margin: 0; font-size: 13px; color: #f0e8ff; }
 .bc-acts { justify-content: center; gap: 12px; }
+.bc-acts .btn { flex: 1 1 0; min-width: 0; }
 .mh-r .btn.small.gray { background: linear-gradient(180deg, #7a7090 0 45%, #5e5674 55% 100%); color: #f4f0ff; }
 .mh-r .btn.small small { color: #fff; }
 /* net room: fits one screen; switch your girl from the ⇄ on your own card; equal-height buttons */

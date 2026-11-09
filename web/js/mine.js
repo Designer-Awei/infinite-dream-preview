@@ -1471,11 +1471,16 @@ export class Dive {
     this.falling = this.falling.filter((f) => !f.done);
   }
 
+  /** Shared by settlement and the pause-menu preview. */
+  retainedFraction(how) {
+    const rescue = .1 * Math.min(2, Math.max(0, this.up.beacon || 0));
+    return how === "extract" || how === "timeup" ? 1 : Math.min(1, (how === "power" ? .5 : .3) + rescue);
+  }
+
   /** end of the dive: how much of the bag comes out */
   finish(how) {
     if (this.ended) return;
-    const rescue = .1 * Math.min(2, this.up.beacon || 0);
-    const keep = how === "extract" || how === "timeup" ? 1 : Math.min(1, (how === "power" ? .5 : .3) + rescue);
+    const keep = this.retainedFraction(how);
     const r = this.r;
     const bag = r.shuffle([...this.bag]);
     const kept = bag.slice(0, Math.round(bag.length * keep));

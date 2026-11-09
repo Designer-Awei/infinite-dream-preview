@@ -368,7 +368,7 @@ export const app = {
           this.pauseMd = null;
           this.dive && this.dive.finish("dead");
         },
-        quitLabel: "放弃下潜（只带回 30%）",
+        quitLabel: `放弃（带回${Math.round(this.dive.retainedFraction("dead") * 100)}%）`,
       });
       return;
     }

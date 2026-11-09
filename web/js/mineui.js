@@ -322,6 +322,12 @@ export function showMineHud(dive) {
     s.style.top = (l.r / rows) * 100 + "%";
     gauge.appendChild(s);
   }
+  // Combat and mining share touch nodes; reset combat-only charge/cooldown presentation.
+  document.querySelectorAll(".b-skill, .b-ult").forEach(n => {
+    n.classList.remove("ready", "ping", "firing", "empty");
+    n.style.removeProperty("--chg");
+    n.querySelector(".cd")?.style.setProperty("--p", "0%");
+  });
   // touch + PC buttons: bomb on the skill button, beacon on the ult button
   const icons = { atk: iconURL("pick", 4), skill: iconURL("bomb", 4), ult: iconURL("beacon", 4) };
   for (const k in icons) document.querySelectorAll(`.b-${k} .ico, .s-${k} .ico`).forEach((im) => (im.src = icons[k]));
