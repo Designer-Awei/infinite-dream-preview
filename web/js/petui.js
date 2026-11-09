@@ -78,7 +78,7 @@ export function showPets(onClose) {
   const showDemo = () => {
     view.classList.toggle("demo", !!act);
     const d = PETS[selected], row = ACTS.find((a) => a[0] === act);
-    $(".pp-cap").textContent = row ? `${row[2]} · ${row[3](d)}${act.startsWith("ride") && stage < 3 ? " · 终极形态" : ""}` : "";
+    $(".pp-cap").textContent = row ? `${row[2]} · ${row[3](d)}` : "";
     if (!act) return demo?.pause();
     const cfg = { id: selected, stage, act, cid: load().sel };
     if (demo) demo.set(cfg);
@@ -225,6 +225,12 @@ export function showPets(onClose) {
   all(".pp-act").forEach((b) => (b.onclick = () => {
     act = act === b.dataset.act ? null : b.dataset.act;
     sfx("click");
+    // riding needs the 终极 form: a ride skill switches the stage badges (and the portrait behind) to 终极 too
+    if (act?.startsWith("ride") && stage !== 3) {
+      stage = 3;
+      setPetPreview(canvas, { stage });
+      refresh();
+    }
     showDemo();
     all(".pp-act").forEach((x) => x.classList.toggle("on", x.dataset.act === act));
   }));

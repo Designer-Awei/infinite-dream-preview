@@ -1,4 +1,4 @@
-// 梦境伙伴面板：左侧固定预览台（与右栏等高、与标题左对齐，芯片/箭头/滑动切换伙伴，阶段徽章切换形态），
+// 梦境伙伴面板（骑乘技能自动切到终极徽章）：左侧固定预览台（与右栏等高、与标题左对齐，芯片/箭头/滑动切换伙伴，阶段徽章切换形态），
 // 右侧技能行（跟随/骑乘 × 普攻/大招）点击后在预览台播放真实战斗演示；804×360 / 667×375 / 877×393 / 1280×720
 import { createRequire } from "module"; const require = createRequire(import.meta.url); const { chromium } = require("playwright");
 const PORT = process.argv[2] || 8775, OUT = process.argv[3] || "/tmp/pp";
@@ -20,7 +20,7 @@ for (const [W, H] of [[804, 360], [667, 375], [877, 393], [1280, 720]]) {
   r.acts = [];
   for (const a of ["atk", "ult", "rideAtk", "rideUlt"]) {
     await p.click(`.pp-act[data-act="${a}"]`); await p.waitForTimeout(a.startsWith("ride") ? 1500 : 1300);
-    r.acts.push(await p.evaluate((a) => { const v = document.querySelector(".pp-view"), d = document.querySelector(".pp-demo").__demo?.(); return [a, v.classList.contains("demo"), d?.cfg.act, d?.g.enemies.length, document.querySelector(".pp-cap").textContent]; }, a));
+    r.acts.push(await p.evaluate((a) => { const v = document.querySelector(".pp-view"), d = document.querySelector(".pp-demo").__demo?.(); return [a, v.classList.contains("demo"), d?.cfg.act, d?.g.enemies.length, document.querySelector(".pp-cap").textContent, document.querySelector(".pp-badge.on")?.dataset.stage]; }, a));
     if (a === "ult" || a === "rideUlt") await p.screenshot({ path: `${OUT}_${W}_${a}.png` });
   }
   await p.click(`.pp-act[data-act="rideUlt"]`); await p.waitForTimeout(200);
