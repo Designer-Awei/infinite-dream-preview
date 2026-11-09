@@ -33,10 +33,15 @@ for cid,actor in meta['actors'].items():
    assert len(actor[clip])==13
    for i,(x,y) in enumerate(actor[clip]):assert atlas.crop((x,y,x+256,y+256)).tobytes()==final.crop((i*256,0,(i+1)*256,256)).tobytes()
   else:
-   assert len(actor[clip])==len(oldmeta['actors'][cid][clip])
-   assert actor['mouth_frames'][clip]==oldmeta['actors'][cid]['mouth_frames'][clip]
-   for pos,prior in zip(actor[clip],oldmeta['actors'][cid][clip]):
-    x,y=pos;ox,oy=prior;assert atlas.crop((x,y,x+256,y+256)).tobytes()==old.crop((ox,oy,ox+256,oy+256)).tobytes();others+=1
+   accepted=ROOT/'art/pets/riding-v3/phoenix'/cid/'accepted-flight.png'
+   if actor.get('shared_flight_cycle') and accepted.exists():
+    replacement=Image.open(accepted).convert('RGBA');assert len(actor[clip])==13
+    for i,(x,y) in enumerate(actor[clip]):assert atlas.crop((x,y,x+256,y+256)).tobytes()==replacement.crop((i*256,0,(i+1)*256,256)).tobytes();others+=1
+   else:
+    assert len(actor[clip])==len(oldmeta['actors'][cid][clip])
+    assert actor['mouth_frames'][clip]==oldmeta['actors'][cid]['mouth_frames'][clip]
+    for pos,prior in zip(actor[clip],oldmeta['actors'][cid][clip]):
+     x,y=pos;ox,oy=prior;assert atlas.crop((x,y,x+256,y+256)).tobytes()==old.crop((ox,oy,ox+256,oy+256)).tobytes();others+=1
 assert meta['actors']['gpt']['shared_flight_cycle']
 assert atlas.width<=4096 and atlas.height<=4096
-print('PASS',cleared,'recorded gap pixels cleared; white feathers/endpoints preserved;',others,'other rider frames exact; three modes share approved flight')
+print('PASS',cleared,'recorded GPT gap pixels cleared; white feathers/endpoints preserved;',others,'other rider source frame samples exact; three modes share reviewed flight')

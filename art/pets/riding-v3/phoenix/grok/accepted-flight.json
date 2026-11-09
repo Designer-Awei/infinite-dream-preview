@@ -1,0 +1,18 @@
+{
+  "source_file": "flight-r1.png",
+  "source_sha256": "3797dafe06c40d3dfbaaeac9fbe4b5c0da947415eecf742307b7d9ca484c7dc2",
+  "raw_file": "flight-r1-raw.png",
+  "raw_sha256": "3910497db0382a85209a5ef0038174aa4b5bb6d1152dc6183732e50a0035d6d6",
+  "job_file": "flight-r1-job.json",
+  "frames": 13,
+  "shared_flight_cycle": true,
+  "cleanup_roi": [
+    160,
+    193,
+    220,
+    245
+  ],
+  "changes": [],
+  "sha256": "3797dafe06c40d3dfbaaeac9fbe4b5c0da947415eecf742307b7d9ca484c7dc2",
+  "review_status": "User explicitly accepted this rider on 2026-11-09; keep these exact pixels."
+}

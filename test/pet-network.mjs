@@ -64,8 +64,14 @@ try{
   await client.wait(`a.game.petFields.filter(f=>f.kind==='tornado').length===1`);
   const tornado=await client.evaluate(`(()=>{a.game.fx.syncPetFields(a.game);const f=a.game.petFields.find(f=>f.kind==='tornado'),v=a.game.fx.petFx.get(f.id);return{radius:f.r,damage:f.damage,fx:!!v,height:v?.options.height,width:v?.options.radius};})()`);
   assert(tornado.radius===40&&tornado.damage===36&&tornado.fx&&tornado.height===94&&tornado.width===40,'Actual cooperative snapshot renders one larger homing tornado');
+  const ballWall=await host.evaluate(`(()=>{const g=a.game,p=a.me;g.petFields=[];g.enemies=[];g.bullets=[];g.map.t.fill(0);g.map.crates={};p.x=p.pet.x=320;p.y=p.pet.y=272;p.face=p.pet.face=0;p.input.aim=0;p.input.atk=true;p.atkCd=0;const i=8*g.map.W+14;g.map.t[i]=1;return i})()`);
+  await client.evaluate(`a.game.map.t.fill(0);a.game.map.crates={};a.game.map.t[${ballWall}]=1`);
+  await client.wait(`a.game.bullets.some(b=>b.kind==='pet_dragon'&&b.big&&b.r===12&&!b.pred)`);
+  await client.wait(`a.game.map.wallHp?.[${ballWall}]<60`);
+  await client.wait(`a.game.map.t[${ballWall}]===0`);
+  await host.evaluate(`a.me.input.atk=false`);
   await host.evaluate('a.game.nextRoom()');await client.wait('a.game.roomIdx===1');assert(await client.evaluate('a.game.players.every(p=>p.pet&&Number.isFinite(p.pet.x)&&Number.isFinite(p.pet.y))'),'Both followers reset on room transition');
   assert.deepEqual(b.errors,[],'No multiplayer runtime errors');
-  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,largeDragonTornado:tornado,pageErrors:b.errors};
+  const report={transport:'BroadcastChannel',twoPlayers:true,ownKit:true,clientMount:true,mountedUlt:true,fieldRadius:124,noDuplicatePrediction:true,roomTransition:true,foxBlinkSync:true,safeLandingSync:true,wallHealthSync:true,destroyedWallRecovery:true,burnedGrassRecovery:true,claudeDomainFollow:true,largeDragonTornado:tornado,largeFireballAndWallDamageSync:true,pageErrors:b.errors};
   await writeFile(path.join(b.out,'report.json'),JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }catch(e){console.log('Browser errors',JSON.stringify(b.errors));throw e;}finally{await b.close();}

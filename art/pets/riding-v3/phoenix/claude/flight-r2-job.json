@@ -1,0 +1,23 @@
+{
+  "provider": "PixelLab",
+  "endpoint": "/animate-pixminimax",
+  "job": "cff5cf0f-b08d-4b50-bc39-5d6627b5c0ea",
+  "reference_sha256": "d9c8cc997d35e9314e7945f3e87a56f9328792c4aa9e9aa67879a135267d3f39",
+  "prompt_source": "gpt/idle-smooth-r6-job.json",
+  "prompt_source_sha256": "154c9ab5a09b71980f997389006bfa38ad6cb955b34eb145b58bf4ced368be04",
+  "request": {
+    "description": "Smooth complete flying wingbeat, both blue phoenix wings DOWN together, feathers twist to show underside, fold edge-on during recovery and return to reference height. Preserve the EXACT supplied seated orange-haired girl with flower hair ornament, exact eyes, red-and-white outfit and hands. Her hips remain in contact with the SOLID thick bird back behind neck; torso and hips gently rise together. In THIS reference her thighs, skirt hem and boots are HIDDEN BEHIND the SAME near feather mantle throughout; never reveal a leg, boot or extra fabric below hands. Near feathers remain IN FRONT of lower body and hair ends; never swap depth. Rider face above wing stays visible. Subtle breathing, feather lag and tail sway, no sliding or floating rider. Same fixed right-facing camera, same size, transparent background. No magic, grey blobs, floor or shadows. Seamless loop. Keep a solid saddle back under hips; retain near-wing depth and original clothes.",
+    "frame_count": 12,
+    "no_background": true,
+    "direction": "east",
+    "view": "side",
+    "enhance_prompt": false,
+    "subject_description": "The approved girl seated on a blue-white ice phoenix",
+    "initial_pose": "Right-facing side view, rider seated, face above near wing, same exact reference pose and size.",
+    "seed": 8182802
+  },
+  "raw_sha256": "5e4e9f4ce06ebecde5bafab21bf6c68b781ec5ee13d9ce9d489c1836af6b1eeb",
+  "sha256": "ef8c4d719b7eebc4d8badd0765f2541911bd835edc60a61168355765852180ec",
+  "frames": 13,
+  "usage": null
+}

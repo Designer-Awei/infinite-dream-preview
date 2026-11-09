@@ -9,7 +9,7 @@ try{
  await p.wait(`!!document.querySelector('.lb-hero')`);
  const report=await p.evaluate(`(async()=>{
   const {A}=await import('./js/assets.js'),P=await import('./js/pets.js'),{CHAR_ORDER}=await import('./js/data.js');
-  const check=(v,m)=>{if(!v)throw Error(m)},c=document.createElement('canvas');c.width=1536;c.height=620;const ctx=c.getContext('2d'),checks=[];
+  const check=(v,m)=>{if(!v)throw Error(m)},c=document.createElement('canvas');c.width=1536;c.height=620;const ctx=c.getContext('2d'),checks=[];let sampleCount=0;
   for(const species of ['dragon','phoenix']){
    const m=A.mounts[species];check(m.image.complete&&m.meta.ride_stage===3,'Loaded final '+species);check(m.meta.cw===256&&m.meta.ch===256&&m.image.width<=4096&&m.image.height<=4096,'Native 256 mobile atlas');
    for(const cid of CHAR_ORDER){
@@ -22,7 +22,7 @@ try{
       Object.assign(q,{anim:(i+.05)/(6*count/8),walkT:(i+.05)/((a.shared_flight_cycle?6:7)*count/8),moving:clip==='move_e',castMax:4,castT:clip==='cast_e'?3:0});
       let call;const draw=ctx.drawImage.bind(ctx);ctx.drawImage=(...args)=>{call=args;draw(...args)};check(P.drawMountedPet(ctx,player,0,false),'Whole pair rendered');ctx.drawImage=draw;
       const index=a[expected].findIndex(([x,y])=>x===call[1]&&y===call[2]);check(index===i,'Rendering correct action sample');
-      const point=a.mouth_frames[expected][index],muzzle=P.petMuzzle(player);check(Math.abs(muzzle.x-(point[0]-128)*m.meta.scale)<.001&&Math.abs(muzzle.y-(point[1]-232)*m.meta.scale)<.001,'Muzzle follows displayed frame');
+      sampleCount++;const point=a.mouth_frames[expected][index],muzzle=P.petMuzzle(player);check(Math.abs(muzzle.x-(point[0]-128)*m.meta.scale)<.001&&Math.abs(muzzle.y-(point[1]-232)*m.meta.scale)<.001,'Muzzle follows displayed frame');
       q.face=Math.PI;const mirrored=P.petMuzzle(player);check(Math.abs(mirrored.x+muzzle.x)<.001&&mirrored.y===muzzle.y,'Muzzle mirrors with body');q.face=0;
      }
     }
@@ -33,7 +33,7 @@ try{
   }
   const render=(species,mode,t)=>{ctx.fillStyle='#181329';ctx.fillRect(0,0,c.width,c.height);CHAR_ORDER.forEach((cid,i)=>{ctx.save();ctx.translate(i%3*512+256,Math.floor(i/3)*310+270);ctx.scale(2.2,2.2);P.drawMountedPet(ctx,{cid,mounted:true,pet:{id:species,stage:3,x:0,y:0,face:0,anim:t,walkT:t,moving:mode==='move',castMax:3,castT:mode==='cast'?2:0}},t,false);ctx.restore();ctx.font='18px Cubic';ctx.fillStyle='#ffe36a';ctx.fillText(cid+' '+mode,i%3*512+18,Math.floor(i/3)*310+25);});return c.toDataURL().split(',')[1];};
   for(const species of ['dragon','phoenix'])for(const mode of ['idle','move'])check(render(species,mode,.1)!==render(species,mode,.65),'Animated '+species+mode);
-  window.mountReview={render};return{riders:12,clips:36,sourceCells:256,maxAtlasDimension:4096,muzzleSamples:432,stage3Only:true,geometry:checks};
+  window.mountReview={render};return{riders:12,clips:36,sourceCells:256,maxAtlasDimension:4096,muzzleSamples:sampleCount,stage3Only:true,geometry:checks};
  })()`);
  for(const species of ['dragon','phoenix'])for(const mode of ['idle','move','cast'])await writeFile(path.join(b.out,species+'-'+mode+'.png'),Buffer.from(await p.evaluate(`mountReview.render('${species}','${mode}',.65)`),'base64'));
  assert.deepEqual(b.errors,[]);await writeFile(path.join(b.out,'report.json'),JSON.stringify({...report,pageErrors:b.errors},null,2));console.log(JSON.stringify({...report,geometry:report.geometry.length,pageErrors:b.errors}));

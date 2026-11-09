@@ -9,7 +9,7 @@ import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
 import { flyingMount } from './petcombat.js';
-import { FOX_RIDE_RANGE, DRAGON_BREATH } from './petdata.js';
+import { FOX_RIDE_RANGE, DRAGON_FIREBALL } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
 
@@ -635,7 +635,7 @@ export class Game {
     m.t[i]=0;(m.burnedBushes||(m.burnedBushes=[])).push(i);m.groundDirty=true;this.emit({t:'tile',i,bush:true});
     this.vfx('spawn/poof',x*T+T/2,y*T+T/2,{layer:'back',palette:['#291c14','#633727','#a55b30','#d49342','#efc15c','#fff1b1']});
   }
-  /** Mounted dragon fireballs and breath can break internal walls; borders stay solid. */
+  /** Mounted dragon fireballs and tornadoes can break internal walls; borders stay solid. */
   damageWall(i, dmg, p) {
     const m=this.map,tx=i%m.W,ty=Math.floor(i/m.W);
     if(!this.host||this.pvp||!p?.mounted||p.pet?.id!=='dragon'||p.pet.stage!==3||p.dead||p.downed||!(dmg>0)||!Number.isInteger(i)||tx<=0||ty<=0||tx>=m.W-1||ty>=m.H-1||m.t[i]!==WALL)return;
@@ -825,6 +825,25 @@ export class Game {
       h: o.h || 0, wave: o.wave, shieldGive: o.shieldGive, noReact: o.noReact, big: o.big, arcTo: o.arcTo, onLand: o.onLand,
     };
   }
+  dragonFireballImpact(b) {
+    if(!this.host)return;
+    const p=this.player(b.owner),r=DRAGON_FIREBALL.splash,m=this.map,gy=b.y+b.h;
+    this.vfx('explosions/small-explosion',b.x,b.y+8,{opts:{size:.8},speed2:1.3});
+    this.sound('explode',.15);this.shake=Math.max(this.shake,3);
+    for(const e of this.enemies){
+      if(e.dead||e.spawnT>0||Math.hypot(e.x-b.x,e.y-e.r-b.y)>r+e.r)continue;
+      this.hit(e,b.dmg,{p,elem:'dragon',noReact:true});
+    }
+    for(let ty=Math.max(0,Math.floor((gy-r)/T));ty<=Math.min(m.H-1,Math.floor((gy+r)/T));ty++)
+      for(let tx=Math.max(0,Math.floor((b.x-r)/T));tx<=Math.min(m.W-1,Math.floor((b.x+r)/T));tx++){
+        const dx=Math.max(tx*T-b.x,0,b.x-(tx+1)*T),dy=Math.max(ty*T-gy,0,gy-(ty+1)*T);
+        if(dx*dx+dy*dy>r*r)continue;
+        const i=ty*m.W+tx;
+        if(m.crates[i])this.damageTile(i,b.dmg,p);
+        else if(m.t[i]===WALL)this.damageWall(i,b.dmg,p);
+        else if(m.t[i]===BUSH)this.burnBush(i,p);
+      }
+  }
   updateBullets(dt) {
     const m = this.map;
     for (let i = this.bullets.length - 1; i >= 0; i--) {
@@ -852,7 +871,8 @@ export class Game {
         gone = true;
         if (this.host && b.side === "p") {
           const ti = Math.floor(gy / T) * m.W + Math.floor(b.x / T);
-          if (m.crates[ti]) this.damageTile(ti, b.dmg, this.player(b.owner));
+          if(b.kind==='pet_dragon'&&b.big)this.dragonFireballImpact(b);
+          else if (m.crates[ti]) this.damageTile(ti, b.dmg, this.player(b.owner));
           else if(t===WALL&&b.kind==='pet_dragon')this.damageWall(ti,b.dmg,this.player(b.owner));
         }
         if (b.side === "p" && b.kind !== "fire") this.fx.spawn("impacts/hit-spark", b.x - b.vx * 0.012, b.y - b.vy * 0.012, { angle: Math.atan2(b.vy, b.vx) + Math.PI, palette: ELEM[b.elem]?.ramp?.slice(1, 8), light: 0.6, opts: { height: 0 } });
@@ -881,7 +901,8 @@ export class Game {
             if (e.dead || e.spawnT > 0 || b.hits.has(e.id)) continue;
             if (dist2(b.x, b.y, e.x, e.y - e.r) > (b.r + e.r + 2) * (b.r + e.r + 2)) continue;
             b.hits.add(e.id);
-            onBulletHit(this, b, e, owner);
+            if(b.kind==='pet_dragon'&&b.big)this.dragonFireballImpact(b);
+            else onBulletHit(this, b, e, owner);
             if (b.pierce > 0) b.pierce--;
             else if (b.bounce > 0) {
               b.bounce--;
@@ -1373,7 +1394,7 @@ export class Game {
         if (p.buff.rage > 0) rate *= 1.6;
         if (p.cid === "grok") rate *= 1 + c.atk.ramp * (p.rampT / 2) * (p.buff.ultOn > 0 ? 1 : 1);
         if (p.cid === "grok" && p.buff.ultOn > 0) rate *= 1.6;
-        p.atkCd = p.mounted&&p.pet?.id==='dragon'?Math.max(DRAGON_BREATH.interval,1/rate):1/rate;
+        p.atkCd = p.mounted&&p.pet?.id==='dragon'?DRAGON_FIREBALL.interval:1/rate;
       }
     } else {
       p.idleFire += dt;

@@ -1,0 +1,17 @@
+{
+  "source_file": "flight-r2.png",
+  "source_sha256": "ef8c4d719b7eebc4d8badd0765f2541911bd835edc60a61168355765852180ec",
+  "raw_file": "flight-r2-raw.png",
+  "raw_sha256": "5e4e9f4ce06ebecde5bafab21bf6c68b781ec5ee13d9ce9d489c1836af6b1eeb",
+  "job_file": "flight-r2-job.json",
+  "frames": 13,
+  "shared_flight_cycle": true,
+  "cleanup_roi": [
+    160,
+    193,
+    220,
+    245
+  ],
+  "changes": [],
+  "sha256": "ef8c4d719b7eebc4d8badd0765f2541911bd835edc60a61168355765852180ec"
+}

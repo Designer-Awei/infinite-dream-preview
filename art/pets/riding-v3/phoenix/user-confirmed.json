@@ -1,0 +1,23 @@
+{
+  "grok": {
+    "user_confirmed": true,
+    "sha256": "3797dafe06c40d3dfbaaeac9fbe4b5c0da947415eecf742307b7d9ca484c7dc2"
+  },
+  "doubao": {
+    "user_confirmed": true,
+    "sha256": "0e58e4eb55e452441c4bd42a04b48015465a320c22a9bc9a50737f6dfdb5e434"
+  },
+  "claude": {
+    "user_confirmed": true,
+    "sha256": "ef8c4d719b7eebc4d8badd0765f2541911bd835edc60a61168355765852180ec"
+  },
+  "glm": {
+    "user_confirmed": true,
+    "sha256": "fb6ec00b5e358685762a5b2882166bc894d036c307b1194d625c783e5ab085e2"
+  },
+  "deepseek": {
+    "user_confirmed": true,
+    "revision": 5,
+    "sha256": "37d11ab4fd387d2cef31037de121c76f0cfd937a90da12c74f2ebb67dac8415b"
+  }
+}

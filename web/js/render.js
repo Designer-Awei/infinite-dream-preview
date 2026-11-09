@@ -7,8 +7,8 @@ import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages } from "./pets.js";
-import { DRAGON_BREATH } from './petdata.js';
-import { flyingMount, fireHalfWidth } from './petcombat.js';
+import { DRAGON_FIREBALL } from './petdata.js';
+import { flyingMount } from './petcombat.js';
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -142,8 +142,8 @@ export class Renderer {
       switch (d.k) {
         case 0: {
           const X=d.x*T,Y=d.ty*T-LIFT,hp=m.wallHp?.[d.ty*m.W+d.x];
-          const damage=hp!=null&&hp<DRAGON_WALL_HP?(hp<=DRAGON_WALL_HP/2?2:1):0;
-          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty),damage,null,d.x*13+d.ty*7),X,Y);
+          const damage=hp!=null?Math.max(0,Math.min(1,1-hp/DRAGON_WALL_HP)):0;
+          g.drawImage(wallSprite(m.theme, wallMask(m, d.x, d.ty),damage),X,Y);
           break;
         }
         case 1: {
@@ -454,27 +454,20 @@ export class Renderer {
   }
   drawAim(g, me) {
     if (!me || me.dead || me.downed) return;
-    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16},breath=false) => {
+    const show = (ang, len, wid, col, origin={x:me.x,y:me.y-16}) => {
       g.save();
       g.translate(origin.x, origin.y);
       g.rotate(ang);
       g.globalAlpha = 0.28;
       g.fillStyle = col;
-      if(breath){
-        const f={length:len,width:DRAGON_BREATH.width};g.beginPath();g.moveTo(0,0);
-        for(let d=0;d<=len;d+=6)g.lineTo(d,-fireHalfWidth(f,d));
-        for(let d=len;d>=0;d-=6)g.lineTo(d,fireHalfWidth(f,d));
-        g.closePath();g.fill();g.globalAlpha=.7;g.strokeStyle=col;g.lineWidth=1;g.stroke();
-      }else{
-        g.fillRect(8, -wid / 2, len, wid);
-        g.globalAlpha = 0.7;
-        g.fillRect(8, -wid / 2, len, 1);
-        g.fillRect(8, wid / 2 - 1, len, 1);
-      }
+      g.fillRect(8, -wid / 2, len, wid);
+      g.globalAlpha = 0.7;
+      g.fillRect(8, -wid / 2, len, 1);
+      g.fillRect(8, wid / 2 - 1, len, 1);
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_BREATH.length:c.atk.range * me.st.range, 8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me));
     if (input.skillAim != null) show(input.skillAim, 160, 24, "#7fd0ff");
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }

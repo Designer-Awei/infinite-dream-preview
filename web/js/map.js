@@ -2,7 +2,7 @@
 import { T } from "./data.js";
 import { rng } from "./util.js";
 import { applyRoomRules, isCalmTile } from "./roomrules.js";
-import { paintWallWear } from './wallwear.js';
+import { applyWallDamage } from './wallwear.js';
 
 export const F = 0, WALL = 1, WATER = 2, BUSH = 3, CRATE = 4, BARREL = 5;
 export const CRATE_HP = 30, DRAGON_WALL_HP = CRATE_HP * 2;
@@ -372,9 +372,9 @@ export function drawSpikes(g, X, Y, up) {
 }
 
 /** A wall block sprite for a neighbor mask. Returns canvas T x (T+LIFT), drawn at (X, Y - LIFT). */
-export function wallSprite(theme, mask, damage=0, art=null, wearSeed=0) {
-  const variant=Math.abs(wearSeed)%5;
-  const key = "w" + theme + "_" + mask+'_'+damage+'_'+(damage?variant:0);
+export function wallSprite(theme, mask, damage=0) {
+  damage=Math.round(Math.max(0,Math.min(1,damage))*20)/20;
+  const key = "w" + theme + "_" + mask+'_'+damage;
   if (cache.has(key)) return cache.get(key);
   const th = THEMES[theme], c = cv(T, T + LIFT), g = c.getContext("2d");
   const L = mask & 1, Rr = mask & 2, U = mask & 4, D = mask & 8; // neighbors that are walls
@@ -393,7 +393,6 @@ export function wallSprite(theme, mask, damage=0, art=null, wearSeed=0) {
     px(g, 0, T, T, LIFT, th.top);
     for (let y = T + 4; y < T + LIFT; y += 8) px(g, 0, y, T, 1, th.topHi);
   }
-  paintWallWear(g,th,mask,damage,variant*7);
   // outlines on open sides
   g.fillStyle = th.ink;
   if (!U) g.fillRect(0, 0, T, 2);
@@ -401,6 +400,7 @@ export function wallSprite(theme, mask, damage=0, art=null, wearSeed=0) {
   if (!Rr) g.fillRect(T - 2, 0, 2, T + LIFT);
   // rim highlight
   if (!U) px(g, L ? 0 : 2, 2, T - (L ? 0 : 2) - (Rr ? 0 : 2), 2, th.topHi);
+  applyWallDamage(g,damage,T,T+LIFT);
   cache.set(key, c);
   return c;
 }
