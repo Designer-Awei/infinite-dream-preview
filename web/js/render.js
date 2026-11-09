@@ -192,12 +192,13 @@ export class Renderer {
     // overlays
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
+    for (const p of game.players) this.drawHeroBar(g, p, me, game);
+    // floating texts (skill names, damage) go over every health bar so a bar never hides them
     for (const f of game.floaters) {
       const a = clamp(f.life / f.max * 2, 0, 1);
       const pop = 1 + Math.max(0, (f.life / f.max - 0.8) * 2.5);
       this.text(g, f.s, f.x, f.y, f.color, Math.round(12 * f.size * pop), a);
     }
-    for (const p of game.players) this.drawHeroBar(g, p, me, game);
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.drawEdgeArrows(g, game, me, cx, cy);
     // vignette
@@ -922,6 +923,93 @@ export class Renderer {
       P.glow(x, y, r + 7, H(el.glow), 0.5);
     }
   }
+  /** a forked lightning bolt: a stable jagged path that re-rolls 20×/s, glow + core, grows over l.grow seconds */
+  drawBolt(g, l, a) {
+    const age = l.max - l.life, grow = l.grow ? clamp(age / l.grow) : 1, dx = l.x1 - l.x0, dy = l.y1 - l.y0, len = Math.hypot(dx, dy);
+    if (len < 1) return;
+    let s = (l.seed + Math.floor(this.t * 20) * 97) | 0;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    const nx = -dy / len, ny = dx / len, n = Math.max(4, Math.round(len / 13)), amp = Math.min(13, 4 + len * 0.06), pts = [];
+    for (let i = 0; i <= n; i++) {
+      const k = i / n, j = i === 0 || i === n ? 0 : (rnd() - 0.5) * 2 * amp * Math.sin(Math.PI * k) ** 0.5;
+      pts.push([l.x0 + dx * k + nx * j, l.y0 + dy * k + ny * j, k]);
+    }
+    const cut = pts.filter((q) => q[2] <= grow + 1e-6);
+    if (cut.length < pts.length) {
+      const i = cut.length, q0 = pts[i - 1], q1 = pts[i], u = (grow - q0[2]) / (q1[2] - q0[2]);
+      cut.push([q0[0] + (q1[0] - q0[0]) * u, q0[1] + (q1[1] - q0[1]) * u, grow]);
+    }
+    const branches = [];
+    for (let b = 0; b < 2; b++) {
+      const i = 1 + Math.floor(rnd() * (n - 1));
+      if (pts[i][2] > grow) continue;
+      const side = rnd() < 0.5 ? -1 : 1, bl = len * (0.12 + rnd() * 0.12), ang = Math.atan2(dy, dx) + side * (0.5 + rnd() * 0.5);
+      branches.push([pts[i], [pts[i][0] + Math.cos(ang) * bl * 0.5 + nx * side * 3, pts[i][1] + Math.sin(ang) * bl * 0.5 + ny * side * 3], [pts[i][0] + Math.cos(ang) * bl, pts[i][1] + Math.sin(ang) * bl]]);
+    }
+    const alpha = Math.min(1, a * 1.7), path = (list) => { g.beginPath(); list.forEach(([x, y], i) => (i ? g.lineTo(x, y) : g.moveTo(x, y))); g.stroke(); };
+    g.save();
+    g.lineCap = g.lineJoin = "round";
+    // a dark rim first (normal blending) keeps the bolt readable on bright floors, then additive glow and core
+    g.strokeStyle = "#3a1d05";
+    g.lineWidth = l.w + 3.5;
+    g.globalAlpha = alpha * 0.55;
+    path(cut);
+    g.globalCompositeOperation = "lighter";
+    for (const [w, al, col] of [[l.w + 9, 0.16, l.color], [l.w + 3, 0.55, l.color], [Math.max(1.2, l.w * 0.55), 1, "#ffffff"]]) {
+      g.strokeStyle = col;
+      g.lineWidth = w;
+      g.globalAlpha = alpha * al;
+      path(cut);
+      g.lineWidth = Math.max(1, w * 0.5);
+      for (const br of branches) path(br);
+    }
+    const [hx, hy] = cut[cut.length - 1], r = l.w * 2.2 + 3;
+    const glow = g.createRadialGradient(hx, hy, 0, hx, hy, r);
+    glow.addColorStop(0, "rgba(255,255,255,.9)");
+    glow.addColorStop(1, "rgba(255,240,160,0)");
+    g.globalAlpha = alpha;
+    g.fillStyle = glow;
+    g.fillRect(hx - r, hy - r, r * 2, r * 2);
+    g.restore();
+  }
+  /** an impact burst: white flash, short jagged rays thrown outward, a few embers (no ring) */
+  drawSpark(g, l, a) {
+    const u = 1 - a, r = l.w, x = l.x0, y = l.y0;
+    let s = l.seed | 0;
+    const rnd = () => ((s = (s * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+    g.save();
+    g.globalCompositeOperation = "lighter";
+    g.lineCap = "round";
+    const core = r * (0.55 - u * 0.45);
+    if (core > 0) {
+      const glow = g.createRadialGradient(x, y, 0, x, y, core * 2.2);
+      glow.addColorStop(0, "rgba(255,255,255,1)");
+      glow.addColorStop(0.4, "rgba(255,236,150,.8)");
+      glow.addColorStop(1, "rgba(255,210,90,0)");
+      g.globalAlpha = Math.min(1, a * 1.6);
+      g.fillStyle = glow;
+      g.fillRect(x - core * 2.2, y - core * 2.2, core * 4.4, core * 4.4);
+    }
+    for (let i = 0; i < 9; i++) {
+      const ang = (i / 9) * TAU + rnd() * 0.5, r0 = r * (0.15 + u * 0.55), r1 = r * (0.55 + rnd() * 0.45) * (0.6 + u * 0.7);
+      const mx = (r0 + r1) / 2, k = (rnd() - 0.5) * 0.5;
+      g.strokeStyle = i % 3 ? l.color : "#ffffff";
+      g.lineWidth = i % 3 ? 2 : 1.4;
+      g.globalAlpha = a;
+      g.beginPath();
+      g.moveTo(x + Math.cos(ang) * r0, y + Math.sin(ang) * r0 * 0.75);
+      g.lineTo(x + Math.cos(ang + k) * mx, y + Math.sin(ang + k) * mx * 0.75);
+      g.lineTo(x + Math.cos(ang) * r1, y + Math.sin(ang) * r1 * 0.75);
+      g.stroke();
+    }
+    g.fillStyle = "#fff6c8";
+    for (let i = 0; i < 6; i++) {
+      const ang = rnd() * TAU, d = r * (0.4 + u * (0.8 + rnd() * 0.6));
+      g.globalAlpha = a;
+      g.fillRect(Math.round(x + Math.cos(ang) * d), Math.round(y + Math.sin(ang) * d * 0.75 - u * 6), 2, 2);
+    }
+    g.restore();
+  }
   drawLines(g, game) {
     for (const original of game.lines) {
       const l=petLine(game,original);if(!l)continue;
@@ -935,6 +1023,11 @@ export class Renderer {
         g.fillStyle = l.color;
         g.fillRect(0, -l.w / 2, len, l.w);
         g.restore();
+        continue;
+      }
+      if (l.kind === "bolt" || l.kind === "spark") {
+        g.restore();
+        l.kind === "bolt" ? this.drawBolt(g, l, a) : this.drawSpark(g, l, a);
         continue;
       }
       g.globalCompositeOperation = "lighter";

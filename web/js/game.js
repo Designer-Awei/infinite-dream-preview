@@ -324,9 +324,10 @@ export class Game {
     this.floaters.push({ x, y, s: String(s), color, size, life, max: life, vy: -38 });
     if (this.mode === "host") this.events.push({ t: "txt", x: Math.round(x), y: Math.round(y), s: String(s), c: color, z: size });
   }
-  line(x0, y0, x1, y1, color, w = 2, life = 0.18, kind = "zap", anchorOwner = null) {
-    this.lines.push({ x0, y0, x1, y1, color, w, life, max: life, kind, anchorOwner, seed: Math.random() * 1000 });
-    if (this.mode === "host") this.events.push({ t: "ln", a: [x0, y0, x1, y1].map(Math.round), c: color, w, l: life, k: kind, o:anchorOwner });
+  /** grow: seconds for a "bolt" to reach its end (a streak that follows a dash); "spark": x0,y0 = centre, w = radius */
+  line(x0, y0, x1, y1, color, w = 2, life = 0.18, kind = "zap", anchorOwner = null, grow = 0) {
+    this.lines.push({ x0, y0, x1, y1, color, w, life, max: life, kind, anchorOwner, grow, seed: Math.random() * 1000 });
+    if (this.mode === "host") this.events.push({ t: "ln", a: [x0, y0, x1, y1].map(Math.round), c: color, w, l: life, k: kind, o:anchorOwner, ...(grow ? { g: grow } : {}) });
   }
   after(t, fn) {
     this.timers.push({ t, fn });

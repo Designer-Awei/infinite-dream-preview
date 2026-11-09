@@ -14,9 +14,10 @@ const SCENES = {
   atk: { ride: false, dur: 4.2, foes: { n: 3, spread: 34 } },
   ult: { ride: false, dur: { dragon: 3.6, fox: 3, phoenix: 4.8 }, foes: { n: 3, spread: 40 } },
   rideAtk: { ride: true, px: -72, dur: 3.4, foes: { dx: 78, spread: 46, n: 3 } },
-  rideUlt: { ride: true, px: { dragon: -86, fox: -58, phoenix: -6 }, dur: { dragon: 5.2, fox: 3.2, phoenix: 5.6 },
-    foes: { dragon: { dx: 90, spread: 60, n: 3 }, fox: { dx: 60, spread: 70, n: 4 }, phoenix: { ring: 78, n: 5 } } },
+  rideUlt: { ride: true, px: { dragon: -86, fox: -84, phoenix: -6 }, dur: { dragon: 5.2, fox: 3.2, phoenix: 5.6 },
+    foes: { dragon: { dx: 90, spread: 60, n: 3 }, fox: { dx: 46, spread: 30, n: 4 }, phoenix: { ring: 78, n: 5 } } },
 };
+const RIDE_DY = 62;
 const pick = (v, id) => (v && typeof v === "object" && !("n" in v) ? v[id] : v);
 
 /** box: element to fill. returns { set({id,stage,act}), stop() } */
@@ -48,7 +49,7 @@ export function mountPetDemo(box, opt) {
     const range = PET_ATTACK_RANGE[id];
     if (S.ride) {
       p.x = c.x + pick(S.px, id);
-      p.y = c.y;
+      p.y = c.y + RIDE_DY; // riders stand lower so the skill name over their head stays in the crop
       p.face = 0;
       toggleMount(g, p);
     } else {
@@ -71,7 +72,7 @@ export function mountPetDemo(box, opt) {
       } else {
         const k = F.n > 1 ? i / (F.n - 1) - 0.5 : 0;
         x = c.x + (F.dx ?? range / 2 - 8) + (i % 2) * 22;
-        y = c.y + k * F.spread * 2;
+        y = c.y + (S.ride ? RIDE_DY : 0) + k * F.spread * 2;
       }
       home.push({ x, y });
     }
@@ -95,7 +96,7 @@ export function mountPetDemo(box, opt) {
     const ctx = view.getContext("2d"), W = view.width, H = view.height;
     const S = scene(), cw = S.ride ? 330 : 250, ch = Math.round((cw * H) / W);
     // fixed camera: the crop is centred on the scene, a little above the ground line so tall sprites fit
-    const cx = center.x + (S.ride ? -8 : 10), cy = center.y - (S.ride ? 34 : 16);
+    const cx = center.x + (S.ride ? -8 : 10), cy = center.y + (S.ride ? 18 : -16);
     rnd.cam.x = Math.round(cx - VIEW_W / 2);
     rnd.cam.y = Math.round(cy - VIEW_H / 2);
     rnd.draw(g, p, 0);
@@ -110,7 +111,7 @@ export function mountPetDemo(box, opt) {
   };
   const frame = (now) => {
     if (stopped || !view.isConnected) return;
-    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)); // rAF time can precede the mount time
+    const dt = Math.max(0, Math.min(0.05, (now - last) / 1000)) * (cfg.speed || 1); // rAF time can precede the mount time; speed: tests slow it down
     last = now;
     if (document.hidden) return requestAnimationFrame(frame);
     setSfxMute(true);
@@ -129,6 +130,7 @@ export function mountPetDemo(box, opt) {
       if (g.enemies.every((e) => e.dead)) spawn();
       g.update(dt);
       g.slowmo = 0;
+      p.hurtT = 0; // no red hurt wash over the demo
       fxl.update(dt);
       fit();
       draw();

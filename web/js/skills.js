@@ -2,7 +2,7 @@
 import { CHARS, ELEM } from "./data.js";
 import { dist, angTo, TAU } from "./util.js";
 import { BLOCKS_SHOT, tileAt } from "./map.js";
-import { mountedAttack, mountedUlt } from "./pets.js";
+import { mountedAttack, mountedUlt, overheadY } from "./pets.js";
 
 const MUZZLE = 20; // bullets leave from chest height
 
@@ -281,7 +281,7 @@ export function castUlt(g, p, a, target) {
   if (mountedUlt(g, p, a, target)) return;
   const pal = ELEM[CHARS[p.cid].elem].ramp;
   const tx = target ? target.x : p.x + Math.cos(a) * 130, ty = target ? target.y : p.y + Math.sin(a) * 130;
-  g.text(p.x, p.y - 84, CHARS[p.cid].ult.name, ELEM[CHARS[p.cid].elem].glow, 1.5, 1.2);
+  g.text(p.x, overheadY(p), CHARS[p.cid].ult.name, ELEM[CHARS[p.cid].elem].glow, 1.5, 1.2);
   switch (p.cid) {
     case "deepseek": {
       const d = Math.min(200, dist(p.x, p.y, tx, ty)), aa = angTo(p.x, p.y, tx, ty), cx = p.x + Math.cos(aa) * d, cy = p.y + Math.sin(aa) * d;

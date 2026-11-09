@@ -11,24 +11,25 @@ import { mountPetDemo } from "./petdemo.js";
 // slide, stage badges along an evolution track switch 幼年/成长/终极); right, the pet's skills as icon + description
 // rows — 跟随 普攻 / 大招 and 骑乘 普攻 / 大招. Picking a skill plays it on the stage as a small real fight (fixed
 // camera, so the effects never move or rescale the pet); picking it again, a stage or another pet returns to the portrait.
+// one line each: the row has room for a single line beside its icon
 const SKILLS = {
   dragon: {
-    atk: () => "自动索敌，每 1.1 秒吐出一枚焰弹。",
-    ult: (d) => `每 ${d.skillCd} 秒朝敌人喷吐 1.6 秒灼热龙息，持续灼烧一条直线。`,
-    rideAtk: () => "点按或长按每 0.5 秒一发大火球，命中后爆炸溅射。",
-    rideUlt: () => "召出大型火龙卷自动追敌 4.5 秒，沿途可破墙、烧草。",
+    atk: () => "自动索敌，每 1.1 秒吐出焰弹。",
+    ult: (d) => `每 ${d.skillCd} 秒喷吐灼热龙息，灼烧一条直线。`,
+    rideAtk: () => "每 0.5 秒一发大火球，命中爆炸溅射。",
+    rideUlt: () => "火龙卷自动追敌 4.5 秒，可破墙烧草。",
   },
   fox: {
-    atk: () => "自动索敌，每 0.7 秒射出一道雷针。",
-    ult: (d, s) => `每 ${d.skillCd} 秒落下连锁雷击，在 ${2 + s} 个敌人间跳跃并短暂麻痹。`,
-    rideAtk: () => "电弧索敌或指向发射，命中后最多再弹射 3 次。",
-    rideUlt: () => "在附近敌人间雷影穿梭，连落 5 道雷；周围没有敌人时立即结束。",
+    atk: () => "自动索敌，每 0.7 秒射出雷针。",
+    ult: (d, s) => `每 ${d.skillCd} 秒召雷，连锁劈中 ${2 + s} 个敌人。`,
+    rideAtk: () => "电弧索敌或指向发射，最多弹射 3 次。",
+    rideUlt: () => "化作雷影疾驰连斩附近敌人，最多 5 段。",
   },
   phoenix: {
-    atk: () => "自动索敌，每 1.1 秒射出冰羽，命中减速。",
-    ult: (d) => `每 ${d.skillCd} 秒在敌人处降下 3.2 秒暴风雪，减速并间歇冻结。`,
-    rideAtk: () => "单发极寒冰锥，可穿透 2 个敌人并减速。",
-    rideUlt: () => "以自身为中心展开极寒风暴，持续 5 秒并跟随移动。",
+    atk: () => "自动索敌，每 1.1 秒射出冰羽减速。",
+    ult: (d) => `每 ${d.skillCd} 秒降下暴风雪，减速并冻结。`,
+    rideAtk: () => "极寒冰锥可穿透 2 个敌人并减速。",
+    rideUlt: () => "跟随自身的极寒风暴，持续 5 秒。",
   },
 };
 const ACTS = [
@@ -51,7 +52,7 @@ export function showPets(onClose) {
       <div class="pp-stage">
         <div class="pp-top"><div class="pp-pets">${PET_ORDER.map((id) => `<button class="pp-pick" data-id="${id}" style="--pc:${PETS[id].color}" aria-label="${PETS[id].name}"><img alt=""></button>`).join("")}</div><span class="pp-tag"></span></div>
         <div class="pp-view"><div class="pp-anim"></div><div class="pp-demo"></div><span class="pp-cap"></span>
-          <button class="pp-arw l" aria-label="上一只">◀</button><button class="pp-arw r" aria-label="下一只">▶</button></div>
+          <button class="pp-arw l" aria-label="上一只"><svg viewBox="0 0 24 40" width="100%" height="100%"><polyline points="18,6 6,20 18,34" fill="none" stroke="#1a1020" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><polyline points="18,6 6,20 18,34" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></button><button class="pp-arw r" aria-label="下一只"><svg viewBox="0 0 24 40" width="100%" height="100%"><polyline points="6,6 18,20 6,34" fill="none" stroke="#1a1020" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/><polyline points="6,6 18,20 6,34" fill="none" stroke="#ffffff" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>
         <div class="pp-evo">${[1, 2, 3].map((s) => `${s > 1 ? `<span class="pp-link" data-to="${s}"><i></i><small></small></span>` : ""}<button class="pp-badge" data-stage="${s}"><img alt=""><b>${PET_STAGES[s - 1]}</b></button>`).join("")}</div>
       </div>
       <div class="pp-info"><div class="pp-fade">

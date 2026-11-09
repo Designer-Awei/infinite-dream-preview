@@ -110,7 +110,7 @@ function pulse(game,p,kind,x,y,r,life=.35){
   game.petFields.push({id:nid(),owner:p.id,kind,x,y,r,t:0,life,max:life,delay:0});
 }
 function strike(game,p,x,y,r,damage,ultimate=false,bounds=null){
-  game.line(x,y-110,x,y-8,'#fff4b2',3,.25,'zap');pulse(game,p,'zap',x,y,r);
+  game.line(x+8,y-128,x,y-10,'#ffe36a',4,.3,'bolt',null,.05);game.line(x,y-10,x,y-10,'#ffe36a',r*.55,.28,'spark');
   for(const e of game.enemies){if(e.dead||e.spawnT>0||Math.hypot(e.x-x,e.y-y)>r+e.r||(bounds&&Math.hypot(e.x-bounds.x,e.y-bounds.y)>bounds.r))continue;game.hit(e,damage,{p,elem:'thunder',noUltGain:ultimate,noReact:true});if(!e.boss)e.stunT=Math.max(e.stunT||0,.18);}
   props(game,p,damage,(cx,cy)=>Math.hypot(cx-x,cy-y)<=r+12&&(!bounds||Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r),ultimate);
   game.sound('shoot_thunder',.1);
@@ -167,19 +167,30 @@ function channel(game,p,kind,options,duration,ultimate=false){
   game.petFields=game.petFields.filter(f=>f.owner!==p.id||f.kind==='purge');
   game.petFields.push({id:nid(),owner:p.id,kind,...options,t:0,life:duration+.35,max:duration+.35,delay:.35,tick:0,ultimate});
 }
+// 连锁雷击: a bolt drops from the sky onto the first foe, then arcs on from foe to foe, one hop every 0.09 s
 function lightning(game,p,targets,damage,from){
-  const used=new Set(),bounds={x:p.pet.x,y:p.pet.y,r:FOX_RIDE_RANGE};let x=from.x,y=from.y,groundY=p.pet.y;
-  for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:FOX_RIDE_RANGE,used,true,bounds);if(!e)break;used.add(e.id);game.line(x,y,e.x,e.y-e.r,'#fff2a0',3,.24,'zap');game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38&&Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r);if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);x=e.x;y=e.y-e.r;groundY=e.y;}
+  const used=new Set(),bounds={x:p.pet.x,y:p.pet.y,r:FOX_RIDE_RANGE};let x=from.x,y=from.y,groundY=p.pet.y;const q=p.pet;
+  for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:FOX_RIDE_RANGE,used,true,bounds);if(!e)break;used.add(e.id);
+    const sx=x,sy=y,first=i===0;
+    game.after(i*.09,()=>{
+      if(q!==p.pet||p.dead||p.downed)return;const ty=e.y-e.r;
+      if(first)game.line(e.x+10,ty-130,e.x,ty,'#ffe36a',4,.32,'bolt',null,.05);else game.line(sx,sy,e.x,ty,'#ffe36a',3,.3,'bolt',null,.05);
+      game.line(e.x,ty,e.x,ty,'#ffe36a',18,.26,'spark');
+      if(!e.dead){game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);}
+      props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38&&Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r);
+      game.sound('shoot_thunder',.05);
+    });
+    x=e.x;y=e.y-e.r;groundY=e.y;}
 }
 function skill(game,p,target,angle,ultimate=false){
   const q=p.pet;q.face=angle;const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
   if(q.id==='dragon')channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length:ultimate?320:180+q.stage*18,width:ultimate?64:25+q.stage*5,damage:ultimate?22:5+q.stage*3},ultimate?3.2:1.6,ultimate);
   else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:ultimate?18:5+q.stage*3,follow:ultimate},ultimate?5:3.2,ultimate);
-  else{q.castT=q.castMax=1.1;game.after(.35,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,10+q.stage*5,petMuzzle(p));});game.vfx('lightning/thunderclap',m.x,m.y,{life:.7,size:35});}
+  else{q.castT=q.castMax=1.1;game.line(m.x,m.y,m.x+4,m.y-56,'#ffe36a',2,.3,'bolt',null,.08);game.line(m.x,m.y,m.x,m.y,'#ffe36a',10,.3,'spark');game.after(.3,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,10+q.stage*5,petMuzzle(p));});}
 }
 export function mountedUlt(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
-  game.text(p.x,p.y-95,PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);
+  game.text(p.x,overheadY(p),PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);
   if(p.pet.id==='dragon'){
     game.petFields=game.petFields.filter(f=>f.owner!==p.id||f.kind!=='tornado');
     const claimed=new Set();
@@ -188,33 +199,58 @@ export function mountedUlt(game,p,angle,target){
       game.petFields.push({id:nid(),owner:p.id,kind:'tornado',ultimate:true,x:p.x+Math.cos(a)*28,y:p.y+Math.sin(a)*28,a,r:DRAGON_TORNADO.radius,origin:{x:p.x,y:p.y},targetId:e?.id??null,t:0,delay:0,life:DRAGON_TORNADO.duration,max:DRAGON_TORNADO.duration,tick:0,damage:DRAGON_TORNADO.damage});
     }
     p.pet.castT=p.pet.castMax=.4;game.sound('shoot_dragon',.18);
-  }else if(p.pet.id==='fox'){if(!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false))return true;Object.assign(p.pet,{blinkT:1,blinkHits:0,blinkOrigin:{x:p.x,y:p.y,r:FOX_RIDE_RANGE},blinkRoom:game.roomIdx,castT:1,castMax:1});p.petWarpUntil=game.time+1.15;}
+  }else if(p.pet.id==='fox'){if(!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false))return true;Object.assign(p.pet,{blinkT:BLINK.cap,blinkHits:0,blinkLeg:null,blinkLast:null,blinkOrigin:{x:p.x,y:p.y,r:FOX_RIDE_RANGE},blinkRoom:game.roomIdx,castT:BLINK.cap,castMax:BLINK.cap});p.petWarpUntil=game.time+BLINK.cap+.15;game.sound('shoot_thunder',.05);}
   else skill(game,p,target,angle,true);return true;
 }
 export function releaseEmptyBlink(game,p){
-  const q=p.pet;if(!game.host||!(q?.blinkT>0))return;
-  if(q.blinkRoom!==game.roomIdx||!p.mounted||!targetFor(game,p.x,p.y,FOX_RIDE_RANGE*2,null,false,q.blinkOrigin)){q.blinkT=0;q.castT=0;p.petWarpUntil=game.time;}
+  const q=p.pet;if(!game.host||!(q?.blinkT>0)||q.blinkLeg)return; // a dash in flight always lands first
+  if(q.blinkRoom!==game.roomIdx||!p.mounted||!targetFor(game,p.x,p.y,FOX_RIDE_RANGE*2,null,false,q.blinkOrigin))endBlink(game,p);
+}
+// 雷影穿梭: the rider becomes a streak of lightning and dashes from foe to foe — up to 5 cuts. Each leg is a short
+// eased dash (no teleport, so the camera and clients follow it smoothly) with a trail of afterimages and a bolt
+// streak; arriving cuts the foe with a sky bolt and a spark burst, the last cut is the heaviest.
+export const BLINK={hits:5,speed:820,min:.1,max:.18,rest:.07,cap:1.8};
+function endBlink(game,p){
+  const q=p.pet;q.blinkT=0;q.castT=0;q.blinkLeg=null;q.warpSeq++;p.petWarpUntil=game.time+.2;
 }
 function blink(game,p,dt){
   releaseEmptyBlink(game,p);
   const q=p.pet;if(!(q.blinkT>0))return;
-  if(q.blinkRoom!==game.roomIdx||!p.mounted){q.blinkT=0;return;}
-  const elapsed=1-q.blinkT+dt;
-  while(q.blinkHits<5&&elapsed>=q.blinkHits*.2){
-    const e=targetFor(game,p.x,p.y,FOX_RIDE_RANGE*2,null,false,q.blinkOrigin);if(e){
-      const old={x:p.x,y:p.y};let spot=null;
-      for(let j=0;j<8;j++){const a=q.blinkHits*Math.PI*.8+j*Math.PI/4,x=e.x+Math.cos(a)*(e.r+p.r+8),y=e.y+Math.sin(a)*(e.r+p.r+8);if(clearLanding(game.map,x,y,p.r)){spot={x,y};break;}}
-      spot||=safeLanding(game.map,e.x,e.y,p.r);
-      if(spot){
-        const length=Math.hypot(spot.x-old.x,spot.y-old.y),n=Math.max(2,Math.min(5,Math.ceil(length/25)));
-        for(let j=0;j<n;j++){const u=j/n;game.petFields.push({id:nid(),owner:p.id,kind:'afterimage',x:old.x+(spot.x-old.x)*u,y:old.y+(spot.y-old.y)*u,face:p.face,anim:q.anim,castT:q.castT,castMax:q.castMax,t:0,delay:0,life:.36,max:.36});}
-        Object.assign(p,spot);q.x=p.x;q.y=p.y;q.warpSeq++;game.line(old.x,old.y-25,p.x,p.y-25,'#ffe7a1',4,.18,'zap');
-      }
-      strike(game,p,e.x,e.y,64,30,true,q.blinkOrigin);
-    }else{q.blinkT=0;q.castT=0;p.petWarpUntil=game.time;return;}q.blinkHits++;
-    releaseEmptyBlink(game,p);if(q.blinkT<=0)return;
+  if(q.blinkRoom!==game.roomIdx||!p.mounted){endBlink(game,p);return;}
+  p.moving=false;q.blinkT=Math.max(.01,q.blinkT-dt);
+  let leg=q.blinkLeg;
+  if(!leg){
+    if(q.blinkHits>=BLINK.hits){endBlink(game,p);return;}
+    const range=FOX_RIDE_RANGE*2,e=targetFor(game,p.x,p.y,range,q.blinkLast!=null?new Set([q.blinkLast]):null,false,q.blinkOrigin)||targetFor(game,p.x,p.y,range,null,false,q.blinkOrigin);
+    if(!e){endBlink(game,p);return;}
+    let spot=null;const from=Math.atan2(p.y-e.y,p.x-e.x);
+    // land on the far side of the foe, so each cut reads as passing through it
+    for(let j=0;j<8;j++){const a=from+Math.PI+(j%2?1:-1)*Math.ceil(j/2)*Math.PI/4,x=e.x+Math.cos(a)*(e.r+p.r+10),y=e.y+Math.sin(a)*(e.r+p.r+10);if(clearLanding(game.map,x,y,p.r)){spot={x,y};break;}}
+    spot||=safeLanding(game.map,e.x,e.y,p.r);
+    if(!spot){endBlink(game,p);return;}
+    const d=Math.hypot(spot.x-p.x,spot.y-p.y),dur=Math.max(BLINK.min,Math.min(BLINK.max,d/BLINK.speed));
+    leg=q.blinkLeg={fx:p.x,fy:p.y,tx:spot.x,ty:spot.y,t:0,dur,eid:e.id,trail:0,hit:false,rest:0};
+    p.face=q.face=Math.atan2(spot.y-p.y,spot.x-p.x);
+    game.line(p.x,p.y-24,spot.x,spot.y-24,'#ffe36a',3,dur+.16,'bolt',null,dur);
   }
-  q.blinkT=Math.max(0,q.blinkT-dt);p.moving=false;
+  if(!leg.hit){
+    leg.t+=dt;const k=Math.min(1,leg.t/leg.dur),u=k<.5?2*k*k:1-2*(1-k)**2; // ease in-out: no first-frame jump
+    p.x=leg.fx+(leg.tx-leg.fx)*u;p.y=leg.fy+(leg.ty-leg.fy)*u;q.x=p.x;q.y=p.y;
+    leg.trail-=dt;
+    if(leg.trail<=0){leg.trail=.024;game.petFields.push({id:nid(),owner:p.id,kind:'afterimage',x:p.x,y:p.y,face:p.face,anim:q.anim,castT:q.castT,castMax:q.castMax,t:0,delay:0,life:.26,max:.26});}
+    if(k<1)return;
+    leg.hit=true;leg.rest=BLINK.rest;q.blinkHits++;q.blinkLast=leg.eid;
+    const e=game.enemies.find(o=>o.id===leg.eid&&!o.dead),last=q.blinkHits>=BLINK.hits;
+    const x=e?.x??leg.tx,y=e?.y??leg.ty;
+    strike(game,p,x,y,last?82:64,last?44:30,true,q.blinkOrigin);
+    game.shake=Math.max(game.shake||0,last?6:3);
+  }
+  leg.rest-=dt;if(leg.rest<=0)q.blinkLeg=null;
+}
+/** y of a big over-head label (skill names): above the rider or girl and her health bar */
+export function overheadY(p){
+  if(p.mounted&&p.pet)return p.y-(mountedHeadHeight(p)??68)-30;
+  const set=A.girls?.[p.cid];return p.y-(set?(set.foot-(set.top||0))/(set.k||1):60)-30;
 }
 export function updatePets(game,dt){
   if(game.pvp)return;
@@ -348,6 +384,6 @@ export function drawPetAfterimages(ctx,game,time){
   for(const f of game.petFields||[]){
     if(f.kind!=='afterimage')continue;const p=game.player(f.owner);if(!p?.mounted||p.pet?.id!=='fox'||p.dead||p.downed)continue;
     const ghost={...p,x:f.x,y:f.y,face:f.face,moving:false,hurtT:0,pet:{...p.pet,x:f.x,y:f.y,face:f.face,anim:f.anim,castT:f.castT,castMax:f.castMax,moving:false}};
-    ctx.save();ctx.globalAlpha=.22*Math.max(0,f.life/f.max);drawMountedPet(ctx,ghost,time,false);ctx.restore();
+    ctx.save();ctx.globalAlpha=.4*Math.max(0,f.life/f.max)**1.5;drawMountedPet(ctx,ghost,time,false);ctx.restore();
   }
 }

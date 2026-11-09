@@ -569,7 +569,7 @@ function applySnapshot(app, s) {
       }
       case "snd": if (!ev.n.startsWith("shoot_")) sfx(ev.n); break; // our own shots are predicted locally
       case "txt": g.floaters.push({ x: ev.x, y: ev.y, s: ev.s, color: ev.c, size: ev.z, life: 0.8, max: 0.8, vy: -38 }); break;
-      case "ln": g.lines.push({ x0: ev.a[0], y0: ev.a[1], x1: ev.a[2], y1: ev.a[3], color: ev.c, w: ev.w, life: ev.l, max: ev.l, kind: ev.k, anchorOwner:ev.o??null }); break;
+      case "ln": g.lines.push({ x0: ev.a[0], y0: ev.a[1], x1: ev.a[2], y1: ev.a[3], color: ev.c, w: ev.w, life: ev.l, max: ev.l, kind: ev.k, anchorOwner:ev.o??null, grow: ev.g||0, seed: Math.random() * 1000 }); break;
       case "tile":
         if(ev.wall){if(g.map.t[ev.i]===1){g.map.t[ev.i]=0;g.map.groundDirty=true;}}
         else if(ev.bush){if(g.map.t[ev.i]===3){g.map.t[ev.i]=0;g.map.groundDirty=true;}}
