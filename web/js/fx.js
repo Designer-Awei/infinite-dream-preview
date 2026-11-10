@@ -108,7 +108,8 @@ export class FxLayer {
   spawn(id, x, y, o = {}) {
     const mod = mods[id];
     if (!mod || !this.enabled) return null;
-    const cap = id==='fire/fire-tornado'?4:HEAVY.has(id) ? (this.lite ? 1 : 2) : this.lite ? 4 : 8;
+    // route portals stand side by side (up to three at a fork): never let one evict another, even in low-effects mode
+    const cap = id==='fire/fire-tornado'||id==='arcane/portal'?4:HEAVY.has(id) ? (this.lite ? 1 : 2) : this.lite ? 4 : 8;
     let n = 0, old = -1;
     for (let i = 0; i < this.list.length; i++) if (this.list[i].id === id) {
       if (old < 0) old = i;
