@@ -2154,46 +2154,25 @@ body.touchmode .pet-ride-btn small { display:none; }
 .dice-res { font-size: 24px; line-height: 30px; min-height: 30px; color: #fff; }
 .dice-sub { font-size: 13px; color: #fff; min-height: 17px; }
 @media (max-height: 420px) { .dice-stage { height: 112px; } .dice-stage canvas { width: 84px; height: 84px; } .dice-res { font-size: 22px; line-height: 26px; min-height: 26px; } }
-
-/* ===== 2026-11-10 主页改版（预览）：右侧保持原布局；左侧是“元素即按钮”的场景入口；点角色打开角色窗口 ===== */
-.lb2 .lb-scene { pointer-events: none; }
-.lb-spot { position: absolute; left: 4%; bottom: 3%; width: min(60%, 172px); padding: 0; border: 0; background: none; cursor: pointer; pointer-events: auto; color: #fff; font-family: inherit; display: flex; flex-direction: column; align-items: center; transition: transform .1s; }
-.lb-spot:active { transform: scale(.95); }
-.lb-spot .sp-img { width: 100%; display: block; image-rendering: pixelated; filter: drop-shadow(0 6px 0 rgba(0,0,0,.25)); }
-.lb-spot .sp-l { margin-top: -8px; font-size: 15px; line-height: 1.2; white-space: nowrap; -webkit-text-stroke: 3px #1a1020; paint-order: stroke fill; position: relative; z-index: 2; }
-/* the partner sits on the nest: its feet overlap the nest's bowl */
-.lb2 .lb-spot .lb-pet { position: relative; left: auto; right: auto; top: auto; bottom: auto; display: block; width: 70%; aspect-ratio: 1; margin-bottom: -34%; z-index: 1; pointer-events: none; animation: spotBob 3.2s ease-in-out infinite; }
-@keyframes spotBob { 50% { transform: translateY(-4px); } }
-.lb2 .lb-name { pointer-events: auto; cursor: pointer; background: none; border: 0; padding: 0; color: #fff; font-family: inherit; }
-.lb2 .lb-name .lb-swap { display: inline-block; margin-left: 6px; vertical-align: middle; font-size: 11px; font-style: normal; color: #fff; background: rgba(10,6,24,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 0 5px; line-height: 16px; }
-.lb2 .lb-name .lb-lv { margin-left: 6px; font-size: 0.7em; font-weight: normal; vertical-align: middle; }
-/* character window: roster grid (scrolls, grows with new characters) | the girl | a short card. Tap outside to close */
-.cw-modal { z-index: 12; }
-.cw-panel { width: min(860px, 88vw); height: min(340px, 86vh); display: grid; grid-template-columns: 172px minmax(0, 30%) minmax(0, 1fr); gap: 14px; padding: 14px; overflow: hidden; }
-.cw-roster { min-height: 0; overflow-y: auto; display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 84px; gap: 8px; padding: 4px 6px 4px 4px; align-content: start; scrollbar-width: thin; }
-.lb .cw-roster .rcard { height: auto; min-height: 0; aspect-ratio: auto; animation: none; box-shadow: 0 3px 0 var(--ink); }
-.lb .cw-roster .rcard.sel { transform: none; border-color: #fff; box-shadow: 0 0 0 3px var(--y2), 0 3px 0 var(--ink); }
-.lb .cw-roster .rcard img { height: 84%; bottom: 16%; }
-.lb .cw-roster .rcard .nm { font-size: 11px; padding: 1px 0; }
-.lb .cw-roster .rcard .lock { background: rgba(10,6,24,.3); }
+/* 事件对话框按钮：单圈黑色描边，不用八向投影（小字投影会糊） */
+.ev-opts .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 3px #000; paint-order: stroke fill; }
+@media (max-height: 420px) { .ev-opts .btn:not(.gray) { -webkit-text-stroke: 2.5px #000; } }
+/* 骰子狐押注比例条：30%~80%，每 10% 一档，滑块吸附 */
+.dice-bet { display: flex; align-items: center; gap: 10px; width: min(86%, 340px); margin-top: 6px; }
+.dice-bet .db-l { flex: none; font-size: 12px; color: #c8a0ff; }
+.dice-bet .db-v { flex: none; min-width: 92px; font-size: 12px; text-align: right; white-space: nowrap; }
+.db-track { position: relative; flex: 1; height: 10px; border: 2px solid var(--ink); border-radius: 6px; background: #241a40; cursor: pointer; touch-action: none; }
+.db-fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 4px; background: linear-gradient(90deg, #ffe680, #ffb43a); }
+.db-track u { position: absolute; top: 50%; width: 2px; height: 6px; margin: -3px 0 0 -1px; background: rgba(255,255,255,.35); text-decoration: none; }
+.db-knob { position: absolute; top: 50%; width: 16px; height: 20px; margin: -10px 0 0 -8px; border: 2px solid var(--ink); border-radius: 5px; background: linear-gradient(180deg, #fff, #e0d6ff); box-shadow: 0 2px 0 var(--ink); transition: left .08s; }
+.dice-bet.off { opacity: .45; pointer-events: none; }
+.cw-panel { height: min(400px, 90vh); }
+/* 角色列表：吉拉姆后面是筹备中的新角色卡；一行放 6 张，多出来的左滑查看 */
 .rcard.soon { background: repeating-linear-gradient(135deg, #3a3270 0 8px, #322a64 8px 16px); }
-.rcard .rq { position: absolute; inset: 0 0 16px; display: flex; align-items: center; justify-content: center; font-size: 30px; color: #b8a8e8; }
-.cw-stage { position: relative; min-height: 0; border-radius: 14px; overflow: hidden; background: radial-gradient(ellipse at 50% 70%, color-mix(in srgb, var(--ec) 50%, transparent), transparent 70%); }
-.cw-glow { position: absolute; left: 12%; right: 12%; bottom: 6%; height: 8%; border-radius: 50%; background: rgba(0,0,0,.35); }
-.lb .cw-stage .lb-hero { position: absolute; left: 50%; bottom: 8%; height: 86%; transform: translateX(-50%); animation: none; }
-.cw-q { display: none; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 120px; color: #b8a8e8; }
-.cw-modal.soon .lb-hero { display: none; } .cw-modal.soon .cw-q { display: flex; }
-.cw-lock { position: absolute; left: 50%; transform: translateX(-50%); bottom: 4px; max-width: 96%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 11px; background: rgba(10,6,24,.75); border: 2px solid var(--ink); border-radius: 8px; padding: 2px 8px; }
-.cw-side { min-height: 0; display: flex; }
-.lb .cw-side .lb-info { flex: 1; height: auto; min-height: 0; overflow: hidden; background: none; border: 0; box-shadow: none; padding: 2px 0; gap: 12px; justify-content: center; }
-.cw-soon { font-size: 14px; color: #d8d0ff; margin: 0; }
-/* the three skills side by side: icon + name; the full text is under 详情 */
-.lb .cw-side .li-skills { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; cursor: pointer; }
-.lb .cw-side .li-skills .sk { flex-direction: column; align-items: center; gap: 5px; padding: 8px 4px; border-radius: 10px; background: rgba(10,6,24,.35); min-width: 0; }
-.lb .cw-side .sk-ic { width: 38px; height: 38px; } .lb .cw-side .sk-ic img { width: 28px; height: 28px; }
-.lb .cw-side .sk-tx { text-align: center; min-width: 0; } .lb .cw-side .sk-tx b { font-size: 13px; white-space: nowrap; }
-.lb .cw-side .sk-tx span { display: none !important; }
-.lb .cw-side .li-bars { row-gap: 7px; }
-@media (min-height: 600px) { .cw-panel { width: min(1040px, 86vw); height: min(480px, 80vh); grid-template-columns: 216px minmax(0, 30%) minmax(0, 1fr); } .cw-roster { grid-auto-rows: 104px; } }
-.lb .cw-side .li-skills .sk { overflow: hidden; } .lb .cw-side .sk-tx { width: 100%; } .lb .cw-side .sk-tx b { overflow: hidden; text-overflow: ellipsis; }
-@media (max-width: 720px) { .cw-panel { grid-template-columns: 150px minmax(0, 28%) minmax(0, 1fr); gap: 10px; } .cw-roster { grid-auto-rows: 74px; gap: 6px; } }
+.rcard.soon .rq { position: absolute; inset: 0 0 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; color: #b8a8e8; }
+.rcard.soon .nm { position: absolute; left: 0; right: 0; bottom: 0; font-size: 10px; text-align: center; background: rgba(10,6,24,.75); padding: 1px 0; white-space: nowrap; }
+.lb .lb-roster { overflow-x: auto; overflow-y: hidden; scrollbar-width: none; overscroll-behavior-x: contain; }
+.lb .lb-roster::-webkit-scrollbar { display: none; }
+@media (max-height: 420px) { .lb .lb-roster { grid-template-columns: none; grid-auto-flow: column; grid-auto-columns: calc((100% - 20px) / 6); } }
+/* taller screens keep the 3-column grid in its order; the extra row scrolls up */
+@media (min-height: 421px) { .lb .lb-roster { overflow-x: hidden; overflow-y: auto; grid-auto-rows: calc((100% - 8px) / 2); } }
