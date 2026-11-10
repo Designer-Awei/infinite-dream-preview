@@ -174,7 +174,7 @@ export function showWarehouse(onClose) {
       box.innerHTML = `<div class="wh-view"><div class="wh-anim"></div><button class="wh-lockbtn" aria-label="上锁"></button><div class="wh-score"><i class="o1">评分</i><b class="outline"></b></div></div>
         <div class="wh-head" title="点击上方宠物查看技能详情"><b class="wh-name outline"></b><span class="wh-tags o1"></span></div>
         <div class="wh-traits o1"></div><div class="wh-xp"><u></u><span class="o1"></span></div><div class="wh-btns"></div>`;
-      canvas = petPreview(box.querySelector(".wh-anim"), p.id, p.stage, "lobby", false, [320, 220], false, true);
+      canvas = petPreview(box.querySelector(".wh-anim"), p.id, p.stage, "lobby", false, [640, 300], false, true, true);
       box.querySelector(".wh-view").insertAdjacentHTML("beforeend", `<span class="wh-hint o1">点击查看详情</span>`);
     }
     // tap the pet on the stage: its detail panel (skills, demos)
