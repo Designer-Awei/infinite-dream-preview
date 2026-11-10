@@ -1,7 +1,8 @@
 # Build web/assets/girls_hd.png + girls_hd.json: 192px hero frames (k=2, drawn at the same world size as the 96px
 # atlas, twice the detail). Girls listed here override their row in girls.json; the rest keep the 96px frames.
 # usage: build_girls_hd.py <work dir with base/{front,back,side}_<cid>.png and out/<cid>/*.png> [clips.json]
-# clips.json: {"<cid>": {"idle_s": ["a_idle-s", [0,1,2,3]], ...}}  (frame n repeats frame 0, so a loop is 0..n-1)
+# clips.json: {"<cid>": {"idle_s": ["a_idle-s", [0,1,2,3]], "run_s": [["l", [0,2,4,6]], ["r", [0,2,4,6]]], ...}}
+# (frame n repeats frame 0, so a loop is 0..n-1)
 import json, os, sys
 import numpy as np
 from PIL import Image
@@ -25,7 +26,7 @@ def snap(img, pal_lab, pal_rgb, base_a, kind):
     if kind == 'idle': m &= ndimage.binary_dilation(body0, iterations=6)
     if kind == 'atk':
         near = ndimage.binary_dilation(body0, iterations=6); hsv = rgb2hsv(a[..., :3])
-        m &= ~(~near & (hsv[..., 2] > 0.8) & (hsv[..., 1] < 0.18))
+        m &= ~(~near & (hsv[..., 2] > 0.8) & (hsv[..., 1] < 0.09))  # her pale skin is >= 0.13
     px = a[..., :3][m].astype(np.float64)
     L = color.rgb2lab(px[None] / 255)[0]
     d = ((L[:, None, :] - pal_lab[None]) ** 2).sum(-1)
@@ -62,9 +63,11 @@ for n, clips in CLIPS.items():
     i0 = len(cells); cells += [base['front'], base['back'], base['side']]
     meta['frames'][n] = {'front': i0, 'back': i0 + 1, 'side': i0 + 2}
     meta['clips'][n] = {}
-    for clip, (src, idx) in clips.items():
+    for clip, spec in clips.items():
         ba = np.array(base[VIEW[clip[-1]]])[..., 3]
-        new = [snap(Image.open(f'{WORK}/out/{n}/{src}_{i}.png'), pal_lab, pal_rgb, ba, clip[:-2]) for i in idx]
+        # a clip is one [src, frames] or a list of them spliced (e.g. a left step clip then a right step clip)
+        segs = spec if isinstance(spec[0], list) else [spec]
+        new = [snap(Image.open(f'{WORK}/out/{n}/{src}_{i}.png'), pal_lab, pal_rgb, ba, clip[:-2]) for src, idx in segs for i in idx]
         meta['clips'][n][clip] = list(range(len(cells), len(cells) + len(new))); cells += new
 pos = lambda i: [(i % PER) * C, (i // PER) * C]
 atlas = Image.new('RGBA', (min(len(cells), PER) * C, ((len(cells) + PER - 1) // PER) * C), (0, 0, 0, 0))
