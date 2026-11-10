@@ -9,7 +9,6 @@ import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
-const SWING_FPS = 18; // melee combo clips: each stage's PixelLab frames play once from the swing (the motion is the effect)
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -329,20 +328,13 @@ export class Renderer {
     // place, breathing when idle; the sliced procedural sway is only a fallback for missing clips
     const dk = { front: "_s", back: "_n", side: "_e", sideL: "_eL" }[v], CL = set.clips || {};
     const firing = (p.input && p.input.atk && p.target) || p.castT > 0;
-    let clip = null, fps = 13, frameAt = null;
-    // melee girls play their swing once per swing (from its start), even while running
-    const melee = CHARS[p.cid].atk.melee, swingAge = melee && p.swingAt != null ? (this.gameTime ?? 0) - p.swingAt : Infinity;
-    // melee girls swing in side view only (front / back views just carry the weapon): left or right by her aim
-    const sideK = Math.cos(p.swingA ?? p.face) >= 0 ? "_e" : "_eL";
-    const swingClip = melee ? CL["atk" + ((p.comboStage || 0) + 1) + sideK] || CL["atk" + sideK] : null;
-    if (!p.downed && swingClip && swingAge >= 0 && swingAge < swingClip.length / SWING_FPS) (clip = swingClip), (frameAt = Math.floor(swingAge * SWING_FPS));
-    else if (!p.downed) {
+    let clip = null, fps = 13;
+    if (!p.downed) {
       if (p.moving && CL["run" + dk]) (clip = CL["run" + dk]), (fps = p.dashT > 0 ? 24 : 13);
-      else if (melee && CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
       else if (firing && CL["atk" + dk]) (clip = CL["atk" + dk]), (fps = 16);
       else if (CL["idle" + dk]) (clip = CL["idle" + dk]), (fps = 5);
     }
-    const runF = clip ? clip[frameAt ?? Math.floor(p.animT * fps) % clip.length] : null;
+    const runF = clip ? clip[Math.floor(p.animT * fps) % clip.length] : null;
     const img = runF || set.views[v];
     const wht = (c) => c.__w || (c.__w = silhouette(c, "#ffffff")), tnt = (c) => c.__t || (c.__t = silhouette(c, ELEM[CHARS[p.cid].elem].glow));
     const silW = runF ? wht(runF) : set.white[v], silT = runF ? tnt(runF) : set.tint[v];
@@ -382,21 +374,10 @@ export class Renderer {
       return;
     }
     const blink = p.invuln > 0 && p.hurtT < 0.5 && p.invuln < 0.9 && Math.floor(this.t * 20) % 2 === 0 && p.dashT <= 0;
-    const phase = p.buff && p.buff.phase > 0;
-    g.globalAlpha = inBush ? 0.55 : blink ? 0.45 : phase ? 0.5 + 0.1 * Math.sin(this.t * 12) : 1;
+    g.globalAlpha = inBush ? 0.55 : blink ? 0.45 : 1;
     // procedural animation: bob, sway of hair/skirt rows, stepping legs (rows sliced from the hi-res sprite)
     const t = p.animT, mv = p.moving;
     const bob = half(mv ? -Math.abs(Math.sin(t * 9)) * 2 : Math.sin(t * 2.2) * 0.6);
-    if (p.buff && p.buff.ultOn > 0 && p.cid === "gpt") {
-      // 龙怒: a flickering violet flame outline around her whole body, drawn behind her so she stays readable
-      const yy = y0 + (runF ? 0 : bob), fl = 0.55 + 0.25 * Math.sin(this.t * 14), keep = g.globalAlpha;
-      const src = runF || img, c = src.__rage || (src.__rage = silhouette(src, "#9b6cf0"));
-      for (const [dx, dy, al] of [[-2, 0, 0.7], [2, 0, 0.7], [0, 2, 0.6], [0, -2, 0.8], [-1, -4, 0.55], [1, -5, 0.45], [0, -7, 0.3]]) {
-        g.globalAlpha = fl * al;
-        g.drawImage(c, 0, 0, SW, set.h, x0 + dx + (Math.sin(this.t * 23 + dy) > 0.7 ? 1 : 0), yy + dy, W, SH);
-      }
-      g.globalAlpha = keep;
-    }
     const rec = p.recoil ? -Math.cos(p.face) * p.recoil : 0;
     if (runF) {
       // a real run cycle: draw the frame whole (no sliced bob / sway / legs)
@@ -427,23 +408,7 @@ export class Renderer {
       g.globalAlpha = Math.min(1, flashA);
       g.drawImage(p.buff.star > 0 ? silT : silW, x0, y0 + (runF ? 0 : bob), W, SH);
     }
-    if (phase) {
-      // 雷影虚化: a see-through thunder ghost with a flickering electric rim
-      const yy = y0 + (runF ? 0 : bob);
-      g.globalCompositeOperation = "lighter";
-      g.globalAlpha = 0.3 + 0.2 * Math.sin(this.t * 17);
-      g.drawImage(silT, x0 + (Math.sin(this.t * 31) > 0.6 ? 1 : 0), yy, W, SH);
-      g.globalCompositeOperation = "source-over";
-    }
-    if (p.buff && p.buff.ultOn > 0 && p.cid === "gpt") {
-      // 龙怒 (the flame outline is drawn behind her, above): embers rising off her body
-      g.globalCompositeOperation = "lighter";
-      for (let i = 0; i < 10; i++) {
-        const u = (this.t * 1.6 + i * 0.137) % 1, ex = p.x + Math.sin(i * 2.3 + this.t * 3) * 13, ey = p.y - 6 - u * 62;
-        g.globalAlpha = (1 - u) * 0.9; g.fillStyle = i % 3 ? "#c9a8ff" : "#ffffff"; g.fillRect(Math.round(ex), Math.round(ey), i % 2 ? 2 : 3, i % 2 ? 2 : 3);
-      }
-      g.globalCompositeOperation = "source-over";
-    } else if (p.buff && p.buff.ultOn > 0) {
+    if (p.buff && p.buff.ultOn > 0) {
       g.globalAlpha = 0.18 + 0.12 * Math.sin(this.t * 10);
       g.globalCompositeOperation = "lighter";
       g.drawImage(silT, x0, y0 + (runF ? 0 : bob), W, SH);
@@ -504,7 +469,7 @@ export class Renderer {
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.melee?c.atk.reach*Math.min(1.6,me.st.range):c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
     if (input.skillAim != null) show(input.skillAim, me.cid === "gpt" ? 115 : 160, 24, "#7fd0ff"); // 龙跃突刺 shows its leap length
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }
@@ -944,19 +909,6 @@ export class Renderer {
           const cs = Math.cos(ang), sn = Math.sin(ang);
           for (let i = -4; i <= 4; i++) for (let j = -2; j <= 2; j++) P.dot(x + cs * i - sn * j, y + sn * i + cs * j, H(Math.abs(j) === 2 || Math.abs(i) === 4 ? "#1a1430" : i === 0 ? el.color : "#f0eaff"));
           break;
-        }
-        case "crescent": {
-          // 月牙剑气: a crescent bowed forward, thick in the middle, thinning to its horns
-          const cs = Math.cos(ang), sn = Math.sin(ang), R = 15, cxx = x - cs * R * 0.7, cyy = y - sn * R * 0.7;
-          for (let i = -12; i <= 12; i++) {
-            const t = ang + (i / 12) * 1.25, th = Math.round(4 * (1 - Math.abs(i) / 13)) + 1;
-            for (let j = 0; j < th; j++) {
-              const rr = R - j;
-              P.dot(cxx + Math.cos(t) * rr, cyy + Math.sin(t) * rr * 0.85, H(j === 0 ? "#ffffff" : j === 1 ? el.glow : el.color));
-            }
-          }
-          P.glow(x, y, 20, H(el.glow), 0.55);
-          continue;
         }
         case "grok":
         case "grokb":

@@ -49,10 +49,10 @@ const DEMO = {
   t_elite: { foes: { n: 2, elite: true, hp: 300 } },
   t_replay: { foes: { n: 2, elite: true, hp: 6 }, respawn: 1.2, autoUlt: true, ult: 0.7 },
   t_cd: { autoSkill: true },
-  // 自洽回声 with 吉普缇: her skill is a leap-thrust, so the echo reads as a second leap right after the first.
+  // 自洽回声 with Grok: her skill is a dash, so the echo reads as a second dash right after the first.
   // The demo shows the echo every time (in a run it is a 35% chance).
   u_echo: {
-    cid: "gpt",
+    cid: "grok",
     noCard: true,
     foes: { n: 3, hp: 300, dx: 150, spread: 70 },
     tick: (g, p, t, inp, ui) => {
@@ -61,8 +61,8 @@ const DEMO = {
       const dir = k % 2 ? -1 : 1;
       if (ph < 1.1) (inp.mx = dir), (inp.my = 0.25 * dir);
       const ang = Math.atan2(0.25 * dir, dir);
-      if (ph >= 0.15 && p.__e1 !== k) (p.__e1 = k), castSkill(g, p, "gpt", ang, p.target, 1), ui.press(ui.skill), (p.skillCd = CHARS.gpt.skill.cd);
-      if (ph >= 0.6 && p.__e1 === k && p.__e2 !== k) (p.__e2 = k), castSkill(g, p, "gpt", ang, p.target, 1); // the echo
+      if (ph >= 0.15 && p.__e1 !== k) (p.__e1 = k), castSkill(g, p, "grok", ang, p.target, 1), ui.press(ui.skill), (p.skillCd = CHARS.grok.skill.cd);
+      if (ph >= 0.6 && p.__e1 === k && p.__e2 !== k) (p.__e2 = k), castSkill(g, p, "grok", ang, p.target, 1); // the echo
     },
   },
   u_links: { autoSkill: true, cd: 0.4 },
