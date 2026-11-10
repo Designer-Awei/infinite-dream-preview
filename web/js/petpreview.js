@@ -46,7 +46,9 @@ function draw(now){
       const k3key=`${v.id}-3`,a3=meta.actors[k3key],[,b3y,b3w,b3h]=boxOf(k3key,'rest',null,meta.clips[k3key].idle_e.slice(0,1),a3.page);
       const k3=Math.min(Hv*0.74/b3h,Wv*0.9/b3w),k=k3*actor.render_scale/a3.render_scale,an=actor.anchor||[cw/2,ch-8];
       const ground=(H-b3h*k3)/2+H*0.04+((a3.anchor||an)[1]-b3y)*k3;
-      ctx.translate(W/2-(bx+w/2)*k,ground-an[1]*k);ctx.scale(k,k);
+      // real==='center': each stage's resting pose centred up and down instead of standing on the 终极's ground line
+      const rest=v.real==='center'&&boxOf(key,'rest',null,meta.clips[key].idle_e.slice(0,1),actor.page);
+      ctx.translate(W/2-(bx+w/2)*k,rest?H/2-(rest[1]+rest[3]/2)*k:ground-an[1]*k);ctx.scale(k,k);
     }else{const k=Math.min(W/(w+12),H/(h+12));ctx.translate((W-w*k)/2-bx*k,(v.alignTop?0:(H-h*k)/2)-by*k);ctx.scale(k,k);}
     if(hasEffects&&v.id==='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
     if(skin){const cell=skinnedFrame(v.skin,image,x,y,cw,ch,now/1000),an=actor.anchor||[cw/2,ch-8];ctx.drawImage(cell,0,0,cw,ch);if(skin.aura){ctx.save();ctx.translate(an[0],an[1]);drawAura(ctx,skin.aura,cell,an,1,now/1000);ctx.restore();}}

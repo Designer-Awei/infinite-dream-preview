@@ -77,7 +77,7 @@ export function showPetDetail(uid, onClose) {
   const view = $(".pp-view");
   uiRoot().appendChild(md);
   // the one portrait canvas: idle with an occasional cast, one framing for every pose, so it never rescales
-  const canvas = petPreview($(".pp-anim"), selected, stage, "lobby", false, [640, 300], false, true, true);
+  const canvas = petPreview($(".pp-anim"), selected, stage, "lobby", false, [640, 300], false, true, "center");
   setPetPreview(canvas, { skin: ownOf(selected)?.skin || null });
   // ---- the skill demo (a real fight) replaces the portrait while a skill row is picked
   const showDemo = () => {
