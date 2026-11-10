@@ -19,22 +19,27 @@ export function drawEgg(c, crack = 0, kind = "base") {
   const g = c.getContext("2d"), W = 24, H = 30;
   c.width = W;
   c.height = H;
+  // a real egg: narrow, rounded top and a wide, full bottom (widest just below the middle). v runs -1 (top, row 2) to 1
+  // (bottom, row 28); the half width at v is sqrt(1 - v²) · (1 + 0.24 v), so the outline is still centred in the canvas
+  const half = (v) => (Math.abs(v) >= 1 ? 0 : 9.9 * Math.sqrt(1 - v * v) * (1 + 0.24 * v));
+  const at = (x, y) => ({ u: (x + 0.5 - 12), v: (y + 0.5 - 15.5) / 13 });
   const inside = (x, y) => {
-    // centred in the canvas (outline on rows 2..28), so a centred canvas shows a centred egg
-    const u = (x + 0.5 - 12) / 10.5, v = (y + 0.5 - 15) / 12.5;
-    return u * u + v * v * (v < 0 ? 1.15 : 0.92) < 1;
+    const { u, v } = at(x, y);
+    return Math.abs(u) < half(v);
   };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     if (!inside(x, y)) {
       if (inside(x - 1, y) || inside(x + 1, y) || inside(x, y - 1) || inside(x, y + 1)) (g.fillStyle = "#1a1020"), g.fillRect(x, y, 1, 1);
       continue;
     }
-    const lit = (x - 8) * (x - 8) + (y - 8) * (y - 8) < 18, dark = x > 16 || y > 23;
+    // light from the upper left: a soft highlight there, shadow along the right side and the bottom curve
+    const { u, v } = at(x, y), w = half(v), k = u / w;
+    const lit = (k + 0.38) ** 2 * 1.4 + (v + 0.5) ** 2 * 2.2 < 0.16, dark = k > 0.52 || v > 0.8 || (v > 0.55 && k > 0.15);
     g.fillStyle = lit ? P[0] : dark ? P[2] : P[1];
     g.fillRect(x, y, 1, 1);
   }
   g.fillStyle = P[3];
-  for (const [x, y, w] of [[6, 12, 3], [14, 7, 2], [15, 16, 3], [9, 20, 2], [17, 11, 1], [11, 15, 1]]) g.fillRect(x, y, w, w > 1 ? 2 : 1);
+  for (const [x, y, w] of [[7, 12, 3], [13, 7, 2], [15, 17, 3], [8, 21, 2], [16, 11, 1], [11, 16, 1]]) g.fillRect(x, y, w, w > 1 ? 2 : 1);
   g.fillStyle = "#1a1020";
   const seg = [[[7, 10], [9, 12], [11, 10], [13, 12]], [[13, 12], [15, 10], [17, 12]], [[11, 10], [12, 7], [11, 5]]];
   for (let k = 0; k < Math.min(crack, seg.length); k++) {
@@ -165,9 +170,8 @@ export function showWarehouse(onClose) {
     const st = petState(), p = sel && findPet(sel, st), box = $(".wh-detail");
     if (!p) {
       canvas = null;
-      box.innerHTML = `<div class="wh-empty o1"><canvas></canvas><p>${eggCount(st) ? "点右侧的宠物蛋孵化你的第一只宠物。" : "还没有宠物。击败首领可获得宠物蛋，也可以在图鉴里用积攒兑换。"}</p><div class="wh-btns"></div></div>`;
+      box.innerHTML = `<div class="wh-empty o1"><canvas></canvas><p>${eggCount(st) ? "点右侧的宠物蛋孵化你的第一只宠物。" : "还没有宠物。击败首领可获得宠物蛋，也可以在扭蛋机用积攒兑换。"}</p></div>`;
       drawEgg(box.querySelector("canvas"));
-      box.querySelector(".wh-btns").appendChild(btn("图鉴", "small", () => (md.remove(), showPetDetail(null, () => showWarehouse(onClose)))));
       return;
     }
     const d = PETS[p.id], q = petQuality(p), next = PET_EVOLVE[p.stage + 1], to = next ? next.xp : null, ms = mineState();
