@@ -67,6 +67,20 @@ const traitLine = (p) => ([k, v]) => {
   return `<div class="wh-tr"><b>${t.name}</b><span class="wh-td">${t.desc} ${t.minus ? "-" : "+"}${v}%</span><i class="wh-tb"><u style="width:${Math.round(8 + pos * 92)}%"></u></i><small>${lo}~${cap}%</small></div>`;
 };
 
+/** sparse, uneven rays for the hatch reveal: 9~12 beams, each 3~11° wide with gaps of 14~42°, a little brighter or
+ *  dimmer each (流彩: every beam its own colour) — a conic-gradient built fresh each time */
+const RAINBOW_COLS = ["#ff6a6a", "#ffd84a", "#6ee08a", "#5aa8ff", "#c27bff", "#ff8ad8"];
+function rayBg(Q, alpha) {
+  const stops = [];
+  let a = Math.random() * 20, i = 0;
+  while (a < 345) {
+    const w = 3 + Math.random() * 8, col = Q.rainbow ? RAINBOW_COLS[i++ % RAINBOW_COLS.length] : Q.col, k = Math.round(alpha * (0.6 + Math.random() * 0.7) * 100);
+    const c = `color-mix(in srgb, ${col} ${Math.min(60, k)}%, transparent)`;
+    stops.push(`transparent ${a.toFixed(1)}deg`, `${c} ${a.toFixed(1)}deg`, `${c} ${(a + w).toFixed(1)}deg`, `transparent ${(a + w).toFixed(1)}deg`);
+    a += w + 14 + Math.random() * 28;
+  }
+  return `conic-gradient(${stops.join(",")}, transparent 360deg)`;
+}
 /** the quality chip, and the 异色 chip when there is one (流彩 shows once, as its quality) */
 const tags = (p) => {
   const q = petQuality(p), Q = QUALITY[q];
@@ -293,7 +307,7 @@ export function showWarehouse(onClose) {
     ov.style.setProperty("--rc", Q.col);
     ov.style.setProperty("--ra", [0.1, 0.14, 0.18, 0.24, 0.32, 0.36][q]);
     ov.style.setProperty("--rs", [26, 22, 18, 14, 10, 8][q] + "s");
-    ov.innerHTML = `<i class="wh-rays2"></i><div class="wh-hstage"><canvas class="wh-hegg"></canvas><div class="wh-hpet"></div></div><div class="wh-hinfo"></div><div class="wh-tap o1"></div>`;
+    ov.innerHTML = `<i class="wh-rays2" style="background:${rayBg(Q, [0.1, 0.14, 0.18, 0.24, 0.32, 0.36][q])}"></i><div class="wh-hstage"><canvas class="wh-hegg"></canvas><div class="wh-hpet"></div></div><div class="wh-hinfo"></div><div class="wh-tap o1"></div>`;
     $(".wh-panel").appendChild(ov);
     const eggC = ov.querySelector(".wh-hegg");
     drawEgg(eggC, 0, kind);

@@ -2382,7 +2382,6 @@ body.touchmode .pet-ride-btn small { display:none; }
   background: repeating-conic-gradient(color-mix(in srgb, var(--rc, #fff) calc(var(--ra, .15) * 100%), transparent) 0 6deg, transparent 6deg 15deg);
   -webkit-mask: radial-gradient(closest-side, #000, transparent 72%); mask: radial-gradient(closest-side, #000, transparent 72%); }
 .wh-hatch.open .wh-rays2 { opacity: 1; transition: opacity .4s; animation: whRaySpin var(--rs, 18s) linear infinite; }
-.wh-hatch.rainbow .wh-rays2 { background: repeating-conic-gradient(rgba(255,106,106,.32) 0 6deg, transparent 6deg 15deg, rgba(255,216,74,.32) 15deg 21deg, transparent 21deg 30deg, rgba(110,224,138,.32) 30deg 36deg, transparent 36deg 45deg, rgba(90,168,255,.32) 45deg 51deg, transparent 51deg 60deg, rgba(194,123,255,.32) 60deg 66deg, transparent 66deg 75deg); }
 @keyframes whRaySpin { to { transform: rotate(360deg); } }
 .wh-tap { font-size: 12px; color: #c8c0e8; min-height: 16px; }
 .wh-hatch.open { cursor: pointer; }
