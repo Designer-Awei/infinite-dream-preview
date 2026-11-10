@@ -5,6 +5,22 @@ import { VIEW_W, VIEW_H } from "./data.js";
 import { FX_MODS } from "./fxmods.js";
 import { mountedShield } from './pets.js';
 import { flyingMount } from './petcombat.js';
+import { A } from './assets.js';
+
+// a shield bubble big enough for the whole figure (head, wings, tail; not the hp bar): measured once per hero sprite
+function heroShield(p) {
+  const set = p && A.girls[p.cid];
+  if (!set) return null;
+  if (set.__shield) return set.__shield;
+  const k = set.k || 1, H = (set.foot - (set.top || 0)) / k;
+  let half = 0;
+  for (const v of ['front', 'back', 'side']) {
+    const c = set.views[v], d = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    for (let y = 0; y < c.height; y++) for (let x = 0; x < c.width; x++) if (d[(y * c.width + x) * 4 + 3]) half = Math.max(half, Math.abs(x + 0.5 - c.width / 2) / k);
+  }
+  const r = Math.ceil(Math.max(half + 3, H / 2 + 4));
+  return (set.__shield = { r, cy: -Math.round(H / 2 + 1) });
+}
 
 export const FX_IDS = [
   "fire/fire-tornado",
@@ -132,8 +148,9 @@ export class FxLayer {
         f.options.x = f.follow.x + f.dx;
         f.options.y = f.follow.y + f.dy;
         if(f.id==='holy/divine-shield'){
-          const shield=mountedShield(f.follow);
-          f.options.radius=shield?shield.radius:f.baseRadius;
+          const shield=mountedShield(f.follow),fit=!shield&&heroShield(f.follow);
+          f.options.radius=shield?shield.radius:fit?fit.r:f.baseRadius;
+          f.options.cy=fit?fit.cy:undefined;
           if(shield){f.options.x=shield.x;f.options.y=shield.y;}
         }
       }

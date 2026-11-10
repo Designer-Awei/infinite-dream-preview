@@ -27,7 +27,9 @@ export const act = {
   ],
 };
 
-const CY = -22, TILT = 0.34, N = 4, FLOOR_SY = 0.26;
+// CY: the bubble's centre above the feet; o.cy lets the game raise it for taller characters (set per draw)
+let CY = -22;
+const TILT = 0.34, N = 4, FLOOR_SY = 0.26;
 
 // a point of the sphere (lat, lon) seen from a little above: screen x, y and depth z (> 0 faces us)
 function onSphere(r, lat, lon) {
@@ -75,6 +77,7 @@ function film(p, t, o, back) {
 }
 
 export function drawBack(p, t, o) {
+  CY = o.cy ?? -22;
   const C = fit(o.palette, 8), r = o.radius, rf = Math.sqrt(r * r - CY * CY);
   film(p, t, o, true);
   lattice(p, t, o, true);
@@ -84,6 +87,7 @@ export function drawBack(p, t, o) {
 }
 
 export function draw(p, t, o) {
+  CY = o.cy ?? -22;
   const C = fit(o.palette, 8), r = o.radius, T = meta.duration, rf = Math.sqrt(r * r - CY * CY), A = o.actor;
   // the bubble lights the character from all round
   if (A) for (const [x, y] of shapeOf(A).out) p.light(x, y, C[5], 0.3);
