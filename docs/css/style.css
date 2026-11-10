@@ -2513,3 +2513,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* the + is exactly as tall as the xp bar (18px); the armed glow sits outside it */
 .wh-xpadd { width: 18px; height: 18px; box-sizing: border-box; }
 .wh-xpadd i { background: linear-gradient(#fff, #fff) center / 9px 3px no-repeat, linear-gradient(#fff, #fff) center / 3px 9px no-repeat; }
+/* + a touch larger (20px, still centred on the 18px bar) and pixel-exact: 16px inside, a 10x4 cross at whole pixels */
+.wh-xpadd { width: 20px; height: 20px; margin: -1px 0; display: grid; place-items: center; }
+.wh-xpadd i { position: relative; inset: auto; width: 10px; height: 10px; background: linear-gradient(#fff, #fff) 0 3px / 10px 4px no-repeat, linear-gradient(#fff, #fff) 3px 0 / 4px 10px no-repeat; }
