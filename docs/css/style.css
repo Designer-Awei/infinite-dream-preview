@@ -2493,3 +2493,5 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* large modal windows: no drop shadow under the frame (the inner top highlight stays) */
 .panel { box-shadow: inset 0 3px 0 rgba(255,255,255,.25); }
 .pvm-r { box-shadow: 0 0 30px rgba(160,100,255,.35); }
+/* pull summary buttons (收下 / 再来十连): one black stroke instead of the 8-way shadow */
+.pv-foot .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }

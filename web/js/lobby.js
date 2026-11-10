@@ -901,6 +901,7 @@ function stashPreview(n) {
     <div class="sp-side"><div class="sp-caption o1">增加后</div><div class="stashbar sp-after" aria-label="积攒点 ${n} 增加至 ${n+1}">${stashBarContent(n,true)}</div></div></div>`;
 }
 
+let pullBusy = false, latestPull = () => {};
 export function showGacha() {
   clear();
   playMusic("lobby");
@@ -987,18 +988,29 @@ export function showGacha() {
   if (m.tokens < GACHA.cost10) b10.classList.add("poor");
   b.append(b1, b10);
 
-  async function doPull(n) {
+  // one pull at a time: taps while a pull (crank, reveal, summary) is running are ignored, so a quick double tap
+  // or a tap on 十连 right after 收下 can never draw twice; 再来十连 runs the next pull itself under the same lock
+  async function doPull(n, chained = false) {
+    if (pullBusy && !chained) return;
     const cost = n === 1 ? GACHA.cost1 : GACHA.cost10;
-    if (m.tokens < cost) return toast("晶石不足：去地牢里赚吧！");
-    m.tokens -= cost;
-    const res = [];
-    for (let i = 0; i < n; i++) res.push(pull());
-    save();
-    const unl = checkUnlocks();
-    await pullSequence(s, res);
-    showGacha();
-    if (unl.length) showUnlock(unl[0]);
+    if (m.tokens < cost) return (pullBusy = false), toast("晶石不足：去地牢里赚吧！");
+    pullBusy = true;
+    let again = 0;
+    try {
+      m.tokens -= cost;
+      const res = [];
+      for (let i = 0; i < n; i++) res.push(pull());
+      save();
+      const unl = checkUnlocks();
+      again = await pullSequence(s, res);
+      showGacha();
+      if (unl.length) showUnlock(unl[0]);
+    } finally {
+      if (!again) setTimeout(() => (pullBusy = false), 250); // a beat so the tap that closed the summary can't pull
+    }
+    if (again) setTimeout(() => latestPull(again, true), 60);
   }
+  latestPull = doPull;
 }
 
 // ------------------------------------------------------------------ pool preview + item effect preview
@@ -1369,14 +1381,13 @@ function pullSequence(screen, res) {
     foot.append(ok, again);
     q(".pv-skip", ov).remove();
     foot.classList.add("show");
+    let done = false;
     function finish(again) {
+      if (done) return; // a second tap on 收下 / 再来 does nothing
+      done = true;
       fx.stop();
       ov.remove();
-      resolve();
-      if (again) setTimeout(() => {
-        const bt = document.querySelectorAll(".gacha2 .pull-btn")[again > 1 ? 1 : 0];
-        bt && bt.click();
-      }, 60);
+      resolve(again);
     }
   });
 }
