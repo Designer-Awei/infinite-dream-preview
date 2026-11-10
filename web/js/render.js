@@ -791,10 +791,10 @@ export class Renderer {
     const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n, s = N.meta.cell;
     g.drawImage(N.image, f * s, m.row * s, s, s, x - m.ox, y + 8 - m.oy, s, s);
   }
-  /** a bold 8-bit "!" over a visitor you haven't talked to: about 2/3 of the visitor's height, bottom at y */
+  /** a bold 8-bit "!" over a visitor you haven't talked to: about 2/5 of the visitor's height, bottom at y */
   drawTalkMark(g, x, y, h) {
     const G = [" ### ", "#####", "#####", "#####", " ### ", " ### ", " ### ", " ### ", "     ", " ### ", " ### ", " ### "];
-    const u = Math.max(2, Math.round((h * 2) / 3 / (G.length + 2))), W = 5;
+    const u = Math.max(2, Math.round((h * 2) / 5 / (G.length + 2))), W = 5;
     const x0 = Math.round(x - (W * u) / 2), y0 = Math.round(y - (G.length + 1) * u + Math.sin(this.t * 5) * 2);
     const on = (c, r) => G[r] && G[r][c] === "#";
     g.fillStyle = "#1a1020";
