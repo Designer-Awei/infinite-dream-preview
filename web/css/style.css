@@ -2516,3 +2516,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* + a touch larger (20px, still centred on the 18px bar) and pixel-exact: 16px inside, a 10x4 cross at whole pixels */
 .wh-xpadd { width: 20px; height: 20px; margin: -1px 0; display: grid; place-items: center; }
 .wh-xpadd i { position: relative; inset: auto; width: 10px; height: 10px; background: linear-gradient(#fff, #fff) 0 3px / 10px 4px no-repeat, linear-gradient(#fff, #fff) 3px 0 / 4px 10px no-repeat; }
+/* home: before the first pet hatches the entry shows the real egg (24x30, narrow top, wide bottom), standing on the
+   gacha tile's bottom line like a hatched pet does, and wobbling like a ready egg to invite a tap */
+.lb-pet .lb-pet-egg { position: absolute; left: 0; right: 0; bottom: 8%; height: 62%; width: auto; aspect-ratio: 24 / 30; margin: 0 auto; image-rendering: pixelated; transform-origin: 50% 90%; animation: whWobble 1.2s ease-in-out infinite; }
+.lb-pet .lb-pet-egg { animation: whWobble 2s ease-in-out infinite; } /* same wobble as the notice bar's egg */
