@@ -2510,3 +2510,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .cdx-tabs { padding: 5px 6px 5px 0; margin: -5px -6px -5px 0; }
 .wh-xpadd i::before, .wh-xpadd i::after { display: none; }
 .wh-xpadd i { position: absolute; inset: 0; background: linear-gradient(#fff, #fff) center / 12px 4px no-repeat, linear-gradient(#fff, #fff) center / 4px 12px no-repeat; filter: drop-shadow(1px 0 0 var(--ink)) drop-shadow(-1px 0 0 var(--ink)) drop-shadow(0 1px 0 var(--ink)) drop-shadow(0 -1px 0 var(--ink)); }
+/* the + is exactly as tall as the xp bar (18px); the armed glow sits outside it */
+.wh-xpadd { width: 18px; height: 18px; box-sizing: border-box; }
+.wh-xpadd i { background: linear-gradient(#fff, #fff) center / 9px 3px no-repeat, linear-gradient(#fff, #fff) center / 3px 9px no-repeat; }
