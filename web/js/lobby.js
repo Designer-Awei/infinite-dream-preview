@@ -20,7 +20,7 @@ import { petPortrait } from "./petdata.js";
 import { petState } from './petsave.js';
 import { petPreview, setPetPreview } from './petpreview.js';
 import { EGGS, PET_ITEMS, eggCount } from './petdata.js';
-import { stashExchange } from './petsave.js';
+import { stashExchange, readySlots } from './petsave.js';
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -123,13 +123,15 @@ export function showLobby() {
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
   // the partner entry (宠物仓库): the carried pet (with its 异色), else the most grown one; an egg when there are only eggs
   const pets=petState(),pet=pets.list.find((p)=>p.uid===pets.equipped)||pets.list[0];
-  const eggs=eggCount(pets),eggKind=['hur','ur','base'].find((k)=>pets.eggs[k]>0)||'base';
+  const eggs=eggCount(pets)+pets.slots.filter(Boolean).length,eggKind=['hur','ur','base'].find((k)=>pets.eggs[k]>0)||'base';
   if(pet||eggs){
     const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
     entry.title='宠物仓库';entry.setAttribute('aria-label','宠物仓库');q('.lb-right',s).appendChild(entry);
     if(pet)setPetPreview(petPreview(entry.querySelector('span'),pet.id,pet.stage,'lobby',true,false,true),{skin:pet.skin});
     else{const c=document.createElement('canvas');c.className='lb-pet-egg';drawEgg(c,0,eggKind);entry.querySelector('span').appendChild(c);}
-    if(eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可孵化的宠物蛋">${Math.min(99,eggs)}</i>`);
+    const ready=readySlots(pets);
+    if(ready)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs ready" title="孵化槽里有蛋可以孵化了">${ready}</i>`);
+    else if(eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可放入孵化槽的宠物蛋">${Math.min(99,eggs)}</i>`);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);

@@ -416,6 +416,7 @@ export function showMineResult(res, again, back) {
       <div class="mres-items${items.length === 1 ? " single" : ""}">${items.length ? items.map(([id, n]) => `<div class="mri"><img src="${oreIcon(id)}" alt=""><span>${ORES[id].name}</span><b>×${n}</b></div>`).join("") : `<div class="mres-empty muted">两手空空…</div>`}</div></section>
       ${res.starsFound > res.stars ? `<div class="mres-note o1">丢失星砂 ${res.starsFound - res.stars}</div>` : ""}
       ${res.questsDone?.length ? `<div class="mres-q o1">委托完成：${res.questsDone.join("、")}（回矿场领取）</div>` : ""}
+      ${res.petEgg ? `<div class="mres-q o1">挖到一颗宠物蛋！（宠物仓库孵化）</div>` : ""}
       ${res.relics && Object.keys(res.relics).length ? `<div class="mres-rel o1">遗物 ${Object.keys(res.relics).map((id) => `<img src="${iconURL(RELICS[id].icon, 2)}" title="${RELICS[id].name}" alt="">`).join("")}</div>` : ""}</div>
       <div class="row acts"></div></div></div>`;
   const a = q(".acts", md);

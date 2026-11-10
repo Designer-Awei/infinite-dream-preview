@@ -17,7 +17,7 @@ import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
-import { PETS, PET_EVOLVE, petExperience } from "./petdata.js";
+import { PETS, PET_EVOLVE, MINE_EGG_CHANCE, petExperience } from "./petdata.js";
 import { grantPetXP, grantEggs, petState, findPet } from "./petsave.js";
 import { showEvent } from "./routeui.js";
 
@@ -390,6 +390,8 @@ export const app = {
     ms.best = Math.max(ms.best, res.depth);
     save();
     res.questsDone = progressQuests(res).map(questText);
+    // 矿场掉蛋：a safe extraction with something dug or fought finds a 宠物蛋 now and then
+    res.petEgg = res.how === "extract" && (res.dug > 0 || res.kills > 0) && Math.random() < MINE_EGG_CHANCE ? grantEggs(1) : 0;
     res.codexNew = recordCodex(res.seenTypes, res.killTypes);
     this.dive = null;
     MUI.hideMineHud();

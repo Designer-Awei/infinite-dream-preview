@@ -1,9 +1,9 @@
 // 宠物仓库：从主页角色右上方的宠物入口进入。右侧是库存格子（第一格是宠物蛋，其后每只已孵化的宠物；上锁的排在前面），
 // 左侧是选中宠物：动画（左上角上锁按钮）、名字旁的异色 / 品质标签、词条（数值与范围）、经验条，以及
 // 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、宠物现身。图鉴按种类列出原色与各异色。点面板外关闭。
-import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, petQuality, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
+import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
 import { PET_SKINS, skinnedFrame } from "./petskins.js";
-import { petState, findPet, hatchEgg, equipPet, evolvePet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem } from "./petsave.js";
+import { petState, findPet, equipPet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, speedSlot, speedCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
 import { mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { el } from "./util.js";
@@ -81,7 +81,7 @@ export function showWarehouse(onClose) {
     <header class="topbar"><button class="btn gray small back-btn">◀ 返回</button><h2 id="wh-title" class="outline">宠物仓库</h2><span class="wh-hbtn"></span><div class="wh-wallet o1"></div></header>
     <div class="wh-body">
       <div class="wh-detail"></div>
-      <div class="wh-grid"></div>
+      <div class="wh-right"><div class="wh-slots"></div><div class="wh-grid"></div></div>
     </div></section>`;
   const $ = (s) => md.querySelector(s);
   const close = () => (md.remove(), onClose?.());
@@ -106,8 +106,15 @@ export function showWarehouse(onClose) {
       if (k !== "base" && !n) continue;
       const fl = EGGS[k].floor, egg = el("button", `wh-card wh-egg e-${k}` + (n ? "" : " none"), `<canvas></canvas><b class="o1">${k === "base" ? "孵化" : `${QUALITY[fl].name}起`}</b><i class="wh-n o1">×${n}</i>`);
       drawEgg(egg.querySelector("canvas"), 0, k);
-      egg.title = n ? `${EGGS[k].name}：孵化出${QUALITY[fl].name}或更高品质` : "击败首领可获得宠物蛋";
-      egg.onclick = () => (n ? hatch(k) : toast("击败首领可获得宠物蛋，积攒也可兑换"));
+      egg.title = n ? `${EGGS[k].name}：放入孵化槽，${EGGS[k].min} 分钟后孵化出${QUALITY[fl].name}或更高品质` : "击败首领、矿场撤离可获得宠物蛋，积攒也可兑换";
+      egg.onclick = () => {
+        if (!n) return toast("击败首领、矿场撤离可获得宠物蛋，积攒也可兑换");
+        const r = incubate(k);
+        if (!r.ok) return toast(r.reason);
+        sfx("click");
+        toast(`放入孵化槽，${EGGS[k].min} 分钟后孵化`);
+        refresh();
+      };
       g.appendChild(egg);
     }
     const A = fuseA && findPet(fuseA, st);
@@ -224,7 +231,37 @@ export function showWarehouse(onClose) {
     if (confirmRelease) rel.textContent = `确认 +${releaseXP(p)}`;
     b.appendChild(rel);
   };
-  const refresh = () => (wallet(), grid(), detail());
+  // ---- 孵化槽: three slots above the grid; an egg counts down in real time, 加速 pays 星砂, a ready one hatches on tap
+  const mmss = (ms) => `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
+  const slots = () => {
+    const st = petState(), box = $(".wh-slots");
+    box.replaceChildren(el("span", "wh-sl-h o1", "孵化槽"));
+    st.slots.forEach((sl, i) => {
+      const left = slotLeft(sl), c = el("div", "wh-slot" + (!sl ? " empty" : left ? "" : " ready"));
+      if (!sl) c.innerHTML = `<span class="o1">空</span>`;
+      else {
+        c.innerHTML = `<canvas></canvas><div class="wh-sl-t"><b class="o1">${left ? mmss(left) : "可孵化"}</b><i><u style="width:${Math.round((1 - left / sl.dur) * 100)}%"></u></i></div>`;
+        drawEgg(c.querySelector("canvas"), left ? 0 : 1, sl.kind);
+        if (left) {
+          const sp = btn(`加速 ${speedCost(sl)}`, "small", () => {
+            const r = speedSlot(i);
+            if (!r.ok) return toast(r.reason);
+            sfx("coin");
+            refresh();
+          });
+          sp.title = `花 ${speedCost(sl)} 星砂立即完成（每分钟 4 星砂）`;
+          c.querySelector(".wh-sl-t").appendChild(sp);
+        } else c.onclick = () => {
+          const r = hatchSlot(i);
+          if (r) reveal(r.pet, false, r.kind);
+        };
+      }
+      box.appendChild(c);
+    });
+  };
+  const tickSlots = setInterval(() => (md.isConnected ? petState().slots.some((x) => x) && slots() : clearInterval(tickSlots)), 1000);
+  const refresh = () => (wallet(), slots(), grid(), detail(), dexDot());
+  const dexDot = () => $(".wh-hbtn .btn")?.classList.toggle("dot", dexClaimable().length > 0);
 
   // ---- hatching / fusion, revealed over the panel: shake, three cracks, the pet appears (异色 gold, 流彩 rainbow)
   const reveal = (p, again, kind = "base") => {
@@ -249,13 +286,8 @@ export function showWarehouse(onClose) {
         ov.querySelector(".wh-hinfo").innerHTML = `${head}<div class="wh-head"><b class="outline" style="color:${PETS[p.id].color}">${PETS[p.id].name}</b><span class="wh-tags o1">${tags(p)}</span></div><div class="wh-traits o1">${p.traits.map(traitLine(p)).join("")}</div>`;
         const bb = ov.querySelector(".wh-btns"), done = () => (ov.remove(), (sel = p.uid), (canvas = null), refresh());
         bb.appendChild(btn("收下", "small blue", done));
-        if (again && petState().eggs[kind] > 0) bb.appendChild(btn("再孵一颗", "small", () => (done(), hatch(kind))));
       }
     }, 420);
-  };
-  const hatch = (kind = "base") => {
-    const p = hatchEgg(kind);
-    if (p) reveal(p, true, kind);
   };
   // ---- fusion: pick the first pet (融合), then a second of the same kind in the grid, confirm, reveal
   const startFuse = (p) => {
@@ -292,7 +324,7 @@ export function showWarehouse(onClose) {
     const entries = PET_ORDER.flatMap((id) => ["base", ...skinsOf(id)].map((k) => ({ id, k, own: have(id, k) })));
     const got = entries.filter((e) => e.own).length;
     md2.innerHTML = `<div class="panel cdx-p"><div class="cdx-h"><h2 class="outline">宠物图鉴</h2><span class="o1">已收集 <b>${got}</b> / ${entries.length}</span><span class="cdx-x"></span></div>
-      <div class="cdx-b"><div class="cdx-tabs">${["全部图鉴", ...PET_ORDER.map((id) => PETS[id].name)].map((n, i) => `<button class="hp-tab cdx-tab" data-i="${i}">${n}</button>`).join("")}</div>
+      <div class="cdx-b"><div class="cdx-tabs">${["全部图鉴", ...PET_ORDER.map((id) => PETS[id].name), "收集奖励"].map((n, i) => `<button class="hp-tab cdx-tab" data-i="${i}">${n}</button>`).join("")}</div>
       <div class="cdx-main"><div class="cdx-grid pdx-grid"></div><div class="cdx-info o1"></div></div></div></div>`;
     const close2 = () => md2.remove();
     md2.querySelector(".cdx-x").appendChild(btn("关闭", "gray small", close2));
@@ -304,8 +336,34 @@ export function showWarehouse(onClose) {
       const how = e.k === "base" ? "孵化宠物蛋获得" : e.k === "flow" ? "流彩品质专属，孵化或融合时有概率出现" : "孵化时 6% 概率为异色；融合更高";
       info.innerHTML = `<b>${e.own ? `${PETS[e.id].name} · ${label(e.k)}` : "？？？"}</b><span>${e.own ? "已收集" : "未收集"}</span><p>${how}</p>`;
     };
+    const rewardsTab = PET_ORDER.length + 1;
+    const rewards = () => {
+      const n = dexCount();
+      grid.className = "cdx-grid pdx-rw";
+      grid.innerHTML = DEX_REWARDS.map((r) => {
+        const done = petState().dexClaim.includes(r.n);
+        return `<div class="pdx-r${done ? " done" : n >= r.n ? " can" : ""}"><b class="o1">收集 ${r.n} 种</b><span class="o1">${r.text}</span><i class="pdx-bar"><u style="width:${Math.min(100, (n / r.n) * 100)}%"></u></i><span class="pdx-b" data-n="${r.n}"></span></div>`;
+      }).join("");
+      grid.querySelectorAll(".pdx-b").forEach((sp) => {
+        const k = +sp.dataset.n, done = petState().dexClaim.includes(k);
+        const b = btn(done ? "已领取" : "领取", done ? "small gray" : "small", () => {
+          const r = claimDex(k);
+          if (!r.ok) return toast(r.reason);
+          sfx("ssr");
+          toast(`获得 ${r.text}`);
+          rewards();
+          refresh();
+        });
+        b.disabled = done || n < k;
+        sp.appendChild(b);
+      });
+      info.innerHTML = `<b>收集奖励</b><span>已收集 ${n} / ${entries.length}</span><p>原色、异色与流彩各算一种，放生或融合后仍计入。</p>`;
+    };
     const draw = (tab) => {
       md2.querySelectorAll(".cdx-tab").forEach((b) => b.classList.toggle("on", +b.dataset.i === tab));
+      md2.querySelector(`.cdx-tab[data-i="${rewardsTab}"]`).classList.toggle("dot", dexClaimable().length > 0);
+      if (tab === rewardsTab) return rewards();
+      grid.className = "cdx-grid pdx-grid";
       const list = tab ? entries.filter((e) => e.id === PET_ORDER[tab - 1]) : entries;
       grid.innerHTML = list.map((e) => `<button class="cdx-c${e.own ? "" : " no"}" data-id="${e.id}" data-k="${e.k}"><span class="pdx-v"></span><b>${e.own ? label(e.k) : "？？？"}</b><small>${PETS[e.id].name}</small></button>`).join("");
       grid.querySelectorAll(".cdx-c").forEach((c, n) => {

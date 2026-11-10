@@ -1,5 +1,5 @@
 import { load, save, mineState } from "./save.js";
-import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, normalizePets, rollPet, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
+import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, SPEED_STARS, DEX_REWARDS, skinsOf, normalizePets, rollPet, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
 
 // 宠物仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
 export function petState() {
@@ -165,4 +165,55 @@ export function releasePet(uid) {
   state.pool += xp;
   save();
   return { ok: true, xp };
+}
+
+// ---------------------------------------------------------------- 孵化槽
+export const slotLeft = (sl, now = Date.now()) => (sl ? Math.max(0, sl.t0 + sl.dur - now) : 0);
+export const speedCost = (sl) => Math.max(1, Math.ceil(slotLeft(sl) / 60000)) * SPEED_STARS;
+/** put an egg of a kind into the first free 孵化槽 */
+export function incubate(kind) {
+  const state = petState(), i = state.slots.findIndex((x) => !x);
+  if (!EGGS[kind] || state.eggs[kind] <= 0) return { ok: false, reason: "没有这种蛋" };
+  if (i < 0) return { ok: false, reason: "孵化槽已满" };
+  state.eggs[kind]--;
+  state.slots[i] = { kind, t0: Date.now(), dur: EGGS[kind].min * 60000 };
+  save();
+  return { ok: true, slot: i };
+}
+/** 加速: pay 星砂 for the minutes left, the egg is ready at once */
+export function speedSlot(i) {
+  const state = petState(), sl = state.slots[i], ms = mineState();
+  if (!sl || !slotLeft(sl)) return { ok: false, reason: "已经可以孵化了" };
+  const cost = speedCost(sl);
+  if (ms.stars < cost) return { ok: false, reason: `星砂不足（需要 ${cost}）` };
+  ms.stars -= cost;
+  sl.t0 = Date.now() - sl.dur;
+  save();
+  return { ok: true, cost };
+}
+/** a ready egg hatches: a young pet of a random kind with the egg's quality floor (maybe 异色 / 流彩) */
+export function hatchSlot(i) {
+  const state = petState(), sl = state.slots[i];
+  if (!sl || slotLeft(sl) > 0) return null;
+  state.slots[i] = null;
+  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: EGGS[sl.kind].floor });
+  addPet(state, p);
+  save();
+  return { pet: p, kind: sl.kind };
+}
+export const readySlots = (state = petState()) => state.slots.filter((x) => x && !slotLeft(x)).length;
+
+// ---------------------------------------------------------------- 图鉴收集奖励
+export const dexCount = (state = petState()) => PET_ORDER.reduce((a, id) => a + ["base", ...skinsOf(id)].filter((k) => state.dex[id]?.skins.includes(k)).length, 0);
+export const dexClaimable = (state = petState()) => DEX_REWARDS.filter((r) => dexCount(state) >= r.n && !state.dexClaim.includes(r.n));
+export function claimDex(n) {
+  const state = petState(), r = DEX_REWARDS.find((x) => x.n === n);
+  if (!r || state.dexClaim.includes(n)) return { ok: false, reason: "已领取" };
+  if (dexCount(state) < n) return { ok: false, reason: `收集 ${n} 种后可领取` };
+  if (r.egg) state.eggs[r.egg]++;
+  if (r.item) state.items[r.item]++;
+  if (r.pool) state.pool += r.pool;
+  state.dexClaim.push(n);
+  save();
+  return { ok: true, text: r.text };
 }

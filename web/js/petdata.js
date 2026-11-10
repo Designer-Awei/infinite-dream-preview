@@ -45,11 +45,25 @@ export const QUALITY = [
 ];
 export const RELEASE_XP = 400;
 // 宠物蛋：three kinds that only differ in the lowest quality they hatch (the top is the same for all)
+// min = minutes in a 孵化槽 before it hatches
 export const EGGS = {
-  base: { name: "宠物蛋", floor: 0 },
-  ur: { name: "UR 宠物蛋", floor: 2, cost: 10 },
-  hur: { name: "HUR 宠物蛋", floor: 3, cost: 20 },
+  base: { name: "宠物蛋", floor: 0, min: 3 },
+  ur: { name: "UR 宠物蛋", floor: 2, cost: 10, min: 5 },
+  hur: { name: "HUR 宠物蛋", floor: 3, cost: 20, min: 8 },
 };
+// 孵化槽：eggs wait here in real time; 星砂 speeds one up (per minute left)
+export const SLOTS = 3, SPEED_STARS = 4;
+// 矿场: a safe extraction finds a 宠物蛋 with this chance
+export const MINE_EGG_CHANCE = 0.35;
+// 图鉴收集奖励: claimed once each when that many entries are collected
+export const DEX_REWARDS = [
+  { n: 3, egg: "base", text: "宠物蛋 ×1" },
+  { n: 6, item: "ur", text: "淬灵露 ×1" },
+  { n: 9, egg: "ur", text: "UR 宠物蛋 ×1" },
+  { n: 12, pool: 600, text: "经验池 +600" },
+  { n: 15, egg: "hur", text: "HUR 宠物蛋 ×1" },
+  { n: 19, item: "hur", text: "流彩晶 ×1" },
+];
 export const EGG_KINDS = Object.keys(EGGS);
 // 积攒 items: 淬灵露 raises one random trait 2~5 points up to its quality's cap (传说 and below);
 // 流彩晶 does the same for a 流彩 pet only, and may go past the cap, up to 150% of the top
@@ -187,7 +201,13 @@ export function normalizePets(value) {
   const ev = value?.eggs, eggs = {}, items = {};
   for (const k of EGG_KINDS) eggs[k] = clampInt(typeof ev === "number" ? (k === "base" ? ev : 0) : ev?.[k], 0, 999);
   for (const k of Object.keys(PET_ITEMS)) items[k] = clampInt(value?.items?.[k], 0, 999);
-  const out = { v: 2, list, equipped, eggs, items, pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex };
+  // 孵化槽 ({ kind, t0, dur } or null) and the 图鉴 rewards already claimed
+  const slots = Array.from({ length: SLOTS }, (_, i) => {
+    const v = value?.slots?.[i];
+    return v && EGGS[v.kind] && Number.isFinite(v.t0) ? { kind: v.kind, t0: v.t0, dur: clampInt(v.dur, 0, 36e5) } : null;
+  });
+  const dexClaim = (Array.isArray(value?.dexClaim) ? value.dexClaim : []).filter((n) => DEX_REWARDS.some((r) => r.n === n));
+  const out = { v: 2, list, equipped, eggs, items, pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex, slots, dexClaim };
   Object.defineProperty(out, "owned", {
     enumerable: false,
     get() {
