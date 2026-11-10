@@ -196,19 +196,19 @@ export class Renderer {
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
     for (const p of game.players) this.drawHeroBar(g, p, me, game);
-    // fork portals: the room each one leads to, above it (plus a one-line tip when you walk up)
+    // fork portals: the room each one leads to, above it (challenges add their rule)
     if (game.portals) for (const q of game.portals) {
-      const near = me && dist(me.x, me.y, q.x, q.y) < 56, y = q.y - 70 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5);
+      const y = q.y - 70 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5);
       this.text(g, q.name, q.x, y, q.col, 14);
       if (q.sub) this.text(g, q.sub, q.x, y + 14, "#ffffff", 10);
-      if (near && q.tip) this.text(g, q.tip, q.x, y - 16, "#ffe14a", 10);
     }
     if (game.npc && !game.npc.done && me) {
       const n = game.npc, near = dist(me.x, me.y, n.x, n.y + 6) < 34;
       const name = (NPCS[n.id] || NPCS.altar).name;
       this.text(g, name, n.x, n.y + 22, near ? "#ffe14a" : "#e8dcff", 11);
-      if (near) this.text(g, input.touch ? "按攻击键交谈" : "按 J 交谈", n.x, n.y - 66 + Math.sin(this.t * 5) * 2, "#5dff7a", 11);
-      else this.drawTalkMark(g, n.x, n.y - 64);
+      const m = A.npc?.meta.npcs[n.id], h = m?.h || 70, top = n.y + 8 - h;
+      if (near) this.text(g, input.touch ? "按攻击键交谈" : "按 J 交谈", n.x, top - 8 + Math.sin(this.t * 5) * 2, "#5dff7a", 11);
+      else this.drawTalkMark(g, n.x, top - 4, h);
     }
     // floating texts (skill names, damage) go over every health bar so a bar never hides them
     for (const f of game.floaters) {
@@ -791,17 +791,19 @@ export class Renderer {
     const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n, s = N.meta.cell;
     g.drawImage(N.image, f * s, m.row * s, s, s, x - m.ox, y + 8 - m.oy, s, s);
   }
-  /** a bobbing "!" bubble over a visitor you haven't talked to */
-  drawTalkMark(g, x, y) {
-    y = Math.round(y + Math.sin(this.t * 4) * 2);
+  /** a bold 8-bit "!" over a visitor you haven't talked to: about 2/3 of the visitor's height, bottom at y */
+  drawTalkMark(g, x, y, h) {
+    const G = [" ### ", "#####", "#####", "#####", " ### ", " ### ", " ### ", " ### ", "     ", " ### ", " ### ", " ### "];
+    const u = Math.max(2, Math.round((h * 2) / 3 / (G.length + 2))), W = 5;
+    const x0 = Math.round(x - (W * u) / 2), y0 = Math.round(y - (G.length + 1) * u + Math.sin(this.t * 5) * 2);
+    const on = (c, r) => G[r] && G[r][c] === "#";
     g.fillStyle = "#1a1020";
-    g.fillRect(x - 7, y - 9, 14, 14);
-    g.fillRect(x - 2, y + 5, 4, 3);
-    g.fillStyle = "#fff6c4";
-    g.fillRect(x - 6, y - 8, 12, 12);
-    g.fillStyle = "#1a1020";
-    g.fillRect(x - 1, y - 6, 2, 5);
-    g.fillRect(x - 1, y, 2, 2);
+    for (let r = 0; r < G.length; r++) for (let c = 0; c < W; c++) if (on(c, r)) g.fillRect(x0 + (c - 1) * u, y0 + (r - 1) * u, u * 3, u * 3);
+    for (let r = 0; r < G.length; r++) for (let c = 0; c < W; c++) if (on(c, r)) {
+      // lit from the top left: pale on the left / top edge, orange on the right / bottom edge
+      g.fillStyle = !on(c - 1, r) || !on(c, r - 1) ? "#fff3a0" : !on(c + 1, r) || !on(c, r + 1) ? "#f0a020" : "#ffd84a";
+      g.fillRect(x0 + c * u, y0 + r * u, u, u);
+    }
   }
   drawShopItem(g, it, me) {
     const x = Math.round(it.x), y = Math.round(it.y);

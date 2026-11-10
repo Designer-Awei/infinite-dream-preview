@@ -14,15 +14,6 @@ export const NODE = {
   treasure: { name: "宝藏", col: "#ffd84a" },
   boss: { name: "首领", col: "#ff5a5a" },
 };
-/** one line under a fork portal's name, shown when the player walks up to it */
-export const NODE_TIP = {
-  combat: "普通战斗",
-  elite: "敌人更强，奖励不变",
-  shop: "扭蛋机与补给，免费宝箱",
-  event: "遇见一位访客，做一次选择",
-  challenge: "带一条规则的战斗 · 清场额外选卡",
-  treasure: "必出本图稀有怪，道具更多",
-};
 /** each kind of room gets its own portal colour (an 8-step pixelfx ramp) */
 export const PORTAL_PAL = {
   combat: PAL.metal, elite: PAL.fire, shop: PAL.heal, event: PAL.arcane, challenge: PAL.blood, treasure: PAL.gold, boss: PAL.shadow,
@@ -134,7 +125,7 @@ export const EVENTS = {
   // a dice game instead of a one-shot choice: bet all coins on odd or even, the die is rolled in the dialog
   // (game.rollDice / settleDice); leaving only closes the dialog, so you can come back. Two rounds a room.
   gamble: {
-    name: "幸运骰子", text: "「押上全部金币，猜骰子是单数还是双数？猜中翻倍，猜错清零哦～」",
+    name: "幸运骰子", text: "「押上全部金币猜单双，猜中翻倍，猜错清零～」",
     dice: { rounds: 2 },
     options: [],
   },

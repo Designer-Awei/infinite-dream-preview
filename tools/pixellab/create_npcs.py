@@ -29,16 +29,16 @@ def main(work):
     sheet = Image.new("RGBA", (N * CELL, len(IDS) * CELL), (0, 0, 0, 0))
     meta = {"cell": CELL, "fps": FPS, "npcs": {}}
     for row, nid in enumerate(IDS):
-        bottom = 0
+        bottom, top = 0, CELL
         for n in range(N):
             im = Image.open(work / "anim" / f"{nid}_{n}.png").convert("RGBA")
             assert im.size == (CELL, CELL), (nid, n, im.size)
             # hard alpha: no half-transparent fringe on the pixel art
             a = im.getchannel("A").point(lambda v: 255 if v >= 128 else 0)
             im.putalpha(a)
-            bottom = max(bottom, im.getbbox()[3])
+            bottom, top = max(bottom, im.getbbox()[3]), min(top, im.getbbox()[1])
             sheet.alpha_composite(im, (n * CELL, row * CELL))
-        meta["npcs"][nid] = {"row": row, "n": N, "ox": CELL // 2, "oy": bottom, **({"seq": SEQ[nid]} if nid in SEQ else {})}
+        meta["npcs"][nid] = {"row": row, "n": N, "ox": CELL // 2, "oy": bottom, "h": bottom - top, **({"seq": SEQ[nid]} if nid in SEQ else {})}
     OUT.mkdir(parents=True, exist_ok=True)
     sheet.save(OUT / "npc.png", optimize=True)
     (OUT / "npc.json").write_text(json.dumps(meta, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")

@@ -1,6 +1,6 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
 import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES } from "./data.js";
-import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, NODE_TIP, PORTAL_PAL, NPCS } from "./route.js";
+import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
 import { sfx } from "./audio.js";
@@ -137,7 +137,7 @@ export class Game {
     this.portals = opts.map((j, i) => {
       const node = R.cols[R.step + 1][j], px = x + (i - (n - 1) / 2) * gap;
       this.vfx("arcane/portal", px, y + 8, { layer: "back", palette: PORTAL_PAL[node.kind] || PORTAL_PAL.combat });
-      return { x: px, y, t: 0, to: j, kind: node.kind, name: NODE[node.kind].name, sub: node.challenge ? CHALLENGES[node.challenge].name : "", col: NODE[node.kind].col, tip: NODE_TIP[node.kind] || "" };
+      return { x: px, y, t: 0, to: j, kind: node.kind, name: NODE[node.kind].name, sub: node.challenge ? CHALLENGES[node.challenge].name : "", col: NODE[node.kind].col };
     });
   }
   /** the fork portals stand in a row through the room's centre: clear that strip before the ground is drawn */
