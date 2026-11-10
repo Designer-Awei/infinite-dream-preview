@@ -1,9 +1,9 @@
 // 宠物仓库：从主页角色右上方的宠物入口进入。右侧是库存格子（第一格是宠物蛋，其后每只已孵化的宠物；上锁的排在前面），
 // 左侧是选中宠物：动画（左上角上锁按钮）、名字旁的异色 / 品质标签、词条（数值与范围）、经验条，以及
 // 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、宠物现身。图鉴按种类列出原色与各异色。点面板外关闭。
-import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petScore, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
+import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE, fuseOdds, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petScore, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
 import { PET_SKINS, skinnedFrame } from "./petskins.js";
-import { petState, findPet, equipPet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, hatchNow, hatchNowCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
+import { petState, findPet, equipPet, injectXP, injectNext, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, hatchNow, hatchNowCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
 import { mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { el } from "./util.js";
@@ -45,7 +45,7 @@ export function drawEgg(c, crack = 0, kind = "base") {
     }
   }
 }
-let lastScore = { uid: null, v: 0 }, scoreRaf = 0;
+let lastScore = { uid: null, v: 0 }, scoreRaf = 0, injected = null;
 /** a pet's portrait into a box: the stage art, recoloured for an 异色 */
 function portrait(box, p) {
   const im = new Image();
@@ -138,7 +138,7 @@ export function showWarehouse(onClose) {
     }
     const A = fuseA && findPet(fuseA, st);
     for (const p of order(st)) {
-      const q = petQuality(p), mate = A && p !== A && p.id === A.id && spendable(p, st);
+      const q = petQuality(p), mate = A && p !== A && spendable(p, st);
       const c = el("button", "wh-card" + (p.uid === sel ? " on" : "") + (p.skin ? (p.skin === "flow" ? " rainbow" : " shiny") : "") + (A ? (p === A ? " fuse-a" : mate ? " fuse-ok" : " fuse-no") : ""), `<span class="wh-pic"></span><i class="wh-q" style="background:${qBar(q)}"></i><span class="wh-st o1">${PET_STAGES[p.stage - 1]}</span>`);
       c.style.setProperty("--pc", PETS[p.id].color);
       c.dataset.uid = p.uid;
@@ -148,7 +148,7 @@ export function showWarehouse(onClose) {
       c.onclick = () => {
         if (A) {
           if (p === A) return cancelFuse();
-          if (!mate) return toast(p.id !== A.id ? "只能和同种宠物融合" : "上锁或出战中的宠物不能融合");
+          if (!mate) return toast("上锁或出战中的宠物不能融合");
           return fuseConfirm(A, p);
         }
         if (sel === p.uid) return;
@@ -169,7 +169,7 @@ export function showWarehouse(onClose) {
       box.querySelector(".wh-btns").appendChild(btn("图鉴", "small", () => (md.remove(), showPetDetail(null, () => showWarehouse(onClose)))));
       return;
     }
-    const d = PETS[p.id], q = petQuality(p), to = injectTarget(p), next = PET_EVOLVE[p.stage + 1], ms = mineState();
+    const d = PETS[p.id], q = petQuality(p), next = PET_EVOLVE[p.stage + 1], to = next ? next.xp : null, ms = mineState();
     if (!canvas || !canvas.isConnected) {
       box.innerHTML = `<div class="wh-view"><div class="wh-anim"></div><button class="wh-lockbtn" aria-label="上锁"></button><div class="wh-score"><i class="o1">评分</i><b class="outline"></b></div></div>
         <div class="wh-head" title="点击上方宠物查看技能详情"><b class="wh-name outline"></b><span class="wh-tags o1"></span></div>
@@ -221,15 +221,18 @@ export function showWarehouse(onClose) {
     const go = btn(carried ? "休息" : "出战", carried ? "small gray" : "small blue", () => (equipPet(carried ? null : p.uid), sfx("click"), refresh()));
     b.appendChild(go);
     if (to) {
-      const inj = btn("注入经验", "small green", () => {
+      // each tap moves up to 300 xp from the pool (幼年 → 终极 in four taps); after the first tap the label reads the step
+      const nx = injectNext(p, st);
+      const inj = btn(injected === p.uid && nx ? `+${nx}` : "注入经验", "small green wh-inj", () => {
         const r = injectXP(p.uid);
         if (!r.ok) return toast(r.reason);
+        injected = p.uid;
         sfx(r.evolved ? "ssr" : "heal");
-        toast(r.evolved ? `${d.name}进化为${PET_STAGES[r.stage - 1]}！` : `注入 ${r.give} 经验`);
+        if (r.evolved) toast(`${d.name}进化为${PET_STAGES[r.stage - 1]}！`);
         refresh();
       });
       inj.disabled = st.pool <= 0;
-      inj.title = `从经验池注入，最多到 ${to}`;
+      inj.title = `从经验池注入，每次 ${nx || 300}`;
       b.appendChild(inj);
     }
     // 淬炼: 淬灵露 (流彩晶 for a 流彩 pet) raises a random trait; shown while you have the item
@@ -247,12 +250,13 @@ export function showWarehouse(onClose) {
       b.appendChild(up);
     }
     const fu = btn("融合", "small pink", () => startFuse(p));
-    fu.disabled = !spendable(p, st) || !st.list.some((o) => o !== p && o.id === p.id && spendable(o, st));
-    fu.title = fu.disabled ? "需要另一只未上锁、未出战的同种宠物" : "选另一只同种宠物融合";
+    fu.disabled = !spendable(p, st) || !st.list.some((o) => o !== p && spendable(o, st));
+    fu.title = fu.disabled ? "需要另一只未上锁、未出战的宠物" : "以它为主宠，再选一只副宠融合";
     b.appendChild(fu);
     const gap = el("span", "wh-gap");
     b.appendChild(gap);
-    const rel = btn(confirmRelease ? "确认放生" : "放生", "small red", () => {
+    // tap once: the label turns to 确定 (same width); tap again to release
+    const rel = btn(confirmRelease ? "确定" : "放生", "small red wh-rel", () => {
       if (p.lock) return toast("已上锁，先解锁");
       if (carried) return toast("出战中的宠物不能放生");
       if (!confirmRelease) return (confirmRelease = true), sfx("click"), toast(`再点一次放生，经验池 +${releaseXP(p)}`), detail();
@@ -267,7 +271,6 @@ export function showWarehouse(onClose) {
     });
     rel.disabled = p.lock || carried;
     rel.title = p.lock ? "已上锁" : carried ? "出战中" : `放生后经验池 +${releaseXP(p)}`;
-    if (confirmRelease) rel.textContent = `确认 +${releaseXP(p)}`;
     b.appendChild(rel);
   };
   // ---- 孵化槽: three slots above the grid; an egg counts down in real time, 加速 pays 星砂, a ready one hatches on tap
@@ -356,23 +359,27 @@ export function showWarehouse(onClose) {
       }
     }, 420);
   };
-  // ---- fusion: pick the first pet (融合), then a second of the same kind in the grid, confirm, reveal
+  // ---- fusion: the pet you press 融合 on is the 主宠, the next one picked in the grid the 副宠 (any kind); confirm, reveal
   const startFuse = (p) => {
     fuseA = p.uid;
     sfx("click");
-    toast("选择另一只同种宠物（再点它自己取消）");
+    toast("选一只副宠（再点主宠取消）");
     md.classList.add("fusing");
     grid();
   };
   const cancelFuse = () => ((fuseA = null), md.classList.remove("fusing"), grid());
   const fuseConfirm = (A, B) => {
-    const ov = el("div", "wh-hatch wh-fuse");
-    const shiny = Math.round((A.skin || B.skin ? FUSE_SHINY_PARENT : FUSE_SHINY) * 100);
-    ov.innerHTML = `<div class="wh-fpair"><span class="wh-pic a"></span><b class="outline">+</b><span class="wh-pic b"></span><b class="outline">→</b><canvas class="wh-fegg"></canvas></div>
-      <div class="wh-hinfo o1">两只${PETS[A.id].name}融合成一只幼年体<br>词条择优 · 异色 ${shiny}%${A.skin || B.skin ? "（可能继承亲代异色）" : ""} · 流彩 ${(rainbowChance(petState().rb) * 100).toFixed(2)}%</div><div class="wh-btns"></div>`;
+    const ov = el("div", "wh-hatch wh-fuse"), o = fuseOdds(A, B), pct = (x) => Math.round(x * 100) + "%";
+    const kind = o.sameKind ? `${PETS[A.id].name}` : `${PETS[A.id].name} ${pct(FUSE.mainKind)} · ${PETS[B.id].name} ${pct(1 - FUSE.mainKind)}`;
+    const qual = o.q === 5 ? "流彩" : `${QUALITY[o.q].name}${o.up ? `（${pct(o.up)} 升为${QUALITY[o.q + 1].name}）` : ""}`;
+    ov.innerHTML = `<div class="wh-fpair"><span class="wh-pic a"><i class="wh-ftag o1">主宠</i></span><b class="outline">+</b><span class="wh-pic b"><i class="wh-ftag o1">副宠</i></span><b class="outline">→</b><canvas class="wh-fegg"></canvas></div>
+      <div class="wh-hinfo o1">融合成一只幼年 ${kind}<br>品质 ${qual} · 异色 ${pct(o.shiny)} · 流彩 ${o.q === 5 ? "保留" : (rainbowChance(petState().rb) * 100).toFixed(2) + "%"}</div><div class="wh-btns"></div>`;
     $(".wh-panel").appendChild(ov);
-    portrait(ov.querySelector(".wh-pic.a"), A);
-    portrait(ov.querySelector(".wh-pic.b"), B);
+    for (const [k, P] of [["a", A], ["b", B]]) {
+      const box = ov.querySelector(".wh-pic." + k), tag = box.querySelector(".wh-ftag");
+      portrait(box, P);
+      box.appendChild(tag);
+    }
     drawEgg(ov.querySelector(".wh-fegg"));
     const bb = ov.querySelector(".wh-btns");
     bb.appendChild(btn("取消", "small gray", () => (ov.remove(), cancelFuse())));
@@ -382,6 +389,7 @@ export function showWarehouse(onClose) {
       fuseA = null;
       md.classList.remove("fusing");
       if (!r.ok) return toast(r.reason), refresh();
+      if (r.up) toast(`品质提升为${QUALITY[r.pet.q].name}！`);
       reveal(r.pet, false);
     }));
   };

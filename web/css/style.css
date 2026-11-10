@@ -2478,3 +2478,10 @@ body.touchmode .pet-ride-btn small { display:none; }
 .res2 .res-mid { justify-content: flex-end; }
 .res2 .res-mid .res-hero { margin: 0 0 4px; }
 .res2 .res-mid .res-rewards { position: absolute; right: 0; bottom: 4px; margin: 0; z-index: 1; }
+/* warehouse: 注入经验 / 放生 keep their width when their label changes (+300, 确定) */
+.wh-btns .btn.wh-inj { min-width: 86px; }
+.wh-btns .btn.wh-rel { min-width: 58px; }
+/* fusion confirm: 主宠 / 副宠 tags on the two portraits */
+.wh-fpair .wh-pic { position: relative; }
+.wh-ftag { position: absolute; left: 50%; top: -11px; transform: translateX(-50%); font-style: normal; font-size: 11px; line-height: 16px; padding: 0 6px; border: 2px solid var(--ink); border-radius: 6px; background: #ff7ab8; color: #fff; white-space: nowrap; }
+.wh-pic.b .wh-ftag { background: #6a7ae8; }

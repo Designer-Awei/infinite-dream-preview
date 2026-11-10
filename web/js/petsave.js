@@ -1,5 +1,5 @@
 import { load, save, mineState } from "./save.js";
-import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, SPEED_STARS, DEX_REWARDS, skinsOf, normalizePets, rollPet, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
+import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE, fuseOdds, RELEASE_KEEP, INJECT_STEP, SKIN_POOL, TRAITS, rollTraits, newUid, EGGS, PET_ITEMS, SPEED_STARS, DEX_REWARDS, skinsOf, normalizePets, rollPet, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
 
 // 宠物仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
 export function petState() {
@@ -122,15 +122,15 @@ export function addPool(n) {
   save();
   return k;
 }
-/** the xp the next injection fills up to: the next evolution's need above the pet's xp (300, then 1200) */
+/** the xp a pet can still take (its 终极 cap), or null when full */
 export function injectTarget(p) {
-  return [PET_EVOLVE[2].xp, PET_EVOLVE[3].xp].find((x) => x > p.xp) ?? null;
+  return p.xp < PET_MAX_XP ? PET_MAX_XP : null;
 }
-/** 注入经验：move xp from the pool into a pet, up to its next evolution's need */
+/** 注入经验：up to 300 xp from the pool into a pet per tap (幼年 → 终极 in four taps); it evolves on the way */
 export function injectXP(uid) {
-  const state = petState(), p = findPet(uid, state), to = p && injectTarget(p);
-  if (!p || !to) return { ok: false, reason: "经验已满" };
-  const give = Math.min(state.pool, to - p.xp);
+  const state = petState(), p = findPet(uid, state);
+  if (!p || p.xp >= PET_MAX_XP) return { ok: false, reason: "经验已满" };
+  const give = Math.min(INJECT_STEP, state.pool, PET_MAX_XP - p.xp);
   if (give <= 0) return { ok: false, reason: "经验池是空的" };
   state.pool -= give;
   p.xp += give;
@@ -138,6 +138,8 @@ export function injectXP(uid) {
   save();
   return { ok: true, give, evolved, stage: p.stage };
 }
+/** what the next tap of 注入经验 would give this pet */
+export const injectNext = (p, state = petState()) => Math.max(0, Math.min(INJECT_STEP, state.pool, PET_MAX_XP - p.xp));
 export function toggleLock(uid) {
   const p = findPet(uid);
   if (!p) return false;
@@ -151,18 +153,27 @@ export const spendable = (p, state = petState()) => !!p && !p.lock && state.equi
  *  parent is 异色, often inheriting its colour); counts as a hatch for the 流彩 chance */
 export function fusePets(a, b) {
   const state = petState(), A = findPet(a, state), B = findPet(b, state);
-  if (!A || !B || A === B || A.id !== B.id) return { ok: false, reason: "需要两只同种宠物" };
+  if (!A || !B || A === B) return { ok: false, reason: "需要两只宠物" };
   if (!spendable(A, state) || !spendable(B, state)) return { ok: false, reason: "上锁或出战中的宠物不能融合" };
-  const skins = [A.skin, B.skin].filter((k) => k && k !== "flow");
-  const p = rollPet(A.id, Math.random, { rainbow: rollRainbow(state), best: true, floor: Math.min(A.q, B.q), shiny: skins.length ? FUSE_SHINY_PARENT : FUSE_SHINY, skins });
+  const o = fuseOdds(A, B), id = Math.random() < FUSE.mainKind ? A.id : B.id;
+  let p;
+  // 流彩: a 流彩 parent keeps it, otherwise the pity chance (each fusion counts like a hatch)
+  if (rollRainbow(state) || o.q === 5) p = rollPet(id, Math.random, { rainbow: true });
+  else {
+    const q = Math.min(4, o.q + (Math.random() < o.up ? 1 : 0)), pool = SKIN_POOL[id];
+    const skin = Math.random() < o.shiny ? pool[Math.floor(Math.random() * pool.length)] : null;
+    // traits: two draws in the quality's range, the better set kept
+    const worth = (t) => t.reduce((s, [k, v]) => s + v / TRAITS[k].top, 0), t1 = rollTraits(q), t2 = rollTraits(q);
+    p = { uid: newUid(id), id, stage: 1, xp: 0, q, skin, traits: worth(t2) > worth(t1) ? t2 : t1, lock: false, t: Date.now() };
+  }
   state.list = state.list.filter((q) => q !== A && q !== B);
   addPet(state, p);
   save();
-  return { ok: true, pet: p };
+  return { ok: true, pet: p, up: p.q > o.q && p.q !== 5 };
 }
-/** what releasing a pet puts into the pool: by quality, 普通 100 … 传说 600, 流彩 1000 */
-export const releaseXP = (p) => QUALITY[petQuality(p)].xp;
-/** 放生：a pet that isn't locked or carried leaves; its quality's xp goes into the pool */
+/** what releasing a pet puts into the pool: its quality's base (普通 100 … 传说 600, 流彩 1000) + half its xp */
+export const releaseXP = (p) => QUALITY[petQuality(p)].xp + Math.floor((p.xp || 0) * RELEASE_KEEP);
+/** 放生：a pet that isn't locked or carried leaves; its release xp goes into the pool */
 export function releasePet(uid) {
   const state = petState(), i = state.list.findIndex((p) => p.uid === uid), p = state.list[i];
   if (!p) return { ok: false, reason: "没有这只宠物" };

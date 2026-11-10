@@ -29,7 +29,14 @@ export const TRAIT_KEYS = Object.keys(TRAITS);
 // 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality
 export const SKIN_POOL = { dragon: ["frost", "sakura", "gold", "jade", "ember"], fox: ["sakura", "jade", "ember", "frost"], phoenix: ["blaze", "sakura", "gold", "jade"] };
 export const skinsOf = (id) => [...SKIN_POOL[id], "flow"];
-export const SHINY_CHANCE = 0.06, FUSE_SHINY = 0.25, FUSE_SHINY_PARENT = 0.5;
+export const SHINY_CHANCE = 0.06;
+// 融合：主宠（先选的）+ 副宠。种族 70% 随主宠、30% 随副宠；品质取两者较高，同品质且在史诗以下时 20% 再升一阶；
+// 异色按双亲里异色的只数：0 只 20%、1 只 50%、2 只必出，颜色在结果种族的异色里随机；流彩另按保底概率
+export const FUSE = { mainKind: 0.7, upgrade: 0.2, upgradeBelow: 3, shiny: [0.2, 0.5, 1] };
+/** a fusion's odds for main A + sub B: { mainKind, q (quality kept), up (chance of one tier more), shiny } */
+export const fuseOdds = (A, B) => ({ sameKind: A.id === B.id, q: Math.max(A.q, B.q), up: A.q === B.q && A.q < FUSE.upgradeBelow ? FUSE.upgrade : 0, shiny: FUSE.shiny[!!A.skin + !!B.skin] });
+// 放生：品质基础经验 + 当前累计经验的 50%；注入经验每次 300（幼年到终极共 4 次）
+export const RELEASE_KEEP = 0.5, INJECT_STEP = 300;
 // 流彩：0.2% a hatch (fusions count), +0.05% for every hatch without one, at most 5%; back to 0.2% once one hatches
 export const RAINBOW = { base: 0.002, step: 0.0005, max: 0.05 };
 export const rainbowChance = (n) => Math.min(RAINBOW.max, RAINBOW.base + Math.max(0, n) * RAINBOW.step);
