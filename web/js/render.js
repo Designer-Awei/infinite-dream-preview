@@ -445,13 +445,6 @@ export class Renderer {
       g.fillStyle = "#c8dcff";
       g.fillRect(x, y + 4, Math.round(w * clamp(p.shield / Math.max(1, p.maxShield))), 1);
     }
-    // ult ready star
-    if (p.ult >= 1) {
-      g.fillStyle = "#ffe14a";
-      g.fillRect(x + w + 3, y - 1, 5, 5);
-      g.fillStyle = "#fff";
-      g.fillRect(x + w + 4, y, 2, 2);
-    }
   }
   drawAim(g, me) {
     if (!me || me.dead || me.downed) return;
