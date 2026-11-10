@@ -92,14 +92,14 @@ export function mountPetDemo(box, opt) {
       e.__home = h;
     }
   };
-  const draw = () => {
+  const draw = (dt = 0) => {
     const ctx = view.getContext("2d"), W = view.width, H = view.height;
     const S = scene(), cw = S.ride ? 330 : 250, ch = Math.round((cw * H) / W);
     // fixed camera: the crop is centred on the scene, a little above the ground line so tall sprites fit
     const cx = center.x + (S.ride ? -8 : 10), cy = center.y + (S.ride ? 8 : -16);
     rnd.cam.x = Math.round(cx - VIEW_W / 2);
     rnd.cam.y = Math.round(cy - VIEW_H / 2);
-    rnd.draw(g, p, 0);
+    rnd.draw(g, p, dt); // dt drives the renderer clock: the phoenix storms / blizzard ribbons are drawn from it
     ctx.imageSmoothingEnabled = false;
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(work, ((VIEW_W - cw) / 2) * RS, ((VIEW_H - ch) / 2) * RS, cw * RS, ch * RS, 0, 0, W, H);
@@ -133,7 +133,7 @@ export function mountPetDemo(box, opt) {
       p.hurtT = 0; // no red hurt wash over the demo
       fxl.update(dt);
       fit();
-      draw();
+      draw(dt);
     } catch (e) {
       console.warn("pet demo", cfg, e);
       return;
