@@ -2373,3 +2373,5 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-tl h2 { height: 40px; line-height: 40px; }
 @media (max-height: 420px) { .wh-tl, .wh-tl .back-btn, .wh-tl h2, .wh-dexbtn { height: 34px; } .wh-tl h2 { line-height: 34px; } .wh-dexbtn { width: 34px; } .wh-dexbtn canvas { width: 22px; height: 22px; } }
 @media (max-height: 420px) { .topbar .wh-dexbtn.tb-ico { width: 34px; height: 34px; } }
+/* 收蛋通知条只留一行字（右侧已有“去仓库 ▶”），蛋与这行字同一中线 */
+.lb-goal.egg-note .g-tx span { display: none; }

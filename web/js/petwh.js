@@ -20,7 +20,8 @@ export function drawEgg(c, crack = 0, kind = "base") {
   c.width = W;
   c.height = H;
   const inside = (x, y) => {
-    const u = (x + 0.5 - 12) / 10.5, v = (y + 0.5 - 17) / 12.5;
+    // centred in the canvas (outline on rows 2..28), so a centred canvas shows a centred egg
+    const u = (x + 0.5 - 12) / 10.5, v = (y + 0.5 - 15) / 12.5;
     return u * u + v * v * (v < 0 ? 1.15 : 0.92) < 1;
   };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
@@ -28,14 +29,14 @@ export function drawEgg(c, crack = 0, kind = "base") {
       if (inside(x - 1, y) || inside(x + 1, y) || inside(x, y - 1) || inside(x, y + 1)) (g.fillStyle = "#1a1020"), g.fillRect(x, y, 1, 1);
       continue;
     }
-    const lit = (x - 8) * (x - 8) + (y - 10) * (y - 10) < 18, dark = x > 16 || y > 25;
+    const lit = (x - 8) * (x - 8) + (y - 8) * (y - 8) < 18, dark = x > 16 || y > 23;
     g.fillStyle = lit ? P[0] : dark ? P[2] : P[1];
     g.fillRect(x, y, 1, 1);
   }
   g.fillStyle = P[3];
-  for (const [x, y, w] of [[6, 14, 3], [14, 9, 2], [15, 18, 3], [9, 22, 2], [17, 13, 1], [11, 17, 1]]) g.fillRect(x, y, w, w > 1 ? 2 : 1);
+  for (const [x, y, w] of [[6, 12, 3], [14, 7, 2], [15, 16, 3], [9, 20, 2], [17, 11, 1], [11, 15, 1]]) g.fillRect(x, y, w, w > 1 ? 2 : 1);
   g.fillStyle = "#1a1020";
-  const seg = [[[7, 12], [9, 14], [11, 12], [13, 14]], [[13, 14], [15, 12], [17, 14]], [[11, 12], [12, 9], [11, 7]]];
+  const seg = [[[7, 10], [9, 12], [11, 10], [13, 12]], [[13, 12], [15, 10], [17, 12]], [[11, 10], [12, 7], [11, 5]]];
   for (let k = 0; k < Math.min(crack, seg.length); k++) {
     const pts = seg[k];
     for (let i = 1; i < pts.length; i++) {
