@@ -11,43 +11,6 @@ import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
 
-// The talk mark, drawn at screen resolution (RS cells per world pixel) from a distance field so its edges stay smooth:
-// a bar that tapers down and is round at both ends, a round dot below, a dark outline, lit from the top left.
-const TALK_MARKS = {};
-function talkMarkSprite(H) {
-  if (TALK_MARKS[H]) return TALK_MARKS[H];
-  const W = Math.max(9, Math.round(H * 0.42)), k = RS, o = 1.5, cx = W / 2;
-  const rd = W * 0.28, dotY = H - o - rd, gap = Math.max(4.5, H * 0.15);
-  const rt = cx - o, rb = rt * 0.5, yTop = o + rt, yBot = dotY - rd - gap - rb, hh = yBot - yTop;
-  // uneven capsule (Inigo Quilez): radius rb at the bottom centre, rt at the top centre, hh apart, y pointing up
-  const bar = (px, py) => {
-    const x = Math.abs(px - cx), y = yBot - py, b = (rb - rt) / hh, a = Math.sqrt(1 - b * b), q = -b * x + a * y;
-    if (q < 0) return Math.hypot(x, y) - rb;
-    if (q > a * hh) return Math.hypot(x, y - hh) - rt;
-    return a * x + b * y - rb;
-  };
-  const sd = (px, py) => Math.min(bar(px, py), Math.hypot(px - cx, py - dotY) - rd);
-  const c = document.createElement("canvas");
-  c.width = W * k;
-  c.height = H * k;
-  c.w = W;
-  c.h = H;
-  const g = c.getContext("2d"), e = 0.5 / k;
-  for (let j = 0; j < H * k; j++) for (let i = 0; i < W * k; i++) {
-    const px = (i + 0.5) / k, py = (j + 0.5) / k, d = sd(px, py);
-    if (d > o) continue;
-    if (d > 0) g.fillStyle = "#1a1020";
-    else {
-      // outward normal from the field: the rim facing the light is pale, the far rim orange, a soft gloss streak on the bar
-      const nx = sd(px + e, py) - sd(px - e, py), ny = sd(px, py + e) - sd(px, py - e), nl = Math.hypot(nx, ny) || 1;
-      const lit = (-nx * 0.6 - ny * 0.8) / nl, rim = d > -1.6;
-      const gloss = bar(px, py) < 0 && px < cx - rt * 0.15 && px > cx - rt * 0.65 && py < yBot - rb;
-      g.fillStyle = rim && lit > 0.35 ? "#fff3a0" : rim && lit < -0.3 ? "#e8941a" : gloss ? "#ffeb80" : "#ffd23c";
-    }
-    g.fillRect(i, j, 1, 1);
-  }
-  return (TALK_MARKS[H] = c);
-}
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -246,7 +209,6 @@ export class Renderer {
       this.text(g, name, n.x, n.y + 22, near ? "#ffe14a" : "#e8dcff", 11);
       const m = A.npc?.meta.npcs[n.id], h = m?.h || 70, top = n.y + 8 - h;
       if (near) this.text(g, input.touch ? "按攻击键交谈" : "按 J 交谈", n.x, top - 8 + Math.sin(this.t * 5) * 2, "#5dff7a", 11);
-      else this.drawTalkMark(g, n.x, top - 4, h);
     }
     // floating texts (skill names, damage) go over every health bar so a bar never hides them
     for (const f of game.floaters) {
@@ -828,11 +790,6 @@ export class Renderer {
     }
     const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n, s = N.meta.cell;
     g.drawImage(N.image, f * s, m.row * s, s, s, x - m.ox, y + 8 - m.oy, s, s);
-  }
-  /** a bold yellow "!" over a visitor you haven't talked to (about 2/5 of its height), bottom at y; see talkMarkSprite */
-  drawTalkMark(g, x, y, h) {
-    const c = talkMarkSprite(Math.round((h * 2) / 5)), bob = Math.round(Math.sin(this.t * 5) * 2 * RS) / RS;
-    g.drawImage(c, Math.round((x - c.w / 2) * RS) / RS, Math.round((y - c.h + bob) * RS) / RS, c.w, c.h);
   }
   drawShopItem(g, it, me) {
     const x = Math.round(it.x), y = Math.round(it.y);

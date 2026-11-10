@@ -2142,7 +2142,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .dice-mode .ev-say p { height: 18px; line-height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 /* bets flush left, 离开 flush right with the dice window; short buttons so the gap before 离开 clearly splits the two groups */
 .dice-mode .ev-opts { justify-content: flex-start; gap: 10px; }
-.dice-mode .ev-opts .btn { flex: 0 0 112px; min-width: 0; }
+.dice-mode .ev-opts .btn { flex: 0 0 128px; min-width: 0; }
 .dice-mode .ev-opts .btn.gray { margin-left: auto; }
 .ev-dice { display: flex; flex-direction: column; align-items: center; margin: 0 0 10px; padding: 6px 12px 8px; border-radius: 12px; background: radial-gradient(ellipse at 50% 55%, rgba(120,90,220,.35), rgba(10,6,24,.4) 70%); }
 .dice-round { font-size: 12px; color: #c8a0ff; }
