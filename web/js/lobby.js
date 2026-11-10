@@ -177,7 +177,7 @@ export function showLobby() {
     const u = UNLOCKS[next], pr = unlockProgress(next);
     goal.innerHTML = `<img src="assets/portrait_${next}.png" alt=""><div class="g-tx"><b>下一个目标：解锁 ${CHARS[next].short}</b><div class="g-bar"><i style="width:${Math.round(pr * 100)}%"></i></div></div><small>${Math.min(m.stats[u.stat] || 0, u.need)}/${u.need}</small>`;
     goal.title = u.text;
-  } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b><span>最远 ${m.stats.best}/7 · 通关 ${m.stats.bossKills} 次</span></div>`;
+  } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b></div><small>通关 ${m.stats.bossKills} 次</small>`;
   // the notice bar: eggs to hatch come first; otherwise it rotates the goal above with short tips, each a shortcut
   {
     const ps = petState(), ready = readySlots(ps), stock = eggCount(ps), free = ps.slots.some((x) => !x);

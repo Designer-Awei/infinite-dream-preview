@@ -2413,3 +2413,22 @@ body.touchmode .pet-ride-btn small { display:none; }
 .pdx-grid .cdx-c .pdx-v { width: 100%; height: 80px; }
 .pdx-grid .cdx-c .pdx-v img, .pdx-grid .cdx-c .pdx-v canvas { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; object-fit: contain; }
 @media (max-height: 420px) { .pdx-grid .cdx-c .pdx-v { height: 60px; } }
+/* notice bar: centred in the gap between the tiles (their 5px drop shadow counted) and the map card, without moving
+   the cards; every line of text inside it one size — goal, count, tip, tag, jump, 全部角色已解锁 */
+.lb-goal.slim { margin-top: 4px; margin-bottom: -4px; --gf: 14px; }
+.lb-goal.slim .g-tx b, .lb-goal.slim .g-tx span, .lb-goal.slim small, .lb-goal.slim .g-go, .lb-goal.slim.tip-note .g-tx b, .lb-goal.slim.egg-note .g-tx b, .lb-goal.slim.tip-note .g-go, .lb-goal.slim.egg-note .g-go, .lb-goal.slim .g-tag { font-size: var(--gf); line-height: 1.2; }
+.lb-goal.slim .g-tag { line-height: 1.25; }
+@media (max-height: 420px) { .lb-goal.slim { --gf: 12px; } }
+/* pet 评分: top-right of the warehouse preview, the number in the quality colour (流彩 cycles hues) */
+.wh-score { position: absolute; top: 6px; right: 8px; z-index: 2; display: flex; align-items: baseline; gap: 5px; padding: 2px 10px 3px; border: 2px solid var(--ink); border-radius: 10px; background: rgba(14,8,36,.72); pointer-events: none; }
+.wh-score i { font-style: normal; font-size: 12px; color: #c8c0e8; text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+.wh-score b { font-weight: normal; font-size: 24px; line-height: 1; color: var(--qc, #fff); text-shadow: none; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; font-variant-numeric: tabular-nums; }
+.wh-score.rb b { animation: whScoreHue 2.4s linear infinite; }
+@keyframes whScoreHue { to { filter: hue-rotate(360deg); } }
+.wh-sup { position: absolute; right: 6px; top: 100%; font-style: normal; font-size: 15px; color: #8cff7a; text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; animation: whSup 1.2s ease-out forwards; }
+@keyframes whSup { 0% { opacity: 0; transform: translateY(6px); } 20% { opacity: 1; transform: translateY(0); } 75% { opacity: 1; } 100% { opacity: 0; transform: translateY(-10px); } }
+@media (max-height: 420px) { .wh-score { top: 5px; right: 6px; padding: 1px 7px 2px; gap: 4px; } .wh-score i { font-size: 10px; } .wh-score b { font-size: 18px; -webkit-text-stroke: 3px var(--ink); } .wh-sup { font-size: 12px; } }
+.wh-rscore { margin-left: auto; display: inline-flex; align-items: baseline; gap: 4px; }
+.wh-rscore i { font-style: normal; font-size: 12px; color: #c8c0e8; text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+.wh-rscore b { font-weight: normal; font-size: 20px; color: var(--qc); text-shadow: none; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
+.wh-rscore.rb b { animation: whScoreHue 2.4s linear infinite; }

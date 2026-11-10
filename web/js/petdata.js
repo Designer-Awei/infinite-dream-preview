@@ -77,6 +77,18 @@ export const isRainbow = (p) => p.q === 5;
 export const traitBand = (q, k) => QUALITY[q].band.map((f) => Math.max(1, Math.round(TRAITS[k].top * f)));
 /** the highest a trait of this pet can go: its quality's cap, 150% of the top for a 流彩 pet */
 export const traitCap = (p, k) => (isRainbow(p) ? Math.round(TRAITS[k].top * OVERCAP) : traitBand(p.q, k)[1]);
+// 评分：(成长分 + 词条分) × 品质系数 × 异色系数。成长分 幼年 200 → 成长 400 → 终极 600，阶段内随经验连续增长；
+// 词条分 每条 500 × 数值/满值（流彩 三条，流彩晶 可到 150%）。完美满词条的传说终极 (600+1000)×1.25 = 2000，
+// 异色 ×1.05 约 2100；流彩 ×1.4，出生满值 2940，流彩晶淬满 (600+2250)×1.4 = 3990
+export const SCORE = { stage: [200, 400, 600], grow: 200, trait: 500, q: [1, 1.05, 1.1, 1.15, 1.25, 1.4], shiny: 1.05 };
+export function petScore(p) {
+  if (!p) return 0;
+  const s = Math.max(1, Math.min(3, p.stage || 1)), next = PET_EVOLVE[s + 1], from = s > 1 ? PET_EVOLVE[s].xp : 0;
+  const grow = SCORE.stage[s - 1] + (next ? SCORE.grow * Math.max(0, Math.min(1, ((p.xp || 0) - from) / (next.xp - from))) : 0);
+  const tr = (p.traits || []).reduce((a, [k, v]) => a + (TRAITS[k] ? (SCORE.trait * v) / TRAITS[k].top : 0), 0);
+  const skin = p.skin && p.skin !== "flow" ? SCORE.shiny : 1;
+  return Math.round((grow + tr) * (SCORE.q[p.q] || 1) * skin);
+}
 const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.floor(Number(v) || 0)));
 // a small seeded random for the one-time migration of old saves (so every read of an old save agrees)
 function seeded(str) {

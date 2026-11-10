@@ -1,7 +1,7 @@
 // 宠物仓库：从主页角色右上方的宠物入口进入。右侧是库存格子（第一格是宠物蛋，其后每只已孵化的宠物；上锁的排在前面），
 // 左侧是选中宠物：动画（左上角上锁按钮）、名字旁的异色 / 品质标签、词条（数值与范围）、经验条，以及
 // 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、宠物现身。图鉴按种类列出原色与各异色。点面板外关闭。
-import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
+import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petScore, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
 import { PET_SKINS, skinnedFrame } from "./petskins.js";
 import { petState, findPet, equipPet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, hatchNow, hatchNowCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
 import { mineState } from "./save.js";
@@ -45,6 +45,7 @@ export function drawEgg(c, crack = 0, kind = "base") {
     }
   }
 }
+let lastScore = { uid: null, v: 0 }, scoreRaf = 0;
 /** a pet's portrait into a box: the stage art, recoloured for an 异色 */
 function portrait(box, p) {
   const im = new Image();
@@ -170,7 +171,7 @@ export function showWarehouse(onClose) {
     }
     const d = PETS[p.id], q = petQuality(p), to = injectTarget(p), next = PET_EVOLVE[p.stage + 1], ms = mineState();
     if (!canvas || !canvas.isConnected) {
-      box.innerHTML = `<div class="wh-view"><div class="wh-anim"></div><button class="wh-lockbtn" aria-label="上锁"></button></div>
+      box.innerHTML = `<div class="wh-view"><div class="wh-anim"></div><button class="wh-lockbtn" aria-label="上锁"></button><div class="wh-score"><i class="o1">评分</i><b class="outline"></b></div></div>
         <div class="wh-head" title="点击上方宠物查看技能详情"><b class="wh-name outline"></b><span class="wh-tags o1"></span></div>
         <div class="wh-traits o1"></div><div class="wh-xp"><u></u><span class="o1"></span></div><div class="wh-btns"></div>`;
       canvas = petPreview(box.querySelector(".wh-anim"), p.id, p.stage, "lobby", false, [320, 220], false, true);
@@ -188,6 +189,26 @@ export function showWarehouse(onClose) {
     lk.classList.toggle("on", p.lock);
     lk.title = p.lock ? "已上锁：不能放生（点击解锁）" : "上锁：防止误放生，排在前面";
     lk.onclick = () => (sfx("click"), toast(toggleLock(p.uid) ? "已上锁" : "已解锁"), (confirmRelease = false), refresh());
+    // 评分 top-right: counts up with a +N when the same pet's score rises (经验, 进化, 淬炼)
+    {
+      const sc = petScore(p), sb = box.querySelector(".wh-score"), num = sb.querySelector("b");
+      sb.className = "wh-score" + (q === 5 ? " rb" : "");
+      sb.style.setProperty("--qc", QUALITY[q].col);
+      const was = lastScore.uid === p.uid ? lastScore.v : sc;
+      lastScore = { uid: p.uid, v: sc };
+      cancelAnimationFrame(scoreRaf);
+      if (sc > was) {
+        const t0 = performance.now(), step = (t) => {
+          const k = Math.min(1, (t - t0) / 700);
+          num.textContent = Math.round(was + (sc - was) * (1 - (1 - k) ** 3));
+          if (k < 1) scoreRaf = requestAnimationFrame(step);
+        };
+        scoreRaf = requestAnimationFrame(step);
+        const up = el("em", "wh-sup outline", `+${sc - was}`);
+        sb.appendChild(up);
+        setTimeout(() => up.remove(), 1200);
+      } else num.textContent = sc;
+    }
     box.querySelector(".wh-traits").innerHTML = p.traits.map(traitLine(p)).join("");
     // one bar across the row, its text centred on it: stage, xp (or 经验已满) and the stars the next evolution costs
     const from = to === PET_EVOLVE[3].xp ? PET_EVOLVE[2].xp : 0;
@@ -324,7 +345,7 @@ export function showWarehouse(onClose) {
         const c = petPreview(ov.querySelector(".wh-hpet"), p.id, p.stage, "lobby", false, [280, 200], false, true);
         setPetPreview(c, { skin: p.skin });
         const head = Q.rainbow ? `<div class="wh-shiny rainbow outline">流彩！</div>` : p.skin ? `<div class="wh-shiny outline">异色 · ${PET_SKINS[p.skin].name}！</div>` : "";
-        ov.querySelector(".wh-hinfo").innerHTML = `${head}<div class="wh-head"><b class="outline" style="color:${PETS[p.id].color}">${PETS[p.id].name}</b><span class="wh-tags o1">${tags(p)}</span></div><div class="wh-traits o1">${p.traits.map(traitLine(p)).join("")}</div>`;
+        ov.querySelector(".wh-hinfo").innerHTML = `${head}<div class="wh-head"><b class="outline" style="color:${PETS[p.id].color}">${PETS[p.id].name}</b><span class="wh-tags o1">${tags(p)}</span><span class="wh-rscore${Q.rainbow ? " rb" : ""}" style="--qc:${Q.col}"><i>评分</i><b>${petScore(p)}</b></span></div><div class="wh-traits o1">${p.traits.map(traitLine(p)).join("")}</div>`;
         // tap anywhere to go back (after a short beat, so the tap that hatched it can't skip the reveal)
         const done = () => (ov.remove(), (sel = p.uid), (canvas = null), refresh());
         setTimeout(() => {
