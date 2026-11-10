@@ -406,8 +406,7 @@ export function showMineResult(res, again, back) {
   const md = el("div", "modal result mres");
   md.innerHTML = `<div class="panel res2 ${res.how === "dead" ? "lose" : "win"}">
     <div class="res-l"><h2 class="outline">${title}</h2><div class="res-sub o1">${sub}${res.characterXP?.gained ? ` · 经验 +${res.characterXP.gained}（Lv.${res.characterXP.after.level}）` : ""}${res.lost ? `（丢失 ${res.lost} 件）` : ""}</div>
-      ${resultHero(res.cid || m.sel, res.how !== "dead")}
-      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div></div>
+      <div class="res-mid">${resultHero(res.cid || m.sel, res.how !== "dead")}<div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${res.value}</span><div class="gem"></div></div></div></div>
       <div class="res-extras"><div class="res-chip o1" data-cur="ore"><span class="res-label">${CUR.ore()} 矿石</span><b>+${res.mats}</b></div>
       ${res.stars ? `<div class="res-chip o1" data-cur="star"><span class="res-label">${CUR.star()} 星砂</span><b>+${res.stars}</b></div>` : ""}</div></div>
     <div class="res-r"><div class="mres-body" tabindex="0" aria-label="矿场结算明细">
@@ -472,10 +471,10 @@ export function showMerchant(dive, onClose) {
   const md = el("div", "modal mshop-md");
   const draw = () => {
     const offers = dive.shopOffers(), bv = dive.bagValue();
-    md.innerHTML = `<div class="panel mshop"><div class="ms-h"><h2 class="outline">地下商人</h2><span class="o1">用背包里的矿物付款（从最便宜的开始扣）· 背包价值 ${CUR.gem()}${bv}</span></div>
+    md.innerHTML = `<div class="panel mshop"><div class="ms-h"><h2 class="outline">地下商人</h2><span class="o1">用背包里的矿物付款（从最便宜的开始扣）· 背包价值 ${CUR.gem()}${bv}</span><div class="ms-acts"></div></div>
       <div class="ms-list">${offers.map((o) => `<div class="ms-it${o.left <= 0 ? " sold" : ""}"><img src="${iconURL(o.icon, 3)}" alt=""><div class="mu-t"><b class="o1">${o.name}</b><span>${o.desc}${o.left > 0 ? `　剩 ${o.left}` : "　售罄"}</span></div>
         <button class="btn small ${o.left > 0 && bv >= o.price ? "" : "gray"}" data-k="${o.k}"><span>${o.left > 0 ? "购买" : "售罄"}</span><small>${CUR.gem()}${o.price}</small></button></div>`).join("")}</div>
-      <div class="row ms-acts"></div></div>`;
+</div>`;
     md.querySelectorAll(".ms-it button").forEach((b) => (b.onclick = () => {
       const k = b.dataset.k, o = dive.shopOffers().find((x) => x.k === k);
       if (o.left <= 0) return;
