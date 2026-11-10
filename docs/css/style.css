@@ -2473,3 +2473,8 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ms-h .ms-acts { flex: none; margin-left: auto; display: flex; }
 .mshop { width: min(600px, 94vw); }
 .ms-h span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* result panels: more air around the sub line; the hero's feet stand on the gem total's line (total at bottom-right) */
+.res2 .res-l > .res-sub { margin: 5px 0 8px; }
+.res2 .res-mid { justify-content: flex-end; }
+.res2 .res-mid .res-hero { margin: 0 0 4px; }
+.res2 .res-mid .res-rewards { position: absolute; right: 0; bottom: 4px; margin: 0; z-index: 1; }
