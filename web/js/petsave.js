@@ -114,6 +114,14 @@ export function grantPetXP(ref, amount) {
   save();
   return own.xp - before;
 }
+/** xp into the 经验池 (a run's pet xp a full pet could not take) */
+export function addPool(n) {
+  const state = petState(), k = Math.floor(n);
+  if (!(k > 0)) return 0;
+  state.pool += k;
+  save();
+  return k;
+}
 /** the xp the next injection fills up to: the next evolution's need above the pet's xp (300, then 1200) */
 export function injectTarget(p) {
   return [PET_EVOLVE[2].xp, PET_EVOLVE[3].xp].find((x) => x > p.xp) ?? null;

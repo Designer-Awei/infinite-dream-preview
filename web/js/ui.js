@@ -298,7 +298,7 @@ export function updateHud(game, me) {
   set("coins", me.coins, (v) => (hud.querySelector(".coins").textContent = v));
   set("cubes", me.cubes, (v) => (hud.querySelector(".cubes").textContent = v));
   set("room", game.roomIdx, (v) => hud.querySelectorAll(".pip").forEach((p, i) => {
-    p.className = "pip o1" + (i < v ? " done" : i === v ? " cur" : "");
+    p.className = "pip o1" + (i < v ? " done" : i === v ? " now" : ""); // not "cur": that is the currency icon class
     // 梦境航线: the rooms walked so far show their kind, the ones ahead stay a question mark (the boss is always last)
     if (game.route) p.textContent = pipIcon(i <= game.route.step ? game.route.cols[i][game.route.path[i]].kind : i === game.route.cols.length - 1 ? "boss" : "?");
   }));
@@ -499,8 +499,7 @@ export function showResult(r, onAgain, onLobby) {
     <div class="res-l">
       <h2 class="outline">${r.title}</h2>
       <div class="res-sub o1">${r.sub || ""}</div>
-      ${hero}
-      <div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div></div>
+      <div class="res-mid">${hero}<div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div></div></div>
       <div class="res-extras${extras.length > 2 ? " has-more" : ""}">${extras.slice(0, 2).map(chip).join("")}${extras.length > 2 ? `<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">其余 ${extras.length - 2} 项</button>` : ""}</div>
     </div>
     <div class="res-r">

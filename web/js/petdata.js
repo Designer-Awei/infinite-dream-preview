@@ -1,7 +1,7 @@
 // Companion rules shared by save, UI and the authoritative battle simulation.
 export const PHOENIX_STORM_RADIUS=124, FOX_RIDE_RANGE=PHOENIX_STORM_RADIUS*1.5;
 export const PET_ATTACK_RANGE={dragon:150,fox:170,phoenix:180};
-export const DRAGON_FIREBALL={interval:.5,damageScale:2.4,speed:280,radius:12,range:300,splash:56};
+export const DRAGON_FIREBALL={interval:.5,damageScale:2.4,speed:280,radius:12,range:300,splash:56,converge:7}; // converge: how fast a ball eases onto the aim line (1/s)
 export const DRAGON_TORNADO={count:1,radius:40,range:360,speed:110,duration:4.5,damage:36,interval:.4};
 export const PETS = {
   dragon: { name: "赤焰火龙", color: "#ff9c56", elem: "dragon", passive: "伤害", stat: "dmg", bonus: [.08, .12, .18], attack: "焰弹", skill: "灼热龙息", rideAttack: "巨焰火球", rideUlt: "焚天火龙卷", desc: "龙嘴发射大火球，大型火龙卷自动追敌。", trait:"骑乘火球爆炸与火龙卷可破墙、烧草，外边界保留。", rideDesc:"点按或长按每0.5秒一发大火球，命中爆炸；大招召出一道大型自动索敌火龙卷。", skillCd: 9 },

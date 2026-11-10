@@ -298,8 +298,8 @@ export class Game {
     if (kind === "shop") this.setupShop();
     this.phase = kind === "shop" ? "shop" : kind === "event" ? "event" : "fight";
     if (this.pvp) this.phase = "pvp";
-    // an event room: a visitor stands in the middle; walk up and press attack to talk
-    if (kind === "event") this.npc = { x: this.map.center.x, y: this.map.center.y - 6, id: NPCS[def.event] ? def.event : "altar", talked: false };
+    // an event room: a visitor stands left of the middle, clear of the portal(s) that open there; walk up and press attack to talk
+    if (kind === "event") this.npc = { x: this.map.center.x - 5 * T, y: this.map.center.y - 20, id: NPCS[def.event] ? def.event : "altar", talked: false };
     const floor = this.endless ? `无尽回廊 · 第 ${idx + 1} 层` : `第 ${idx + 1} 层 · ${md.name}`;
     this.banner = { text: this.pvp ? `竞技场 · ${this.pvpRule.name}` : kind === "boss" ? (this.endless ? `第 ${idx + 1} 层 · 首领` : `首领 · ${(ENEMIES[def.boss] || ENEMIES.boss_eye).name}`) : kind === "shop" ? "补给站" : floor, sub: this.pvp ? this.pvpRule.goalText : kind === "shop" ? "扭蛋机 / 补给 · 准备好后进入传送门" : kind === "boss" ? "击败它！" : md.hazardText || "清除所有敌人", t: 2.4 };
     if (def.event) this.banner = { text: EVENTS[def.event].name, sub: `走近${NPCS[def.event].name}，按攻击键交谈`, t: 2.4 };
@@ -921,7 +921,13 @@ export class Game {
   stepDragonFireball(b,dt){
     const elapsed=Math.min(dt,Math.max(0,b.life+dt)),steps=Math.max(1,Math.ceil(Math.hypot(b.vx,b.vy)*elapsed/4));
     for(let n=0;n<steps;n++){
-      b.x+=b.vx*elapsed/steps;b.y+=b.vy*elapsed/steps;
+      const h=elapsed/steps;
+      if(b.guide&&h>0){
+        // along the aim line at full speed; the sideways gap from it (mouth vs. centre) shrinks to nothing
+        const gd=b.guide,ux=Math.cos(gd.a),uy=Math.sin(gd.a),rx=b.x-gd.x,ry=b.y-gd.y;
+        const along=rx*ux+ry*uy+DRAGON_FIREBALL.speed*h,side=(-rx*uy+ry*ux)*Math.exp(-DRAGON_FIREBALL.converge*h);
+        const nx=gd.x+along*ux-side*uy,ny=gd.y+along*uy+side*ux;b.vx=(nx-b.x)/h;b.vy=(ny-b.y)/h;b.x=nx;b.y=ny;
+      }else{b.x+=b.vx*h;b.y+=b.vy*h;}
       const blocked=visualTilesIn(this.map,b.x,b.y,b.r).length>0;
       const target=this.enemies.some(e=>!e.dead&&!(e.spawnT>0)&&dist2(b.x,b.y,e.x,e.y-e.r)<=(b.r+e.r)**2);
       if(blocked||target){if(this.host)this.dragonFireballImpact(b);return true;}

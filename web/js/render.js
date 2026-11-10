@@ -6,7 +6,7 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
+import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, mountedAimOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
@@ -482,7 +482,7 @@ export class Renderer {
       g.restore();
     };
     const c = CHARS[me.cid];
-    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAttackOrigin(me),me.mounted&&me.pet?.id==='dragon');
+    if (input.aim != null) show(input.aim, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.range:me.mounted&&me.pet?.id==='fox'?FOX_RIDE_RANGE:c.atk.range * me.st.range, me.mounted&&me.pet?.id==='dragon'?DRAGON_FIREBALL.radius*2:8, "#ffffff",mountedAimOrigin(me),me.mounted&&me.pet?.id==='dragon');
     if (input.skillAim != null) show(input.skillAim, me.cid === "gpt" ? 115 : 160, 24, "#7fd0ff"); // 龙跃突刺 shows its leap length
     if (input.ultAim != null && !(me.mounted&&me.pet?.id==='dragon')) show(input.ultAim, 190, 30, "#ffe14a");
   }

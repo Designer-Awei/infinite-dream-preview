@@ -18,7 +18,7 @@ import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
 import { PETS, PET_EVOLVE, MINE_EGG_CHANCE, petExperience } from "./petdata.js";
-import { grantPetXP, grantEggs, petState, findPet } from "./petsave.js";
+import { grantPetXP, grantEggs, petState, findPet, addPool } from "./petsave.js";
 import { showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
@@ -251,8 +251,11 @@ export const app = {
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
     const petTotal = petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses});
-    const petXP = this.me.pet && (this.petGranted || 0) + grantPetXP(petState().equipped || this.me.pet.id, Math.max(0, petTotal - (this.petGranted || 0)));
+    // the rest of the run's pet xp goes to the carried pet; what a full (or maxed-out) pet can't take fills the 经验池
+    const petLeft = this.me.pet ? Math.max(0, petTotal - (this.petGranted || 0)) : 0, petAdd = petLeft && grantPetXP(petState().equipped || this.me.pet.id, petLeft);
+    const petXP = this.me.pet && (this.petGranted || 0) + petAdd, petOver = this.me.pet && findPet(petState().equipped) ? petLeft - petAdd : 0;
     if (petXP) extras.push(["宠物经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
+    if (petOver > 0 && addPool(petOver)) extras.push(["经验池", `+${petOver}（宠物经验溢出）`]);
     // 宠物蛋：每击败一个首领 1 颗（一局最多 3 颗），在宠物仓库孵化
     const eggs = grantEggs(Math.min(3, rs.xpBosses || 0));
     if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);

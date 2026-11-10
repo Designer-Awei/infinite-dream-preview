@@ -74,6 +74,11 @@ export function petMuzzle(p){
   const q=p.pet,id=`${q.id}-${q.stage}`,a0=A.pets?.meta.actors[id],clips=A.pets?.meta.clips[id],f=a0&&clips?followerFrame(q,a0,clips):null,point=a0?.mouth_frames?.[f?.name]?.[f?.index]||(q.castT>0&&a0?.cast_mouth)||a0?.mouth||[89,60],anchor=a0?.anchor||[64,96],k=petScale(p)*(a0?.render_scale??1);
   return{x:q.x+(point[0]-anchor[0])*k*(Math.cos(q.face)>=0?1:-1),y:q.y+(point[1]-anchor[1])*k-flightLift(p)};
 }
+// 骑乘火龙普攻的指向原点：坐骑整体的中心（x 取站位，不随左右翻转跳变）。火球仍从龙嘴喷出，飞行中收束到这条指向线上
+export function mountedAimOrigin(p){
+ if(p.mounted&&p.pet?.id==='dragon')return{x:p.x,y:mountedCenter(p).y};
+ return mountedAttackOrigin(p);
+}
 export function mountedAttackOrigin(p){
  if(p.mounted&&p.pet?.id==='dragon'){
   const m=mountAsset(p),a=m?.meta.actors[p.cid],point=a?.attack_origin||a?.mouth;
@@ -127,8 +132,11 @@ export function mountedAttack(game,p,angle,target){
   if(p.pet.id==='fox'){foxArc(game,p,angle);return true;}
   if(p.pet.id==='dragon'){
     p.pet.castT=Math.max(p.pet.castT,.3);p.pet.castMax=Math.max(p.pet.castMax,.3);
-    const m=mountedAttackOrigin(p),a=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;
-    game.bullets.push(game.mkBullet(p,{x:m.x,y:m.y,h:0,a,spd:DRAGON_FIREBALL.speed,dmg:CHARS[p.cid].atk.dmg*DRAGON_FIREBALL.damageScale,elem:'dragon',kind:'pet_dragon',r:DRAGON_FIREBALL.radius,life:DRAGON_FIREBALL.range/DRAGON_FIREBALL.speed,big:true}));
+    // aimed from the mount's centre; the ball leaves the mouth and eases onto that aim line (guide), ending at its range
+    const o=mountedAimOrigin(p),a=target?Math.atan2(target.y-target.r-o.y,target.x-o.x):angle,m=mountedAttackOrigin(p);
+    const s0=Math.max(0,(m.x-o.x)*Math.cos(a)+(m.y-o.y)*Math.sin(a)),life=Math.max(.2,(DRAGON_FIREBALL.range-s0)/DRAGON_FIREBALL.speed);
+    const b=game.mkBullet(p,{x:m.x,y:m.y,h:0,a,spd:DRAGON_FIREBALL.speed,dmg:CHARS[p.cid].atk.dmg*DRAGON_FIREBALL.damageScale,elem:'dragon',kind:'pet_dragon',r:DRAGON_FIREBALL.radius,life,big:true});
+    b.guide={x:o.x,y:o.y,a};game.bullets.push(b);
     game.sound('shoot_dragon',.08);return true;
   }
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;

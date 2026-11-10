@@ -2444,3 +2444,19 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* the detail preview draws each stage's own ground shadow on its canvas (under that stage's feet) */
 .pp .pp-view::before { display: none; }
 .pp .pp-view.demo::before { display: none; }
+/* run progress: the room you are in keeps its size and place; its block gets a bright border instead */
+.pip.now { background: rgba(10,6,24,.5); color: #fff; border-color: #ffe36a; box-shadow: 0 0 0 1px var(--ink), 0 0 6px 1px rgba(255,227,106,.8); }
+/* run result: the hero to the left with the gem total right-aligned beside it; the reward chips' bottom level with the
+   buttons'; the stats start a little lower, off the panel's top edge */
+.res2 .res-mid { position: relative; flex: 1 1 auto; min-height: 0; width: 100%; display: flex; align-items: flex-end; justify-content: space-between; gap: 6px; }
+.res2 .res-mid .res-hero { flex: 0 1 auto; align-self: stretch; height: auto; max-height: 150px; margin: auto 0; width: auto; aspect-ratio: 4 / 5; justify-content: flex-start; }
+.res2 .res-mid .res-hero img { height: 100%; }
+.res2 .res-mid .res-rewards { flex: none; width: auto; justify-content: flex-end; margin-bottom: 4px; }
+.res2 .res-extras { margin-bottom: 6px; max-width: none; }
+.res2 .res-stats { margin-top: 8px; }
+@media (max-height: 420px) { .res2 .res-mid .res-hero { max-height: 120px; } }
+.res2 .res-extras .res-chip { max-width: none; }
+.res2 .res-mid .res-hero { max-height: 160px; }
+@media (max-height: 420px) { .res2 .res-mid .res-hero { max-height: 150px; } }
+.res2 .res-mid .res-hero { margin: auto 0 0; max-height: 220px; }
+@media (max-height: 420px) { .res2 .res-mid .res-hero { max-height: 150px; } }
