@@ -54,9 +54,12 @@ function bounds(c) {
 
 export async function loadAll(progress = () => {}) {
   const base = "assets/";
-  const [gj, gi, cj] = await Promise.all([json(base + "girls.json"), img(base + "girls.png"), json(base + "critters/critters.json")]);
+  const [gj0, gi0, cj, hj, hi] = await Promise.all([json(base + "girls.json"), img(base + "girls.png"), json(base + "critters/critters.json"),
+    json(base + "girls_hd.json").catch(() => null), img(base + "girls_hd.png").catch(() => null)]);
   progress(0.3);
   for (const id of CHAR_ORDER) {
+    // 192px frames (k=2) override a girl's 96px row when girls_hd has her: same world size, twice the detail
+    const hd = hj && hi && hj.frames[id], gj = hd ? hj : gj0, gi = hd ? hi : gi0;
     const fr = gj.frames[id], views = {};
     for (const v of ["front", "back", "side"]) {
       const [x, y, w, h] = fr[v];
