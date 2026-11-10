@@ -476,6 +476,8 @@ body.touchmode .keys, body.touchmode .pcskills { display: none; }
 .b-ult.ready > .bface, .s-ult.ready > .bface { background: radial-gradient(circle at 40% 32%, #fff6b0, #ffd84a 50%, #d88a10); }
 .b-dash > .bface, .s-dash > .bface { background: radial-gradient(circle at 40% 32%, #b8ffc8, #3ad06a 55%, #187a3a); }
 .tbtn .ico, .pcs .ico { position: absolute; left: 50%; top: 48%; width: 62%; height: 62%; transform: translate(-50%, -50%); image-rendering: pixelated; z-index: 2; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); transition: transform .12s; }
+/* the PixelLab skill / dash emblems carry their own padding: shown larger so they fill the button */
+.tbtn .ico[src*="assets/skills/"], .pcs .ico[src*="assets/skills/"] { width: 86%; height: 86%; top: 50%; }
 body:not(.mining) .b-ult:not(.ready) .ico, body:not(.mining) .s-ult:not(.ready) .ico { filter: grayscale(.85) brightness(.75); }
 .tbtn .lb { position: absolute; left: 50%; bottom: -17px; transform: translateX(-50%); font-size: 10px; white-space: nowrap; z-index: 3; opacity: .9; }
 .b-atk .lb { bottom: -15px; }
