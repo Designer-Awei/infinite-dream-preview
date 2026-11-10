@@ -210,8 +210,6 @@ export function showLobby() {
       let n = 0;
       const tick = setInterval(() => {
         if (!goal.isConnected) return clearInterval(tick);
-        // keep the bar the goal's height while tips rotate, so the column below never jumps
-        if (!goal.style.minHeight) goal.style.minHeight = goal.offsetHeight + "px";
         k = k === 0 ? order[n++ % order.length] : 0;
         show();
       }, 6000);

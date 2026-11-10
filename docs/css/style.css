@@ -2401,3 +2401,15 @@ body.touchmode .pet-ride-btn small { display:none; }
 @media (max-height: 420px) { .lb-goal.tip-note { padding-top: 2px; padding-bottom: 2px; } .lb-goal.tip-note .g-tag { line-height: 13px; padding: 0 4px; } }
 @media (max-height: 420px) { .lb-goal.tip-note .g-tag { display: none; } }
 @media (max-width: 720px) and (max-height: 420px) { .lb-goal.tip-note .g-gl { display: none; } .lb-goal.tip-note { gap: 6px; } }
+/* notice bar: no drop shadow; the bar itself takes the old bar + shadow height, fixed so every slide matches */
+.lb-goal.slim { box-shadow: none; box-sizing: border-box; height: 51px; min-height: 0 !important; }
+.lb-goal.slim.egg-note { box-shadow: 0 0 0 2px rgba(255,216,74,.5) inset; }
+@media (max-height: 420px) { .lb-goal.slim { height: 39px; } }
+/* warehouse detail buttons a little wider; the fusion confirm's pair clearly wider */
+.wh-modal .wh-btns .btn { min-width: 58px; padding-left: 13px; padding-right: 13px; }
+.wh-fuse .wh-btns { gap: 14px; }
+.wh-fuse .wh-btns .btn { min-width: 92px; }
+/* pet codex: owned (img) and unowned (canvas) art fill the same, larger box */
+.pdx-grid .cdx-c .pdx-v { width: 100%; height: 80px; }
+.pdx-grid .cdx-c .pdx-v img, .pdx-grid .cdx-c .pdx-v canvas { width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; object-fit: contain; }
+@media (max-height: 420px) { .pdx-grid .cdx-c .pdx-v { height: 60px; } }
