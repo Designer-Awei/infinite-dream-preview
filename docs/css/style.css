@@ -2375,3 +2375,30 @@ body.touchmode .pet-ride-btn small { display:none; }
 @media (max-height: 420px) { .topbar .wh-dexbtn.tb-ico { width: 34px; height: 34px; } }
 /* 收蛋通知条只留一行字（右侧已有“去仓库 ▶”），蛋与这行字同一中线 */
 .lb-goal.egg-note .g-tx span { display: none; }
+/* 孵化结果：全屏旋转射线（品质色，品质越高越亮越快；流彩为彩虹），点任意处返回 */
+.wh-hatch { overflow: hidden; }
+.wh-hatch > :not(.wh-rays2) { position: relative; z-index: 1; }
+.wh-rays2 { position: absolute; left: 50%; top: 42%; width: 160vmax; height: 160vmax; margin: -80vmax 0 0 -80vmax; opacity: 0; pointer-events: none;
+  background: repeating-conic-gradient(color-mix(in srgb, var(--rc, #fff) calc(var(--ra, .15) * 100%), transparent) 0 6deg, transparent 6deg 15deg);
+  -webkit-mask: radial-gradient(closest-side, #000, transparent 72%); mask: radial-gradient(closest-side, #000, transparent 72%); }
+.wh-hatch.open .wh-rays2 { opacity: 1; transition: opacity .4s; animation: whRaySpin var(--rs, 18s) linear infinite; }
+.wh-hatch.rainbow .wh-rays2 { background: repeating-conic-gradient(rgba(255,106,106,.32) 0 6deg, transparent 6deg 15deg, rgba(255,216,74,.32) 15deg 21deg, transparent 21deg 30deg, rgba(110,224,138,.32) 30deg 36deg, transparent 36deg 45deg, rgba(90,168,255,.32) 45deg 51deg, transparent 51deg 60deg, rgba(194,123,255,.32) 60deg 66deg, transparent 66deg 75deg); }
+@keyframes whRaySpin { to { transform: rotate(360deg); } }
+.wh-tap { font-size: 12px; color: #c8c0e8; min-height: 16px; }
+.wh-hatch.open { cursor: pointer; }
+.pdx-grid .cdx-c .pdx-v { display: flex; align-items: center; justify-content: center; }
+.pdx-grid .cdx-c .pdx-v img, .pdx-grid .cdx-c .pdx-v canvas { max-width: 100%; max-height: 100%; image-rendering: pixelated; }
+.pdx-grid .cdx-c.no .pdx-v img, .pdx-grid .cdx-c.no .pdx-v canvas { filter: brightness(0) opacity(.5); }
+/* 通知条小知识：与原通知条同高，一行字 + 跳转 */
+.lb-goal.tip-note { cursor: pointer; display: flex; align-items: center; gap: 8px; }
+.lb-goal.tip-note .g-tag { flex: none; font-style: normal; font-size: 11px; line-height: 16px; padding: 0 5px; border: 2px solid var(--ink); border-radius: 6px; background: #3a7ae8; color: #fff; }
+.lb-goal.tip-note .g-tx { min-width: 0; justify-content: center; } .lb-goal.tip-note .g-tx b { font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.lb-goal.tip-note .g-go { margin-left: auto; flex: none; color: #ffe36a; font-size: 12px; white-space: nowrap; }
+.lb-goal.g-in > * { animation: gIn .35s ease-out; }
+@keyframes gIn { from { opacity: 0; transform: translateY(4px); } }
+.lb-goal.tip-note:active { transform: translateY(2px); }
+@media (max-height: 420px) { .lb-goal.tip-note .g-tx b { font-size: 11.5px; } .lb-goal.tip-note .g-go { font-size: 10.5px; } .lb-goal.tip-note .g-tag { font-size: 10px; line-height: 14px; } }
+.lb-goal.tip-note { padding-top: 4px; padding-bottom: 4px; }
+@media (max-height: 420px) { .lb-goal.tip-note { padding-top: 2px; padding-bottom: 2px; } .lb-goal.tip-note .g-tag { line-height: 13px; padding: 0 4px; } }
+@media (max-height: 420px) { .lb-goal.tip-note .g-tag { display: none; } }
+@media (max-width: 720px) and (max-height: 420px) { .lb-goal.tip-note .g-gl { display: none; } .lb-goal.tip-note { gap: 6px; } }

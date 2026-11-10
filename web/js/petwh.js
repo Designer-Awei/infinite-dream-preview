@@ -289,7 +289,11 @@ export function showWarehouse(onClose) {
   // ---- hatching / fusion, revealed over the panel: shake, three cracks, the pet appears (异色 gold, 流彩 rainbow)
   const reveal = (p, again, kind = "base") => {
     const q = petQuality(p), Q = QUALITY[q], ov = el("div", "wh-hatch" + (p.skin ? " shiny" : "") + (Q.rainbow ? " rainbow" : ""));
-    ov.innerHTML = `<div class="wh-hstage"><canvas class="wh-hegg"></canvas><div class="wh-hpet"></div></div><div class="wh-hinfo"></div><div class="wh-btns"></div>`;
+    // full-screen rays behind the reveal, in the quality's colour: brighter and faster the higher it is (流彩 rainbow)
+    ov.style.setProperty("--rc", Q.col);
+    ov.style.setProperty("--ra", [0.1, 0.14, 0.18, 0.24, 0.32, 0.36][q]);
+    ov.style.setProperty("--rs", [26, 22, 18, 14, 10, 8][q] + "s");
+    ov.innerHTML = `<i class="wh-rays2"></i><div class="wh-hstage"><canvas class="wh-hegg"></canvas><div class="wh-hpet"></div></div><div class="wh-hinfo"></div><div class="wh-tap o1"></div>`;
     $(".wh-panel").appendChild(ov);
     const eggC = ov.querySelector(".wh-hegg");
     drawEgg(eggC, 0, kind);
@@ -307,8 +311,13 @@ export function showWarehouse(onClose) {
         setPetPreview(c, { skin: p.skin });
         const head = Q.rainbow ? `<div class="wh-shiny rainbow outline">流彩！</div>` : p.skin ? `<div class="wh-shiny outline">异色 · ${PET_SKINS[p.skin].name}！</div>` : "";
         ov.querySelector(".wh-hinfo").innerHTML = `${head}<div class="wh-head"><b class="outline" style="color:${PETS[p.id].color}">${PETS[p.id].name}</b><span class="wh-tags o1">${tags(p)}</span></div><div class="wh-traits o1">${p.traits.map(traitLine(p)).join("")}</div>`;
-        const bb = ov.querySelector(".wh-btns"), done = () => (ov.remove(), (sel = p.uid), (canvas = null), refresh());
-        bb.appendChild(btn("收下", "small blue", done));
+        // tap anywhere to go back (after a short beat, so the tap that hatched it can't skip the reveal)
+        const done = () => (ov.remove(), (sel = p.uid), (canvas = null), refresh());
+        setTimeout(() => {
+          if (!ov.isConnected) return;
+          ov.querySelector(".wh-tap").textContent = "点击任意处返回";
+          ov.onclick = () => (sfx("click"), done());
+        }, 500);
       }
     }, 420);
   };
@@ -341,7 +350,7 @@ export function showWarehouse(onClose) {
       reveal(r.pet, false);
     }));
   };
-  // ---- 图鉴 (laid out like the monster codex): tabs 全部图鉴 / each kind on the left, animated cards, an info line
+  // ---- 图鉴 (laid out like the monster codex): tabs 全部图鉴 / each kind / 收集奖励 on the left, static cards, an info line
   const codex = () => {
     const st = petState(), have = (id, k) => (st.dex[id]?.skins || []).includes(k), md2 = el("div", "modal cdx-md pdx-md");
     const entries = PET_ORDER.flatMap((id) => ["base", ...skinsOf(id)].map((k) => ({ id, k, own: have(id, k) })));
@@ -390,8 +399,9 @@ export function showWarehouse(onClose) {
       const list = tab ? entries.filter((e) => e.id === PET_ORDER[tab - 1]) : entries;
       grid.innerHTML = list.map((e) => `<button class="cdx-c${e.own ? "" : " no"}" data-id="${e.id}" data-k="${e.k}"><span class="pdx-v"></span><b>${e.own ? label(e.k) : "？？？"}</b><small>${PETS[e.id].name}</small></button>`).join("");
       grid.querySelectorAll(".cdx-c").forEach((c, n) => {
-        const e = list[n], cv = petPreview(c.querySelector(".pdx-v"), e.id, 3, "lobby", true, [120, 84], false, true);
-        setPetPreview(cv, { skin: e.k === "base" ? null : e.k });
+        // static art (the 终极 portrait, recoloured for its 异色): dozens of live previews at once stutter
+        const e = list[n];
+        portrait(c.querySelector(".pdx-v"), { id: e.id, stage: 3, skin: e.k === "base" ? null : e.k });
         c.onclick = () => (sfx("click"), show(e));
       });
       if (list[0]) show(list[0]);

@@ -178,7 +178,7 @@ export function showLobby() {
     goal.innerHTML = `<img src="assets/portrait_${next}.png" alt=""><div class="g-tx"><b>下一个目标：解锁 ${CHARS[next].short}</b><div class="g-bar"><i style="width:${Math.round(pr * 100)}%"></i></div></div><small>${Math.min(m.stats[u.stat] || 0, u.need)}/${u.need}</small>`;
     goal.title = u.text;
   } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b><span>最远 ${m.stats.best}/7 · 通关 ${m.stats.bossKills} 次</span></div>`;
-  // the notice bar also tells about eggs: ready in a 孵化槽 first, then eggs waiting with a free slot (tap: the warehouse)
+  // the notice bar: eggs to hatch come first; otherwise it rotates the goal above with short tips, each a shortcut
   {
     const ps = petState(), ready = readySlots(ps), stock = eggCount(ps), free = ps.slots.some((x) => !x);
     const msg = ready ? `${ready} 颗蛋可以孵化了` : stock && free ? `${stock} 颗宠物蛋待孵化` : "";
@@ -186,11 +186,35 @@ export function showLobby() {
       const egg = document.createElement("canvas");
       const readyKind = ps.slots.find((x) => x && x.t0 + x.dur <= Date.now())?.kind;
       drawEgg(egg, ready ? 1 : 0, readyKind || ["hur", "ur", "base"].find((k) => ps.eggs[k] > 0) || "base");
-      goal.innerHTML = `<div class="g-tx"><b>${msg}</b><span>点击前往宠物仓库</span></div><small class="g-go">去仓库 ▶</small>`;
+      goal.innerHTML = `<div class="g-tx"><b>${msg}</b></div><small class="g-go">去仓库 ▶</small>`;
       goal.prepend(egg);
       goal.classList.add("egg-note");
       goal.title = "宠物仓库";
       goal.onclick = () => (sfx("click"), showPets(() => showLobby()));
+    } else {
+      const first = goal.innerHTML, firstTitle = goal.title;
+      const slides = [{ html: first, title: firstTitle }, ...TIPS.map((t) => ({ tip: t }))];
+      let k = 0;
+      const show = () => {
+        const sl = slides[k];
+        goal.classList.toggle("tip-note", !!sl.tip);
+        goal.innerHTML = sl.tip ? `<i class="g-tag o1">小知识</i><div class="g-tx"><b>${sl.tip[0]}</b></div><small class="g-go"><span class="g-gl">${sl.tip[1]} </span>▶</small>` : sl.html;
+        goal.title = sl.tip ? sl.tip[1] : sl.title;
+        goal.onclick = sl.tip ? () => (sfx("click"), sl.tip[2]()) : null;
+        goal.classList.remove("g-in");
+        void goal.offsetWidth;
+        goal.classList.add("g-in");
+      };
+      // the goal first, then one random tip after another, every 6 s while the lobby is up
+      const order = TIPS.map((_, n) => n + 1).sort(() => Math.random() - 0.5);
+      let n = 0;
+      const tick = setInterval(() => {
+        if (!goal.isConnected) return clearInterval(tick);
+        // keep the bar the goal's height while tips rotate, so the column below never jumps
+        if (!goal.style.minHeight) goal.style.minHeight = goal.offsetHeight + "px";
+        k = k === 0 ? order[n++ % order.length] : 0;
+        show();
+      }, 6000);
     }
   }
   renderModes(s);
@@ -1364,6 +1388,18 @@ const ssrOwned = () => {
   const m = load(), list = GACHA.pool.filter((it) => it.r === "SSR");
   return `${list.filter((it) => (m.talents[it.id] || 0) >= it.max).length} / ${list.length}`;
 };
+// 主页通知条的小知识：[一句话, 跳转按钮文字, 跳转]
+export const TIPS = [
+  ["矿场撤离能挖到宠物蛋", "去矿场", () => import("./mineui.js").then((M) => M.showMineHub())],
+  ["梦境藏品提供永久加成", "看藏品", () => import("./codex.js").then((C) => (C.showCodex(), document.querySelector(".cdx-md .cdx-tab:last-child")?.click()))],
+  ["积攒点可换 HUR 宠物蛋", "去兑换", () => (showGacha(), showStash())],
+  ["同种宠物融合词条更好", "去仓库", () => showPets(() => showLobby())],
+  ["孵化越多流彩概率越高", "去仓库", () => showPets(() => showLobby())],
+  ["宠物图鉴收集有奖励", "去仓库", () => showPets(() => showLobby())],
+  ["高品质宠物放生经验多", "去仓库", () => showPets(() => showLobby())],
+  ["传送门颜色代表房间类型", "看说明", () => showHelp()],
+  ["矿场每日委托送星砂", "去矿场", () => import("./mineui.js").then((M) => M.showMineHub())],
+];
 // 积攒兑换：[what, rarity, name, one line, cost, egg kind]
 const STASH_ROWS = [
   ["egg_ur", "UR", EGGS.ur.name, "孵化必出稀有或更高品质", EGGS.ur.cost, "ur"],
