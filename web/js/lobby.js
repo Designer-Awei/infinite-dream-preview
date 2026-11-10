@@ -106,9 +106,10 @@ export function showLobby() {
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
     <button class="btn gray small set-btn" title="设置">⚙</button>
   </div>
-  <div class="lb-left lb-feats"></div>
+  <div class="lb-left lb-scene"></div>
   <div class="lb-center"><div class="lb-rays"></div><div class="lb-motes">${Array.from({ length: 14 }, (_, i) => `<i style="left:${8 + ((i * 37) % 84)}%;animation-delay:${(i * 0.53) % 4}s;animation-duration:${3 + (i % 4) * 0.7}s"></i>`).join("")}</div><div class="lb-island"></div><div class="lb-hero" title="切换角色"><img alt=""></div><button class="lb-name outline" title="切换角色"></button></div>
   <div class="lb-right">
+    <div class="lb-tiles"></div>
     <div class="lb-goal slim o1"></div>
     <div class="lb-modes"><div class="lm-track"></div><div class="lm-dots"></div></div>
     <div class="lb-play"></div>
@@ -117,13 +118,14 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
-  // the equipped partner stands on the island beside the hero (tap it to open the partner panel)
+  // left side: scene props that are their own buttons (no tile frame). The pet nest sits bottom-left with the
+  // equipped partner above it; together they are the partner entry
   const pets=petState(),petId=pets.equipped||Object.keys(pets.owned)[0];
-  if(petId){
-    const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
-    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-center',s).appendChild(entry);
-    petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true,false,true);
-    entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
+  {
+    const spot=el('button','lb-spot pet-entry t-pets','<span class="lb-pet"><span class="lb-pet-preview"></span></span><img class="sp-img" src="assets/ui/pet-nest.png" alt=""><span class="sp-l">伙伴</span>');
+    spot.title='梦境伙伴';spot.setAttribute('aria-label','梦境伙伴');q('.lb-scene',s).appendChild(spot);
+    if(petId)petPreview(spot.querySelector('.lb-pet-preview'),petId,pets.owned[petId].stage,'lobby',true,false,true);
+    spot.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);
   const fs = q(".fs-btn", s);
@@ -142,19 +144,18 @@ export function showLobby() {
       toast("当前浏览器不支持全屏，可添加到主屏幕或安装 APK");
     }
   };
-  // feature entries on the left: big PixelLab icons with a one-line label, a 2 x 2 grid
-  const feats = q(".lb-feats", s);
-  const feat = (img, label, cls, fn, badge) => {
-    const t = el("button", "lb-feat " + cls, `<span class="fi"><img src="assets/ui/${img}.png" alt=""></span><span class="fl outline">${label}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
+  // side tiles (Brawl Stars keeps shop / brawlers / social as square tiles)
+  const tiles = q(".lb-tiles", s);
+  const tile = (icon, label, cls, fn, badge, sub = "") => {
+    const t = el("button", "lb-tile " + cls, `<span class="ti">${icon}</span><span class="tt"><span class="tl outline">${label}</span>${sub ? `<small class="o1">${sub}</small>` : ""}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
     t.onclick = () => (sfx("click"), fn());
-    feats.appendChild(t);
+    tiles.appendChild(t);
   };
-  feat("pets", "伙伴", "t-pets", () => showPets(() => showLobby()));
+  tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 && !gachaDone() ? Math.min(99, pulls) : "", "抽天赋卡");
   const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au + (msh.freePend || 0);
-  feat("mine-pick", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "");
+  tile('<img src="assets/ui/mine-pick.png" alt="">', "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "", "搜 · 打 · 撤");
   if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
-  feat("gacha", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 && !gachaDone() ? Math.min(99, pulls) : "");
-  feat("net", "联机模式", "t-net", () => showNet());
+  tile("👥", "联机模式", "t-net", () => showNet());
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
   q(".codex-btn", s).onclick = () => (sfx("click"), import("./codex.js").then((C) => C.showCodex()));
   const play = q(".lb-play", s);
@@ -294,44 +295,57 @@ function playReact(s, st, loud) {
 }
 
 // ------------------------------------------------------------------ character window (tap the lobby hero)
-/** switch characters and read their card: the girl big on the left, her card and talents on the right, the roster below */
+// characters still in the works: shown at the end of the roster so the grid's growth can be judged
+const SOON = [{ id: "soon_gemini", name: "双子星" }, { id: "soon_qwen", name: "九千问" }];
+/** switch characters and read their card: a scrolling roster grid on the left (it grows with new characters),
+ *  the girl big in the middle, a short card on the right. Tap outside the panel to close. */
 function showCharWindow(s) {
   if (q(".cw-modal", s)) return;
   const m = load(), start = m.sel;
   const md = el("div", "modal cw-modal");
-  md.innerHTML = `<div class="panel cw-panel"><div class="cw-stage"><div class="cw-glow"></div><div class="lb-hero ready"><img alt=""></div><div class="cw-lock o1"></div></div>
-    <div class="cw-side"><div class="lb-info"></div><div class="cw-roster"></div></div><button class="btn gray small cw-x" title="关闭">✕</button></div>`;
+  md.innerHTML = `<div class="panel cw-panel"><div class="cw-roster"></div>
+    <div class="cw-stage"><div class="cw-glow"></div><div class="lb-hero ready"><img alt=""></div><div class="cw-q outline">?</div><div class="cw-lock o1"></div></div>
+    <div class="cw-side"><div class="lb-info"></div></div></div>`;
   s.appendChild(md);
-  const close = () => {
+  md.addEventListener("click", (e) => {
+    if (e.target !== md) return;
+    sfx("click");
     md.remove();
     const sel = load().sel;
     if (sel !== start) renderHero(s, sel, true);
-  };
-  q(".cw-x", md).onclick = () => (sfx("click"), close());
-  md.addEventListener("click", (e) => e.target === md && close());
-  const roster = q(".cw-roster", md);
+  });
+  const roster = q(".cw-roster", md), hero = q(".lb-hero", md), lock = q(".cw-lock", md), info = q(".lb-info", md);
+  const mark = (id) => roster.querySelectorAll(".rcard").forEach((n) => n.classList.toggle("sel", n.dataset.id === id));
   const show = (id) => {
     const c = CHARS[id], open = m.chars.includes(id), e = ELEM[c.elem];
     md.style.setProperty("--ec", e.color);
     md.style.setProperty("--eg", e.glow);
-    const hero = q(".lb-hero", md);
+    md.classList.remove("soon");
     q("img", hero).src = `assets/hero_${id}.png`;
     hero.classList.toggle("dark", !open);
     heroAnim(md, id);
     hero.onclick = () => playReact(md, hero.__anim, true);
-    const lock = q(".cw-lock", md);
     lock.textContent = open ? "" : "🔒 " + UNLOCKS[id].text;
     lock.style.display = open ? "none" : "";
-    fillInfo(q(".lb-info", md), id, () => show(id));
-    roster.querySelectorAll(".rcard").forEach((n, k) => n.classList.toggle("sel", CHAR_ORDER[k] === id));
+    fillInfo(info, id, () => show(id));
+    mark(id);
+  };
+  const showSoon = (o) => {
+    md.classList.add("soon");
+    md.style.setProperty("--ec", "#8a7ad8");
+    hero.__anim = null;
+    lock.textContent = "筹备中";
+    lock.style.display = "";
+    info.innerHTML = `<div class="li-head"><div class="li-nrow"><div class="li-name outline">${o.name}</div></div></div><p class="cw-soon o1">新角色筹备中，敬请期待。</p>`;
+    mark(o.id);
   };
   CHAR_ORDER.forEach((id) => {
     const c = CHARS[id], open = m.chars.includes(id);
     const d = el("div", "rcard" + (open ? "" : " locked"));
+    d.dataset.id = id;
     d.style.background = `linear-gradient(180deg, ${c.color}, #2a2470)`;
-    d.innerHTML = `<img src="assets/portrait_${id}.png" alt=""><img class="el-ico" src="${iconURL("elem_" + c.elem, 2)}" alt="${ELEM[c.elem].name}">`;
-    d.title = open ? c.short : UNLOCKS[id].text;
-    if (!open) d.insertAdjacentHTML("beforeend", `<div class="lock o1"><div class="ic">🔒</div><div class="bar"><i style="width:${Math.round(unlockProgress(id) * 100)}%"></i></div></div>`);
+    d.innerHTML = `<img src="assets/portrait_${id}.png" alt=""><img class="el-ico" src="${iconURL("elem_" + c.elem, 2)}" alt="${ELEM[c.elem].name}"><div class="nm o1">${c.short}</div>`;
+    if (!open) d.insertAdjacentHTML("beforeend", `<div class="lock o1"><div class="ic">🔒</div></div>`);
     // an unlocked girl becomes the one you play right away; a locked one is only previewed
     d.onclick = () => {
       sfx("click");
@@ -340,7 +354,14 @@ function showCharWindow(s) {
     };
     roster.appendChild(d);
   });
+  for (const o of SOON) {
+    const d = el("div", "rcard soon", `<div class="rq outline">?</div><div class="nm o1">${o.name}</div>`);
+    d.dataset.id = o.id;
+    d.onclick = () => (sfx("click"), showSoon(o));
+    roster.appendChild(d);
+  }
   show(m.sel);
+  q(".rcard.sel", roster)?.scrollIntoView({ block: "nearest" });
 }
 
 function bar(label, v, max, col) {
@@ -412,7 +433,6 @@ function fillInfo(info, id, refresh) {
         .map(([k, n, d]) => `<div class="sk"><div class="sk-ic"><img src="${iconURL(skillIcon(id, k === "J" ? "atk" : k === "K" ? "skill" : "ult"), 2)}" alt=""><i>${k}</i></div><div class="sk-tx"><b>${n}</b><span title="${d}">${d}</span></div></div>`)
         .join("")}
     </div>
-    <p class="li-lore o1">${c.lore}</p>
     `;
   q(".li-more", info).onclick = () => (sfx("click"), showCharDetail(id));
   info.querySelector(".li-skills").onclick = () => (sfx("click"), showCharDetail(id));
