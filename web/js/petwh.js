@@ -3,7 +3,7 @@
 // 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、宠物现身。图鉴按种类列出原色与各异色。点面板外关闭。
 import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, DEX_REWARDS, petQuality, petPortrait, skinsOf, rainbowChance, eggCount, traitCap, traitBand } from "./petdata.js";
 import { PET_SKINS, skinnedFrame } from "./petskins.js";
-import { petState, findPet, equipPet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, speedSlot, speedCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
+import { petState, findPet, equipPet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem, incubate, hatchNow, hatchNowCost, hatchSlot, slotLeft, dexCount, dexClaimable, claimDex } from "./petsave.js";
 import { mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { el } from "./util.js";
@@ -78,7 +78,7 @@ export function showWarehouse(onClose) {
   document.querySelector(".wh-modal")?.remove();
   const md = el("div", "modal pet-modal wh-modal");
   md.innerHTML = `<section class="wh-panel" role="dialog" aria-modal="true" aria-labelledby="wh-title">
-    <header class="topbar"><button class="btn gray small back-btn">◀ 返回</button><h2 id="wh-title" class="outline">宠物仓库</h2><span class="wh-hbtn"></span><div class="wh-wallet o1"></div></header>
+    <header class="topbar wh-top"><div class="wh-tl"><button class="btn gray small back-btn">◀ 返回</button><h2 id="wh-title" class="outline">宠物仓库</h2><span class="wh-hbtn"></span></div><div class="wh-wallet o1"></div></header>
     <div class="wh-body">
       <div class="wh-detail"></div>
       <div class="wh-right"><div class="wh-slots"></div><div class="wh-grid"></div></div>
@@ -89,7 +89,17 @@ export function showWarehouse(onClose) {
   md.onkeydown = (e) => e.key === "Escape" && (e.stopPropagation(), close());
   uiRoot().appendChild(md);
   let sel = petState().equipped || order(petState())[0]?.uid || null, confirmRelease = false, canvas = null, fuseA = null;
-  $(".wh-hbtn").appendChild(btn("图鉴", "small", () => (sfx("click"), codex())));
+  // 图鉴: an icon button (a small code-drawn book), right-aligned with the preview area below
+  {
+    const b = el("button", "btn small tb-ico wh-dexbtn", "<canvas width=\"14\" height=\"14\"></canvas>");
+    b.title = "宠物图鉴";
+    b.setAttribute("aria-label", "宠物图鉴");
+    const g = b.querySelector("canvas").getContext("2d"), r = (c, x, y, w, h) => ((g.fillStyle = c), g.fillRect(x, y, w, h));
+    r("#1a1020", 1, 1, 12, 12); r("#ff8ad8", 2, 2, 5, 10); r("#c04a98", 7, 2, 1, 10); r("#ff8ad8", 8, 2, 4, 10); r("#fff2f8", 3, 3, 2, 1);
+    r("#fffaf0", 9, 5, 2, 3); r("#fffaf0", 10, 4, 1, 1); r("#4ec0b0", 9, 6, 1, 1); r("#fffaf0", 3, 6, 3, 1); r("#fffaf0", 3, 8, 2, 1);
+    b.onclick = () => (sfx("click"), codex());
+    $(".wh-hbtn").appendChild(b);
+  }
 
   const wallet = () => {
     const st = petState();
@@ -107,14 +117,7 @@ export function showWarehouse(onClose) {
       const fl = EGGS[k].floor, egg = el("button", `wh-card wh-egg e-${k}` + (n ? "" : " none"), `<canvas></canvas><b class="o1">${k === "base" ? "孵化" : `${QUALITY[fl].name}起`}</b><i class="wh-n o1">×${n}</i>`);
       drawEgg(egg.querySelector("canvas"), 0, k);
       egg.title = n ? `${EGGS[k].name}：放入孵化槽，${EGGS[k].min} 分钟后孵化出${QUALITY[fl].name}或更高品质` : "击败首领、矿场撤离可获得宠物蛋，积攒也可兑换";
-      egg.onclick = () => {
-        if (!n) return toast("击败首领、矿场撤离可获得宠物蛋，积攒也可兑换");
-        const r = incubate(k);
-        if (!r.ok) return toast(r.reason);
-        sfx("click");
-        toast(`放入孵化槽，${EGGS[k].min} 分钟后孵化`);
-        refresh();
-      };
+      egg.onclick = () => (n ? (sfx("click"), eggAsk(k)) : toast("击败首领、矿场撤离可获得宠物蛋，积攒也可兑换"));
       g.appendChild(egg);
     }
     const A = fuseA && findPet(fuseA, st);
@@ -235,23 +238,14 @@ export function showWarehouse(onClose) {
   const mmss = (ms) => `${String(Math.floor(ms / 60000)).padStart(2, "0")}:${String(Math.floor(ms / 1000) % 60).padStart(2, "0")}`;
   const slots = () => {
     const st = petState(), box = $(".wh-slots");
-    box.replaceChildren(el("span", "wh-sl-h o1", "孵化槽"));
+    box.replaceChildren();
     st.slots.forEach((sl, i) => {
       const left = slotLeft(sl), c = el("div", "wh-slot" + (!sl ? " empty" : left ? "" : " ready"));
-      if (!sl) c.innerHTML = `<span class="o1">空</span>`;
+      if (!sl) c.innerHTML = `<span class="o1">孵化槽</span>`;
       else {
         c.innerHTML = `<canvas></canvas><div class="wh-sl-t"><b class="o1">${left ? mmss(left) : "可孵化"}</b><i><u style="width:${Math.round((1 - left / sl.dur) * 100)}%"></u></i></div>`;
         drawEgg(c.querySelector("canvas"), left ? 0 : 1, sl.kind);
-        if (left) {
-          const sp = btn(`加速 ${speedCost(sl)}`, "small", () => {
-            const r = speedSlot(i);
-            if (!r.ok) return toast(r.reason);
-            sfx("coin");
-            refresh();
-          });
-          sp.title = `花 ${speedCost(sl)} 星砂立即完成（每分钟 4 星砂）`;
-          c.querySelector(".wh-sl-t").appendChild(sp);
-        } else c.onclick = () => {
+        if (!left) c.onclick = () => {
           const r = hatchSlot(i);
           if (r) reveal(r.pet, false, r.kind);
         };
@@ -259,9 +253,37 @@ export function showWarehouse(onClose) {
       box.appendChild(c);
     });
   };
+  // tapping an egg in the grid: put it in a 孵化槽, or hatch it right away for 星砂
+  const eggAsk = (k) => {
+    const st = petState(), free = st.slots.some((x) => !x), cost = hatchNowCost(k), stars = mineState().stars, E = EGGS[k];
+    const ov = el("div", "modal wh-ask");
+    ov.innerHTML = `<div class="panel wh-askp"><canvas></canvas><div class="wh-askt"><b class="outline">${E.name}</b><span class="o1">孵化出${QUALITY[E.floor].name}或更高品质</span>
+      <p class="o1">放入槽位：${E.min} 分钟后可孵化${free ? "" : "（孵化槽已满）"}</p><p class="o1">直接孵化：消耗星砂 ${cost}（当前 ${stars}）</p></div><div class="wh-btns"></div></div>`;
+    drawEgg(ov.querySelector("canvas"), 0, k);
+    ov.onclick = (e) => e.target === ov && ov.remove();
+    const bb = ov.querySelector(".wh-btns");
+    const put = btn("放入槽位", "small blue", () => {
+      const r = incubate(k);
+      if (!r.ok) return toast(r.reason);
+      ov.remove();
+      sfx("click");
+      refresh();
+    });
+    put.disabled = !free;
+    const now = btn("直接孵化", "small", () => {
+      const r = hatchNow(k);
+      if (!r.ok) return toast(r.reason);
+      ov.remove();
+      refresh();
+      reveal(r.pet, false, k);
+    });
+    now.disabled = stars < cost;
+    bb.append(put, now);
+    md.appendChild(ov);
+  };
   const tickSlots = setInterval(() => (md.isConnected ? petState().slots.some((x) => x) && slots() : clearInterval(tickSlots)), 1000);
   const refresh = () => (wallet(), slots(), grid(), detail(), dexDot());
-  const dexDot = () => $(".wh-hbtn .btn")?.classList.toggle("dot", dexClaimable().length > 0);
+  const dexDot = () => $(".wh-dexbtn")?.classList.toggle("dot", dexClaimable().length > 0);
 
   // ---- hatching / fusion, revealed over the panel: shake, three cracks, the pet appears (异色 gold, 流彩 rainbow)
   const reveal = (p, again, kind = "base") => {

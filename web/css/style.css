@@ -2332,3 +2332,31 @@ body.touchmode .pet-ride-btn small { display:none; }
 .pdx-bar { height: 8px; border: 2px solid var(--ink); border-radius: 5px; background: #241a40; overflow: hidden; } .pdx-bar u { display: block; height: 100%; background: linear-gradient(90deg, #8cff7a, #2fbf4a); }
 .pdx-r.can { border-color: #ffd84a; } .pdx-r.done { opacity: .6; }
 .pdx-md .btn:not(.gray), .wh-slot .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+/* 主页通知条：提醒收蛋（点击进入宠物仓库） */
+.lb-goal.egg-note { cursor: pointer; display: flex; align-items: center; gap: 10px; border-color: #ffd84a; box-shadow: 0 5px 0 var(--ink), 0 0 0 2px rgba(255,216,74,.5) inset; }
+.lb-goal.egg-note canvas { width: 30px; height: 38px; image-rendering: pixelated; flex: none; animation: whWobble 2s ease-in-out infinite; transform-origin: 50% 90%; filter: none; border: 0; background: none; }
+.lb-goal.egg-note .g-go { margin-left: auto; color: #ffe36a; font-size: 12px; white-space: nowrap; }
+.lb-goal.egg-note:active { transform: translateY(2px); }
+/* 仓库 v4：铺满整屏高度（左栏按钮贴底），顶栏与下方两栏对齐，图鉴图标对齐预览区右边 */
+.wh-modal .wh-panel { width: auto; height: auto; }
+.wh-modal .wh-top { display: grid; grid-template-columns: minmax(0, 38%) minmax(0, 1fr); gap: 14px; }
+.wh-tl { display: flex; align-items: center; gap: 12px; min-width: 0; }
+.wh-tl .wh-hbtn { margin-left: auto; }
+.wh-modal .wh-top .wh-wallet { justify-self: end; }
+.wh-dexbtn { width: 40px; height: 40px; padding: 0 !important; display: flex; align-items: center; justify-content: center; background: linear-gradient(180deg, #ffe680, #ffb43a); }
+.wh-dexbtn canvas { width: 26px; height: 26px; image-rendering: pixelated; }
+.wh-modal .wh-body { min-height: 0; }
+.wh-detail { height: 100%; }
+/* 孵化槽：空槽写“孵化槽”；有蛋时倒计时与加粗进度条和蛋上下居中对齐 */
+.wh-slot { height: 62px; }
+.wh-slot.empty span { font-size: 12px; color: #8a80a8; }
+.wh-sl-t { justify-content: center; gap: 5px; }
+.wh-sl-t i { height: 10px; border-radius: 6px; }
+/* 点蛋：放入槽位 / 直接孵化 */
+.wh-ask { z-index: 13; }
+.wh-askp { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 16px; align-items: center; padding: 14px 18px; max-width: min(440px, 92vw); }
+.wh-askp canvas { width: 72px; height: 90px; image-rendering: pixelated; grid-row: span 2; animation: whWobble 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
+.wh-askt { display: flex; flex-direction: column; gap: 3px; } .wh-askt b { font-size: 18px; font-weight: normal; } .wh-askt span { font-size: 12px; color: #c8c0e8; }
+.wh-askt p { margin: 0; font-size: 13px; }
+.wh-askp .wh-btns { justify-content: flex-start; gap: 10px; }
+.wh-ask .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }

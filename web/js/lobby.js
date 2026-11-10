@@ -129,9 +129,6 @@ export function showLobby() {
     entry.title='宠物仓库';entry.setAttribute('aria-label','宠物仓库');q('.lb-right',s).appendChild(entry);
     if(pet)setPetPreview(petPreview(entry.querySelector('span'),pet.id,pet.stage,'lobby',true,false,true),{skin:pet.skin});
     else{const c=document.createElement('canvas');c.className='lb-pet-egg';drawEgg(c,0,eggKind);entry.querySelector('span').appendChild(c);}
-    const ready=readySlots(pets);
-    if(ready)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs ready" title="孵化槽里有蛋可以孵化了">${ready}</i>`);
-    else if(eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可放入孵化槽的宠物蛋">${Math.min(99,eggs)}</i>`);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);
@@ -181,6 +178,21 @@ export function showLobby() {
     goal.innerHTML = `<img src="assets/portrait_${next}.png" alt=""><div class="g-tx"><b>下一个目标：解锁 ${CHARS[next].short}</b><div class="g-bar"><i style="width:${Math.round(pr * 100)}%"></i></div></div><small>${Math.min(m.stats[u.stat] || 0, u.need)}/${u.need}</small>`;
     goal.title = u.text;
   } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b><span>最远 ${m.stats.best}/7 · 通关 ${m.stats.bossKills} 次</span></div>`;
+  // the notice bar also tells about eggs: ready in a 孵化槽 first, then eggs waiting with a free slot (tap: the warehouse)
+  {
+    const ps = petState(), ready = readySlots(ps), stock = eggCount(ps), free = ps.slots.some((x) => !x);
+    const msg = ready ? `${ready} 颗蛋可以孵化了` : stock && free ? `${stock} 颗宠物蛋待孵化` : "";
+    if (msg) {
+      const egg = document.createElement("canvas");
+      const readyKind = ps.slots.find((x) => x && x.t0 + x.dur <= Date.now())?.kind;
+      drawEgg(egg, ready ? 1 : 0, readyKind || ["hur", "ur", "base"].find((k) => ps.eggs[k] > 0) || "base");
+      goal.innerHTML = `<div class="g-tx"><b>${msg}</b><span>点击前往宠物仓库</span></div><small class="g-go">去仓库 ▶</small>`;
+      goal.prepend(egg);
+      goal.classList.add("egg-note");
+      goal.title = "宠物仓库";
+      goal.onclick = () => (sfx("click"), showPets(() => showLobby()));
+    }
+  }
   renderModes(s);
   renderRoster(s);
   renderHero(s, m.sel, false);

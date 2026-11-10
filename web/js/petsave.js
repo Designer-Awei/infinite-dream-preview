@@ -191,6 +191,19 @@ export function speedSlot(i) {
   save();
   return { ok: true, cost };
 }
+/** 直接孵化 costs 星砂 for the egg's whole incubation time (minutes × SPEED_STARS) */
+export const hatchNowCost = (kind) => EGGS[kind].min * SPEED_STARS;
+export function hatchNow(kind) {
+  const state = petState(), ms = mineState(), cost = hatchNowCost(kind);
+  if (!EGGS[kind] || state.eggs[kind] <= 0) return { ok: false, reason: "没有这种蛋" };
+  if (ms.stars < cost) return { ok: false, reason: `星砂不足（需要 ${cost}）` };
+  ms.stars -= cost;
+  state.eggs[kind]--;
+  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: EGGS[kind].floor });
+  addPet(state, p);
+  save();
+  return { ok: true, pet: p, cost };
+}
 /** a ready egg hatches: a young pet of a random kind with the egg's quality floor (maybe 异色 / 流彩) */
 export function hatchSlot(i) {
   const state = petState(), sl = state.slots[i];
