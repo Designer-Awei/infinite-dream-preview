@@ -1,6 +1,7 @@
 // Shared authored atlas animation for the lobby and the pet cards.
 import { A } from './assets.js';
 import { drawPetFields } from './pets.js';
+import { PET_SKINS, skinnedCell, drawAura } from './petskins.js';
 const live=new Set(),bounds=new Map();let frame=0;
 // wide: true = 512×192 strip, or an explicit [width, height] canvas. stable: one framing for all three clips of the
 // stage (so switching idle/move/cast in a showcase never rescales the creature).
@@ -11,8 +12,9 @@ export function petPreview(host,id,stage,clip='idle',tight=false,wide=false,alig
   host.replaceChildren(c);live.add(v);c.__pv=v;if(!frame)frame=requestAnimationFrame(draw);return c;
 }
 /** switch an existing preview's pet / stage / clip in place (no new canvas, restarts the clip) */
-export function setPetPreview(c,{id,stage,clip}={}){
+export function setPetPreview(c,{id,stage,clip,skin}={}){
   const v=c&&c.__pv;if(!v)return;
+  if(skin!==undefined)v.skin=skin||null; // 异色：代码改色 + 光环
   if(id!=null)v.id=id;if(stage!=null)v.stage=stage;if(clip!=null)v.clip=clip;
   v.start=performance.now();v.last=null;v.drawn=0;if(!live.has(v)&&c.isConnected)live.add(v);if(!frame)frame=requestAnimationFrame(draw);
 }
@@ -26,7 +28,8 @@ function draw(now){
     const actor=meta.actors[key],cw=actor.cw||meta.cw,ch=actor.ch||meta.ch,count=Math.max(1,list.length-1);
     const image=A.pets.images?.[actor.page||0]||A.pets.image;
     const i=Math.floor(clipAge*(clip==='move'?8:6)*(actor.native_resolution?count/8:1))%count,stamp=clip+':'+i,hasEffects=v.clip==='cast'&&v.wide;
-    if(hasEffects?now-(v.drawn||0)<33:stamp===v.last)continue;v.last=stamp;v.drawn=now;
+    const skin=v.skin&&PET_SKINS[v.skin];
+    if(hasEffects||skin?.aura?now-(v.drawn||0)<33:stamp===v.last)continue;v.last=stamp;v.drawn=now;
     const ctx=v.c.getContext('2d'),[x,y]=list[i],W=v.c.width,H=v.c.height;ctx.clearRect(0,0,W,H);ctx.imageSmoothingEnabled=false;
     const mouth=actor.mouth_frames?.[clip+'_e']?.[i]||actor.cast_mouth||actor.mouth,elapsed=age%1.333;
     const unit=actor.native_resolution?1/actor.render_scale:1;
@@ -41,7 +44,8 @@ function draw(now){
     }
     const [bx,by,w,h]=box,k=Math.min(W/(w+12),H/(h+12));ctx.save();ctx.translate((W-w*k)/2-bx*k,(v.alignTop?0:(H-h*k)/2)-by*k);ctx.scale(k,k);
     if(hasEffects&&v.id==='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
-    ctx.drawImage(image,x,y,cw,ch,0,0,cw,ch);
+    if(skin){const cell=skinnedCell(v.skin,image,x,y,cw,ch),an=actor.anchor||[cw/2,ch-8];ctx.drawImage(cell,0,0,cw,ch);if(skin.aura){ctx.save();ctx.translate(an[0],an[1]);drawAura(ctx,skin.aura,cell,an,1,now/1000);ctx.restore();}}
+    else ctx.drawImage(image,x,y,cw,ch,0,0,cw,ch);
     if(hasEffects&&v.id!=='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
     ctx.restore();
   }

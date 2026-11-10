@@ -1,11 +1,13 @@
 import { PETS, PET_ORDER, PET_STAGES, PET_COST, PET_EVOLVE, petPortrait } from "./petdata.js";
-import { petState, exchangePet, equipPet, evolvePet } from "./petsave.js";
+import { petState, findPet, exchangePet, equipPet, evolvePet } from "./petsave.js";
 import { load, mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { el } from "./util.js";
 import { sfx } from "./audio.js";
 import { petPreview, setPetPreview } from "./petpreview.js";
 import { mountPetDemo } from "./petdemo.js";
+
+export { showWarehouse as showPets } from "./petwh.js";
 
 // 梦境伙伴: left, one fixed preview stage as tall as the info column (pet chips + arrows switch pets with a short
 // slide, stage badges along an evolution track switch 幼年/成长/终极); right, the pet's skills as icon + description
@@ -40,12 +42,15 @@ const ACTS = [
 ];
 const icon = (id, kind) => `assets/pets/icons/${id}_${kind}.png`;
 
-export function showPets(onClose) {
-  document.querySelector(".pet-modal")?.remove();
-  const start = petState();
-  let selected = start.equipped || PET_ORDER.find((id) => start.owned[id]) || PET_ORDER[0];
-  let stage = start.owned[selected]?.stage || 1, act = null, demo = null, busy = 0;
-  const md = el("div", "modal pet-modal");
+/** the partner detail panel (skills, demo, trial, exchange). uid: the warehouse pet it was opened for — its kind
+ *  shows first, its 异色 is on the portrait and 携带 / 进化 act on that pet; other kinds are browsed as a codex */
+export function showPetDetail(uid, onClose) {
+  document.querySelector(".pet-detail")?.remove();
+  const start = petState(), inst = uid ? findPet(uid, start) : null;
+  const ownOf = (id) => (inst && id === inst.id ? findPet(inst.uid) : petState().owned[id]) || null;
+  let selected = inst?.id || start.owned[start.list.find((p) => p.uid === start.equipped)?.id]?.id || PET_ORDER.find((id) => start.owned[id]) || PET_ORDER[0];
+  let stage = ownOf(selected)?.stage || 1, act = null, demo = null, busy = 0;
+  const md = el("div", "modal pet-modal pet-detail");
   md.innerHTML = `<section class="panel pet-panel pp" role="dialog" aria-modal="true" aria-labelledby="pet-title">
     <header><h2 id="pet-title">梦境伙伴</h2><div class="pet-wallet o1"></div></header>
     <div class="pp-body">
@@ -74,6 +79,7 @@ export function showPets(onClose) {
   uiRoot().appendChild(md);
   // the one portrait canvas: idle with an occasional cast, one framing for every pose, so it never rescales
   const canvas = petPreview($(".pp-anim"), selected, stage, "lobby", false, [480, 300], false, true);
+  setPetPreview(canvas, { skin: ownOf(selected)?.skin || null });
   // ---- the skill demo (a real fight) replaces the portrait while a skill row is picked
   const showDemo = () => {
     view.classList.toggle("demo", !!act);
@@ -86,18 +92,18 @@ export function showPets(onClose) {
   };
   // ---- left stage: chips, tag, badges and the evolution track
   const stageUI = () => {
-    const st = petState(), own = st.owned[selected], d = PETS[selected];
+    const st = petState(), own = ownOf(selected), d = PETS[selected], carried = !!own && st.equipped === own.uid;
     view.parentElement.style.setProperty("--pc", d.color);
     all(".pp-pick").forEach((b) => {
-      const id = b.dataset.id, o = st.owned[id];
+      const id = b.dataset.id, o = ownOf(id);
       b.querySelector("img").src = petPortrait(id, o?.stage || 1);
       b.classList.toggle("on", id === selected);
       b.classList.toggle("owned", !!o);
-      b.classList.toggle("carried", st.equipped === id);
+      b.classList.toggle("carried", !!o && st.equipped === o.uid);
     });
     const tag = $(".pp-tag");
-    tag.textContent = st.equipped === selected ? "已携带" : own ? "已拥有" : "未拥有";
-    tag.className = "pp-tag" + (st.equipped === selected ? " carried" : own ? "" : " locked");
+    tag.textContent = carried ? "已携带" : own ? "已拥有" : "未拥有";
+    tag.className = "pp-tag" + (carried ? " carried" : own ? "" : " locked");
     view.classList.toggle("unowned", !own);
     all(".pp-badge").forEach((b) => {
       const s = +b.dataset.stage;
@@ -118,7 +124,7 @@ export function showPets(onClose) {
   };
   // ---- right column (text swapped in place; a short fade when the pet changes)
   const info = () => {
-    const st = petState(), meta = load(), ms = mineState(), d = PETS[selected], own = st.owned[selected];
+    const st = petState(), meta = load(), ms = mineState(), d = PETS[selected], own = ownOf(selected);
     $(".pet-wallet").textContent = `积攒 ${meta.stash || 0} · 星砂 ${ms.stars}`;
     $(".pp-name").textContent = d.name;
     $(".pp-name").style.color = d.color;
@@ -140,11 +146,11 @@ export function showPets(onClose) {
     const a = $(".pp-own");
     a.replaceChildren();
     if (own) {
-      a.appendChild(btn(st.equipped === selected ? "取消携带" : "携带出战", "small blue", () => (equipPet(st.equipped === selected ? null : selected), sfx("click"), refresh())));
+      a.appendChild(btn(st.equipped === own.uid ? "取消携带" : "携带出战", "small blue", () => (equipPet(st.equipped === own.uid ? null : own.uid), sfx("click"), refresh())));
       if (own.stage < 3) {
         const next = PET_EVOLVE[own.stage + 1];
         const b = btn(`进化 · 星砂 ${next.stars}`, "small", () => {
-          const r = evolvePet(selected);
+          const r = evolvePet(own.uid);
           if (!r.ok) return toast(r.reason);
           sfx("ssr");
           toast(`${d.name}进化为${PET_STAGES[r.stage - 1]}！`);
@@ -184,7 +190,7 @@ export function showPets(onClose) {
     if (id === selected || busy) return;
     const dir = PET_ORDER.indexOf(id) > PET_ORDER.indexOf(selected) ? 1 : -1;
     selected = id;
-    stage = petState().owned[id]?.stage || 1;
+    stage = ownOf(id)?.stage || 1;
     act = null;
     sfx("card");
     busy = 1;
@@ -192,7 +198,7 @@ export function showPets(onClose) {
     view.classList.add("out");
     $(".pp-fade").classList.add("out");
     setTimeout(() => {
-      setPetPreview(canvas, { id, stage });
+      setPetPreview(canvas, { id, stage, skin: ownOf(id)?.skin || null });
       showDemo();
       refresh();
       view.style.setProperty("--dx", `${dir * 34}px`);

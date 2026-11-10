@@ -18,7 +18,7 @@ import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
 import { PETS, petExperience } from "./petdata.js";
-import { grantPetXP } from "./petsave.js";
+import { grantPetXP, grantEggs, petState } from "./petsave.js";
 import { showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
@@ -233,8 +233,11 @@ export const app = {
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
-    const petXP = this.me.pet && grantPetXP(this.me.pet.id, petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses}));
+    const petXP = this.me.pet && grantPetXP(petState().equipped || this.me.pet.id, petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses}));
     if (petXP) extras.push(["伙伴经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
+    // 伙伴蛋：每击败一个首领 1 颗（一局最多 3 颗），在伙伴仓库孵化
+    const eggs = grantEggs(Math.min(3, rs.xpBosses || 0));
+    if (eggs) extras.push(["伙伴蛋", `+${eggs}（伙伴仓库孵化）`]);
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {

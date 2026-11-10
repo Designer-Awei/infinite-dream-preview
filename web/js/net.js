@@ -429,7 +429,7 @@ function snapshot(g) {
     const fl = (p.moving ? 1 : 0) | (p.downed ? 2 : 0) | (p.dashT > 0 ? 4 : 0) | (p.hurtT > 0 ? 8 : 0) | (p.castT > 0 ? 16 : 0) | (p.input.atk ? 32 : 0);
     const bf = {};
     for (const k in p.buff) if (p.buff[k] > 0) bf[k] = Math.round(p.buff[k] * 10) / 10;
-    const pet=p.pet?{id:p.pet.id,stage:p.pet.stage,x:round2(p.pet.x),y:round2(p.pet.y),face:round2(p.pet.face),moving:p.pet.moving,castT:round2(p.pet.castT),castMax:round2(p.pet.castMax),anim:round2(p.pet.anim),walkT:round2(p.pet.walkT||0),blinkT:round2(p.pet.blinkT||0),warpSeq:p.pet.warpSeq||0}:null;
+    const pet=p.pet?{id:p.pet.id,stage:p.pet.stage,skin:p.pet.skin||null,x:round2(p.pet.x),y:round2(p.pet.y),face:round2(p.pet.face),moving:p.pet.moving,castT:round2(p.pet.castT),castMax:round2(p.pet.castMax),anim:round2(p.pet.anim),walkT:round2(p.pet.walkT||0),blinkT:round2(p.pet.blinkT||0),warpSeq:p.pet.warpSeq||0}:null;
     return [p.id, r1(p.x), r1(p.y), round2(p.face), p.hp, p.maxHp, p.shield, p.maxShield, fl, Math.round(p.ult * 100), p.coins, p.cubes, Math.round(p.recoil), Math.round((Math.max(0, p.skillCd) / (CHARS[p.cid].skill.cd * p.st.cd)) * 100), Math.round((Math.max(0, p.dashCd) / 1.6) * 100), bf, p.target ? p.target.id : 0, p.cards, p.infuseElem || null, round2(p.reviveT), round2(p.respawnT || 0), p.barrier > 0 ? 1 : 0, p.st, p.fusions, pet, !!p.mounted];
   });
   const E = g.enemies.map((e) => [e.id, e.type, r1(e.x), r1(e.y), Math.ceil(e.hp), Math.ceil(e.maxHp), (e.elite ? 1 : 0) | (e.flash > 0 ? 4 : 0) | (e.freezeT > 0 ? 8 : 0) | (e.slowT > 0 ? 16 : 0) | (e.burnT > 0 ? 32 : 0), e.st, r1(e.z || 0), e.face, Object.keys(e.marks).filter((k) => e.marks[k] > g.time).join(","), e.lx != null ? r1(e.lx) : null, e.ly != null ? r1(e.ly) : null, round2(Math.max(0, e.spawnT)), round2(e.cd), e.bubble > g.time ? 1 : 0]);
@@ -489,7 +489,7 @@ function applySnapshot(app, s) {
     if(pet && validPet(pet)) {
       const q=p.pet||{...pet};p.pet=q;
       if(Math.hypot(q.x-pet.x,q.y-pet.y)>120){q.x=pet.x;q.y=pet.y;}
-      Object.assign(q,{id:pet.id,stage:pet.stage,tx:pet.x,ty:pet.y,face:pet.face,moving:pet.moving,castT:pet.castT,castMax:pet.castMax,blinkT:pet.blinkT||0,warpSeq:pet.warpSeq||0});
+      Object.assign(q,{id:pet.id,stage:pet.stage,skin:validPet(pet)?.skin||null,tx:pet.x,ty:pet.y,face:pet.face,moving:pet.moving,castT:pet.castT,castMax:pet.castMax,blinkT:pet.blinkT||0,warpSeq:pet.warpSeq||0});
       if(q.anim==null)q.anim=pet.anim;
       if(q.walkT==null)q.walkT=pet.walkT||0;
     } else p.pet=null;

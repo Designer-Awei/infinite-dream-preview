@@ -14,10 +14,11 @@ import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMa
 import { T } from "./data.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
-import { showPets } from "./petui.js";
+import { showPets, showPetDetail } from "./petui.js";
+import { drawEgg } from "./petwh.js";
 import { petPortrait } from "./petdata.js";
 import { petState } from './petsave.js';
-import { petPreview } from './petpreview.js';
+import { petPreview, setPetPreview } from './petpreview.js';
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -118,11 +119,14 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
-  const pets=petState(),petId=pets.equipped||Object.keys(pets.owned)[0];
-  if(petId){
+  // the partner entry (伙伴仓库): the carried pet (with its 异色), else the most grown one; an egg when there are only eggs
+  const pets=petState(),pet=pets.list.find((p)=>p.uid===pets.equipped)||pets.list[0];
+  if(pet||pets.eggs){
     const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
-    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-right',s).appendChild(entry);
-    petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true,false,true);
+    entry.title='伙伴仓库';entry.setAttribute('aria-label','伙伴仓库');q('.lb-right',s).appendChild(entry);
+    if(pet)setPetPreview(petPreview(entry.querySelector('span'),pet.id,pet.stage,'lobby',true,false,true),{skin:pet.skin});
+    else{const c=document.createElement('canvas');c.className='lb-pet-egg';drawEgg(c);entry.querySelector('span').appendChild(c);}
+    if(pets.eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可孵化的伙伴蛋">${Math.min(99,pets.eggs)}</i>`);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);
@@ -1354,6 +1358,6 @@ function showStash() {
     </div></div>`;
 
   md.onclick = (e) => e.target === md && md.remove();
-  md.querySelector('.st-it.ur button').onclick=()=>{md.remove();showPets(()=>showGacha());};
+  md.querySelector('.st-it.ur button').onclick=()=>{md.remove();showPetDetail(null,()=>showGacha());};
   uiRoot().appendChild(md);
 }
