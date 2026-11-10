@@ -1,7 +1,7 @@
 // The six girls' kits: normal attacks, small skills (K) and ultimates (L), plus fusion bullets.
 import { CHARS, ELEM } from "./data.js";
 import { dist, angTo, TAU } from "./util.js";
-import { BLOCKS_SHOT, tileAt } from "./map.js";
+import { BLOCKS_SHOT, WALL, tileAt, moveCircle } from "./map.js";
 import { mountedAttack, mountedUlt, overheadY } from "./pets.js";
 
 const MUZZLE = 20; // bullets leave from chest height
@@ -29,16 +29,19 @@ export function fireAttack(g, p, a, target) {
   if (p.cid === "gpt" && p.buff.ultOn > 0) {
     const len = c.atk.range * s.range * 1.1, x0 = p.x, y0 = p.y - MUZZLE;
     let x1 = x0 + Math.cos(a) * len, y1 = y0 + Math.sin(a) * len;
-    // stop at walls
-    for (let d = 8; d < len; d += 8) {
-      const x = x0 + Math.cos(a) * d, y = y0 + Math.sin(a) * d;
-      if (BLOCKS_SHOT(tileAt(g.map, x, y))) {
+    // full pierce: crates and barrels on the path all take the hit and the beam goes on; only a wall stops it
+    const crossed = new Set();
+    for (let d = 8; d < len; d += 4) {
+      const x = x0 + Math.cos(a) * d, y = y0 + Math.sin(a) * d, t = tileAt(g.map, x, y);
+      if (t === WALL) {
         x1 = x;
         y1 = y;
-        // the beam stops at the first blocking tile: a crate or barrel there takes the hit
-        const ti = Math.floor(y / 32) * g.map.W + Math.floor(x / 32);
-        if (g.host && g.map.crates[ti]) g.damageTile(ti, c.atk.dmg * 1.6 * k, p);
         break;
+      }
+      const ti = Math.floor(y / 32) * g.map.W + Math.floor(x / 32);
+      if (BLOCKS_SHOT(t) && !crossed.has(ti)) {
+        crossed.add(ti);
+        if (g.host && g.map.crates[ti]) g.damageTile(ti, c.atk.dmg * 1.6 * k, p);
       }
     }
     g.line(x0, y0, x1, y1, "#e8dcff", 4, 0.12, "beam");
@@ -177,31 +180,51 @@ export function castSkill(g, p, cid, a, target, pw = 1) {
     }
     case "gpt": {
       // 龙跃突刺: she leaps forward along the aim (≈115 px, invulnerable), every foe on the path takes a thrust
-      // and a 灼印 and is flung aside; landing, the dragon flame bursts around the spearhead.
+      // and a 灼印; non-boss foes are caught on the spearhead and dragged along to the landing spot (bosses are
+      // flung aside), where the dragon flame bursts on the whole pile.
       p.dashDx = Math.cos(a);
       p.dashDy = Math.sin(a);
       p.dashT = 0.22;
       p.lastDash = g.time;
       p.invuln = Math.max(p.invuln, 0.34);
       p.face = a;
-      const hit = new Set();
+      const hit = new Set(), held = [];
+      // the spot held foes are pulled to: just ahead of the spearhead, a little fanned out so they don't stack
+      const tip = (i) => {
+        const sp = (i % 2 ? 1 : -1) * Math.ceil(i / 2) * 7;
+        return { x: p.x + Math.cos(a) * 18 - Math.sin(a) * sp, y: p.y + Math.sin(a) * 12 + Math.cos(a) * sp };
+      };
+      let landed = false;
+      const pull = (dt, k) => !landed && held.forEach((e, i) => {
+        if (e.dead) return;
+        const t = tip(i);
+        e.kbx = e.kby = 0;
+        e.stunT = Math.max(e.stunT || 0, 0.35);
+        moveCircle(g.map, e, (t.x - e.x) * k, (t.y - e.y) * k, !!e.def.fly);
+      });
       g.addZone({
         kind: "lance", x: p.x, y: p.y, r: 0, life: 0.3, side: "p", owner: p.id,
-        update: () => {
+        update: (z, dt) => {
           for (const e of g.enemies) {
             if (e.dead || e.spawnT > 0 || hit.has(e) || dist(p.x, p.y - 10, e.x, e.y - e.r) > e.r + 24) continue;
             hit.add(e);
             g.hit(e, 9 * pw, { p, elem: "dragon" });
             g.fx.spawn("impacts/hit-spark", e.x, e.y - e.r, { angle: a + Math.PI, palette: pal.slice(1, 8), light: 0.8, opts: { height: 0 } });
-            // flung to the side of her path
-            const side = Math.sign(Math.cos(a) * (e.y - p.y) - Math.sin(a) * (e.x - p.x)) || 1;
-            g.knock(e, e.x + Math.sin(a) * side * 20, e.y - Math.cos(a) * side * 20, 240);
+            if (!e.boss) held.push(e);
+            else {
+              // bosses can't be carried: flung to the side of her path
+              const side = Math.sign(Math.cos(a) * (e.y - p.y) - Math.sin(a) * (e.x - p.x)) || 1;
+              g.knock(e, e.x + Math.sin(a) * side * 20, e.y - Math.cos(a) * side * 20, 240);
+            }
           }
+          pull(dt, Math.min(1, dt * 30));
           if (g.pvp) for (const o of g.players) if (o !== p && !o.downed && !hit.has(o) && dist(p.x, p.y, o.x, o.y) < 30) (hit.add(o), g.hit(o, 9 * pw, { p }));
         },
       });
       g.after(0.24, () => {
         if (p.dead || p.downed) return;
+        pull(0, 1); // the pile lands with her, then is let go
+        landed = true;
         const bx = p.x + Math.cos(a) * 16, by = p.y - 8 + Math.sin(a) * 12;
         g.vfx("explosions/plasma-explosion", bx, by, { palette: pal, life: 0.4 });
         g.line(bx, by, bx, by, ELEM.dragon.glow, 30, 0.3, "spark");
