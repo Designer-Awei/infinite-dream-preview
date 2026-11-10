@@ -135,7 +135,7 @@ export function showWarehouse(onClose) {
     for (const k of EGG_KINDS) {
       const n = st.eggs[k];
       if (k !== "base" && !n) continue;
-      const fl = EGGS[k].floor, egg = el("button", `wh-card wh-egg e-${k}` + (n ? "" : " none"), `<canvas></canvas><b class="o1">${k === "base" ? "孵化" : `${QUALITY[fl].name}起`}</b><i class="wh-n o1">×${n}</i>`);
+      const fl = EGGS[k].floor, egg = el("button", `wh-card wh-egg e-${k}` + (n ? "" : " none"), `<canvas></canvas><b class="o1">${k === "base" ? "孵化" : `${QUALITY[fl].name}`}</b><i class="wh-n o1">×${n}</i>`);
       drawEgg(egg.querySelector("canvas"), 0, k);
       egg.title = n ? `${EGGS[k].name}：放入孵化槽，${EGGS[k].min} 分钟后孵化出${QUALITY[fl].name}或更高品质` : "击败首领、矿场撤离可获得宠物蛋，积攒也可兑换";
       egg.onclick = () => (n ? (sfx("click"), eggAsk(k)) : toast("击败首领、矿场撤离可获得宠物蛋，积攒也可兑换"));
