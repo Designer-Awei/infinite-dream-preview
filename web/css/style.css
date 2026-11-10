@@ -2360,3 +2360,16 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-askt p { margin: 0; font-size: 13px; }
 .wh-askp .wh-btns { justify-content: flex-start; gap: 10px; }
 .wh-ask .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+/* 收蛋通知条：不比原通知条高多少——蛋缩小并上下居中，文字加大 */
+.lb-goal.egg-note { padding-top: 4px; padding-bottom: 4px; }
+.lb-goal.egg-note canvas { display: block; align-self: center; width: 24px; height: 30px; margin: -3px 0; }
+.lb-goal.egg-note .g-tx { justify-content: center; }
+.lb-goal.egg-note .g-tx b { font-size: 15px; line-height: 1.2; }
+.lb-goal.egg-note .g-go { font-size: 13px; align-self: center; }
+@media (max-height: 420px) { .lb-goal.egg-note { padding-top: 2px; padding-bottom: 2px; } .lb-goal.egg-note canvas { width: 16px; height: 20px; margin: -2px 0; } .lb-goal.egg-note .g-tx b { font-size: 13px; } .lb-goal.egg-note .g-go { font-size: 11px; } }
+/* 仓库顶栏：返回、标题、图鉴同一高度 */
+.wh-tl { height: 40px; }
+.wh-tl .back-btn { height: 40px; padding: 0 12px !important; display: inline-flex; align-items: center; box-sizing: border-box; }
+.wh-tl h2 { height: 40px; line-height: 40px; }
+@media (max-height: 420px) { .wh-tl, .wh-tl .back-btn, .wh-tl h2, .wh-dexbtn { height: 34px; } .wh-tl h2 { line-height: 34px; } .wh-dexbtn { width: 34px; } .wh-dexbtn canvas { width: 22px; height: 22px; } }
+@media (max-height: 420px) { .topbar .wh-dexbtn.tb-ico { width: 34px; height: 34px; } }
