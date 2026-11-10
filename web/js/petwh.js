@@ -155,6 +155,7 @@ export function showWarehouse(onClose) {
         sfx("click");
         sel = p.uid;
         confirmRelease = false;
+        injected = null;
         refresh();
       };
       g.appendChild(c);
@@ -173,7 +174,7 @@ export function showWarehouse(onClose) {
     if (!canvas || !canvas.isConnected) {
       box.innerHTML = `<div class="wh-view"><div class="wh-anim"></div><button class="wh-lockbtn" aria-label="上锁"></button><div class="wh-score"><i class="o1">评分</i><b class="outline"></b></div></div>
         <div class="wh-head" title="点击上方宠物查看技能详情"><b class="wh-name outline"></b><span class="wh-tags o1"></span></div>
-        <div class="wh-traits o1"></div><div class="wh-xp"><u></u><span class="o1"></span></div><div class="wh-btns"></div>`;
+        <div class="wh-traits o1"></div><div class="wh-xprow"><div class="wh-xp"><u></u><span class="o1"></span></div><button class="wh-xpadd" aria-label="注入经验"><i></i></button></div><div class="wh-btns"></div>`;
       canvas = petPreview(box.querySelector(".wh-anim"), p.id, p.stage, "lobby", false, [640, 300], false, true, true);
       box.querySelector(".wh-view").insertAdjacentHTML("beforeend", `<span class="wh-hint o1">点击查看详情</span>`);
     }
@@ -214,27 +215,30 @@ export function showWarehouse(onClose) {
     const from = to === PET_EVOLVE[3].xp ? PET_EVOLVE[2].xp : 0;
     box.querySelector(".wh-xp u").style.width = Math.round(Math.min(1, to ? (p.xp - from) / (to - from) : 1) * 100) + "%";
     box.querySelector(".wh-xp span").textContent = `${PET_STAGES[p.stage - 1]} · ` + (to ? `经验 ${p.xp}/${to}` : "经验已满");
+    // 注入经验: the round + at the bar's right end (only while not full). First tap arms it with a hint, then each
+    // tap moves up to 300 xp from the pool (幼年 → 终极 in four taps)
+    {
+      const add = box.querySelector(".wh-xpadd"), nx = injectNext(p, st), armed = injected === p.uid;
+      add.hidden = p.xp >= PET_MAX_XP;
+      add.classList.toggle("armed", armed);
+      add.classList.toggle("off", !nx);
+      add.title = nx ? `注入经验 +${nx}（经验池 ${st.pool}）` : "经验池是空的";
+      add.onclick = () => {
+        if (!nx) return toast("经验池是空的");
+        if (!armed) return (injected = p.uid), sfx("click"), toast(`再点一次注入 ${nx} 经验（经验池 ${st.pool}）`), refresh();
+        const r = injectXP(p.uid);
+        if (!r.ok) return toast(r.reason);
+        sfx(r.evolved ? "ssr" : "heal");
+        if (r.evolved) toast(`${d.name}进化为${PET_STAGES[r.stage - 1]}！`);
+        refresh();
+      };
+    }
     // buttons: the pet's own actions on the left, 详情 / 放生 apart on the right
     const b = box.querySelector(".wh-btns");
     b.replaceChildren();
     const carried = st.equipped === p.uid;
     const go = btn(carried ? "休息" : "出战", carried ? "small gray" : "small blue", () => (equipPet(carried ? null : p.uid), sfx("click"), refresh()));
     b.appendChild(go);
-    if (to) {
-      // each tap moves up to 300 xp from the pool (幼年 → 终极 in four taps); after the first tap the label reads the step
-      const nx = injectNext(p, st);
-      const inj = btn(injected === p.uid && nx ? `+${nx}` : "注入经验", "small green wh-inj", () => {
-        const r = injectXP(p.uid);
-        if (!r.ok) return toast(r.reason);
-        injected = p.uid;
-        sfx(r.evolved ? "ssr" : "heal");
-        if (r.evolved) toast(`${d.name}进化为${PET_STAGES[r.stage - 1]}！`);
-        refresh();
-      });
-      inj.disabled = st.pool <= 0;
-      inj.title = `从经验池注入，每次 ${nx || 300}`;
-      b.appendChild(inj);
-    }
     // 淬炼: 淬灵露 (流彩晶 for a 流彩 pet) raises a random trait; shown while you have the item
     const it = itemFor(p);
     if (st.items[it.k] > 0) {
