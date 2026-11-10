@@ -2441,3 +2441,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-anim canvas, .pp .pp-anim canvas { object-fit: cover; }
 /* notice bar: 2px below its old spot (chosen from the 2/4/6/8 px versions) */
 .lb-goal.slim { margin-top: 2px; margin-bottom: -2px; }
+/* the detail preview draws each stage's own ground shadow on its canvas (under that stage's feet) */
+.pp .pp-view::before { display: none; }
+.pp .pp-view.demo::before { display: none; }

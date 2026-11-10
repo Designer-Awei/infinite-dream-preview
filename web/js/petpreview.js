@@ -49,6 +49,8 @@ function draw(now){
       // real==='center': each stage's resting pose centred up and down instead of standing on the 终极's ground line
       const rest=v.real==='center'&&boxOf(key,'rest',null,meta.clips[key].idle_e.slice(0,1),actor.page);
       ctx.translate(W/2-(bx+w/2)*k,rest?H/2-(rest[1]+rest[3]/2)*k:ground-an[1]*k);ctx.scale(k,k);
+      // centred stages carry their own ground shadow, under this stage's feet and as wide as its resting pose
+      if(rest){const sx=rest[0]+rest[2]/2,sy=rest[1]+rest[3]-2,rx=rest[2]*0.42,ry=rx*0.16;ctx.save();ctx.translate(sx,sy);ctx.scale(1,ry/rx);const g=ctx.createRadialGradient(0,0,0,0,0,rx);g.addColorStop(0,'rgba(10,4,24,.5)');g.addColorStop(1,'rgba(10,4,24,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,rx,0,Math.PI*2);ctx.fill();ctx.restore();}
     }else{const k=Math.min(W/(w+12),H/(h+12));ctx.translate((W-w*k)/2-bx*k,(v.alignTop?0:(H-h*k)/2)-by*k);ctx.scale(k,k);}
     if(hasEffects&&v.id==='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
     if(skin){const cell=skinnedFrame(v.skin,image,x,y,cw,ch,now/1000),an=actor.anchor||[cw/2,ch-8];ctx.drawImage(cell,0,0,cw,ch);if(skin.aura){ctx.save();ctx.translate(an[0],an[1]);drawAura(ctx,skin.aura,cell,an,1,now/1000);ctx.restore();}}
