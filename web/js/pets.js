@@ -1,6 +1,6 @@
 // Host-authoritative companions; clients render plain snapshot state.
 import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS, DRAGON_FIREBALL, DRAGON_TORNADO } from './petdata.js';
-import { PET_SKINS, skinnedCell, drawAura } from './petskins.js';
+import { PET_SKINS, skinnedFrame, drawAura } from './petskins.js';
 import { A } from './assets.js';
 import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
 import { updateCompanion, PET_MOTION } from './petai.js';
@@ -312,7 +312,7 @@ export function drawPet(ctx,player,time,ride=false) {
   ctx.translate(0,-flightLift(player));
   const cw=actor.cw||assets.meta.cw,ch=actor.ch||assets.meta.ch,anchor=actor.anchor||[cw/2,ch-8];
   ctx.imageSmoothingEnabled=!!actor.native_resolution;if(actor.native_resolution)ctx.imageSmoothingQuality='high';const img=assets.images?.[actor.page||0]||assets.image,skin=q.skin&&PET_SKINS[q.skin];
-  if(skin){const cell=skinnedCell(q.skin,img,pos[0],pos[1],cw,ch);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 换皮：代码改色 + 代码光环
+  if(skin){const cell=skinnedFrame(q.skin,img,pos[0],pos[1],cw,ch,time);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 换皮：代码改色 + 代码光环
   else ctx.drawImage(img,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
 }
 export function drawMountedPet(ctx,player,time,shadow=true) {

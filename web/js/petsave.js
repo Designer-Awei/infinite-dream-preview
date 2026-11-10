@@ -1,5 +1,5 @@
 import { load, save, mineState } from "./save.js";
-import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, RELEASE_XP, normalizePets, rollPet } from "./petdata.js";
+import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, normalizePets, rollPet, rainbowChance, petQuality } from "./petdata.js";
 
 // 伙伴仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
 export function petState() {
@@ -14,7 +14,8 @@ export function findPet(ref, state = petState()) {
 const addPet = (state, p) => {
   state.list.push(p);
   (state.dex[p.id] ||= { skins: [] });
-  if (p.skin && !state.dex[p.id].skins.includes(p.skin)) state.dex[p.id].skins.push(p.skin);
+  const k = p.skin || "base";
+  if (!state.dex[p.id].skins.includes(k)) state.dex[p.id].skins.push(k);
   if (!state.equipped) state.equipped = p.uid;
 };
 /** UR exchange (积攒): a first pet of a kind you don't have yet */
@@ -25,17 +26,23 @@ export function exchangePet(id, rarity) {
   const cost = PET_COST[rarity];
   if (!Number.isFinite(m.stash) || m.stash < cost) return { ok: false, reason: "积攒点不足" };
   m.stash -= cost;
-  const p = rollPet(id);
+  const p = rollPet(id, Math.random, { rainbow: rollRainbow(state) });
   addPet(state, p);
   save();
   return { ok: true, first: state.list.length === 1, stage: 1, pet: p };
 }
-/** hatch one egg: a young pet of a random kind (maybe 异色) */
+/** one 流彩 roll with the growing chance: resets the count when it hits */
+function rollRainbow(state) {
+  const hit = Math.random() < rainbowChance(state.rb);
+  state.rb = hit ? 0 : state.rb + 1;
+  return hit;
+}
+/** hatch one egg: a young pet of a random kind (maybe 异色, maybe 流彩) */
 export function hatchEgg() {
   const state = petState();
   if (state.eggs <= 0) return null;
   state.eggs--;
-  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)]);
+  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state) });
   addPet(state, p);
   save();
   return p;
@@ -91,14 +98,32 @@ export function toggleLock(uid) {
   save();
   return p.lock;
 }
-/** 放生：a pet that isn't locked or carried leaves; its RELEASE_XP goes into the pool */
+/** pets that can be used up (fusion / release): not locked, not carried */
+export const spendable = (p, state = petState()) => !!p && !p.lock && state.equipped !== p.uid;
+/** 融合：two pets of one kind become one young pet of that kind — traits rolled with advantage, 异色 25% (50% if a
+ *  parent is 异色, often inheriting its colour); counts as a hatch for the 流彩 chance */
+export function fusePets(a, b) {
+  const state = petState(), A = findPet(a, state), B = findPet(b, state);
+  if (!A || !B || A === B || A.id !== B.id) return { ok: false, reason: "需要两只同种伙伴" };
+  if (!spendable(A, state) || !spendable(B, state)) return { ok: false, reason: "上锁或出战中的伙伴不能融合" };
+  const skins = [A.skin, B.skin].filter((k) => k && k !== "flow");
+  const p = rollPet(A.id, Math.random, { rainbow: rollRainbow(state), best: true, shiny: skins.length ? FUSE_SHINY_PARENT : FUSE_SHINY, skins });
+  state.list = state.list.filter((q) => q !== A && q !== B);
+  addPet(state, p);
+  save();
+  return { ok: true, pet: p };
+}
+/** what releasing a pet puts into the pool: by quality, 普通 100 … 传说 600, 流彩 1000 */
+export const releaseXP = (p) => QUALITY[petQuality(p)].xp;
+/** 放生：a pet that isn't locked or carried leaves; its quality's xp goes into the pool */
 export function releasePet(uid) {
   const state = petState(), i = state.list.findIndex((p) => p.uid === uid), p = state.list[i];
   if (!p) return { ok: false, reason: "没有这只伙伴" };
   if (p.lock) return { ok: false, reason: "已上锁，先解锁" };
   if (state.equipped === uid) return { ok: false, reason: "出战中的伙伴不能放生" };
+  const xp = releaseXP(p);
   state.list.splice(i, 1);
-  state.pool += RELEASE_XP;
+  state.pool += xp;
   save();
-  return { ok: true, xp: RELEASE_XP };
+  return { ok: true, xp };
 }

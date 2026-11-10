@@ -25,15 +25,23 @@ export const TRAITS = {
   carry: { name: "共鸣", desc: "携带加成", min: 10, max: 35 },
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
-export const SKIN_POOL = { dragon: ["frost", "shadow", "gold", "jade", "ember"], fox: ["shadow", "jade", "ember"], phoenix: ["blaze", "shadow", "gold", "jade"] };
-export const SHINY_CHANCE = 0.06;
-export const RELEASE_XP = 400;
+// 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality
+export const SKIN_POOL = { dragon: ["frost", "sakura", "gold", "jade", "ember"], fox: ["sakura", "jade", "ember", "frost"], phoenix: ["blaze", "sakura", "gold", "jade"] };
+export const skinsOf = (id) => [...SKIN_POOL[id], "flow"];
+export const SHINY_CHANCE = 0.06, FUSE_SHINY = 0.25, FUSE_SHINY_PARENT = 0.5;
+// 流彩：0.2% a hatch (fusions count), +0.05% for every hatch without one, at most 5%; back to 0.2% once one hatches
+export const RAINBOW = { base: 0.002, step: 0.0005, max: 0.05 };
+export const rainbowChance = (n) => Math.min(RAINBOW.max, RAINBOW.base + Math.max(0, n) * RAINBOW.step);
+// quality: white / green / blue / purple / gold by how high the two rolls landed; 流彩 = three traits, all at the top
 export const QUALITY = [
-  { name: "普通", col: "#d8d0e8" },
-  { name: "优秀", col: "#6ee08a" },
-  { name: "稀有", col: "#6ab8ff" },
-  { name: "完美", col: "#ffcf4a" },
+  { name: "普通", col: "#e8e4f0", xp: 100 },
+  { name: "优秀", col: "#6ee08a", xp: 200 },
+  { name: "稀有", col: "#5aa8ff", xp: 300 },
+  { name: "史诗", col: "#c27bff", xp: 400 },
+  { name: "传说", col: "#ffcf4a", xp: 600 },
+  { name: "流彩", col: "#ff8ad8", xp: 1000, rainbow: true },
 ];
+export const RELEASE_XP = 400;
 const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.floor(Number(v) || 0)));
 // a small seeded random for the one-time migration of old saves (so every read of an old save agrees)
 function seeded(str) {
@@ -41,40 +49,51 @@ function seeded(str) {
   for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)), ((h >>>= 0) % 100000) / 100000);
 }
-export function rollTraits(rand = Math.random) {
+/** n distinct traits; best: each value rolled twice, the higher kept (fusion); top: all in the top tenth (流彩) */
+export function rollTraits(rand = Math.random, n = 2, best = false, top = false) {
   const keys = [...TRAIT_KEYS], out = [];
-  for (let n = 0; n < 2; n++) {
+  for (let i = 0; i < n; i++) {
     const k = keys.splice(Math.floor(rand() * keys.length), 1)[0], t = TRAITS[k];
-    out.push([k, Math.round(t.min + rand() * (t.max - t.min))]);
+    let u = best ? Math.max(rand(), rand()) : rand();
+    if (top) u = 0.9 + u * 0.1;
+    out.push([k, Math.round(t.min + u * (t.max - t.min))]);
   }
   return out;
 }
 export const newUid = (id) => id + "-" + Math.random().toString(36).slice(2, 8);
-/** a freshly hatched young pet of kind id: random traits, 异色 with SHINY_CHANCE */
-export function rollPet(id, rand = Math.random) {
-  const shiny = rand() < SHINY_CHANCE, pool = SKIN_POOL[id];
-  return { uid: newUid(id), id, stage: 1, xp: 0, skin: shiny ? pool[Math.floor(rand() * pool.length)] : null, traits: rollTraits(rand), lock: false, t: Date.now() };
+/** a freshly hatched young pet of kind id. o: { rainbow (流彩: three top traits, the 流彩 skin), shiny (异色 chance),
+ *  best (traits rolled with advantage), skins (parents' 异色, one of them is inherited 60% of the time) } */
+export function rollPet(id, rand = Math.random, o = {}) {
+  const pool = SKIN_POOL[id];
+  let skin = null;
+  if (o.rainbow) skin = "flow";
+  else if (rand() < (o.shiny ?? SHINY_CHANCE)) skin = o.skins?.length && rand() < 0.6 ? o.skins[Math.floor(rand() * o.skins.length)] : pool[Math.floor(rand() * pool.length)];
+  const traits = o.rainbow ? rollTraits(rand, 3, false, true) : rollTraits(rand, 2, !!o.best);
+  return { uid: newUid(id), id, stage: 1, xp: 0, skin, traits, lock: false, t: Date.now() };
 }
 function cleanTraits(v, uid) {
   const out = [], seen = new Set();
   if (Array.isArray(v)) for (const e of v) {
     const k = Array.isArray(e) ? e[0] : null, t = TRAITS[k];
-    if (!t || seen.has(k) || out.length >= 2) continue;
+    if (!t || seen.has(k) || out.length >= 3) continue;
     seen.add(k);
     out.push([k, clampInt(e[1], t.min, t.max)]);
   }
   return out.length ? out : rollTraits(seeded(uid));
 }
+// 暗影 (purple) became 绯樱; a 流彩 skin needs three traits
+const skinOk = (id, k) => (k === "shadow" ? "sakura" : skinsOf(id).includes(k) ? k : null);
 function cleanPet(v) {
   if (!v || typeof v !== "object" || !Object.hasOwn(PETS, v.id)) return null;
   const uid = typeof v.uid === "string" && /^[a-z0-9-]{1,24}$/.test(v.uid) ? v.uid : null;
   if (!uid) return null;
-  return { uid, id: v.id, stage: clampInt(v.stage || 1, 1, 3), xp: clampInt(v.xp, 0, PET_MAX_XP), skin: SKIN_POOL[v.id].includes(v.skin) ? v.skin : null, traits: cleanTraits(v.traits, uid), lock: !!v.lock, t: Number(v.t) || 0 };
+  return { uid, id: v.id, stage: clampInt(v.stage || 1, 1, 3), xp: clampInt(v.xp, 0, PET_MAX_XP), skin: skinOk(v.id, v.skin), traits: cleanTraits(v.traits, uid), lock: !!v.lock, t: Number(v.t) || 0 };
 }
-/** 0..3: how high the trait rolls landed (普通 / 优秀 / 稀有 / 完美) */
+/** 0..5 = 普通 / 优秀 / 稀有 / 史诗 / 传说 by how high the two rolls landed; 5 = 流彩 (three traits) */
 export function petQuality(p) {
+  if (p.traits.length >= 3) return 5;
   const k = p.traits.reduce((a, [key, v]) => a + (v - TRAITS[key].min) / (TRAITS[key].max - TRAITS[key].min), 0) / Math.max(1, p.traits.length);
-  return k >= 0.85 ? 3 : k >= 0.6 ? 2 : k >= 0.35 ? 1 : 0;
+  return k >= 0.88 ? 4 : k >= 0.7 ? 3 : k >= 0.5 ? 2 : k >= 0.28 ? 1 : 0;
 }
 /** the battle multipliers of a pet's traits */
 export function traitMul(traits) {
@@ -91,7 +110,7 @@ export function validPet(value) {
     const t = TRAITS[k], lo = k === "cd" ? 1 - t.max / 100 : 1, hi = k === "cd" ? 1 : 1 + t.max / 100;
     tr[k] = Math.max(lo, Math.min(hi, Number(src[k]) || 1));
   }
-  return { id: value.id, stage, skin: SKIN_POOL[value.id].includes(value.skin) ? value.skin : null, tr };
+  return { id: value.id, stage, skin: skinOk(value.id, value.skin), tr };
 }
 /** the save's pets: { v: 2, list, equipped (uid), eggs, pool (养成经验池), dex }. An old save ({ owned: { kind: { stage, xp } } })
  *  becomes one pet per kind whose uid is the kind's id, so an old equipped kind stays equipped. `owned` (not saved) is a
@@ -111,10 +130,12 @@ export function normalizePets(value) {
   const dex = {};
   for (const id of PET_ORDER) {
     const d = value?.dex?.[id];
-    const skins = new Set([...(Array.isArray(d?.skins) ? d.skins : []).filter((k) => SKIN_POOL[id].includes(k)), ...list.filter((p) => p.id === id && p.skin).map((p) => p.skin)]);
+    // 图鉴: "base" (原色) and every 异色 ever owned, kept after a pet is released or fused
+    const skins = new Set([...(Array.isArray(d?.skins) ? d.skins : []).map((k) => (k === "base" ? k : skinOk(id, k))).filter(Boolean), ...list.filter((p) => p.id === id).map((p) => p.skin || "base")]);
     if (d || list.some((p) => p.id === id)) dex[id] = { skins: [...skins] };
   }
-  const out = { v: 2, list, equipped, eggs: clampInt(value?.eggs, 0, 999), pool: clampInt(value?.pool, 0, 999999), dex };
+  // rb: hatches / fusions since the last 流彩 (its chance grows with it)
+  const out = { v: 2, list, equipped, eggs: clampInt(value?.eggs, 0, 999), pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex };
   Object.defineProperty(out, "owned", {
     enumerable: false,
     get() {

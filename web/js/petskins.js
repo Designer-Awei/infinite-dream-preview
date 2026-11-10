@@ -9,11 +9,15 @@
 export const PET_SKINS = {
   frost: { name: "霜鳞", rules: [{ from: [330, 40], to: 200, sat: 0.85, light: 1.05, minS: 0.25 }], aura: "frost" },
   ember: { name: "炎魂", rules: [{ from: [0, 360], shift: 0, sat: 1.15, light: 1.0 }], aura: "flame" },
-  shadow: { name: "暗影", rules: [{ from: [0, 360], to: 275, sat: 0.7, light: 0.72, minS: 0.15 }], aura: "shadow" },
-  gold: { name: "鎏金", rules: [{ from: [0, 360], to: 43, sat: 0.95, light: 1.08, minS: 0.15 }], aura: "spark" },
+  sakura: { name: "绯樱", rules: [{ from: [0, 360], to: 342, sat: 0.72, light: 1.1, minS: 0.15 }], aura: "petal" },
+  gold: { name: "灿金", rules: [{ from: [0, 360], to: 43, sat: 0.95, light: 1.08, minS: 0.15 }], aura: "spark" },
   jade: { name: "翠玉", rules: [{ from: [0, 360], to: 140, sat: 0.8, light: 0.95, minS: 0.2 }], aura: null },
   blaze: { name: "焚羽", rules: [{ from: [170, 260], to: 18, sat: 1.1, light: 1.02, minS: 0.2 }], aura: "flame" },
+  // 流彩：no fixed recolour; a rainbow drifting across the body is laid over each frame as it is drawn (flowFrame)
+  flow: { name: "流彩", rules: [], flow: true, aura: "spark" },
 };
+// the old purple 暗影 skin reads as 绯樱 now
+PET_SKINS.shadow = PET_SKINS.sakura;
 
 const inHue = (h, [a, b]) => (a <= b ? h >= a && h <= b : h >= a || h <= b);
 function rgb2hsl(r, g, b) {
@@ -78,6 +82,28 @@ export function skinnedCell(skinId, img, sx, sy, w, h) {
   cells.set(key, c);
   return c;
 }
+/** a skinned frame ready to draw: the recoloured cell, or for 流彩 the cell with a moving rainbow laid over it
+ *  (canvas "color" blend keeps each pixel's lightness, so outlines stay dark and highlights stay bright) */
+const flowBuf = document.createElement("canvas");
+export function skinnedFrame(skinId, img, sx, sy, w, h, t = 0) {
+  const cell = skinnedCell(skinId, img, sx, sy, w, h);
+  if (!PET_SKINS[skinId]?.flow) return cell;
+  if (flowBuf.width !== w || flowBuf.height !== h) (flowBuf.width = w), (flowBuf.height = h);
+  // two full hue cycles across the cell's diagonal, drifting with time, so even a small pet shows the whole rainbow
+  const g = flowBuf.getContext("2d"), grad = g.createLinearGradient(w * 0.2, h * 0.2, w * 0.8, h * 0.8), o = (t * 90) % 360;
+  for (let i = 0; i <= 12; i++) grad.addColorStop(i / 12, `hsl(${(o + i * 60) % 360} 95% 60%)`);
+  g.globalCompositeOperation = "source-over";
+  g.clearRect(0, 0, w, h);
+  g.drawImage(cell, 0, 0);
+  g.globalCompositeOperation = "color";
+  g.fillStyle = grad;
+  g.fillRect(0, 0, w, h);
+  g.globalCompositeOperation = "destination-in";
+  g.drawImage(cell, 0, 0);
+  g.globalCompositeOperation = "source-over";
+  flowBuf.edges = cell.edges;
+  return flowBuf;
+}
 /** silhouette points whose pixel above is empty: where flames / frost / sparks rise from (at most 28, evenly spread) */
 function topEdges(d) {
   const { width: w, height: h, data } = d, all = [];
@@ -96,6 +122,7 @@ const RAMP = {
   frost: ["#ffffff", "#d8f6ff", "#9ee4ff", "#5ab8f0", "#2a78c8"],
   spark: ["#ffffff", "#fff3a6", "#ffd84a", "#e0a020"],
   shadow: ["#c8a0ff", "#8a5ad0", "#5a2a9a", "#2a1440", "#140a20"],
+  petal: ["#ffffff", "#ffe0ec", "#ff9ac0", "#e06090"],
 };
 /** draw the aura for one frame: called in the sprite's own transform (origin = anchor, k = world px per cell px).
  *  Draws are grouped by colour / opacity so the fill style changes only a few times per pet. */
@@ -130,7 +157,7 @@ export function drawAura(ctx, kind, cell, anchor, k, t) {
     }
     ctx.globalAlpha = 1;
     if (kind === "frost") { ctx.fillStyle = ramp[0]; for (let i = 0; i < n; i++) if (Math.sin(t * 4 + hash(i) * 30) > 0.93) { ctx.fillRect(Math.round(X(i)) - 1, Math.round(Y(i) - 3), 3, 1); ctx.fillRect(Math.round(X(i)), Math.round(Y(i) - 4), 1, 3); } }
-  } else if (kind === "spark") {
+  } else if (kind === "spark" || kind === "petal") {
     // short gold glints that blink on and off along the outline
     for (const hot of [false, true]) {
       ctx.fillStyle = ramp[hot ? 0 : 2];

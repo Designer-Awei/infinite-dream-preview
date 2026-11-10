@@ -1,7 +1,7 @@
 // Shared authored atlas animation for the lobby and the pet cards.
 import { A } from './assets.js';
 import { drawPetFields } from './pets.js';
-import { PET_SKINS, skinnedCell, drawAura } from './petskins.js';
+import { PET_SKINS, skinnedFrame, drawAura } from './petskins.js';
 const live=new Set(),bounds=new Map();let frame=0;
 // wide: true = 512×192 strip, or an explicit [width, height] canvas. stable: one framing for all three clips of the
 // stage (so switching idle/move/cast in a showcase never rescales the creature).
@@ -44,7 +44,7 @@ function draw(now){
     }
     const [bx,by,w,h]=box,k=Math.min(W/(w+12),H/(h+12));ctx.save();ctx.translate((W-w*k)/2-bx*k,(v.alignTop?0:(H-h*k)/2)-by*k);ctx.scale(k,k);
     if(hasEffects&&v.id==='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
-    if(skin){const cell=skinnedCell(v.skin,image,x,y,cw,ch),an=actor.anchor||[cw/2,ch-8];ctx.drawImage(cell,0,0,cw,ch);if(skin.aura){ctx.save();ctx.translate(an[0],an[1]);drawAura(ctx,skin.aura,cell,an,1,now/1000);ctx.restore();}}
+    if(skin){const cell=skinnedFrame(v.skin,image,x,y,cw,ch,now/1000),an=actor.anchor||[cw/2,ch-8];ctx.drawImage(cell,0,0,cw,ch);if(skin.aura){ctx.save();ctx.translate(an[0],an[1]);drawAura(ctx,skin.aura,cell,an,1,now/1000);ctx.restore();}}
     else ctx.drawImage(image,x,y,cw,ch,0,0,cw,ch);
     if(hasEffects&&v.id!=='phoenix')drawPetFields(ctx,{petFields:[f],fx:{lite:true}},now/1000);
     ctx.restore();
