@@ -181,7 +181,7 @@ export const app = {
         if (this.game === g) g.resolveEvent(me.id, k);
       }, {
         coins: () => me.coins,
-        roll: (odd) => (this.game === g ? g.rollDice(me.id, odd) : null),
+        roll: (odd, ratio) => (this.game === g ? g.rollDice(me.id, odd, ratio) : null),
         settle: () => this.game === g && g.settleDice(me.id),
         close: () => {
           this.paused = false;

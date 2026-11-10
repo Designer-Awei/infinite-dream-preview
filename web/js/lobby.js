@@ -92,7 +92,7 @@ export function showLobby() {
   const root = uiRoot();
   const m = load();
   if (!m.chars.includes(m.sel)) m.sel = m.chars[0];
-  const s = el("div", "screen lobby lb" + (entered ? " quick" : ""));
+  const s = el("div", "screen lobby lb lb2" + (entered ? " quick" : ""));
   entered = true;
   const pulls = Math.floor(m.tokens / GACHA.cost1);
   s.innerHTML = `<div class="sparkles"></div><div class="lb-glow"></div>
@@ -106,10 +106,9 @@ export function showLobby() {
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
     <button class="btn gray small set-btn" title="设置">⚙</button>
   </div>
-  <div class="lb-left"><div class="lb-info"></div><div class="lb-roster"></div></div>
-  <div class="lb-center"><div class="lb-rays"></div><div class="lb-motes">${Array.from({ length: 14 }, (_, i) => `<i style="left:${8 + ((i * 37) % 84)}%;animation-delay:${(i * 0.53) % 4}s;animation-duration:${3 + (i % 4) * 0.7}s"></i>`).join("")}</div><div class="lb-island"></div><div class="lb-hero"><img alt=""></div><div class="lb-name outline"></div></div>
+  <div class="lb-left lb-feats"></div>
+  <div class="lb-center"><div class="lb-rays"></div><div class="lb-motes">${Array.from({ length: 14 }, (_, i) => `<i style="left:${8 + ((i * 37) % 84)}%;animation-delay:${(i * 0.53) % 4}s;animation-duration:${3 + (i % 4) * 0.7}s"></i>`).join("")}</div><div class="lb-island"></div><div class="lb-hero" title="切换角色"><img alt=""></div><button class="lb-name outline" title="切换角色"></button></div>
   <div class="lb-right">
-    <div class="lb-tiles"></div>
     <div class="lb-goal slim o1"></div>
     <div class="lb-modes"><div class="lm-track"></div><div class="lm-dots"></div></div>
     <div class="lb-play"></div>
@@ -118,10 +117,11 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
+  // the equipped partner stands on the island beside the hero (tap it to open the partner panel)
   const pets=petState(),petId=pets.equipped||Object.keys(pets.owned)[0];
   if(petId){
     const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
-    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-right',s).appendChild(entry);
+    entry.title='梦境伙伴';entry.setAttribute('aria-label','梦境伙伴');q('.lb-center',s).appendChild(entry);
     petPreview(entry.querySelector('span'),petId,pets.owned[petId].stage,'lobby',true,false,true);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
@@ -142,18 +142,19 @@ export function showLobby() {
       toast("当前浏览器不支持全屏，可添加到主屏幕或安装 APK");
     }
   };
-  // side tiles (Brawl Stars keeps shop / brawlers / social as square tiles)
-  const tiles = q(".lb-tiles", s);
-  const tile = (icon, label, cls, fn, badge, sub = "") => {
-    const t = el("button", "lb-tile " + cls, `<span class="ti">${icon}</span><span class="tt"><span class="tl outline">${label}</span>${sub ? `<small class="o1">${sub}</small>` : ""}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
+  // feature entries on the left: big PixelLab icons with a one-line label, a 2 x 2 grid
+  const feats = q(".lb-feats", s);
+  const feat = (img, label, cls, fn, badge) => {
+    const t = el("button", "lb-feat " + cls, `<span class="fi"><img src="assets/ui/${img}.png" alt=""></span><span class="fl outline">${label}</span>${badge ? `<i class="badge o1">${badge}</i>` : ""}`);
     t.onclick = () => (sfx("click"), fn());
-    tiles.appendChild(t);
+    feats.appendChild(t);
   };
-  tile("🎰", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 && !gachaDone() ? Math.min(99, pulls) : "", "抽天赋卡");
+  feat("pets", "伙伴", "t-pets", () => showPets(() => showLobby()));
   const msh = mineState(), shovels = msh.shovels.cu + msh.shovels.ag + msh.shovels.au + (msh.freePend || 0);
-  tile('<img src="assets/ui/mine-pick.png" alt="">', "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "", "搜 · 打 · 撤");
+  feat("mine-pick", "梦境矿场", "t-mine", () => import("./mineui.js").then((M) => M.showMineHub()), shovels || "");
   if (claimable()) q(".t-mine", s).insertAdjacentHTML("beforeend", `<i class="rdot" title="有可领取的每日委托"></i>`);
-  tile("👥", "联机模式", "t-net", () => showNet());
+  feat("gacha", "扭蛋机", "t-gacha", () => showGacha(), pulls > 0 && !gachaDone() ? Math.min(99, pulls) : "");
+  feat("net", "联机模式", "t-net", () => showNet());
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
   q(".codex-btn", s).onclick = () => (sfx("click"), import("./codex.js").then((C) => C.showCodex()));
   const play = q(".lb-play", s);
@@ -173,11 +174,10 @@ export function showLobby() {
     goal.title = u.text;
   } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b><span>最远 ${m.stats.best}/7 · 通关 ${m.stats.bossKills} 次</span></div>`;
   renderModes(s);
-  renderRoster(s);
   renderHero(s, m.sel, false);
   setTimeout(() => s.isConnected && heroSummon(s, s.classList.contains("quick")), s.classList.contains("quick") ? 0 : 300);
-  // tap the hero: one of three drawn reaction clips, picked at random but never the same twice in a row
-  q(".lb-hero", s).onclick = () => heroReact(s);
+  // tap the hero (or her name): the character window — switch characters, stats, skills, talents
+  q(".lb-hero", s).onclick = q(".lb-name", s).onclick = () => (sfx("click"), showCharWindow(s));
   const fresh = m.chars.filter((c) => !["deepseek", "gpt"].includes(c) && !m.seenUnlock.includes(c));
   if (fresh.length) setTimeout(() => showUnlock(fresh[0]), 900);
 }
@@ -207,8 +207,10 @@ function lbSheet(id) {
   }
   return lbSheets[id];
 }
-/** the hero on the island plays her idle loop; a reaction clip plays once, then back to idle */
-function heroAnim(s, id) {
+/** the hero plays her idle loop; a reaction clip plays once, then back to idle. auto: every 6~11 s one of the
+ *  reaction clips plays by itself (never the same twice in a row), so the lobby girl idles with a random carousel */
+const nextAuto = (now) => now + 6000 + Math.random() * 5000;
+function heroAnim(s, id, auto = false) {
   const h = q(".lb-hero", s);
   let cv = q("canvas.lb-anim", h);
   if (!cv) {
@@ -218,7 +220,7 @@ function heroAnim(s, id) {
     h.appendChild(cv);
   }
   const g = cv.getContext("2d");
-  const st = (h.__anim = { id, clip: "idle", t0: performance.now(), sheet: null, seq: idleSeq(id), last: "" });
+  const st = (h.__anim = { id, clip: "idle", t0: performance.now(), sheet: null, seq: idleSeq(id), last: "", auto, next: nextAuto(performance.now()) });
   h.classList.remove("anim");
   lbSheet(id).then((sheet) => {
     if (h.__anim !== st || !sheet) return;
@@ -227,7 +229,8 @@ function heroAnim(s, id) {
     const frame = (now) => {
       if (h.__anim !== st || !cv.isConnected) return;
       const fps = LB_FPS[st.clip], k = Math.floor(((now - st.t0) / 1000) * fps);
-      if (st.clip !== "idle" && k >= 8) (st.clip = "idle"), (st.t0 = now);
+      if (st.clip !== "idle" && k >= 8) (st.clip = "idle"), (st.t0 = now), (st.next = nextAuto(now));
+      else if (st.auto && st.clip === "idle" && now >= st.next && !document.hidden && !h.dataset.busy) playReact(s, st, false);
       const f = st.clip === "idle" ? st.seq[k % st.seq.length] : Math.min(7, k), row = LB_CLIPS.indexOf(st.clip), key = row * 8 + f;
       requestAnimationFrame(frame);
       if (key === st.last) return; // the canvas only changes 6-10 times a second
@@ -276,47 +279,68 @@ function heroSummon(s, quick) {
   h.classList.add("ready"); // past the pre-entrance hide
   playAnim(h, "summon" + (quick ? "q" : ""), quick ? 700 : 1300);
 }
-function heroReact(s) {
-  const h = q(".lb-hero", s), stage = q(".lb-center", s), st = h.__anim;
+/** one reaction clip (wave / joy / cast), never the same as last time; loud = with its sound (a tap), quiet for the carousel */
+function playReact(s, st, loud) {
   if (!st || !st.sheet || st.clip !== "idle") return;
-  const m = load(), id = m.sel;
+  const stage = q(".lb-center", s) || q(".cw-stage", s);
   let k;
   do k = Math.floor(Math.random() * 3);
   while (k === lastReact);
   lastReact = k;
   st.clip = ["wave", "joy", "cast"][k];
   st.t0 = performance.now();
-  if (st.clip === "cast") {
-    setTimeout(() => (fx(stage, "lb-wave", 800), burst(stage, 14, "spark", 50, 50, 1.1), sfx("skill")), 300);
-  } else sfx(st.clip === "wave" ? "card" : "pickup");
+  if (st.clip === "cast") setTimeout(() => stage && stage.isConnected && (fx(stage, "lb-wave", 800), burst(stage, 14, "spark", 50, 50, 1.1), loud && sfx("skill")), 300);
+  else if (loud) sfx(st.clip === "wave" ? "card" : "pickup");
 }
 
-function renderRoster(s) {
-  const m = load(), r = q(".lb-roster", s);
-  r.innerHTML = "";
-  CHAR_ORDER.forEach((id, i) => {
+// ------------------------------------------------------------------ character window (tap the lobby hero)
+/** switch characters and read their card: the girl big on the left, her card and talents on the right, the roster below */
+function showCharWindow(s) {
+  if (q(".cw-modal", s)) return;
+  const m = load(), start = m.sel;
+  const md = el("div", "modal cw-modal");
+  md.innerHTML = `<div class="panel cw-panel"><div class="cw-stage"><div class="cw-glow"></div><div class="lb-hero ready"><img alt=""></div><div class="cw-lock o1"></div></div>
+    <div class="cw-side"><div class="lb-info"></div><div class="cw-roster"></div></div><button class="btn gray small cw-x" title="关闭">✕</button></div>`;
+  s.appendChild(md);
+  const close = () => {
+    md.remove();
+    const sel = load().sel;
+    if (sel !== start) renderHero(s, sel, true);
+  };
+  q(".cw-x", md).onclick = () => (sfx("click"), close());
+  md.addEventListener("click", (e) => e.target === md && close());
+  const roster = q(".cw-roster", md);
+  const show = (id) => {
+    const c = CHARS[id], open = m.chars.includes(id), e = ELEM[c.elem];
+    md.style.setProperty("--ec", e.color);
+    md.style.setProperty("--eg", e.glow);
+    const hero = q(".lb-hero", md);
+    q("img", hero).src = `assets/hero_${id}.png`;
+    hero.classList.toggle("dark", !open);
+    heroAnim(md, id);
+    hero.onclick = () => playReact(md, hero.__anim, true);
+    const lock = q(".cw-lock", md);
+    lock.textContent = open ? "" : "🔒 " + UNLOCKS[id].text;
+    lock.style.display = open ? "none" : "";
+    fillInfo(q(".lb-info", md), id, () => show(id));
+    roster.querySelectorAll(".rcard").forEach((n, k) => n.classList.toggle("sel", CHAR_ORDER[k] === id));
+  };
+  CHAR_ORDER.forEach((id) => {
     const c = CHARS[id], open = m.chars.includes(id);
-    const d = el("div", "rcard" + (m.sel === id ? " sel" : "") + (open ? "" : " locked"));
+    const d = el("div", "rcard" + (open ? "" : " locked"));
     d.style.background = `linear-gradient(180deg, ${c.color}, #2a2470)`;
-    d.style.animationDelay = 0.55 + i * 0.06 + "s";
     d.innerHTML = `<img src="assets/portrait_${id}.png" alt=""><img class="el-ico" src="${iconURL("elem_" + c.elem, 2)}" alt="${ELEM[c.elem].name}">`;
-    d.title = c.short; // the name is shown big in the middle of the lobby
-    if (!open) {
-      const u = UNLOCKS[id], pr = unlockProgress(id);
-      d.insertAdjacentHTML("beforeend", `<div class="lock o1"><div class="ic">🔒</div><div class="bar"><i style="width:${Math.round(pr * 100)}%"></i></div></div>`);
-      d.title = u.text;
-    }
+    d.title = open ? c.short : UNLOCKS[id].text;
+    if (!open) d.insertAdjacentHTML("beforeend", `<div class="lock o1"><div class="ic">🔒</div><div class="bar"><i style="width:${Math.round(unlockProgress(id) * 100)}%"></i></div></div>`);
+    // an unlocked girl becomes the one you play right away; a locked one is only previewed
     d.onclick = () => {
       sfx("click");
-      if (open && m.sel !== id) {
-        m.sel = id;
-        save();
-      }
-      r.querySelectorAll(".rcard").forEach((n, k) => n.classList.toggle("sel", CHAR_ORDER[k] === id && open));
-      renderHero(s, id, true);
+      if (open && m.sel !== id) (m.sel = id), save();
+      show(id);
     };
-    r.appendChild(d);
+    roster.appendChild(d);
   });
+  show(m.sel);
 }
 
 function bar(label, v, max, col) {
@@ -337,11 +361,12 @@ function renderHero(s, id, swap) {
     };
     img.src = `assets/hero_${id}.png`;
     hero.classList.toggle("dark", !open);
-    heroAnim(s, id);
+    heroAnim(s, id, true);
     const isl = q(".lb-island", s);
     isl.innerHTML = "";
     isl.appendChild(islandCanvas(e.color));
-    q(".lb-name", s).innerHTML = `<span class="${(load().cores || {})[id] ? "core-name" : ""}">${c.short}</span><small>${c.title}</small>`;
+    const lv = characterProgress(id).level;
+    q(".lb-name", s).innerHTML = `<span class="${(load().cores || {})[id] ? "core-name" : ""}">${c.short}</span><b class="lb-lv">Lv.${lv}</b><i class="lb-swap">切换</i><small>${c.title}</small>`;
   };
   if (swap) {
     // the current girl dissolves upward into motes and stays hidden until the new girl's art and animation
@@ -362,9 +387,14 @@ function renderHero(s, id, swap) {
     });
     sfx("card");
   } else apply();
+  updatePlay(s, id);
+}
+
+/** a character's card (name, level, talents, element, stats, skills) into info; refresh re-draws it after talents change */
+function fillInfo(info, id, refresh) {
+  const c = CHARS[id], e = ELEM[c.elem];
   const xp = characterProgress(id);
   const dps = c.atk.dmg * c.atk.rate, core = !!(load().cores || {})[id];
-  const info = q(".lb-info", s);
   info.classList.remove("refresh");
   void info.offsetWidth;
   info.classList.add("refresh");
@@ -382,11 +412,11 @@ function renderHero(s, id, swap) {
         .map(([k, n, d]) => `<div class="sk"><div class="sk-ic"><img src="${iconURL(skillIcon(id, k === "J" ? "atk" : k === "K" ? "skill" : "ult"), 2)}" alt=""><i>${k}</i></div><div class="sk-tx"><b>${n}</b><span title="${d}">${d}</span></div></div>`)
         .join("")}
     </div>
+    <p class="li-lore o1">${c.lore}</p>
     `;
   q(".li-more", info).onclick = () => (sfx("click"), showCharDetail(id));
   info.querySelector(".li-skills").onclick = () => (sfx("click"), showCharDetail(id));
-  q(".li-kit", info).onclick = () => (sfx("click"), showLoadout(id, () => renderHero(s, id, false)));
-  updatePlay(s, id);
+  q(".li-kit", info).onclick = () => (sfx("click"), showLoadout(id, refresh));
 }
 
 // ------------------------------------------------------------------ character detail (everything that doesn't fit the card)

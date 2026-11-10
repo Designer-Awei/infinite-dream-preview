@@ -77,7 +77,41 @@ function rollDie(stage, face, done) {
   };
   requestAnimationFrame(tick);
 }
-/** the dice game: bet odd / even (all coins), watch the roll, settle; 离开 only closes (the fox stays until its rounds are used) */
+/** the bet share, 30%~80% in 10% steps; kept between dialogs so the player's choice sticks for the session */
+let betShare = 0.5;
+const BET_MIN = 0.3, BET_MAX = 0.8, snapShare = (v) => Math.min(BET_MAX, Math.max(BET_MIN, Math.round(v * 10) / 10));
+/** a slider snapping to the 10% steps between 30% and 80%; onChange(share) */
+function betSlider(onChange) {
+  const n = Math.round((BET_MAX - BET_MIN) * 10);
+  const box = el("div", "dice-bet");
+  box.innerHTML = `<span class="db-l o1">押注</span><div class="db-track"><i class="db-fill"></i>${Array.from({ length: n + 1 }, (_, i) => `<u style="left:${(i / n) * 100}%"></u>`).join("")}<b class="db-knob"></b></div><span class="db-v o1"></span>`;
+  const track = box.querySelector(".db-track");
+  const set = (v, quiet) => {
+    const s = snapShare(v), pc = ((s - BET_MIN) / (BET_MAX - BET_MIN)) * 100;
+    box.querySelector(".db-fill").style.width = pc + "%";
+    box.querySelector(".db-knob").style.left = pc + "%";
+    if (s !== betShare && !quiet) sfx("click", 0.05);
+    betShare = s;
+    onChange(s);
+  };
+  const at = (e) => {
+    const r = track.getBoundingClientRect();
+    set(BET_MIN + Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)) * (BET_MAX - BET_MIN));
+  };
+  let drag = false;
+  track.addEventListener("pointerdown", (e) => {
+    if (box.classList.contains("off")) return;
+    drag = true;
+    track.setPointerCapture(e.pointerId);
+    at(e);
+  });
+  track.addEventListener("pointermove", (e) => drag && at(e));
+  track.addEventListener("pointerup", () => (drag = false));
+  track.addEventListener("pointercancel", () => (drag = false));
+  box.set = set;
+  return box;
+}
+/** the dice game: bet odd / even with a share of the coins, watch the roll, settle; 离开 only closes (the fox stays until its rounds are used) */
 function diceDialog(game, md, ev, hooks) {
   const box = md.querySelector(".ev-opts"), nv = game.npc, R = ev.dice.rounds;
   const area = el("div", "ev-dice");
@@ -88,10 +122,14 @@ function diceDialog(game, md, ev, hooks) {
   const $ = (q) => area.querySelector(q);
   drawDie(g, 1 + Math.floor(Math.random() * 6));
   let busy = false;
+  const slider = betSlider((s) => (slider.querySelector(".db-v").textContent = `${Math.round(s * 100)}% · ${Math.max(1, Math.round(hooks.coins() * s))} 金币`));
+  area.appendChild(slider);
   const buttons = () => {
     box.innerHTML = "";
     const left = R - (nv.rounds || 0), coins = hooks.coins();
-    $(".dice-round").textContent = left <= 0 ? `${R} 轮都玩完了` : coins > 0 ? `第 ${(nv.rounds || 0) + 1} / ${R} 轮 · 押注 ${coins} 金币` : `还剩 ${left} 轮 · 身上没有金币可押了`;
+    $(".dice-round").textContent = left <= 0 ? `${R} 轮都玩完了` : coins > 0 ? `第 ${(nv.rounds || 0) + 1} / ${R} 轮` : `还剩 ${left} 轮 · 身上没有金币可押了`;
+    slider.classList.toggle("off", !(left > 0 && coins > 0));
+    slider.set(betShare, true);
     if (left > 0 && coins > 0) for (const [odd, name] of [[true, "押单数"], [false, "押双数"]]) box.appendChild(btn(name, odd ? "" : "blue", () => bet(odd)));
     box.appendChild(btn("离开", "gray", () => {
       if (busy) return;
@@ -101,10 +139,11 @@ function diceDialog(game, md, ev, hooks) {
   };
   const bet = (odd) => {
     if (busy) return;
-    const r = hooks.roll(odd);
+    const r = hooks.roll(odd, betShare);
     if (!r) return;
     busy = true;
     box.querySelectorAll(".btn").forEach((b) => (b.disabled = true));
+    slider.classList.add("off");
     $(".dice-res").textContent = "……";
     $(".dice-res").style.color = "";
     $(".dice-sub").textContent = `押了${odd ? "单" : "双"}数`;
@@ -113,7 +152,7 @@ function diceDialog(game, md, ev, hooks) {
       drawDie(g, r.face, r.win ? "#ffe14a" : "#ff5a6a");
       $(".dice-res").textContent = `${r.face} 点 · ${r.face % 2 ? "单" : "双"}数`;
       $(".dice-res").style.color = r.win ? "#ffe14a" : "#ff8a8a";
-      $(".dice-sub").textContent = r.win ? `押中了！金币 ${r.stake} → ${r.stake * 2}` : "没押中……金币清零";
+      $(".dice-sub").textContent = r.win ? `押中了！赢得 ${r.stake} 金币` : `没押中……输掉 ${r.stake} 金币`;
       hooks.settle();
       busy = false;
       buttons();

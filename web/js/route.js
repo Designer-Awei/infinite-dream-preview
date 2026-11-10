@@ -122,10 +122,10 @@ export const EVENTS = {
       { label: "离开", apply: () => "" },
     ],
   },
-  // a dice game instead of a one-shot choice: bet all coins on odd or even, the die is rolled in the dialog
+  // a dice game instead of a one-shot choice: bet a share of the coins (30%~80%) on odd or even, the die is rolled in the dialog
   // (game.rollDice / settleDice); leaving only closes the dialog, so you can come back. Two rounds a room.
   gamble: {
-    name: "幸运骰子", text: "「押上全部金币猜单双，猜中翻倍，猜错清零～」",
+    name: "幸运骰子", text: "「挑好押注比例猜单双，猜中赢一倍，猜错输掉押注～」",
     dice: { rounds: 2 },
     options: [],
   },

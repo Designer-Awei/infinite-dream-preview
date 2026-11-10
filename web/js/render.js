@@ -197,12 +197,8 @@ export class Renderer {
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
     for (const p of game.players) this.drawHeroBar(g, p, me, game);
-    // fork portals: the room each one leads to, above it (challenges add their rule)
-    if (game.portals) for (const q of game.portals) {
-      const y = q.y - 70 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5);
-      this.text(g, q.name, q.x, y, q.col, 14);
-      if (q.sub) this.text(g, q.sub, q.x, y + 14, "#ffffff", 10);
-    }
+    // fork portals: the kind of room each one leads to, above it
+    if (game.portals) for (const q of game.portals) this.text(g, q.name, q.x, q.y - 66 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5), q.col, 14);
     if (game.npc && !game.npc.done && me) {
       const n = game.npc, near = dist(me.x, me.y, n.x, n.y + 6) < 34;
       const name = (NPCS[n.id] || NPCS.altar).name;

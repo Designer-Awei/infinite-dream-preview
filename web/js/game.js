@@ -1322,21 +1322,23 @@ export class Game {
     if (this.cardOffers[p.id]) this.phase = "cards";
     else this.openPortal();
   }
-  /** 骰子狐: roll the die for a bet on odd (true) or even; the dialog animates it, then calls settleDice */
-  rollDice(pid, odd) {
+  /** 骰子狐: roll the die for a bet on odd (true) or even, staking a share of the coins (30%~80%, 10% steps);
+   *  the dialog animates it, then calls settleDice */
+  rollDice(pid, odd, ratio = 0.5) {
     const p = this.player(pid), nv = this.npc, ev = this.room && EVENTS[this.room.event];
     if (!p || !nv || !ev?.dice || (nv.rounds || 0) >= ev.dice.rounds || p.coins <= 0 || nv.roll) return null;
+    const share = Math.min(0.8, Math.max(0.3, Math.round((+ratio || 0.5) * 10) / 10));
     const face = 1 + Math.floor(Math.random() * 6);
     nv.rounds = (nv.rounds || 0) + 1;
-    nv.roll = { face, odd, win: (face % 2 === 1) === odd, stake: p.coins };
+    nv.roll = { face, odd, win: (face % 2 === 1) === odd, stake: Math.max(1, Math.round(p.coins * share)), share };
     return nv.roll;
   }
   settleDice(pid) {
     const p = this.player(pid), nv = this.npc, r = nv && nv.roll;
     if (!p || !r) return;
     nv.roll = null;
-    p.coins = r.win ? p.coins + r.stake : 0;
-    this.text(p.x, p.y - 60, r.win ? `+${r.stake} 金币` : "金币清零……", r.win ? "#ffe14a" : "#ff8080", 1.4);
+    p.coins = Math.max(0, r.win ? p.coins + r.stake : p.coins - r.stake);
+    this.text(p.x, p.y - 60, `${r.win ? "+" : "-"}${r.stake} 金币`, r.win ? "#ffe14a" : "#ff8080", 1.4);
     this.sound(r.win ? "coin" : "hurt");
     if (nv.rounds === 1) this.runStats.events = (this.runStats.events || 0) + 1;
     this.onUi("hud");
