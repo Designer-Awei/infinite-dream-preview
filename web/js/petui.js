@@ -1,4 +1,4 @@
-import { PETS, PET_ORDER, PET_STAGES, PET_COST, PET_EVOLVE, petPortrait } from "./petdata.js";
+import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, QUALITY, petPortrait } from "./petdata.js";
 import { petState, findPet, exchangePet, equipPet, evolvePet } from "./petsave.js";
 import { load, mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
@@ -45,12 +45,12 @@ const icon = (id, kind) => `assets/pets/icons/${id}_${kind}.png`;
 /** the partner detail panel (skills, demo, trial, exchange). uid: the warehouse pet it was opened for — its kind
  *  shows first, its 异色 is on the portrait and 携带 / 进化 act on that pet; other kinds are browsed as a codex */
 export function showPetDetail(uid, onClose) {
-  document.querySelector(".pet-detail")?.remove();
+  document.querySelector(".pet-info-md")?.remove();
   const start = petState(), inst = uid ? findPet(uid, start) : null;
   const ownOf = (id) => (inst && id === inst.id ? findPet(inst.uid) : petState().owned[id]) || null;
   let selected = inst?.id || start.owned[start.list.find((p) => p.uid === start.equipped)?.id]?.id || PET_ORDER.find((id) => start.owned[id]) || PET_ORDER[0];
   let stage = ownOf(selected)?.stage || 1, act = null, demo = null, busy = 0;
-  const md = el("div", "modal pet-modal pet-detail");
+  const md = el("div", "modal pet-modal pet-info-md");
   md.innerHTML = `<section class="panel pet-panel pp" role="dialog" aria-modal="true" aria-labelledby="pet-title">
     <header><h2 id="pet-title">梦境宠物</h2><div class="pet-wallet o1"></div></header>
     <div class="pp-body">
@@ -64,7 +64,6 @@ export function showPetDetail(uid, onClose) {
         <div class="pp-head"><h3 class="pp-name"></h3><small class="pp-rar"></small><span class="pp-bonus"></span></div>
         <p class="pp-trait"><img alt=""><b>特性</b><span></span></p>
         <div class="pp-acts">${ACTS.map(([a, , label]) => `<button class="pp-act" data-act="${a}"><img alt=""><span class="pp-at"><b></b><em>${label}</em></span><span class="pp-ad"></span></button>`).join("")}</div></div>
-        <div class="pp-btns"><span class="pp-own"></span><span class="pet-trial"></span></div>
       </div>
     </div></section>`;
   const close = () => (demo?.stop(), md.remove(), onClose?.());
@@ -125,10 +124,10 @@ export function showPetDetail(uid, onClose) {
   // ---- right column (text swapped in place; a short fade when the pet changes)
   const info = () => {
     const st = petState(), meta = load(), ms = mineState(), d = PETS[selected], own = ownOf(selected);
-    $(".pet-wallet").textContent = `积攒 ${meta.stash || 0} · 星砂 ${ms.stars}`;
+    $(".pet-wallet").textContent = own ? `${PET_STAGES[own.stage - 1]} · 经验 ${own.xp}` : "尚未拥有 · 孵化宠物蛋获得";
     $(".pp-name").textContent = d.name;
     $(".pp-name").style.color = d.color;
-    $(".pp-rar").textContent = `${stage === 3 ? "HUR" : "UR"} · ${PET_STAGES[stage - 1]}${own ? (own.stage >= stage ? "" : " · 未解锁") : " · 预览"}`;
+    $(".pp-rar").textContent = own ? `${QUALITY[own.q].name} · ${PET_STAGES[stage - 1]}${own.stage >= stage ? "" : " · 未达成"}` : `${PET_STAGES[stage - 1]} · 预览`;
     $(".pp-bonus").innerHTML = `携带加成 <b>${d.passive} +${Math.round(d.bonus[stage - 1] * 100)}%</b>`;
     $(".pp-trait img").src = icon(selected, "trait");
     $(".pp-trait span").textContent = d.trait;
@@ -140,37 +139,6 @@ export function showPetDetail(uid, onClose) {
       b.querySelector(".pp-ad").textContent = SKILLS[selected][a](d, stage);
       b.classList.toggle("on", a === act);
     });
-    buttons(st, meta, ms, d, own);
-  };
-  const buttons = (st, meta, ms, d, own) => {
-    const a = $(".pp-own");
-    a.replaceChildren();
-    if (own) {
-      a.appendChild(btn(st.equipped === own.uid ? "取消携带" : "携带出战", "small blue", () => (equipPet(st.equipped === own.uid ? null : own.uid), sfx("click"), refresh())));
-      if (own.stage < 3) {
-        const next = PET_EVOLVE[own.stage + 1];
-        const b = btn(`进化 · 星砂 ${next.stars}`, "small", () => {
-          const r = evolvePet(own.uid);
-          if (!r.ok) return toast(r.reason);
-          sfx("ssr");
-          toast(`${d.name}进化为${PET_STAGES[r.stage - 1]}！`);
-          stage = r.stage;
-          act = null;
-          view.classList.remove("evolved");
-          void view.offsetWidth;
-          view.classList.add("evolved");
-          setPetPreview(canvas, { stage });
-          showDemo();
-          refresh();
-        });
-        b.title = `成长 ${own.xp}/${next.xp}，需 ${next.stars} 星砂`;
-        b.disabled = own.xp < next.xp || ms.stars < next.stars;
-        a.appendChild(b);
-      }
-    } else a.appendChild(Object.assign(el("span", "pp-none o1"), { textContent: "尚未拥有 · 孵化宠物蛋获得" }));
-    const tb = btn("免费试用 · 终极骑乘", "small green", () => (demo?.stop(), md.remove(), import("./main.js").then(({ app }) => app.startPetTrial(selected))));
-    tb.innerHTML = `<span class="pp-long">免费试用 · 终极骑乘</span><span class="pp-short">试用 · 终极骑乘</span>`; // narrow screens drop 免费
-    $(".pet-trial").replaceChildren(tb);
   };
   const refresh = () => (stageUI(), info());
   // ---- switching: pets slide in from the side they come from; stages and skills swap in place

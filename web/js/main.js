@@ -17,8 +17,8 @@ import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
-import { PETS, petExperience } from "./petdata.js";
-import { grantPetXP, grantEggs, petState } from "./petsave.js";
+import { PETS, PET_EVOLVE, petExperience } from "./petdata.js";
+import { grantPetXP, grantEggs, petState, findPet } from "./petsave.js";
 import { showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
@@ -70,6 +70,21 @@ export const app = {
   cardOpen: false,
   net: null,
   hudT: 0,
+  /** 实时进化: once a second, the carried pet's xp earned so far in this run; when it reaches the next stage it is
+   *  saved at once and the pet evolves on the field (solo / host only — a client's pet evolves at the result) */
+  petLiveXP() {
+    const g = this.game, me = this.me;
+    if (!g || !g.host || g.pvp || this.petTrial || this.ended || !me?.pet) return;
+    const uid = petState().equipped, p = uid && findPet(uid);
+    if (!p || p.stage >= 3 || p.id !== me.pet.id) return;
+    const total = petExperience({ seconds: this.progressSession?.seconds, rooms: g.runStats.xpRooms, bosses: g.runStats.xpBosses });
+    const add = total - (this.petGranted || 0);
+    if (add <= 0 || p.xp + add < PET_EVOLVE[p.stage + 1].xp) return;
+    grantPetXP(uid, add);
+    this.petGranted = total;
+    const np = findPet(uid);
+    if (np.stage > me.pet.stage) g.evolvePetLive(me, np.stage);
+  },
   startPetTrial(id) {
     if (!Object.hasOwn(PETS, id)) return;
     const m = load(); this.net = null;
@@ -141,6 +156,8 @@ export const app = {
     this.ended = false;
     this.riftLoot = null;
     this.progressSession = { seconds: 0, idle: 0 };
+    this.petGranted = 0; // pet xp already saved during this run (live evolution)
+    this.petCheckT = 0;
     g.onUi = (k, pid) => this.onGameUi(k, pid);
     if (cfg.mode !== "client") g.startRun();
     UI.showHud(g, this.me);
@@ -233,7 +250,8 @@ export const app = {
     const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
-    const petXP = this.me.pet && grantPetXP(petState().equipped || this.me.pet.id, petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses}));
+    const petTotal = petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses});
+    const petXP = this.me.pet && (this.petGranted || 0) + grantPetXP(petState().equipped || this.me.pet.id, Math.max(0, petTotal - (this.petGranted || 0)));
     if (petXP) extras.push(["宠物经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
     // 宠物蛋：每击败一个首领 1 颗（一局最多 3 颗），在宠物仓库孵化
     const eggs = grantEggs(Math.min(3, rs.xpBosses || 0));
@@ -491,6 +509,7 @@ function frame(now) {
     if (consume("mount")) inp.mount = true;
   }
   const active = me && (Math.abs(me.input.mx) > .1 || Math.abs(me.input.my) > .1 || me.input.atk || me.input.skill || me.input.ult || me.input.dash || me.castT > 0);
+  if ((app.petCheckT = (app.petCheckT || 0) + wallDt) >= 1) (app.petCheckT = 0), app.petLiveXP();
   trackExperienceTime(app.progressSession, wallDt, active, !document.hidden && !frozen && !app.cardOpen && !app.ended && !g.pvp && !me?.dead && !me?.downed && ["fight", "clear", "portal"].includes(g.phase) && g.room?.kind !== "shop");
   if (g.hitStop > 0) {
     g.hitStop -= dt;

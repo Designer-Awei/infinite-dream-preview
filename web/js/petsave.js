@@ -1,5 +1,5 @@
 import { load, save, mineState } from "./save.js";
-import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, normalizePets, rollPet, rollTraits, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
+import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, normalizePets, rollPet, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
 
 // 宠物仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
 export function petState() {
@@ -43,8 +43,7 @@ export function hatchEgg(kind = "base") {
   const state = petState(), egg = EGGS[kind];
   if (!egg || state.eggs[kind] <= 0) return null;
   state.eggs[kind]--;
-  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state) });
-  for (let i = 0; i < 200 && petQuality(p) < egg.floor; i++) p.traits = rollTraits();
+  const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: egg.floor });
   addPet(state, p);
   save();
   return p;
@@ -93,19 +92,26 @@ export function equipPet(ref) {
   save();
   return true;
 }
+// 进化 needs nothing but xp: a pet evolves the moment its xp reaches the next stage's need (in a run, at once)
+const autoEvolve = (p) => {
+  const from = p.stage;
+  while (p.stage < 3 && p.xp >= PET_EVOLVE[p.stage + 1].xp) p.stage++;
+  return p.stage > from;
+};
 export function evolvePet(ref) {
-  const state = petState(), own = findPet(ref, state);
+  const own = findPet(ref);
   if (!own || own.stage >= 3) return { ok: false, reason: "已达终极或尚未拥有" };
-  const need = PET_EVOLVE[own.stage + 1], ms = mineState();
-  if (own.xp < need.xp) return { ok: false, reason: "宠物经验不足" };
-  if (ms.stars < need.stars) return { ok: false, reason: "星砂不足" };
-  ms.stars -= need.stars; own.stage++; save();
+  if (!autoEvolve(own)) return { ok: false, reason: "宠物经验不足" };
+  save();
   return { ok: true, stage: own.stage };
 }
+/** add xp to a pet (it evolves on the spot when it reaches a stage); returns the xp actually added */
 export function grantPetXP(ref, amount) {
   const own = findPet(ref);
   if (!own || !Number.isFinite(amount) || amount <= 0) return 0;
-  const before = own.xp; own.xp = Math.min(PET_MAX_XP, own.xp + Math.floor(amount)); save();
+  const before = own.xp; own.xp = Math.min(PET_MAX_XP, own.xp + Math.floor(amount));
+  autoEvolve(own);
+  save();
   return own.xp - before;
 }
 /** the xp the next injection fills up to: the next evolution's need above the pet's xp (300, then 1200) */
@@ -120,8 +126,9 @@ export function injectXP(uid) {
   if (give <= 0) return { ok: false, reason: "经验池是空的" };
   state.pool -= give;
   p.xp += give;
+  const evolved = autoEvolve(p);
   save();
-  return { ok: true, give };
+  return { ok: true, give, evolved, stage: p.stage };
 }
 export function toggleLock(uid) {
   const p = findPet(uid);
@@ -139,7 +146,7 @@ export function fusePets(a, b) {
   if (!A || !B || A === B || A.id !== B.id) return { ok: false, reason: "需要两只同种宠物" };
   if (!spendable(A, state) || !spendable(B, state)) return { ok: false, reason: "上锁或出战中的宠物不能融合" };
   const skins = [A.skin, B.skin].filter((k) => k && k !== "flow");
-  const p = rollPet(A.id, Math.random, { rainbow: rollRainbow(state), best: true, shiny: skins.length ? FUSE_SHINY_PARENT : FUSE_SHINY, skins });
+  const p = rollPet(A.id, Math.random, { rainbow: rollRainbow(state), best: true, floor: Math.min(A.q, B.q), shiny: skins.length ? FUSE_SHINY_PARENT : FUSE_SHINY, skins });
   state.list = state.list.filter((q) => q !== A && q !== B);
   addPet(state, p);
   save();

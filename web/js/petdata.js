@@ -16,14 +16,14 @@ export const PET_COST = { UR: 10 };
 export const eggCount = (st) => Object.values(st.eggs || {}).reduce((a, n) => a + n, 0);
 export const petPortrait = (id, stage = 3) => `assets/pets/${id}-${stage}.png`;
 // ---------------------------------------------------------------- 宠物仓库：每只宠物独立养成
-// A pet = { uid, id (kind), stage, xp, skin (异色 id or null), traits: [[key, value], [key, value]], lock, t }.
-// Traits roll uniformly inside their range; the quality grade is how high the rolls landed. Skins are code recolours
-// (petskins.js), any stage can be one: an egg hatches 异色 with SHINY_CHANCE.
+// A pet = { uid, id (kind), stage, xp, q (quality 0..5), skin (异色 id or null), traits: [[key, value], …], lock, t }.
+// The quality is rolled first and decides each trait's range (its cap): a 普通 pet's 灵动 rolls 2~8%, a 传说 one 12~20%.
+// Skins are code recolours (petskins.js), any stage can be one: an egg hatches 异色 with SHINY_CHANCE.
 export const TRAITS = {
-  dmg: { name: "利爪", desc: "宠物伤害", min: 4, max: 15 },
-  rate: { name: "迅捷", desc: "宠物攻速", min: 4, max: 15 },
-  cd: { name: "灵动", desc: "宠物技能冷却", min: 5, max: 18, minus: true },
-  carry: { name: "共鸣", desc: "携带加成", min: 10, max: 35 },
+  dmg: { name: "利爪", desc: "宠物伤害", top: 20 },
+  rate: { name: "迅捷", desc: "宠物攻速", top: 20 },
+  cd: { name: "灵动", desc: "宠物技能冷却", top: 20, minus: true },
+  carry: { name: "共鸣", desc: "携带加成", top: 40 },
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
 // 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality
@@ -33,14 +33,15 @@ export const SHINY_CHANCE = 0.06, FUSE_SHINY = 0.25, FUSE_SHINY_PARENT = 0.5;
 // 流彩：0.2% a hatch (fusions count), +0.05% for every hatch without one, at most 5%; back to 0.2% once one hatches
 export const RAINBOW = { base: 0.002, step: 0.0005, max: 0.05 };
 export const rainbowChance = (n) => Math.min(RAINBOW.max, RAINBOW.base + Math.max(0, n) * RAINBOW.step);
-// quality: white / green / blue / purple / gold by how high the two rolls landed; 流彩 = three traits, all at the top
+// quality: white / green / blue / purple / gold / 流彩. w = hatch weight, band = each trait's range as a share of its top,
+// xp = what releasing it puts into the pool. 流彩 has three traits; 流彩晶 may push them to 150% of the top.
 export const QUALITY = [
-  { name: "普通", col: "#e8e4f0", xp: 100 },
-  { name: "优秀", col: "#6ee08a", xp: 200 },
-  { name: "稀有", col: "#5aa8ff", xp: 300 },
-  { name: "史诗", col: "#c27bff", xp: 400 },
-  { name: "传说", col: "#ffcf4a", xp: 600 },
-  { name: "流彩", col: "#ff8ad8", xp: 1000, rainbow: true },
+  { name: "普通", col: "#e8e4f0", xp: 100, w: 30, band: [0.1, 0.4] },
+  { name: "优秀", col: "#6ee08a", xp: 200, w: 30, band: [0.2, 0.55] },
+  { name: "稀有", col: "#5aa8ff", xp: 300, w: 22, band: [0.3, 0.7] },
+  { name: "史诗", col: "#c27bff", xp: 400, w: 12, band: [0.45, 0.85] },
+  { name: "传说", col: "#ffcf4a", xp: 600, w: 6, band: [0.6, 1] },
+  { name: "流彩", col: "#ff8ad8", xp: 1000, w: 0, band: [0.9, 1], rainbow: true },
 ];
 export const RELEASE_XP = 400;
 // 宠物蛋：three kinds that only differ in the lowest quality they hatch (the top is the same for all)
@@ -50,16 +51,18 @@ export const EGGS = {
   hur: { name: "HUR 宠物蛋", floor: 3, cost: 20 },
 };
 export const EGG_KINDS = Object.keys(EGGS);
-// 积攒 items: 淬灵露 raises one random trait 2~5 points up to its range's top (传说 and below);
-// 流彩晶 does the same for a 流彩 pet only, and may go past the top, up to 150% of it
+// 积攒 items: 淬灵露 raises one random trait 2~5 points up to its quality's cap (传说 and below);
+// 流彩晶 does the same for a 流彩 pet only, and may go past the cap, up to 150% of the top
 export const PET_ITEMS = {
-  ur: { name: "淬灵露", r: "UR", cost: 10, desc: "传说及以下 · 随机词条 +2~5%" },
+  ur: { name: "淬灵露", r: "UR", cost: 10, desc: "传说及以下 · 随机词条 +2~5%，至品质上限" },
   hur: { name: "流彩晶", r: "HUR", cost: 20, desc: "仅流彩 · 随机词条 +2~5%，可破上限" },
 };
 export const OVERCAP = 1.5;
-export const isRainbow = (p) => p.traits.length >= 3;
-/** the highest a trait of this pet can go: its range's top, 150% of it for a 流彩 pet */
-export const traitCap = (p, k) => Math.round(TRAITS[k].max * (isRainbow(p) ? OVERCAP : 1));
+export const isRainbow = (p) => p.q === 5;
+/** a trait's range for a quality: [lo, hi] in percent */
+export const traitBand = (q, k) => QUALITY[q].band.map((f) => Math.max(1, Math.round(TRAITS[k].top * f)));
+/** the highest a trait of this pet can go: its quality's cap, 150% of the top for a 流彩 pet */
+export const traitCap = (p, k) => (isRainbow(p) ? Math.round(TRAITS[k].top * OVERCAP) : traitBand(p.q, k)[1]);
 const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.floor(Number(v) || 0)));
 // a small seeded random for the one-time migration of old saves (so every read of an old save agrees)
 function seeded(str) {
@@ -67,54 +70,79 @@ function seeded(str) {
   for (const c of str) h = Math.imul(h ^ c.charCodeAt(0), 16777619);
   return () => ((h = Math.imul(h ^ (h >>> 15), 2246822507) ^ Math.imul(h ^ (h >>> 13), 3266489909)), ((h >>>= 0) % 100000) / 100000);
 }
-/** n distinct traits; best: each value rolled twice, the higher kept (fusion); top: all in the top tenth (流彩) */
-export function rollTraits(rand = Math.random, n = 2, best = false, top = false) {
+/** a quality by the hatch weights, at least floor; best: rolled twice, the higher kept (fusion) */
+export function rollQuality(rand = Math.random, floor = 0, best = false) {
+  const one = () => {
+    const ok = QUALITY.map((Q, i) => (i >= floor ? Q.w : 0)), sum = ok.reduce((a, b) => a + b, 0);
+    let r = rand() * sum;
+    return ok.findIndex((w) => (r -= w) < 0);
+  };
+  return best ? Math.max(one(), one()) : one();
+}
+/** distinct traits for a quality (two, three for 流彩), each inside the quality's range */
+export function rollTraits(q, rand = Math.random) {
   const keys = [...TRAIT_KEYS], out = [];
-  for (let i = 0; i < n; i++) {
-    const k = keys.splice(Math.floor(rand() * keys.length), 1)[0], t = TRAITS[k];
-    let u = best ? Math.max(rand(), rand()) : rand();
-    if (top) u = 0.9 + u * 0.1;
-    out.push([k, Math.round(t.min + u * (t.max - t.min))]);
+  for (let i = 0; i < (q === 5 ? 3 : 2); i++) {
+    const k = keys.splice(Math.floor(rand() * keys.length), 1)[0], [lo, hi] = traitBand(q, k);
+    out.push([k, Math.round(lo + rand() * (hi - lo))]);
   }
   return out;
 }
 export const newUid = (id) => id + "-" + Math.random().toString(36).slice(2, 8);
-/** a freshly hatched young pet of kind id. o: { rainbow (流彩: three top traits, the 流彩 skin), shiny (异色 chance),
- *  best (traits rolled with advantage), skins (parents' 异色, one of them is inherited 60% of the time) } */
+/** a freshly hatched young pet of kind id. o: { rainbow (流彩: three top traits, the 流彩 skin), floor (lowest quality),
+ *  best (quality rolled with advantage), shiny (异色 chance), skins (parents' 异色, one is inherited 60% of the time) } */
 export function rollPet(id, rand = Math.random, o = {}) {
-  const pool = SKIN_POOL[id];
+  const pool = SKIN_POOL[id], q = o.rainbow ? 5 : rollQuality(rand, o.floor || 0, !!o.best);
   let skin = null;
   if (o.rainbow) skin = "flow";
   else if (rand() < (o.shiny ?? SHINY_CHANCE)) skin = o.skins?.length && rand() < 0.6 ? o.skins[Math.floor(rand() * o.skins.length)] : pool[Math.floor(rand() * pool.length)];
-  const traits = o.rainbow ? rollTraits(rand, 3, false, true) : rollTraits(rand, 2, !!o.best);
-  return { uid: newUid(id), id, stage: 1, xp: 0, skin, traits, lock: false, t: Date.now() };
+  return { uid: newUid(id), id, stage: 1, xp: 0, q, skin, traits: rollTraits(q, rand), lock: false, t: Date.now() };
 }
-function cleanTraits(v, uid) {
-  const out = [], seen = new Set();
+// the quality of a pet saved before qualities were stored: how high its traits sat in the old ranges
+const OLD = { dmg: [4, 15], rate: [4, 15], cd: [5, 18], carry: [10, 35] };
+function oldQuality(traits) {
+  if (traits.length >= 3) return 5;
+  const k = traits.reduce((a, [key, v]) => a + Math.min(1, Math.max(0, (v - OLD[key][0]) / (OLD[key][1] - OLD[key][0]))), 0) / Math.max(1, traits.length);
+  return k >= 0.88 ? 4 : k >= 0.7 ? 3 : k >= 0.5 ? 2 : k >= 0.28 ? 1 : 0;
+}
+/** a pet's traits, kept inside its quality's range; a pet saved before qualities existed gets its quality from its old
+ *  rolls and fresh values in that quality's range (seeded by its uid, so every read agrees) */
+function cleanTraits(v, uid, q0) {
+  const raw = [], seen = new Set();
   if (Array.isArray(v)) for (const e of v) {
-    const k = Array.isArray(e) ? e[0] : null, t = TRAITS[k];
-    if (!t || seen.has(k) || out.length >= 3) continue;
+    const k = Array.isArray(e) ? e[0] : null;
+    if (!TRAITS[k] || seen.has(k) || raw.length >= 3) continue;
     seen.add(k);
-    out.push([k, Number(e[1]) || 0]);
+    raw.push([k, Number(e[1]) || 0]);
   }
-  if (!out.length) return rollTraits(seeded(uid));
-  const cap = out.length >= 3 ? OVERCAP : 1; // a 流彩 pet's traits may have been pushed past the top by 流彩晶
-  return out.map(([k, x]) => [k, clampInt(x, TRAITS[k].min, Math.round(TRAITS[k].max * cap))]);
+  if (Number.isInteger(q0) && q0 >= 0 && q0 <= 5 && raw.length === (q0 === 5 ? 3 : 2)) {
+    const p = { q: q0 };
+    return { q: q0, traits: raw.map(([k, x]) => [k, clampInt(x, traitBand(q0, k)[0], traitCap(p, k))]) };
+  }
+  const rand = seeded(uid);
+  if (!raw.length) {
+    const q = rollQuality(rand);
+    return { q, traits: rollTraits(q, rand) };
+  }
+  // keep the old trait kinds, roll their values again inside the new quality's ranges
+  const q = oldQuality(raw), traits = raw.slice(0, q === 5 ? 3 : 2).map(([k]) => {
+    const [lo, hi] = traitBand(q, k);
+    return [k, Math.round(lo + rand() * (hi - lo))];
+  });
+  return { q, traits };
 }
-// 暗影 (purple) became 绯樱; a 流彩 skin needs three traits
+// 暗影 (purple) became 绯樱
 const skinOk = (id, k) => (k === "shadow" ? "sakura" : skinsOf(id).includes(k) ? k : null);
 function cleanPet(v) {
   if (!v || typeof v !== "object" || !Object.hasOwn(PETS, v.id)) return null;
   const uid = typeof v.uid === "string" && /^[a-z0-9-]{1,24}$/.test(v.uid) ? v.uid : null;
   if (!uid) return null;
-  return { uid, id: v.id, stage: clampInt(v.stage || 1, 1, 3), xp: clampInt(v.xp, 0, PET_MAX_XP), skin: skinOk(v.id, v.skin), traits: cleanTraits(v.traits, uid), lock: !!v.lock, t: Number(v.t) || 0 };
+  const { q, traits } = cleanTraits(v.traits, uid, v.q);
+  const skin = q === 5 ? "flow" : skinOk(v.id, v.skin) === "flow" ? null : skinOk(v.id, v.skin);
+  return { uid, id: v.id, stage: clampInt(v.stage || 1, 1, 3), xp: clampInt(v.xp, 0, PET_MAX_XP), q, skin, traits, lock: !!v.lock, t: Number(v.t) || 0 };
 }
-/** 0..5 = 普通 / 优秀 / 稀有 / 史诗 / 传说 by how high the two rolls landed; 5 = 流彩 (three traits) */
-export function petQuality(p) {
-  if (p.traits.length >= 3) return 5;
-  const k = p.traits.reduce((a, [key, v]) => a + Math.min(1, (v - TRAITS[key].min) / (TRAITS[key].max - TRAITS[key].min)), 0) / Math.max(1, p.traits.length);
-  return k >= 0.88 ? 4 : k >= 0.7 ? 3 : k >= 0.5 ? 2 : k >= 0.28 ? 1 : 0;
-}
+/** 0..5 = 普通 / 优秀 / 稀有 / 史诗 / 传说 / 流彩 */
+export const petQuality = (p) => p.q ?? 0;
 /** the battle multipliers of a pet's traits */
 export function traitMul(traits) {
   const tr = { dmg: 1, rate: 1, cd: 1, carry: 1 };
@@ -127,7 +155,7 @@ export function validPet(value) {
   const stage = Math.max(1, Math.min(3, Math.floor(Number(value.stage) || 1)));
   const src = value.tr || traitMul(value.traits), tr = {};
   for (const k of TRAIT_KEYS) {
-    const t = TRAITS[k], top = (t.max * OVERCAP) / 100, lo = k === "cd" ? 1 - top : 1, hi = k === "cd" ? 1 : 1 + top;
+    const top = (TRAITS[k].top * OVERCAP) / 100, lo = k === "cd" ? 1 - top : 1, hi = k === "cd" ? 1 : 1 + top;
     tr[k] = Math.max(lo, Math.min(hi, Number(src[k]) || 1));
   }
   return { id: value.id, stage, skin: skinOk(value.id, value.skin), tr };

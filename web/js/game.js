@@ -10,7 +10,7 @@ import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
 import { flyingMount, visualTilesIn } from './petcombat.js';
-import { FOX_RIDE_RANGE, DRAGON_FIREBALL } from './petdata.js';
+import { FOX_RIDE_RANGE, DRAGON_FIREBALL, PETS } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
 
@@ -130,6 +130,19 @@ export class Game {
     R.path.push(j);
     if (!auto) R.choices++;
     this.nextRoom();
+  }
+  /** 实时进化: the pet grows a stage in the run — its carry bonus steps up, a light pillar and a burst play on it */
+  evolvePetLive(p, stage) {
+    const q = p.pet;
+    if (!q || stage <= q.stage) return;
+    const def = PETS[q.id], k = q.tr?.carry || 1, name = ["幼年", "成长", "终极"][stage - 1];
+    p.st[def.stat] *= (1 + def.bonus[stage - 1] * k) / (1 + def.bonus[q.stage - 1] * k);
+    q.stage = stage;
+    this.vfx("holy/holy-pillar", q.x, q.y + 4, { life: 1.4 });
+    this.vfx("pickups/collect-burst", q.x, q.y - 16, {});
+    this.sound("ssr");
+    this.text(q.x, q.y - 50, `进化为${name}！`, def.color, 1.3, 1.8);
+    this.banner = { text: "宠物进化！", sub: `${def.name} · ${name}`, t: 2 };
   }
   /** a fork on the route: one coloured portal per next room, side by side at (x, y) */
   openForkPortals(x, y) {

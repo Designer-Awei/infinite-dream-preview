@@ -2291,3 +2291,20 @@ body.touchmode .pet-ride-btn small { display:none; }
 .pp-none { font-size: 12px; color: #d8d0f0; }
 .wh-egg.e-ur { background: radial-gradient(circle at 50% 55%, #2e5a9a, #1e1840 75%); }
 .wh-egg.e-hur { background: radial-gradient(circle at 50% 55%, #6a3aa0, #1e1840 75%); }
+/* 仓库 v3：全屏页（左上角返回，参考扭蛋机），点左侧宠物动画进详情，放生靠右与左栏右对齐 */
+.wh-modal { background: radial-gradient(120% 100% at 30% 30%, #4a3ab0, #2a1e70 55%, #160e40); animation: none; display: block; }
+.wh-modal .wh-panel { position: absolute; inset: 0; display: flex; flex-direction: column; padding: calc(max(8px, env(safe-area-inset-top)) + 50px) max(14px, env(safe-area-inset-right)) max(10px, env(safe-area-inset-bottom)) max(14px, env(safe-area-inset-left)); gap: 8px; }
+.wh-modal .topbar { gap: 12px; }
+.wh-modal .topbar h2 { margin: 0; font-size: 22px; }
+.wh-modal .wh-wallet { margin-left: auto; font-size: 13px; }
+.wh-modal .wh-body { grid-template-columns: minmax(0, 38%) minmax(0, 1fr); }
+.wh-anim { cursor: pointer; }
+.wh-hint { position: absolute; right: 8px; bottom: 6px; font-size: 10px; color: #c8c0e8; pointer-events: none; }
+.wh-hatch { border-radius: 0; }
+/* 详情页：去掉底部按钮后技能行铺满右栏 */
+.pet-info-md .pp-info { justify-content: flex-start; }
+/* 宠物图鉴卡片：动画预览 */
+.pdx-grid .cdx-c .pdx-v { display: block; width: 96px; height: 68px; }
+.pdx-grid .cdx-c .pdx-v canvas { width: 100%; height: 100%; image-rendering: pixelated; }
+.pdx-grid .cdx-c.no .pdx-v canvas { filter: brightness(0) opacity(.5); }
+@media (max-height: 420px) { .pdx-grid .cdx-c .pdx-v { width: 76px; height: 52px; } .wh-modal .wh-panel { padding-top: calc(max(8px, env(safe-area-inset-top)) + 44px); } }
