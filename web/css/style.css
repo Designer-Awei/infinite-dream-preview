@@ -2432,3 +2432,8 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-rscore i { font-style: normal; font-size: 12px; color: #c8c0e8; text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
 .wh-rscore b { font-weight: normal; font-size: 20px; color: var(--qc); text-shadow: none; -webkit-text-stroke: 4px var(--ink); paint-order: stroke fill; }
 .wh-rscore.rb b { animation: whScoreHue 2.4s linear infinite; }
+/* 评分: no box, straight on the preview's top-right; the number gets a fixed four-digit slot (right-aligned) so 评分
+   never moves when the digit count changes */
+.wh-score { background: none; border: 0; padding: 0; top: 10px; right: 12px; gap: 6px; }
+.wh-score b { display: inline-block; width: 4ch; text-align: right; }
+@media (max-height: 420px) { .wh-score { top: 8px; right: 10px; padding: 0; gap: 5px; } }
