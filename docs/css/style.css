@@ -2017,7 +2017,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 @media(max-height:420px){.pet-body{grid-template-columns:minmax(145px,28%) minmax(0,1fr);gap:12px}.pet-choice>span{font-size:11px}.pet-choice>small{font-size:9px}.pet-summary{gap:3px}.pet-preview-tools{gap:12px;margin:0}.pet-preview-tools button{font-size:11px;padding:3px 1px}.pet-skill-lines p{font-size:11px;margin:4px 0}.pet-summary>.pet-preview-note{font-size:9px}.pet-detail{padding:0}}
 
 .pet-choice.evolved canvas { animation:petEvolve .9s ease-out; }
-/* ---- 梦境伙伴 (2026-11-09): fixed preview stage (left, as tall as the info column) + skill rows (right) ---- */
+/* ---- 梦境宠物 (2026-11-09): fixed preview stage (left, as tall as the info column) + skill rows (right) ---- */
 .pp { gap: 10px; }
 .pp .pp-body { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.08fr); gap: 16px; }
 .pp .pp-stage { --pc: #ff9c56; position: relative; min-width: 0; min-height: 0; display: flex; flex-direction: column; border: 3px solid #1a1020; border-radius: 16px; overflow: hidden;
@@ -2177,7 +2177,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* taller screens keep the 3-column grid in its order; the extra row scrolls up */
 @media (min-height: 421px) { .lb .lb-roster { overflow-x: hidden; overflow-y: auto; grid-auto-rows: calc((100% - 8px) / 2); } }
 
-/* ===== 伙伴仓库（预览）：右侧库存格子是主体，左侧选中伙伴；按钮短、单行、单圈描边 ===== */
+/* ===== 宠物仓库（预览）：右侧库存格子是主体，左侧选中宠物；按钮短、单行、单圈描边 ===== */
 .wh-panel { width: min(920px, 94vw); height: min(400px, 92vh); }
 .wh-wallet { display: flex; gap: 14px; margin-left: auto; font-size: 13px; color: #d8d0f0; white-space: nowrap; }
 .wh-wallet b { color: #ffe36a; font-weight: normal; }
@@ -2279,3 +2279,15 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-modal .wh-chip { text-shadow: none; -webkit-text-stroke: 0; }
 .wh-modal .wh-chip.rainbow { -webkit-text-stroke: 2px #1a1020; }
 .wh-codex { background: linear-gradient(180deg, #3e2f86, #241a58); }
+/* 积攒条刻度统一白色；积攒兑换四行：宠物蛋（代码画的蛋）与两种词条道具 */
+.stashbar .sb-t.ur em, .stashbar .sb-t.hur em { color: #fff; background: none; -webkit-background-clip: initial; background-clip: initial; -webkit-text-fill-color: #fff; }
+.stash-p .st-list { display: flex; flex-direction: column; gap: 6px; }
+.st-it { padding: 6px 10px; }
+.st-it .st-egg { width: 26px; height: 32px; image-rendering: pixelated; flex: none; }
+.st-ico { flex: none; width: 26px; height: 30px; border: 2px solid var(--ink); border-radius: 8px 8px 12px 12px; background: radial-gradient(circle at 40% 35%, #fff 0 12%, #9ef0ff 13% 40%, #3aa0e0 70%); }
+.st-ico.hur { background: conic-gradient(from 0deg, #ff6a6a, #ffd84a, #6ee08a, #5aa8ff, #c27bff, #ff6a6a); border-radius: 50% 50% 8px 8px / 60% 60% 8px 8px; transform: rotate(45deg) scale(.82); }
+.st-it .btn small { display: block; font-size: 10px; }
+.stash-p .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.pp-none { font-size: 12px; color: #d8d0f0; }
+.wh-egg.e-ur { background: radial-gradient(circle at 50% 55%, #2e5a9a, #1e1840 75%); }
+.wh-egg.e-hur { background: radial-gradient(circle at 50% 55%, #6a3aa0, #1e1840 75%); }

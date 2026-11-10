@@ -14,11 +14,13 @@ import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMa
 import { T } from "./data.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
-import { showPets, showPetDetail } from "./petui.js";
+import { showPets } from "./petui.js";
 import { drawEgg } from "./petwh.js";
 import { petPortrait } from "./petdata.js";
 import { petState } from './petsave.js';
 import { petPreview, setPetPreview } from './petpreview.js';
+import { EGGS, PET_ITEMS, eggCount } from './petdata.js';
+import { stashExchange } from './petsave.js';
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -119,14 +121,15 @@ export function showLobby() {
   q(".pname", s).textContent = m.name;
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
-  // the partner entry (伙伴仓库): the carried pet (with its 异色), else the most grown one; an egg when there are only eggs
+  // the partner entry (宠物仓库): the carried pet (with its 异色), else the most grown one; an egg when there are only eggs
   const pets=petState(),pet=pets.list.find((p)=>p.uid===pets.equipped)||pets.list[0];
-  if(pet||pets.eggs){
+  const eggs=eggCount(pets),eggKind=['hur','ur','base'].find((k)=>pets.eggs[k]>0)||'base';
+  if(pet||eggs){
     const entry=el('button','lb-pet pet-entry','<span class="lb-pet-preview"></span>');
-    entry.title='伙伴仓库';entry.setAttribute('aria-label','伙伴仓库');q('.lb-right',s).appendChild(entry);
+    entry.title='宠物仓库';entry.setAttribute('aria-label','宠物仓库');q('.lb-right',s).appendChild(entry);
     if(pet)setPetPreview(petPreview(entry.querySelector('span'),pet.id,pet.stage,'lobby',true,false,true),{skin:pet.skin});
-    else{const c=document.createElement('canvas');c.className='lb-pet-egg';drawEgg(c);entry.querySelector('span').appendChild(c);}
-    if(pets.eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可孵化的伙伴蛋">${Math.min(99,pets.eggs)}</i>`);
+    else{const c=document.createElement('canvas');c.className='lb-pet-egg';drawEgg(c,0,eggKind);entry.querySelector('span').appendChild(c);}
+    if(eggs)entry.insertAdjacentHTML('beforeend',`<i class="badge o1 lb-pet-eggs" title="可孵化的宠物蛋">${Math.min(99,eggs)}</i>`);
     entry.onclick=()=>{sfx('click');showPets(()=>showLobby());};
   }
   wireCurrency(s);
@@ -991,7 +994,7 @@ function showPool() {
 /** SSR 兑换卡 (bought in 梦境工坊 with 星砂): same card grid as the pool; tap → effect preview with the 兑换 button */
 export function showExchange(after) {
   const m = load(), ms = mineState();
-  const stash={...STASH_ITEM,desc:"消耗1张兑换卡，获得1积攒点；可用于兑换梦境伙伴。",exchangeStash:true};
+  const stash={...STASH_ITEM,desc:"消耗1张兑换卡，获得1积攒点；可用于兑换梦境宠物。",exchangeStash:true};
   const list = [...GACHA.pool.filter((it) => it.r === "SSR"),stash];
   const md = el("div", "modal pool-modal ex-modal");
   const full = it => !it.exchangeStash && (m.talents[it.id] || 0) >= it.max;
@@ -1347,17 +1350,30 @@ const ssrOwned = () => {
   const m = load(), list = GACHA.pool.filter((it) => it.r === "SSR");
   return `${list.filter((it) => (m.talents[it.id] || 0) >= it.max).length} / ${list.length}`;
 };
+// 积攒兑换：[what, rarity, name, one line, cost, egg kind]
+const STASH_ROWS = [
+  ["egg_ur", "UR", EGGS.ur.name, "孵化必出稀有或更高品质", EGGS.ur.cost, "ur"],
+  ["egg_hur", "HUR", EGGS.hur.name, "孵化必出史诗或更高品质", EGGS.hur.cost, "hur"],
+  ["item_ur", "UR", PET_ITEMS.ur.name, PET_ITEMS.ur.desc, PET_ITEMS.ur.cost, null],
+  ["item_hur", "HUR", PET_ITEMS.hur.name, PET_ITEMS.hur.desc, PET_ITEMS.hur.cost, null],
+];
 function showStash() {
   const m = load(), n = m.stash || 0;
   const md = el("div", "modal stash-md");
   md.innerHTML = `<div class="panel stash-p"><h2 class="outline">积攒兑换</h2>
-    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 ${n} 点）。点数可兑换梦境伙伴，首次获得后解锁出战。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
-    <div class="st-list">
-      <div class="st-it ur"><div class="st-r o1">UR</div><div class="st-tx"><b class="outline">幼年伙伴</b><span>三选一 · 自动助战，可养成进化</span></div><button class="btn small"><span>选择伙伴</span><small>积攒 10</small></button></div>
-      <div class="st-it hur"><div class="st-r o1">HUR</div><div class="st-tx"><b class="outline">兑换内容待定</b><span>暂未开放</span></div><button class="btn small" disabled>敬请期待</button></div>
-    </div></div>`;
-
+    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 <b class="st-n">${n}</b> 点）。兑换的宠物蛋与道具放进宠物仓库。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
+    <div class="st-list">${STASH_ROWS.map(([what, r, name, desc, cost, kind]) => `<div class="st-it ${r.toLowerCase()}" data-w="${what}"><div class="st-r o1">${r}</div>${kind ? `<canvas class="st-egg" data-k="${kind}"></canvas>` : `<i class="st-ico ${r.toLowerCase()}"></i>`}<div class="st-tx"><b class="outline">${name}</b><span>${desc}</span></div><button class="btn small"><span>兑换</span><small>积攒 ${cost}</small></button></div>`).join("")}</div></div>`;
   md.onclick = (e) => e.target === md && md.remove();
-  md.querySelector('.st-it.ur button').onclick=()=>{md.remove();showPetDetail(null,()=>showGacha());};
+  md.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
+  const sync = () => md.querySelectorAll(".st-it").forEach((it) => (it.querySelector("button").disabled = (load().stash || 0) < STASH_ROWS.find((r) => r[0] === it.dataset.w)[4]));
+  md.querySelectorAll(".st-it").forEach((it) => (it.querySelector("button").onclick = () => {
+    const r = stashExchange(it.dataset.w);
+    if (!r.ok) return toast(r.reason);
+    sfx("ssr");
+    toast(`获得${r.name}，在宠物仓库使用`);
+    md.querySelector(".st-n").textContent = load().stash || 0;
+    sync();
+  }));
+  sync();
   uiRoot().appendChild(md);
 }

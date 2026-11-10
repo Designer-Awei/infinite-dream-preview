@@ -1,9 +1,9 @@
-// 伙伴仓库：从主页角色右上方的伙伴入口进入。右侧是库存格子（第一格是伙伴蛋，其后每只已孵化的伙伴；上锁的排在前面），
-// 左侧是选中伙伴：动画（左上角上锁按钮）、名字旁的异色 / 品质标签、词条（数值与范围）、经验条，以及
-// 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、伙伴现身。图鉴按种类列出原色与各异色。点面板外关闭。
-import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, petQuality, petPortrait, skinsOf, rainbowChance } from "./petdata.js";
+// 宠物仓库：从主页角色右上方的宠物入口进入。右侧是库存格子（第一格是宠物蛋，其后每只已孵化的宠物；上锁的排在前面），
+// 左侧是选中宠物：动画（左上角上锁按钮）、名字旁的异色 / 品质标签、词条（数值与范围）、经验条，以及
+// 出战 / 进化 / 注入经验 / 融合 / 详情 / 放生。孵蛋与融合在面板内揭晓：蛋摇晃、裂开、宠物现身。图鉴按种类列出原色与各异色。点面板外关闭。
+import { PETS, PET_ORDER, PET_STAGES, PET_EVOLVE, PET_MAX_XP, TRAITS, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, EGG_KINDS, PET_ITEMS, petQuality, petPortrait, skinsOf, rainbowChance, eggCount, traitCap } from "./petdata.js";
 import { PET_SKINS, skinnedFrame } from "./petskins.js";
-import { petState, findPet, hatchEgg, equipPet, evolvePet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable } from "./petsave.js";
+import { petState, findPet, hatchEgg, equipPet, evolvePet, injectXP, injectTarget, toggleLock, releasePet, releaseXP, fusePets, spendable, itemFor, useItem } from "./petsave.js";
 import { mineState } from "./save.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { el } from "./util.js";
@@ -11,8 +11,11 @@ import { sfx } from "./audio.js";
 import { petPreview, setPetPreview } from "./petpreview.js";
 import { showPetDetail } from "./petui.js";
 
-/** a code-drawn pixel egg (24 x 30) with teal spots; crack 0..3 draws that many crack segments */
-export function drawEgg(c, crack = 0) {
+// shell colours by egg kind: [light, mid, shadow, spots] — 宠物蛋 cream / teal, UR blue / white, HUR purple / gold
+const EGG_PAL = { base: ["#fffaf0", "#f4ead4", "#d8c8a8", "#4ec0b0"], ur: ["#e8f6ff", "#8cc8ff", "#4a86d8", "#ffffff"], hur: ["#f4e0ff", "#c48aff", "#8048c8", "#ffd84a"] };
+/** a code-drawn pixel egg (24 x 30) in its kind's colours; crack 0..3 draws that many crack segments */
+export function drawEgg(c, crack = 0, kind = "base") {
+  const P = EGG_PAL[kind] || EGG_PAL.base;
   const g = c.getContext("2d"), W = 24, H = 30;
   c.width = W;
   c.height = H;
@@ -26,10 +29,10 @@ export function drawEgg(c, crack = 0) {
       continue;
     }
     const lit = (x - 8) * (x - 8) + (y - 10) * (y - 10) < 18, dark = x > 16 || y > 25;
-    g.fillStyle = lit ? "#fffaf0" : dark ? "#d8c8a8" : "#f4ead4";
+    g.fillStyle = lit ? P[0] : dark ? P[2] : P[1];
     g.fillRect(x, y, 1, 1);
   }
-  g.fillStyle = "#4ec0b0";
+  g.fillStyle = P[3];
   for (const [x, y, w] of [[6, 14, 3], [14, 9, 2], [15, 18, 3], [9, 22, 2], [17, 13, 1], [11, 17, 1]]) g.fillRect(x, y, w, w > 1 ? 2 : 1);
   g.fillStyle = "#1a1020";
   const seg = [[[7, 12], [9, 14], [11, 12], [13, 14]], [[13, 14], [15, 12], [17, 14]], [[11, 12], [12, 9], [11, 7]]];
@@ -58,7 +61,7 @@ function portrait(box, p) {
 }
 const order = (st) => [...st.list].sort((a, b) => (b.lock - a.lock) || ((b.uid === st.equipped) - (a.uid === st.equipped)) || (!!b.skin - !!a.skin) || (b.stage - a.stage) || (petQuality(b) - petQuality(a)) || (b.t - a.t));
 const traitLine = ([k, v]) => {
-  const t = TRAITS[k], pos = (v - t.min) / (t.max - t.min);
+  const t = TRAITS[k], pos = Math.min(1, (v - t.min) / (t.max - t.min));
   return `<div class="wh-tr"><b>${t.name}</b><span class="wh-td">${t.desc} ${t.minus ? "-" : "+"}${v}%</span><i class="wh-tb"><u style="width:${Math.round(8 + pos * 92)}%"></u></i><small>${t.min}~${t.max}%</small></div>`;
 };
 
@@ -74,7 +77,7 @@ export function showWarehouse(onClose) {
   document.querySelector(".wh-modal")?.remove();
   const md = el("div", "modal pet-modal wh-modal");
   md.innerHTML = `<section class="panel pet-panel wh-panel" role="dialog" aria-modal="true" aria-labelledby="wh-title">
-    <header><h2 id="wh-title">伙伴仓库</h2><span class="wh-hbtn"></span><div class="wh-wallet o1"></div></header>
+    <header><h2 id="wh-title">宠物仓库</h2><span class="wh-hbtn"></span><div class="wh-wallet o1"></div></header>
     <div class="wh-body">
       <div class="wh-detail"></div>
       <div class="wh-grid"></div>
@@ -90,16 +93,22 @@ export function showWarehouse(onClose) {
   const wallet = () => {
     const st = petState();
     const rc = rainbowChance(st.rb) * 100;
-    $(".wh-wallet").innerHTML = `<span>伙伴蛋 <b>${st.eggs}</b></span><span>经验池 <b>${st.pool}</b></span><span>星砂 <b>${mineState().stars}</b></span><span title="每次孵化或融合没出流彩，下次概率 +0.05%，最高 5%；出了流彩后回到 0.2%">流彩 <b class="wh-rc">${rc.toFixed(rc < 1 ? 2 : 1)}%</b></span>`;
+    const items = Object.entries(PET_ITEMS).filter(([k]) => st.items[k] > 0).map(([k, it]) => `<span>${it.name} <b>${st.items[k]}</b></span>`).join("");
+    $(".wh-wallet").innerHTML = `<span>宠物蛋 <b>${eggCount(st)}</b></span>${items}<span>经验池 <b>${st.pool}</b></span><span>星砂 <b>${mineState().stars}</b></span><span title="每次孵化或融合没出流彩，下次概率 +0.05%，最高 5%；出了流彩后回到 0.2%">流彩 <b class="wh-rc">${rc.toFixed(rc < 1 ? 2 : 1)}%</b></span>`;
   };
   const grid = () => {
     const st = petState(), g = $(".wh-grid");
     g.replaceChildren();
-    const egg = el("button", "wh-card wh-egg" + (st.eggs ? "" : " none"), `<canvas></canvas><b class="o1">孵化</b><i class="wh-n o1">×${st.eggs}</i>`);
-    drawEgg(egg.querySelector("canvas"));
-    egg.title = st.eggs ? "孵化一颗伙伴蛋" : "击败首领可获得伙伴蛋";
-    egg.onclick = () => (st.eggs ? hatch() : toast("击败首领可获得伙伴蛋"));
-    g.appendChild(egg);
+    // one card per kind of egg you have (the plain one always shows, as the place eggs go)
+    for (const k of EGG_KINDS) {
+      const n = st.eggs[k];
+      if (k !== "base" && !n) continue;
+      const fl = EGGS[k].floor, egg = el("button", `wh-card wh-egg e-${k}` + (n ? "" : " none"), `<canvas></canvas><b class="o1">${k === "base" ? "孵化" : `${QUALITY[fl].name}起`}</b><i class="wh-n o1">×${n}</i>`);
+      drawEgg(egg.querySelector("canvas"), 0, k);
+      egg.title = n ? `${EGGS[k].name}：孵化出${QUALITY[fl].name}或更高品质` : "击败首领可获得宠物蛋";
+      egg.onclick = () => (n ? hatch(k) : toast("击败首领可获得宠物蛋，积攒也可兑换"));
+      g.appendChild(egg);
+    }
     const A = fuseA && findPet(fuseA, st);
     for (const p of order(st)) {
       const q = petQuality(p), mate = A && p !== A && p.id === A.id && spendable(p, st);
@@ -112,7 +121,7 @@ export function showWarehouse(onClose) {
       c.onclick = () => {
         if (A) {
           if (p === A) return cancelFuse();
-          if (!mate) return toast(p.id !== A.id ? "只能和同种伙伴融合" : "上锁或出战中的伙伴不能融合");
+          if (!mate) return toast(p.id !== A.id ? "只能和同种宠物融合" : "上锁或出战中的宠物不能融合");
           return fuseConfirm(A, p);
         }
         if (sel === p.uid) return;
@@ -128,7 +137,7 @@ export function showWarehouse(onClose) {
     const st = petState(), p = sel && findPet(sel, st), box = $(".wh-detail");
     if (!p) {
       canvas = null;
-      box.innerHTML = `<div class="wh-empty o1"><canvas></canvas><p>${st.eggs ? "点右侧的伙伴蛋孵化你的第一只伙伴。" : "还没有伙伴。击败首领可获得伙伴蛋，也可以在图鉴里用积攒兑换。"}</p><div class="wh-btns"></div></div>`;
+      box.innerHTML = `<div class="wh-empty o1"><canvas></canvas><p>${eggCount(st) ? "点右侧的宠物蛋孵化你的第一只宠物。" : "还没有宠物。击败首领可获得宠物蛋，也可以在图鉴里用积攒兑换。"}</p><div class="wh-btns"></div></div>`;
       drawEgg(box.querySelector("canvas"));
       box.querySelector(".wh-btns").appendChild(btn("图鉴", "small", () => (md.remove(), showPetDetail(null, () => showWarehouse(onClose)))));
       return;
@@ -185,16 +194,30 @@ export function showWarehouse(onClose) {
       inj.title = `从经验池注入，最多到 ${to}`;
       b.appendChild(inj);
     }
+    // 淬炼: 淬灵露 (流彩晶 for a 流彩 pet) raises a random trait; shown while you have the item
+    const it = itemFor(p);
+    if (st.items[it.k] > 0) {
+      const up = btn("淬炼", "small", () => {
+        const r = useItem(p.uid);
+        if (!r.ok) return toast(r.reason);
+        sfx("heal");
+        toast(`${r.item}：${TRAITS[r.key].name} +${r.add}%`);
+        refresh();
+      });
+      up.disabled = !it.room;
+      up.title = it.room ? `用 1 个${it.item.name}（剩 ${st.items[it.k]}）：${it.item.desc}` : "词条都已到上限";
+      b.appendChild(up);
+    }
     const fu = btn("融合", "small pink", () => startFuse(p));
     fu.disabled = !spendable(p, st) || !st.list.some((o) => o !== p && o.id === p.id && spendable(o, st));
-    fu.title = fu.disabled ? "需要另一只未上锁、未出战的同种伙伴" : "选另一只同种伙伴融合";
+    fu.title = fu.disabled ? "需要另一只未上锁、未出战的同种宠物" : "选另一只同种宠物融合";
     b.appendChild(fu);
     const gap = el("span", "wh-gap");
     b.appendChild(gap);
     b.appendChild(btn("详情", "small gray", () => (md.remove(), showPetDetail(p.uid, () => showWarehouse(onClose)))));
     const rel = btn(confirmRelease ? "确认放生" : "放生", "small red", () => {
       if (p.lock) return toast("已上锁，先解锁");
-      if (carried) return toast("出战中的伙伴不能放生");
+      if (carried) return toast("出战中的宠物不能放生");
       if (!confirmRelease) return (confirmRelease = true), sfx("click"), toast(`再点一次放生，经验池 +${releaseXP(p)}`), detail();
       const r = releasePet(p.uid);
       if (!r.ok) return toast(r.reason);
@@ -213,18 +236,18 @@ export function showWarehouse(onClose) {
   const refresh = () => (wallet(), grid(), detail());
 
   // ---- hatching / fusion, revealed over the panel: shake, three cracks, the pet appears (异色 gold, 流彩 rainbow)
-  const reveal = (p, again) => {
+  const reveal = (p, again, kind = "base") => {
     const q = petQuality(p), Q = QUALITY[q], ov = el("div", "wh-hatch" + (p.skin ? " shiny" : "") + (Q.rainbow ? " rainbow" : ""));
     ov.innerHTML = `<div class="wh-hstage"><canvas class="wh-hegg"></canvas><div class="wh-hpet"></div></div><div class="wh-hinfo"></div><div class="wh-btns"></div>`;
     $(".wh-panel").appendChild(ov);
     const eggC = ov.querySelector(".wh-hegg");
-    drawEgg(eggC);
+    drawEgg(eggC, 0, kind);
     sfx("click");
     let k = 0;
     const tick = setInterval(() => {
       k++;
       if (!ov.isConnected) return clearInterval(tick);
-      if (k <= 3) (drawEgg(eggC, k), sfx("hit"), eggC.classList.remove("shake"), void eggC.offsetWidth, eggC.classList.add("shake"));
+      if (k <= 3) (drawEgg(eggC, k, kind), sfx("hit"), eggC.classList.remove("shake"), void eggC.offsetWidth, eggC.classList.add("shake"));
       else {
         clearInterval(tick);
         ov.classList.add("open");
@@ -235,19 +258,19 @@ export function showWarehouse(onClose) {
         ov.querySelector(".wh-hinfo").innerHTML = `${head}<div class="wh-head"><b class="outline" style="color:${PETS[p.id].color}">${PETS[p.id].name}</b><span class="wh-tags o1">${tags(p)}</span></div><div class="wh-traits o1">${p.traits.map(traitLine).join("")}</div>`;
         const bb = ov.querySelector(".wh-btns"), done = () => (ov.remove(), (sel = p.uid), (canvas = null), refresh());
         bb.appendChild(btn("收下", "small blue", done));
-        if (again && petState().eggs > 0) bb.appendChild(btn("再孵一颗", "small", () => (done(), hatch())));
+        if (again && petState().eggs[kind] > 0) bb.appendChild(btn("再孵一颗", "small", () => (done(), hatch(kind))));
       }
     }, 420);
   };
-  const hatch = () => {
-    const p = hatchEgg();
-    if (p) reveal(p, true);
+  const hatch = (kind = "base") => {
+    const p = hatchEgg(kind);
+    if (p) reveal(p, true, kind);
   };
   // ---- fusion: pick the first pet (融合), then a second of the same kind in the grid, confirm, reveal
   const startFuse = (p) => {
     fuseA = p.uid;
     sfx("click");
-    toast("选择另一只同种伙伴（再点它自己取消）");
+    toast("选择另一只同种宠物（再点它自己取消）");
     md.classList.add("fusing");
     grid();
   };
@@ -285,7 +308,7 @@ export function showWarehouse(onClose) {
       });
       return `<div class="wh-dxrow"><b class="outline" style="color:${PETS[id].color}">${PETS[id].name}</b><div>${cells.join("")}</div></div>`;
     });
-    ov.innerHTML = `<div class="wh-dxhead"><b class="outline">伙伴图鉴</b><span class="o1">已收集 ${got} / ${all}</span></div><div class="wh-dxbody">${rows.join("")}</div><div class="wh-btns"></div>`;
+    ov.innerHTML = `<div class="wh-dxhead"><b class="outline">宠物图鉴</b><span class="o1">已收集 ${got} / ${all}</span></div><div class="wh-dxbody">${rows.join("")}</div><div class="wh-btns"></div>`;
     $(".wh-panel").appendChild(ov);
     ov.querySelectorAll(".wh-dx").forEach((n) => portrait(n.querySelector(".wh-pic"), { id: n.dataset.id, stage: 3, skin: n.dataset.k === "base" ? null : n.dataset.k }));
     ov.querySelector(".wh-btns").appendChild(btn("返回", "small gray", () => ov.remove()));

@@ -13,15 +13,16 @@ export const PET_STAGES = ["幼年", "成长", "终极"];
 export const PET_EVOLVE = { 2: { xp: 300, stars: 40 }, 3: { xp: 1200, stars: 120 } };
 export const PET_MAX_XP = 1200;
 export const PET_COST = { UR: 10 };
+export const eggCount = (st) => Object.values(st.eggs || {}).reduce((a, n) => a + n, 0);
 export const petPortrait = (id, stage = 3) => `assets/pets/${id}-${stage}.png`;
-// ---------------------------------------------------------------- 伙伴仓库：每只伙伴独立养成
+// ---------------------------------------------------------------- 宠物仓库：每只宠物独立养成
 // A pet = { uid, id (kind), stage, xp, skin (异色 id or null), traits: [[key, value], [key, value]], lock, t }.
 // Traits roll uniformly inside their range; the quality grade is how high the rolls landed. Skins are code recolours
 // (petskins.js), any stage can be one: an egg hatches 异色 with SHINY_CHANCE.
 export const TRAITS = {
-  dmg: { name: "利爪", desc: "伙伴伤害", min: 4, max: 15 },
-  rate: { name: "迅捷", desc: "伙伴攻速", min: 4, max: 15 },
-  cd: { name: "灵动", desc: "伙伴技能冷却", min: 5, max: 18, minus: true },
+  dmg: { name: "利爪", desc: "宠物伤害", min: 4, max: 15 },
+  rate: { name: "迅捷", desc: "宠物攻速", min: 4, max: 15 },
+  cd: { name: "灵动", desc: "宠物技能冷却", min: 5, max: 18, minus: true },
   carry: { name: "共鸣", desc: "携带加成", min: 10, max: 35 },
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
@@ -42,6 +43,23 @@ export const QUALITY = [
   { name: "流彩", col: "#ff8ad8", xp: 1000, rainbow: true },
 ];
 export const RELEASE_XP = 400;
+// 宠物蛋：three kinds that only differ in the lowest quality they hatch (the top is the same for all)
+export const EGGS = {
+  base: { name: "宠物蛋", floor: 0 },
+  ur: { name: "UR 宠物蛋", floor: 2, cost: 10 },
+  hur: { name: "HUR 宠物蛋", floor: 3, cost: 20 },
+};
+export const EGG_KINDS = Object.keys(EGGS);
+// 积攒 items: 淬灵露 raises one random trait 2~5 points up to its range's top (传说 and below);
+// 流彩晶 does the same for a 流彩 pet only, and may go past the top, up to 150% of it
+export const PET_ITEMS = {
+  ur: { name: "淬灵露", r: "UR", cost: 10, desc: "传说及以下 · 随机词条 +2~5%" },
+  hur: { name: "流彩晶", r: "HUR", cost: 20, desc: "仅流彩 · 随机词条 +2~5%，可破上限" },
+};
+export const OVERCAP = 1.5;
+export const isRainbow = (p) => p.traits.length >= 3;
+/** the highest a trait of this pet can go: its range's top, 150% of it for a 流彩 pet */
+export const traitCap = (p, k) => Math.round(TRAITS[k].max * (isRainbow(p) ? OVERCAP : 1));
 const clampInt = (v, a, b) => Math.max(a, Math.min(b, Math.floor(Number(v) || 0)));
 // a small seeded random for the one-time migration of old saves (so every read of an old save agrees)
 function seeded(str) {
@@ -77,9 +95,11 @@ function cleanTraits(v, uid) {
     const k = Array.isArray(e) ? e[0] : null, t = TRAITS[k];
     if (!t || seen.has(k) || out.length >= 3) continue;
     seen.add(k);
-    out.push([k, clampInt(e[1], t.min, t.max)]);
+    out.push([k, Number(e[1]) || 0]);
   }
-  return out.length ? out : rollTraits(seeded(uid));
+  if (!out.length) return rollTraits(seeded(uid));
+  const cap = out.length >= 3 ? OVERCAP : 1; // a 流彩 pet's traits may have been pushed past the top by 流彩晶
+  return out.map(([k, x]) => [k, clampInt(x, TRAITS[k].min, Math.round(TRAITS[k].max * cap))]);
 }
 // 暗影 (purple) became 绯樱; a 流彩 skin needs three traits
 const skinOk = (id, k) => (k === "shadow" ? "sakura" : skinsOf(id).includes(k) ? k : null);
@@ -92,7 +112,7 @@ function cleanPet(v) {
 /** 0..5 = 普通 / 优秀 / 稀有 / 史诗 / 传说 by how high the two rolls landed; 5 = 流彩 (three traits) */
 export function petQuality(p) {
   if (p.traits.length >= 3) return 5;
-  const k = p.traits.reduce((a, [key, v]) => a + (v - TRAITS[key].min) / (TRAITS[key].max - TRAITS[key].min), 0) / Math.max(1, p.traits.length);
+  const k = p.traits.reduce((a, [key, v]) => a + Math.min(1, (v - TRAITS[key].min) / (TRAITS[key].max - TRAITS[key].min)), 0) / Math.max(1, p.traits.length);
   return k >= 0.88 ? 4 : k >= 0.7 ? 3 : k >= 0.5 ? 2 : k >= 0.28 ? 1 : 0;
 }
 /** the battle multipliers of a pet's traits */
@@ -107,7 +127,7 @@ export function validPet(value) {
   const stage = Math.max(1, Math.min(3, Math.floor(Number(value.stage) || 1)));
   const src = value.tr || traitMul(value.traits), tr = {};
   for (const k of TRAIT_KEYS) {
-    const t = TRAITS[k], lo = k === "cd" ? 1 - t.max / 100 : 1, hi = k === "cd" ? 1 : 1 + t.max / 100;
+    const t = TRAITS[k], top = (t.max * OVERCAP) / 100, lo = k === "cd" ? 1 - top : 1, hi = k === "cd" ? 1 : 1 + top;
     tr[k] = Math.max(lo, Math.min(hi, Number(src[k]) || 1));
   }
   return { id: value.id, stage, skin: skinOk(value.id, value.skin), tr };
@@ -135,7 +155,11 @@ export function normalizePets(value) {
     if (d || list.some((p) => p.id === id)) dex[id] = { skins: [...skins] };
   }
   // rb: hatches / fusions since the last 流彩 (its chance grows with it)
-  const out = { v: 2, list, equipped, eggs: clampInt(value?.eggs, 0, 999), pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex };
+  // eggs by kind (an old save's number is plain 宠物蛋) and 积攒 items
+  const ev = value?.eggs, eggs = {}, items = {};
+  for (const k of EGG_KINDS) eggs[k] = clampInt(typeof ev === "number" ? (k === "base" ? ev : 0) : ev?.[k], 0, 999);
+  for (const k of Object.keys(PET_ITEMS)) items[k] = clampInt(value?.items?.[k], 0, 999);
+  const out = { v: 2, list, equipped, eggs, items, pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex };
   Object.defineProperty(out, "owned", {
     enumerable: false,
     get() {

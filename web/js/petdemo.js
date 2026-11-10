@@ -1,5 +1,5 @@
-// 梦境伙伴技能演示：真实的 Game / Renderer / 特效跑一个小场景（跟随态普攻、大招；骑乘态普攻、大招），
-// 镜头固定、按场景裁出一块世界区域放大到演示画布，所以特效不会改变伙伴的位置或大小。静音、循环，
+// 梦境宠物技能演示：真实的 Game / Renderer / 特效跑一个小场景（跟随态普攻、大招；骑乘态普攻、大招），
+// 镜头固定、按场景裁出一块世界区域放大到演示画布，所以特效不会改变宠物的位置或大小。静音、循环，
 // 画布离开页面后自动停止。
 import { VIEW_W, VIEW_H, RS, CHARS } from "./data.js";
 import { Game } from "./game.js";
@@ -9,7 +9,7 @@ import { setSfxMute } from "./audio.js";
 import { toggleMount } from "./pets.js";
 import { PET_ATTACK_RANGE } from "./petdata.js";
 
-// 每个演示：伙伴/角色站位（相对场景中心）、敌人布置、循环时长、裁切宽度（世界像素）
+// 每个演示：宠物/角色站位（相对场景中心）、敌人布置、循环时长、裁切宽度（世界像素）
 const SCENES = {
   atk: { ride: false, dur: 4.2, foes: { n: 3, spread: 34 } },
   ult: { ride: false, dur: { dragon: 3.6, fox: 3, phoenix: 4.8 }, foes: { n: 3, spread: 40 } },

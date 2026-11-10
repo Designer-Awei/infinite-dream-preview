@@ -1,7 +1,7 @@
 import { load, save, mineState } from "./save.js";
-import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, normalizePets, rollPet, rainbowChance, petQuality } from "./petdata.js";
+import { PETS, PET_ORDER, PET_COST, PET_EVOLVE, PET_MAX_XP, QUALITY, FUSE_SHINY, FUSE_SHINY_PARENT, EGGS, PET_ITEMS, normalizePets, rollPet, rollTraits, rainbowChance, petQuality, isRainbow, traitCap } from "./petdata.js";
 
-// 伙伴仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
+// 宠物仓库存档操作。ref = a pet's uid, or a kind id (then the pet `owned` maps that kind to).
 export function petState() {
   const m = load(), legacy = m.pets && !Array.isArray(m.pets.list) && m.pets.owned;
   m.pets = normalizePets(m.pets);
@@ -22,7 +22,7 @@ const addPet = (state, p) => {
 export function exchangePet(id, rarity) {
   if (!Object.hasOwn(PETS, id) || !Object.hasOwn(PET_COST, rarity)) return { ok: false, reason: "无效兑换" };
   const m = load(), state = petState();
-  if (state.list.some((p) => p.id === id)) return { ok: false, reason: "已拥有该伙伴" };
+  if (state.list.some((p) => p.id === id)) return { ok: false, reason: "已拥有该宠物" };
   const cost = PET_COST[rarity];
   if (!Number.isFinite(m.stash) || m.stash < cost) return { ok: false, reason: "积攒点不足" };
   m.stash -= cost;
@@ -37,20 +37,52 @@ function rollRainbow(state) {
   state.rb = hit ? 0 : state.rb + 1;
   return hit;
 }
-/** hatch one egg: a young pet of a random kind (maybe 异色, maybe 流彩) */
-export function hatchEgg() {
-  const state = petState();
-  if (state.eggs <= 0) return null;
-  state.eggs--;
+/** hatch one egg of a kind: a young pet of a random kind (maybe 异色, maybe 流彩); the egg's floor re-rolls the
+ *  traits until the quality reaches it (a UR egg hatches 稀有 or better, a HUR egg 史诗 or better) */
+export function hatchEgg(kind = "base") {
+  const state = petState(), egg = EGGS[kind];
+  if (!egg || state.eggs[kind] <= 0) return null;
+  state.eggs[kind]--;
   const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state) });
+  for (let i = 0; i < 200 && petQuality(p) < egg.floor; i++) p.traits = rollTraits();
   addPet(state, p);
   save();
   return p;
 }
-export function grantEggs(n) {
+export function grantEggs(n, kind = "base") {
   const state = petState(), k = Math.max(0, Math.floor(n) || 0);
-  if (k) (state.eggs = Math.min(999, state.eggs + k)), save();
+  if (k && EGGS[kind]) (state.eggs[kind] = Math.min(999, state.eggs[kind] + k)), save();
   return k;
+}
+/** 积攒兑换: "egg_ur" / "egg_hur" (宠物蛋) or "item_ur" / "item_hur" (淬灵露 / 流彩晶) */
+export function stashExchange(what) {
+  const m = load(), state = petState(), [type, r] = what.split("_"), def = type === "egg" ? EGGS[r] : PET_ITEMS[r];
+  if (!def || !def.cost) return { ok: false, reason: "无效兑换" };
+  if (!Number.isFinite(m.stash) || m.stash < def.cost) return { ok: false, reason: "积攒点不足" };
+  m.stash -= def.cost;
+  if (type === "egg") state.eggs[r]++;
+  else state.items[r]++;
+  save();
+  return { ok: true, name: def.name };
+}
+/** which item a pet takes (流彩晶 for 流彩, else 淬灵露) and whether any of its traits can still go up */
+export function itemFor(p) {
+  const k = isRainbow(p) ? "hur" : "ur";
+  return { k, item: PET_ITEMS[k], room: p.traits.some(([t, v]) => v < traitCap(p, t)) };
+}
+/** use one item on a pet: a random trait that isn't at its cap rises 2~5 points (clamped to the cap) */
+export function useItem(uid) {
+  const state = petState(), p = findPet(uid, state);
+  if (!p) return { ok: false, reason: "没有这只宠物" };
+  const { k, item, room } = itemFor(p);
+  if (state.items[k] <= 0) return { ok: false, reason: `没有${item.name}` };
+  if (!room) return { ok: false, reason: "词条都已到上限" };
+  const open = p.traits.filter(([t, v]) => v < traitCap(p, t)), e = open[Math.floor(Math.random() * open.length)];
+  const before = e[1];
+  e[1] = Math.min(traitCap(p, e[0]), e[1] + 2 + Math.floor(Math.random() * 4));
+  state.items[k]--;
+  save();
+  return { ok: true, key: e[0], add: e[1] - before, item: item.name };
 }
 export function equipPet(ref) {
   const state = petState();
@@ -65,7 +97,7 @@ export function evolvePet(ref) {
   const state = petState(), own = findPet(ref, state);
   if (!own || own.stage >= 3) return { ok: false, reason: "已达终极或尚未拥有" };
   const need = PET_EVOLVE[own.stage + 1], ms = mineState();
-  if (own.xp < need.xp) return { ok: false, reason: "伙伴经验不足" };
+  if (own.xp < need.xp) return { ok: false, reason: "宠物经验不足" };
   if (ms.stars < need.stars) return { ok: false, reason: "星砂不足" };
   ms.stars -= need.stars; own.stage++; save();
   return { ok: true, stage: own.stage };
@@ -104,8 +136,8 @@ export const spendable = (p, state = petState()) => !!p && !p.lock && state.equi
  *  parent is 异色, often inheriting its colour); counts as a hatch for the 流彩 chance */
 export function fusePets(a, b) {
   const state = petState(), A = findPet(a, state), B = findPet(b, state);
-  if (!A || !B || A === B || A.id !== B.id) return { ok: false, reason: "需要两只同种伙伴" };
-  if (!spendable(A, state) || !spendable(B, state)) return { ok: false, reason: "上锁或出战中的伙伴不能融合" };
+  if (!A || !B || A === B || A.id !== B.id) return { ok: false, reason: "需要两只同种宠物" };
+  if (!spendable(A, state) || !spendable(B, state)) return { ok: false, reason: "上锁或出战中的宠物不能融合" };
   const skins = [A.skin, B.skin].filter((k) => k && k !== "flow");
   const p = rollPet(A.id, Math.random, { rainbow: rollRainbow(state), best: true, shiny: skins.length ? FUSE_SHINY_PARENT : FUSE_SHINY, skins });
   state.list = state.list.filter((q) => q !== A && q !== B);
@@ -118,9 +150,9 @@ export const releaseXP = (p) => QUALITY[petQuality(p)].xp;
 /** 放生：a pet that isn't locked or carried leaves; its quality's xp goes into the pool */
 export function releasePet(uid) {
   const state = petState(), i = state.list.findIndex((p) => p.uid === uid), p = state.list[i];
-  if (!p) return { ok: false, reason: "没有这只伙伴" };
+  if (!p) return { ok: false, reason: "没有这只宠物" };
   if (p.lock) return { ok: false, reason: "已上锁，先解锁" };
-  if (state.equipped === uid) return { ok: false, reason: "出战中的伙伴不能放生" };
+  if (state.equipped === uid) return { ok: false, reason: "出战中的宠物不能放生" };
   const xp = releaseXP(p);
   state.list.splice(i, 1);
   state.pool += xp;

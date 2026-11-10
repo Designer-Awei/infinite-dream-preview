@@ -9,7 +9,7 @@ import { mountPetDemo } from "./petdemo.js";
 
 export { showWarehouse as showPets } from "./petwh.js";
 
-// 梦境伙伴: left, one fixed preview stage as tall as the info column (pet chips + arrows switch pets with a short
+// 梦境宠物: left, one fixed preview stage as tall as the info column (pet chips + arrows switch pets with a short
 // slide, stage badges along an evolution track switch 幼年/成长/终极); right, the pet's skills as icon + description
 // rows — 跟随 普攻 / 大招 and 骑乘 普攻 / 大招. Picking a skill plays it on the stage as a small real fight (fixed
 // camera, so the effects never move or rescale the pet); picking it again, a stage or another pet returns to the portrait.
@@ -52,7 +52,7 @@ export function showPetDetail(uid, onClose) {
   let stage = ownOf(selected)?.stage || 1, act = null, demo = null, busy = 0;
   const md = el("div", "modal pet-modal pet-detail");
   md.innerHTML = `<section class="panel pet-panel pp" role="dialog" aria-modal="true" aria-labelledby="pet-title">
-    <header><h2 id="pet-title">梦境伙伴</h2><div class="pet-wallet o1"></div></header>
+    <header><h2 id="pet-title">梦境宠物</h2><div class="pet-wallet o1"></div></header>
     <div class="pp-body">
       <div class="pp-stage">
         <div class="pp-top"><div class="pp-pets">${PET_ORDER.map((id) => `<button class="pp-pick" data-id="${id}" style="--pc:${PETS[id].color}" aria-label="${PETS[id].name}"><img alt=""></button>`).join("")}</div><span class="pp-tag"></span></div>
@@ -167,19 +167,7 @@ export function showPetDetail(uid, onClose) {
         b.disabled = own.xp < next.xp || ms.stars < next.stars;
         a.appendChild(b);
       }
-    } else {
-      const b = btn(`UR兑换 · ${PET_COST.UR} 积攒`, "small", () => {
-        const r = exchangePet(selected, "UR");
-        if (!r.ok) return toast(r.reason);
-        sfx("ssr");
-        toast(`获得${d.name}，已解锁伙伴出战！`);
-        stage = r.stage;
-        setPetPreview(canvas, { stage });
-        refresh();
-      });
-      b.disabled = (meta.stash || 0) < PET_COST.UR;
-      a.appendChild(b);
-    }
+    } else a.appendChild(Object.assign(el("span", "pp-none o1"), { textContent: "尚未拥有 · 孵化宠物蛋获得" }));
     const tb = btn("免费试用 · 终极骑乘", "small green", () => (demo?.stop(), md.remove(), import("./main.js").then(({ app }) => app.startPetTrial(selected))));
     tb.innerHTML = `<span class="pp-long">免费试用 · 终极骑乘</span><span class="pp-short">试用 · 终极骑乘</span>`; // narrow screens drop 免费
     $(".pet-trial").replaceChildren(tb);

@@ -204,7 +204,7 @@ export const app = {
     this.ended = true;
     if (this.petTrial) {
       const id = this.petTrial, rs = this.game.runStats;
-      UI.showResult({title:"伙伴试炼结束",sub:`${PETS[id].name} · 试用收益不保存`,rows:[["清理房间",rs.rooms],["击败敌人",rs.kills],["造成伤害",Math.round(rs.dmg)]],extras:[["伙伴试用","未消耗货币，不保存收益"]],tokens:0,win,cid:this.me.cid},()=>this.startPetTrial(id),()=>this.toLobby());
+      UI.showResult({title:"宠物试炼结束",sub:`${PETS[id].name} · 试用收益不保存`,rows:[["清理房间",rs.rooms],["击败敌人",rs.kills],["造成伤害",Math.round(rs.dmg)]],extras:[["宠物试用","未消耗货币，不保存收益"]],tokens:0,win,cid:this.me.cid},()=>this.startPetTrial(id),()=>this.toLobby());
       return;
     }
     const g = this.game, m = load(), rs = g.runStats;
@@ -234,10 +234,10 @@ export const app = {
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
     const petXP = this.me.pet && grantPetXP(petState().equipped || this.me.pet.id, petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses}));
-    if (petXP) extras.push(["伙伴经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
-    // 伙伴蛋：每击败一个首领 1 颗（一局最多 3 颗），在伙伴仓库孵化
+    if (petXP) extras.push(["宠物经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
+    // 宠物蛋：每击败一个首领 1 颗（一局最多 3 颗），在宠物仓库孵化
     const eggs = grantEggs(Math.min(3, rs.xpBosses || 0));
-    if (eggs) extras.push(["伙伴蛋", `+${eggs}（伙伴仓库孵化）`]);
+    if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {
