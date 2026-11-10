@@ -201,6 +201,11 @@ export class Renderer {
     }
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.drawEdgeArrows(g, game, me, cx, cy);
+    // 挑战 · 限时清场: the countdown under the top bar
+    if (game.room && game.room.timeLimit && game.phase === "fight" && !game.room.failed) {
+      const left = Math.max(0, Math.ceil(game.room.timeLimit - (game.roomT || 0)));
+      this.text(g, `剩余 ${left} 秒`, VIEW_W / 2, 58, left <= 10 ? "#ff5a6a" : "#ffe14a", 14);
+    }
     // vignette
     if (!this.vig) {
       const v = document.createElement("canvas");

@@ -19,6 +19,7 @@ import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
 import { PETS, petExperience } from "./petdata.js";
 import { grantPetXP } from "./petsave.js";
+import { showRoute, showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
 const uiRoot = document.getElementById("ui");
@@ -172,6 +173,20 @@ export const app = {
     else if (kind === "pvpwin") this.endPvp();
     else if (kind === "transition") fade();
     else if (kind === "rift") this.offerRift();
+    else if (kind === "route") {
+      // 梦境航线: pick the next room (the game waits; solo only)
+      this.paused = true;
+      showRoute(g, (j) => {
+        this.paused = false;
+        if (this.game === g) g.chooseRoute(j);
+      });
+    } else if (kind === "event") {
+      this.paused = true;
+      showEvent(g, (k) => {
+        this.paused = false;
+        if (this.game === g) g.resolveEvent(this.me.id, k);
+      });
+    }
     else if (kind === "cardsClosed") {
       UI.closeCards();
       this.cardOpen = false;
@@ -228,6 +243,13 @@ export const app = {
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
     if (drops.length) extras.push(["梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
+    if (rs.eventStars) {
+      // 星砂泉: star sand carried out of the run
+      mineState().stars += rs.eventStars;
+      save();
+      extras.push(["星砂泉", `+${rs.eventStars} 星砂`]);
+    }
+    if (rs.challenges || rs.events) extras.push(["梦境航线", `挑战成功 ${rs.challenges || 0} · 事件 ${rs.events || 0}`]);
     if (riftBonus) extras.push(["放弃裂隙", `${rs.riftDeclines} 次 · +${riftBonus}<i class="cur gem"></i>`]);
     // 怪物图鉴 + 梦境藏品
     const met = recordCodex(g.seen, g.killedTypes);
