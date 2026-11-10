@@ -337,8 +337,8 @@ export function drawPetFields(ctx,game,time,layer='back') {
     if(layer==='front'&&!f.ultimate)continue;
     if(layer==='back'&&f.ultimate&&f.kind!=='snow')continue;
     if(f.t<f.delay)continue;
+    if(f.kind==='fire'&&f.fx)continue; // drawn by the pixelfx breath (skip before save: a skipped save left the fade on every later draw)
     const fade=Math.min(1,(f.t-f.delay)*8,f.life*4);ctx.save();ctx.globalAlpha=fade;
-    if(f.kind==='fire'&&f.fx)continue; // drawn by the pixelfx breath
     if(f.kind==='fire') {
       const len=f.visibleLength||f.length,cs=Math.cos(f.a),sn=Math.sin(f.a),step=game.fx?.lite?8:5;
       // World-aligned blocks retain the pixel style at every aim angle; hot tongues travel outward.
