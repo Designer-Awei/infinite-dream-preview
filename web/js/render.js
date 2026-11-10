@@ -9,6 +9,7 @@ import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
+import { NPCS } from "./route.js";
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
 const H = (c) => {
@@ -137,6 +138,7 @@ export class Renderer {
     if (game.shop && game.room && game.room.kind === "shop") for (const it of game.shop) if (me && game.shopAvailable(me,it)) list.push({ y: it.y + 10, k: 7, o: it });
     if (game.chest && !game.chest.opened) list.push({ y: game.chest.y + 8, k: 8, o: game.chest });
     if (game.shovelItem && !game.shovelItem.got) list.push({ y: game.shovelItem.y, k: 9, o: game.shovelItem });
+    if (game.npc) list.push({ y: game.npc.y + 8, k: 11, o: game.npc });
     list.sort((a, b) => a.y - b.y);
     for (const d of list) {
       switch (d.k) {
@@ -176,6 +178,7 @@ export class Renderer {
         case 8: this.drawChest(g, d.o); break;
         case 9: this.drawShovelDrop(g, d.o, game.time); break;
         case 10: drawPet(g, d.o, this.t); break;
+        case 11: this.drawNpc(g, d.o); break;
       }
     }
     drawPetFields(g,game,this.t,'front');
@@ -193,6 +196,20 @@ export class Renderer {
     for (const e of game.enemies) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
     for (const p of game.players) this.drawHeroBar(g, p, me, game);
+    // fork portals: the room each one leads to, above it (plus a one-line tip when you walk up)
+    if (game.portals) for (const q of game.portals) {
+      const near = me && dist(me.x, me.y, q.x, q.y) < 56, y = q.y - 70 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5);
+      this.text(g, q.name, q.x, y, q.col, 14);
+      if (q.sub) this.text(g, q.sub, q.x, y + 14, "#ffffff", 10);
+      if (near && q.tip) this.text(g, q.tip, q.x, y - 16, "#ffe14a", 10);
+    }
+    if (game.npc && !game.npc.done && me) {
+      const n = game.npc, near = dist(me.x, me.y, n.x, n.y + 6) < 34;
+      const name = (NPCS[n.id] || NPCS.altar).name;
+      this.text(g, name, n.x, n.y + 22, near ? "#ffe14a" : "#e8dcff", 11);
+      if (near) this.text(g, input.touch ? "按攻击键交谈" : "按 J 交谈", n.x, n.y - 66 + Math.sin(this.t * 5) * 2, "#5dff7a", 11);
+      else this.drawTalkMark(g, n.x, n.y - 64);
+    }
     // floating texts (skill names, damage) go over every health bar so a bar never hides them
     for (const f of game.floaters) {
       const a = clamp(f.life / f.max * 2, 0, 1);
@@ -256,6 +273,8 @@ export class Renderer {
     if (!me) return;
     const goals = [];
     if (game.portal && game.phase !== "fight" && !game.pvp) goals.push({ x: game.portal.x, y: game.portal.y, c: "#b48cff", s: "门" });
+    if (game.portals && game.phase !== "fight") for (const q of game.portals) goals.push({ x: q.x, y: q.y, c: q.col, s: q.name[0] });
+    if (game.npc && !game.npc.done) goals.push({ x: game.npc.x, y: game.npc.y, c: "#c8a0ff", s: "?" });
     if (game.chest && !game.chest.opened) goals.push({ x: game.chest.x, y: game.chest.y, c: "#ffd84a", s: "箱" });
     if (game.pvp && game.pvpRule && game.pvpRule.zone) goals.push({ x: game.map.center.x, y: game.map.center.y, c: "#7dffb0", s: "点" });
     const live = game.enemies.filter((e) => e.spawnT <= 0);
@@ -755,6 +774,34 @@ export class Renderer {
     // remaining time
     g.fillStyle = "#ff7cc8";
     g.fillRect(x - 10, y + 3, Math.round(20 * clamp(z.life / 7)), 2);
+  }
+  /** an event visitor: its idle loop from assets/npc (a plain marker if the atlas is missing), feet at (x, y + 8) */
+  drawNpc(g, n) {
+    const x = Math.round(n.x), y = Math.round(n.y);
+    g.fillStyle = "rgba(10,20,10,0.35)";
+    g.beginPath();
+    g.ellipse(x, y + 8, 16, 5, 0, 0, TAU);
+    g.fill();
+    const N = A.npc, m = N && N.meta.npcs[n.id];
+    if (!m) {
+      g.fillStyle = "#c8a0ff";
+      g.fillRect(x - 8, y - 30, 16, 36);
+      return;
+    }
+    const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n, s = N.meta.cell;
+    g.drawImage(N.image, f * s, m.row * s, s, s, x - m.ox, y + 8 - m.oy, s, s);
+  }
+  /** a bobbing "!" bubble over a visitor you haven't talked to */
+  drawTalkMark(g, x, y) {
+    y = Math.round(y + Math.sin(this.t * 4) * 2);
+    g.fillStyle = "#1a1020";
+    g.fillRect(x - 7, y - 9, 14, 14);
+    g.fillRect(x - 2, y + 5, 4, 3);
+    g.fillStyle = "#fff6c4";
+    g.fillRect(x - 6, y - 8, 12, 12);
+    g.fillStyle = "#1a1020";
+    g.fillRect(x - 1, y - 6, 2, 5);
+    g.fillRect(x - 1, y, 2, 2);
   }
   drawShopItem(g, it, me) {
     const x = Math.round(it.x), y = Math.round(it.y);

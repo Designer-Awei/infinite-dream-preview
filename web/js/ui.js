@@ -9,6 +9,7 @@ import { ORES, ZONES, CHEST_STARS, oreIcon, chestIcon } from "./minedata.js";
 import { LEVEL_REWARDS } from "./progression.js";
 import { PETS, PET_COST, PET_EVOLVE, PET_MAX_XP, PET_ATTACK_RANGE, FOX_RIDE_RANGE, petPortrait } from "./petdata.js";
 import { input } from "./input.js";
+import { NPCS } from "./route.js";
 
 let root, app;
 export const $ = (s, r = root) => r.querySelector(s);
@@ -78,7 +79,7 @@ export function showHelp() {
   const SECS = [
     ["闯关基础", `${H("电脑操作")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
       ${H("手机操作")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放
-      ${H("闯关循环")}每局 7 层，单人主线走「梦境航线」：每清一层在 2～3 个房间里选下一间——战斗、精英、补给站、事件（一次有代价的选择）、挑战（战斗加一条规则，成功多选一次卡）、宝藏（必出稀有怪）——第 7 层是首领。合作模式仍为固定顺序：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
+      ${H("闯关循环")}每局 7 层，单人主线走「梦境航线」：清场后常会同时出现 2～3 扇不同颜色的传送门，走进哪扇就去哪种房间——战斗、精英、补给站、事件（走近访客按攻击键交谈，做一次有代价的选择）、挑战（战斗加一条规则，成功多选一次卡）、宝藏（必出稀有怪）——第 7 层是首领。合作模式仍为固定顺序：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
       ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 200 晶石。
@@ -265,9 +266,11 @@ export function showHud(game, me) {
   const tips = { skill: CHARS[me.cid].skill.name, ult: CHARS[me.cid].ult.name, atk: CHARS[me.cid].atk.name };
   for (const k in tips) document.querySelectorAll(`.b-${k} .lb`).forEach((n) => (n.textContent = tips[k]));
   const pips = hud.querySelector(".pips");
-  if (!game.pvp) RUN.forEach((r, i) => pips.appendChild(el("div", "pip o1", r.kind === "shop" ? "🛒" : r.kind === "boss" ? "👑" : "⚔")));
+  if (!game.pvp) RUN.forEach((r, i) => pips.appendChild(el("div", "pip o1", pipIcon(game.route ? (i === RUN.length - 1 ? "boss" : "?") : r.kind))));
   hudCache = {};
 }
+const PIP = { combat: "⚔", elite: "🔥", shop: "🛒", event: "💬", challenge: "⚡", treasure: "💎", boss: "👑", "?": "?" };
+const pipIcon = (kind) => PIP[kind] || "⚔";
 export function updateHud(game, me) {
   if (!hud || !me) return;
   const set = (k, v, fn) => {
@@ -294,7 +297,11 @@ export function updateHud(game, me) {
   });
   set("coins", me.coins, (v) => (hud.querySelector(".coins").textContent = v));
   set("cubes", me.cubes, (v) => (hud.querySelector(".cubes").textContent = v));
-  set("room", game.roomIdx, (v) => hud.querySelectorAll(".pip").forEach((p, i) => (p.className = "pip o1" + (i < v ? " done" : i === v ? " cur" : ""))));
+  set("room", game.roomIdx, (v) => hud.querySelectorAll(".pip").forEach((p, i) => {
+    p.className = "pip o1" + (i < v ? " done" : i === v ? " cur" : "");
+    // 梦境航线: the rooms walked so far show their kind, the ones ahead stay a question mark (the boss is always last)
+    if (game.route) p.textContent = pipIcon(i <= game.route.step ? game.route.cols[i][game.route.path[i]].kind : i === game.route.cols.length - 1 ? "boss" : "?");
+  }));
   const boss = game.enemies.find((e) => e.boss);
   set("boss", boss ? Math.ceil((boss.hp / boss.maxHp) * 200) : -1, (v) => {
     const bb = hud.querySelector(".bossbar");
@@ -362,7 +369,8 @@ export function updateHud(game, me) {
   let tip = "";
   if (game.room && game.room.kind === "shop" && me.nearShop) tip = `${me.nearShop.name}：◎${me.nearShop.price}（${load().sel && "按攻击键购买"}）`;
   if (me.downed && !game.pvp) tip = "倒地了！等待队友靠近救援…";
-  if (game.phase === "portal") tip = "前往传送门 ↓";
+  if (game.phase === "portal") tip = game.portals ? "走进一扇传送门，选择下一个房间" : "前往传送门 ↓";
+  if (game.npc && !game.eventDone && !game.npc.open && game.phase === "event") tip = `走近${NPCS[game.npc.id]?.name || "访客"}，按攻击键交谈`;
   set("tip", tip, (v) => {
     const t = hud.querySelector(".tipline");
     t.style.display = v ? "" : "none";

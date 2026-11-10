@@ -1,7 +1,7 @@
 // Loads images and prepares the sprite canvases the renderer draws from.
 import { CHAR_ORDER, ELEM, CHARS, SPR_K } from "./data.js";
 
-export const A = { girls: {}, critters: {}, portraits: {}, pets: null, mounts: {}, ready: false };
+export const A = { girls: {}, critters: {}, portraits: {}, pets: null, mounts: {}, npc: null, ready: false };
 
 function img(src) {
   return new Promise((res, rej) => {
@@ -108,6 +108,11 @@ export async function loadAll(progress = () => {}) {
     const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);
     A.mounts[id]={meta,image};
   }));
+  // event visitors (梦境航线): one row of idle frames each
+  try {
+    const [meta, image] = await Promise.all([json(base + "npc/npc.json"), img(base + "npc/npc.png")]);
+    A.npc = { meta, image };
+  } catch {}
   try {
     await document.fonts.load("12px Cubic");
   } catch {}

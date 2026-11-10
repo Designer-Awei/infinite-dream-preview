@@ -19,7 +19,7 @@ import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
 import { PETS, petExperience } from "./petdata.js";
 import { grantPetXP } from "./petsave.js";
-import { showRoute, showEvent } from "./routeui.js";
+import { showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
 const uiRoot = document.getElementById("ui");
@@ -173,18 +173,20 @@ export const app = {
     else if (kind === "pvpwin") this.endPvp();
     else if (kind === "transition") fade();
     else if (kind === "rift") this.offerRift();
-    else if (kind === "route") {
-      // 梦境航线: pick the next room (the game waits; solo only)
+    else if (kind === "event") {
       this.paused = true;
-      showRoute(g, (j) => {
-        this.paused = false;
-        if (this.game === g) g.chooseRoute(j);
-      });
-    } else if (kind === "event") {
-      this.paused = true;
+      const me = this.me;
       showEvent(g, (k) => {
         this.paused = false;
-        if (this.game === g) g.resolveEvent(this.me.id, k);
+        if (this.game === g) g.resolveEvent(me.id, k);
+      }, {
+        coins: () => me.coins,
+        roll: (odd) => (this.game === g ? g.rollDice(me.id, odd) : null),
+        settle: () => this.game === g && g.settleDice(me.id),
+        close: () => {
+          this.paused = false;
+          if (this.game === g) g.closeEvent();
+        },
       });
     }
     else if (kind === "cardsClosed") {

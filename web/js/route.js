@@ -3,6 +3,7 @@
 // 清场多拿一次选卡）、宝藏（一小波怪，必出本图稀有怪，道具更多）。
 import { RUN } from "./data.js";
 import { rng } from "./util.js";
+import { PAL } from "../pixelfx/core/color.js";
 
 export const NODE = {
   combat: { name: "战斗", col: "#d8d0c0" },
@@ -12,6 +13,19 @@ export const NODE = {
   challenge: { name: "挑战", col: "#ff5a6a" },
   treasure: { name: "宝藏", col: "#ffd84a" },
   boss: { name: "首领", col: "#ff5a5a" },
+};
+/** one line under a fork portal's name, shown when the player walks up to it */
+export const NODE_TIP = {
+  combat: "普通战斗",
+  elite: "敌人更强，奖励不变",
+  shop: "扭蛋机与补给，免费宝箱",
+  event: "遇见一位访客，做一次选择",
+  challenge: "带一条规则的战斗 · 清场额外选卡",
+  treasure: "必出本图稀有怪，道具更多",
+};
+/** each kind of room gets its own portal colour (an 8-step pixelfx ramp) */
+export const PORTAL_PAL = {
+  combat: PAL.metal, elite: PAL.fire, shop: PAL.heal, event: PAL.arcane, challenge: PAL.blood, treasure: PAL.gold, boss: PAL.shadow,
 };
 export const CHALLENGES = {
   timer: { name: "限时清场", desc: "60 秒内清场；超时敌人消散，但拿不到额外选卡" },
@@ -43,6 +57,14 @@ export function makeRoute(seed) {
     let ev = 0;
     for (const n of col) if (n.kind === "event" && ev++) n.kind = "combat";
   }
+  // the rooms of one step are all different kinds, so the portals of a fork are always a real choice
+  for (let s = 1; s < STEPS - 1; s++) {
+    const used = new Set();
+    for (const n of cols[s]) {
+      if (used.has(n.kind)) n.kind = pickKind(r, s, used);
+      used.add(n.kind);
+    }
+  }
   for (const col of cols) for (const n of col) if (n.kind === "challenge") n.challenge = r.pick(Object.keys(CHALLENGES));
   // links: every node reaches 1~2 neighbours in the next column and every next node is reachable (no crossing lines)
   for (let s = 0; s < STEPS - 1; s++) {
@@ -59,9 +81,10 @@ export function makeRoute(seed) {
   }
   return { cols, step: 0, at: 0, path: [0], choices: 0 };
 }
-function pickKind(r, s) {
+function pickKind(r, s, not = null) {
   const w = s <= 1 ? { combat: 4, event: 2, treasure: 1, challenge: 1 } : { combat: 3, event: 2, challenge: 2, treasure: 1.2, elite: s >= 3 ? 1.5 : 0, shop: s === 2 || s === 5 ? 2 : 0.3 };
-  return r.weighted(Object.keys(w), (k) => w[k]);
+  const ks = Object.keys(w).filter((k) => w[k] > 0 && !(not && not.has(k)));
+  return r.weighted(ks, (k) => w[k]);
 }
 
 /** the room definition for a node on step s (combat difficulty follows the step, like the old fixed run) */
@@ -91,33 +114,41 @@ export function nodeRoom(node, s, seed) {
   }
 }
 
+/** the visitor who hosts each event (sprite rows in assets/npc/npc.json) and what it says after the choice */
+export const NPCS = {
+  altar: { name: "祭坛巫女", bye: "愿星光指引你。" },
+  gamble: { name: "骰子狐", bye: "下次再来玩呀～" },
+  spring: { name: "泉之精灵", bye: "一路顺风～" },
+  curse: { name: "宝箱怪", bye: "嘎吱……" },
+};
+
 // events: one choice each. apply(game, p) runs on the host; returns a short result line (shown as floating text)
 export const EVENTS = {
   altar: {
-    name: "献祭祭坛", text: "一座发着微光的祭坛：献上一点生命，换取更强的力量。",
+    name: "献祭祭坛", text: "「向祭坛献上 1 点生命上限，我便让你挑一张 SR / SSR 卡。」",
     options: [
-      { label: "献祭 1 点生命上限，选一张 SR / SSR 卡", apply: (g, p) => { p.maxHp = Math.max(1, p.maxHp - 1); p.hp = Math.min(p.hp, p.maxHp); g.offerCards(p, 3, "SR"); return "生命上限 -1"; } },
+      { label: "献祭", apply: (g, p) => { p.maxHp = Math.max(1, p.maxHp - 1); p.hp = Math.min(p.hp, p.maxHp); g.offerCards(p, 3, "SR"); return "生命上限 -1"; } },
       { label: "离开", apply: () => "" },
     ],
   },
+  // a dice game instead of a one-shot choice: bet all coins on odd or even, the die is rolled in the dialog
+  // (game.rollDice / settleDice); leaving only closes the dialog, so you can come back. Two rounds a room.
   gamble: {
-    name: "幸运骰子", text: "一个笑嘻嘻的骰子：押上全部金币，一半概率翻倍，一半概率清零。",
-    options: [
-      { label: "押上全部金币", apply: (g, p) => { const win = Math.random() < 0.5; p.coins = win ? p.coins * 2 : 0; return win ? "金币翻倍！" : "金币清零……"; } },
-      { label: "离开", apply: () => "" },
-    ],
+    name: "幸运骰子", text: "「押上全部金币，猜骰子是单数还是双数？猜中翻倍，猜错清零哦～」",
+    dice: { rounds: 2 },
+    options: [],
   },
   spring: {
-    name: "星砂泉", text: "泉水里闪着星砂：可以疗伤，也可以装走星砂。",
+    name: "星砂泉", text: "「泉水能回满你的生命和护盾；或者装走 20 星砂，结算时归你。」",
     options: [
-      { label: "回满生命和护盾", apply: (g, p) => { p.hp = p.maxHp; p.shield = p.maxShield; return "生命与护盾回满"; } },
-      { label: "装走 20 星砂（结算时获得）", apply: (g) => { g.runStats.eventStars = (g.runStats.eventStars || 0) + 20; return "+20 星砂"; } },
+      { label: "疗伤", apply: (g, p) => { p.hp = p.maxHp; p.shield = p.maxShield; return "生命与护盾回满"; } },
+      { label: "装星砂", apply: (g) => { g.runStats.eventStars = (g.runStats.eventStars || 0) + 20; return "+20 星砂"; } },
     ],
   },
   curse: {
-    name: "诅咒宝箱", text: "一只缠着锁链的宝箱：里面有好东西，但打开后之后的敌人都会更强。",
+    name: "诅咒宝箱", text: "（宝箱怪咧开嘴，锁链哗啦作响）打开能选一张卡，但之后的敌人生命 +20%。",
     options: [
-      { label: "打开：选一张卡，之后的敌人生命 +20%", apply: (g, p) => { g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return "诅咒：敌人生命 +20%"; } },
+      { label: "打开", apply: (g, p) => { g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return "诅咒：敌人生命 +20%"; } },
       { label: "离开", apply: () => "" },
     ],
   },
