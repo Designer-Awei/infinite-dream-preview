@@ -3307,12 +3307,12 @@
   "pages": [
     {
       "file": "pets.png",
-      "sha256": "be890c013d09e63ee004ae7a2e0ffceb335648d2be9780d9fa154fc23d78710b"
+      "sha256": "8e9cd1950c6c68a38af7dabb5289c0f5f8cca3a051957c6a39e0888cb1f3eeba"
     },
     {
       "file": "pets-fox.png",
       "sha256": "b4e75f292929eac537de5d874ebbd530e4ddbf88cdd571822ecee8661e240e84"
     }
   ],
-  "sha256": "be890c013d09e63ee004ae7a2e0ffceb335648d2be9780d9fa154fc23d78710b"
+  "sha256": "8e9cd1950c6c68a38af7dabb5289c0f5f8cca3a051957c6a39e0888cb1f3eeba"
 }
