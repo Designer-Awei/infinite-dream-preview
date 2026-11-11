@@ -2556,3 +2556,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .sh-good.sold { filter: none; }
 .sh-good.sold .sh-pic, .sh-good.sold b, .sh-good.sold small, .sh-good.sold .sh-price { opacity: .45; }
 .sh-good .btn.gray { -webkit-text-stroke: 0; }
+/* 奇遇小铺: 离开 top-right in the header row (as in 地下商人), its middle level with the title line (26px row) */
+.shop-mode .ev-top > .ev-leave { flex: none; align-self: flex-start; margin-left: 6px; transform: translateY(calc(13px - 50%)); }
+.shop-mode .ev-top > .ev-leave:active { transform: translateY(calc(13px - 50% + 4px)); }
+.shop-mode .ev-top > .ev-leave { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }

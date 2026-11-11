@@ -11,10 +11,11 @@ view, full body, crisp dark outline, same style and size as the style image"):
   gamble - fox-eared gambler girl, red and gold vest, tiny top hat, holding up a big white die
   spring - small water spirit girl of translucent light blue water, fountain hair, star droplets
   curse  - mimic treasure chest in purple glowing chains, open toothy lid, tongue, one big eye
-  merchant - wandering merchant girl, big straw hat with a teal ribbon, brown hooded travel cloak, huge backpack
-             piled with spotted pet eggs and a lantern, a small golden shovel in one hand (seed 11, candidate 1)
+  merchant - (own prompt, no shared tail) cheerful traveling merchant girl, big round straw hat with a teal ribbon,
+             brown travel cloak, sitting relaxed in a wooden rocking chair (front three-quarter view); beside the chair an
+             open burlap sack of spotted pet eggs with a small golden shovel leaning upright against it (seed 23, candidate 0)
 Idle actions: crystal pulses / tosses and catches the die / floats and bobs / breathes, tongue wags, blinks /
-bounces the shovel, eggs wobble, lantern sways (animate seed 3).
+the rocking chair rocks on its rockers, the eggs in the sack wobble, sack and shovel stay put (animate seed 9).
 """
 import json, sys
 from pathlib import Path

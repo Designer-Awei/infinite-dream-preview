@@ -196,12 +196,15 @@ function shopDialog(game, md, ev, hooks) {
       card.appendChild(b);
       grid.appendChild(card);
     }
-    box.innerHTML = "";
-    box.appendChild(btn("离开", "gray", () => {
-      md.remove();
-      hooks.close();
-    }));
   };
+  // 离开 sits top-right in the header row, like the 地下商人 panel; no visitor name next to the title
+  md.querySelector(".ev-who")?.remove();
+  box.remove();
+  md.querySelector(".ev-top").appendChild(btn("离开", "blue ev-leave", () => {
+    md.querySelector(".ev-face")?.stop?.();
+    md.remove();
+    hooks.close();
+  }));
   draw();
 }
 

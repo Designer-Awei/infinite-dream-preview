@@ -531,6 +531,9 @@ function frame(now) {
     if (consume("dash")) inp.dash = true;
     if (consume("mount")) inp.mount = true;
   }
+  // frozen (an event dialog, card pick or the pause menu is up): drop the held attack, or the HUD keeps the
+  // attack button "firing" behind the dialog with the value it had when the dialog opened
+  if (me && frozen) me.input.atk = false;
   const active = me && (Math.abs(me.input.mx) > .1 || Math.abs(me.input.my) > .1 || me.input.atk || me.input.skill || me.input.ult || me.input.dash || me.castT > 0);
   if ((app.petCheckT = (app.petCheckT || 0) + wallDt) >= 1) (app.petCheckT = 0), app.petLiveXP();
   trackExperienceTime(app.progressSession, wallDt, active, !document.hidden && !frozen && !app.cardOpen && !app.ended && !g.pvp && !me?.dead && !me?.downed && ["fight", "clear", "portal"].includes(g.phase) && g.room?.kind !== "shop");
