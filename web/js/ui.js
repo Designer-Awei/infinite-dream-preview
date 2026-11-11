@@ -1,5 +1,5 @@
 // HTML overlay: lobby, roster, gacha, net rooms, HUD, card picks, pause, results.
-import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES } from "./data.js";
+import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
 import { load, save, unlockProgress, pull, checkUnlocks } from "./save.js";
 import { A } from "./assets.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
@@ -116,7 +116,7 @@ export function showHelp() {
         ["event", "紫门。没有敌人，房间里站着一位访客，走近按攻击键交谈（每层的门里最多一扇事件）。"],
         ["challenge", "深红门。普通战斗加一条随机规则，清场成功额外再选一次卡（可出 SR 及以上）。"],
         ["treasure", "金门。只有一小波怪，但必出本图稀有怪物（必掉梦境藏品），地上道具更多。"],
-        ["boss", "暗紫门。第 7 层首领战，击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙。"],
+        ["boss", "暗紫门。第 7 层首领战，击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip" style="background:${NODE[k].col};color:#1a1020">${NODE[k].name}</span><span>${t}</span></div>`).join("")}
       ${H("挑战规则")}${Object.values(CHALLENGES).map((c) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.challenge.col};color:#1a1020">${c.name}</span><span>${c.desc}。</span></div>`).join("")}
       ${H("事件访客")}${[
@@ -128,7 +128,7 @@ export function showHelp() {
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.event.col};color:#1a1020">${EVENTS[k].name}</span><span>${NPCS[k].name}：${t}</span></div>`).join("")}
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
-      ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 200 晶石。
+      ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 ${REWARD.riftSkip} 晶石，并有 ${Math.round(REWARD.riftSkipEgg * 100)}% 概率再得 1 颗宠物蛋。<br>双首领：首领房有 10% 概率出现两只同样的首领（横幅提示），两只都击败才算胜利，首领晶石奖励、铲子、宠物蛋和首领经验都翻倍。
       ${H("技能混搭")}每位角色带一种元素。拿到【融合】【联动】卡后可以借用其他角色的弹幕和技能；不同元素先后命中同一敌人会触发反应：<div class="hp-chips">${reacts}</div>`],
     ["地图道具", `走过去自动拾取：${Object.values(ITEMS).map((i) => `<div class="hp-cur"><span class="chip" style="background:${i.color};color:#1a1020">${i.name}</span><span>${i.desc}</span></div>`).join("")}
       ${H("算力方块")}本局的成长道具：左上角绿色方块旁的数字就是已拿到的个数，常规模式每个让伤害 +6%，每5个生命上限 +1；无尽前40个收益相同，之后伤害和生命收益逐渐递减，持续到本局结束。打碎箱子、击败敌人会刷出。
@@ -146,7 +146,7 @@ export function showHelp() {
       ${H("矿物")}矿物带出后按价值换成晶石，同时得到矿石；带星砂图标的矿物挖到时额外给星砂。图标依次是：晶石、矿石、星砂。${Object.entries(ORES).map(([id, o]) => `<div class="hp-orow"><img src="${oreIcon(id)}" alt=""><b>${o.name}</b><em><i class="cur gem"></i>${o.v}</em><em>${o.m ? `<img class="cur" src="${iconURL("ore", 1)}" alt="矿石">${o.m}` : ""}</em><em>${o.s ? `<img class="cur" src="${oreIcon("star")}" alt="星砂">${o.s}` : ""}</em><span>${Object.keys(o.zones).map((z) => ZONES.find((q) => q.id === z).name).join("、")}${o.light ? " · 会发光" : ""}</span></div>`).join("")}
       ${H("宝箱")}<div class="hp-orow"><img src="${chestIcon("plain")}" alt=""><b>普通宝箱</b><span>2～4 个本层矿物，50% 多掉星砂金矿，星砂 ${CHEST_STARS[ZONES[0].id][0]}～${CHEST_STARS[ZONES[ZONES.length - 1].id][1]}</span></div><div class="hp-orow"><img src="${chestIcon("relic")}" alt=""><b>紫色遗物箱</b><span>每层一个，三选一本次下潜的遗物增益</span></div><div class="hp-orow"><img src="${chestIcon("star")}" alt=""><b>星图宝箱</b><span>遗迹深处，金铲开启：4 个遗迹矿物 + 星砂 ${CHEST_STARS.star.join("～")}</span></div>
       ${H("梦境工坊")}最终减伤（矿场里每次受伤 -1，最多 2 级）、SSR 兑换卡、角色专属梦核（强化该角色的大招）。`],
-    ["梦境宠物", `${H("获得宠物")}击败首领获得宠物蛋（每个首领 1 颗，一局最多 3 颗），矿场安全撤离也有 35% 概率挖到一颗。在宠物仓库把蛋放进孵化槽（3 个），宠物蛋 3 分钟、UR 5 分钟、HUR 8 分钟后可孵化，可花星砂加速（每分钟 4 星砂）；孵出随机种类的幼年体，可以拥有多只同种宠物。宠物图鉴每收集 3 种左右可领一次奖励（蛋、道具、经验池）。SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点（兑换卡也可每张换 1 点）；在扭蛋机点「积攒」兑换：UR 宠物蛋 10 点（必出稀有及以上）、HUR 宠物蛋 20 点（必出史诗及以上）、淬灵露 10 点、流彩晶 20 点。${H("孵化品质")}${eggOddsTable()}${H("品质与词条")}每只宠物有两条随机词条，按数值高低分普通 / 优秀 / 稀有 / 史诗 / 传说；流彩有三条顶级词条，概率 0.2% 起，每次没出 +0.05%，最高 5%。孵化有 6% 概率是异色。品质决定词条范围，例如灵动：普通 2~8%、优秀 4~11%、稀有 6~14%、史诗 9~17%、传说 12~20%、流彩 18~20%。淬灵露给传说及以下宠物随机一条词条 +2~5%（不超过该品质上限），流彩晶只给流彩宠物用，可突破上限到 150%。${H("词条类型")}蓝色标签作用于宠物，金色标签作用于携带它的角色；每只宠物从这六种里随机抽两条（流彩三条），不会重复。范围按品质依次为普通 / 优秀 / 稀有 / 史诗 / 传说。${traitTable()}${H("成长")}出战宠物随闯关获得经验（每 6 秒 1 点，清理战斗房 +4，首领 +8），累计 300 经验成长、1200 经验终极，达到即在战斗中当场进化，不需要材料；终极满经验后多出的经验进入经验池。${H("注入经验")}点经验条右侧的圆形加号：第一次点出现提示，之后每点一次从经验池注入 +300（经验池不足或接近满经验时按剩余数量），幼年到终极共点 4 次，途中自动进化。${H("放生")}未上锁、未出战的宠物可放生，点一次按钮变为「确定」，再点放生。返还经验池 = 品质基础值 + 当前累计经验的 50%。品质基础值：普通 100、优秀 200、稀有 300、史诗 400、传说 600、流彩 1000。例如：0 经验的普通幼年 100；300 经验的稀有成长 300 + 150 = 450；满经验的传说终极 600 + 600 = 1200。${H("融合")}选中一只宠物点「融合」，它就是主宠，再在格子里点另一只作为副宠（不限种族，上锁和出战中的不能用），两只合成一只 0 经验的幼年体：<br>• 种族：70% 与主宠相同，30% 与副宠相同；同种融合必为该种。<br>• 品质：取两只中较高的品质；两只同品质且在史诗以下（普通、优秀、稀有）时，另有 20% 升一阶。<br>• 词条：在结果品质的范围内随机两次，保留较好的一组。<br>• 异色：两只都不是异色 20%，一只异色 50%，两只都是异色必出异色；颜色在结果种族的异色里随机，不继承。<br>• 流彩：任一只是流彩则结果保留流彩；否则按当前流彩概率（和孵化共用保底）。<br>例如：异色普通（主宠）+ 原色传说（副宠）→ 品质传说，50% 异色，70% 是主宠的种族。${H("评分")}评分综合成长阶段与经验、词条数值、品质和异色：完美满词条的传说终极约 2000，流彩可以更高。
+    ["梦境宠物", `${H("获得宠物")}击败首领获得宠物蛋（每个首领 1 颗，一局最多 3 颗；双首领算 2 颗并让上限 +1），放弃梦境裂隙有 35% 概率再得 1 颗，矿场安全撤离也有 35% 概率挖到一颗。在宠物仓库把蛋放进孵化槽（3 个），宠物蛋 3 分钟、UR 5 分钟、HUR 8 分钟后可孵化，可花星砂加速（每分钟 4 星砂）；孵出随机种类的幼年体，可以拥有多只同种宠物。宠物图鉴每收集 3 种左右可领一次奖励（蛋、道具、经验池）。SSR 全部收齐后，每再抽到一张 SSR 获得 1 积攒点（兑换卡也可每张换 1 点）；在扭蛋机点「积攒」兑换：UR 宠物蛋 10 点（必出稀有及以上）、HUR 宠物蛋 20 点（必出史诗及以上）、淬灵露 10 点、流彩晶 20 点。${H("孵化品质")}${eggOddsTable()}${H("品质与词条")}每只宠物有两条随机词条，按数值高低分普通 / 优秀 / 稀有 / 史诗 / 传说；流彩有三条顶级词条，概率 0.2% 起，每次没出 +0.05%，最高 5%。孵化有 6% 概率是异色。品质决定词条范围，例如灵动：普通 2~8%、优秀 4~11%、稀有 6~14%、史诗 9~17%、传说 12~20%、流彩 18~20%。淬灵露给传说及以下宠物随机一条词条 +2~5%（不超过该品质上限），流彩晶只给流彩宠物用，可突破上限到 150%。${H("词条类型")}蓝色标签作用于宠物，金色标签作用于携带它的角色；每只宠物从这六种里随机抽两条（流彩三条），不会重复。范围按品质依次为普通 / 优秀 / 稀有 / 史诗 / 传说。${traitTable()}${H("成长")}出战宠物随闯关获得经验（每 6 秒 1 点，清理战斗房 +4，首领 +8），累计 300 经验成长、1200 经验终极，达到即在战斗中当场进化，不需要材料；终极满经验后多出的经验进入经验池。${H("注入经验")}点经验条右侧的圆形加号：第一次点出现提示，之后每点一次从经验池注入 +300（经验池不足或接近满经验时按剩余数量），幼年到终极共点 4 次，途中自动进化。${H("放生")}未上锁、未出战的宠物可放生，点一次按钮变为「确定」，再点放生。返还经验池 = 品质基础值 + 当前累计经验的 50%。品质基础值：普通 100、优秀 200、稀有 300、史诗 400、传说 600、流彩 1000。例如：0 经验的普通幼年 100；300 经验的稀有成长 300 + 150 = 450；满经验的传说终极 600 + 600 = 1200。${H("融合")}选中一只宠物点「融合」，它就是主宠，再在格子里点另一只作为副宠（不限种族，上锁和出战中的不能用），两只合成一只 0 经验的幼年体：<br>• 种族：70% 与主宠相同，30% 与副宠相同；同种融合必为该种。<br>• 品质：取两只中较高的品质；两只同品质且在史诗以下（普通、优秀、稀有）时，另有 20% 升一阶。<br>• 词条：在结果品质的范围内随机两次，保留较好的一组。<br>• 异色：两只都不是异色 20%，一只异色 50%，两只都是异色必出异色；颜色在结果种族的异色里随机，不继承。<br>• 流彩：任一只是流彩则结果保留流彩；否则按当前流彩概率（和孵化共用保底）。<br>例如：异色普通（主宠）+ 原色传说（副宠）→ 品质传说，50% 异色，70% 是主宠的种族。${H("评分")}评分综合成长阶段与经验、词条数值、品质和异色：完美满词条的传说终极约 2000，流彩可以更高。
       ${H("宠物仓库")}大厅人物右上方是出战宠物（有蛋时显示数量），点击进入宠物仓库：右侧是蛋和全部宠物，上锁的排在前面；左侧是选中宠物的词条、经验和操作（出战、进化、注入经验、淬炼、融合、详情、放生）。“详情”可看技能演示和试用，切到其他种类时作为图鉴浏览。
       ${H("跟随助战")}主线、无尽与合作模式中，宠物会靠近附近敌人，到攻击距离后停步普攻并自动释放技能；火龙攻击距离 ${PET_ATTACK_RANGE.dragon}、灵狐 ${PET_ATTACK_RANGE.fox}、冰凰 ${PET_ATTACK_RANGE.phoenix}。没有敌人且离主人较远时自动回跟，到身边停下，小范围移动不会反复踱步；宠物不承受伤害、不占传送人数。携带加成进入下一局生效，竞技场和矿场不出战、不提供加成。
       ${H("经验与进化")}携带出战的宠物获得经验：有效游玩每 6 秒 +1，清理战斗房 +4，首领 +8；暂停和长时间无操作不计。累计 ${PET_EVOLVE[2].xp} 经验进化为成长、${PET_EVOLVE[3].xp} 经验进化为终极，不需要其他材料：局内一达到就当场进化（光柱 + 提示），从经验池注入经验达到时也立即进化。
@@ -267,7 +267,7 @@ export function showHud(game, me) {
    <div class="tl"><div class="face"><img src="assets/portrait_${me.cid}.png"></div>
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar sh"><i></i><span class="o1"></span></div>
      <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div><div class="pvpscore"></div></div></div></div>
-   <div class="tc"><div class="pips"></div><div class="bossbar" style="display:none"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div></div>
+   <div class="tc"><div class="pips"></div><div class="bossbars" style="display:none"><div class="bossbar"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div><div class="bossbar" style="display:none"><div class="nm o1"></div><div class="bar"><i></i></div></div></div></div>
    <div class="tr"><div class="buffs"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
    <div class="banner-slot"></div>
    <div class="keys o1">WASD 移动 · J 攻击(自动锁敌) · K 技能 · L 大招 · 空格 闪避</div>
@@ -348,12 +348,21 @@ export function updateHud(game, me) {
     // 梦境航线: the rooms walked so far show their kind, the ones ahead stay a question mark (the boss is always last)
     if (game.route) p.textContent = pipIcon(i <= game.route.step ? game.route.cols[i][game.route.path[i]].kind : i === game.route.cols.length - 1 ? "boss" : "?");
   }));
-  const boss = game.enemies.find((e) => e.boss);
-  set("boss", boss ? Math.ceil((boss.hp / boss.maxHp) * 200) : -1, (v) => {
-    const bb = hud.querySelector(".bossbar");
-    bb.style.display = v < 0 ? "none" : "";
-    if (v >= 0) bb.querySelector("i").style.width = v / 2 + "%";
-    if (boss) bb.querySelector(".nm").textContent = boss.def.name;
+  // boss bars: one per boss of this room, kept (empty) after it falls; 双首领 splits the same strip into two shorter bars,
+  // left to right as they stood when they appeared
+  if (hudCache.bossRoom !== game.roomIdx) (hudCache.bossRoom = game.roomIdx), (hudCache.bossSeen = []);
+  const living = game.enemies.filter((e) => e.boss && !e.dead && e.hp > 0), seen = hudCache.bossSeen;
+  for (const e of living) if (!seen.some((b) => b.id === e.id)) seen.push({ id: e.id, name: e.def.name, x: e.x }), seen.sort((a, b) => a.x - b.x);
+  const bossVals = seen.slice(0, 2).map((b) => { const e = living.find((q) => q.id === b.id); return e ? Math.ceil((e.hp / e.maxHp) * 200) : 0; });
+  set("boss", living.length ? bossVals.join(",") : -1, () => {
+    const box = hud.querySelector(".bossbars"), bars = box.querySelectorAll(".bossbar");
+    box.style.display = living.length ? "" : "none";
+    bars.forEach((bb, k) => {
+      bb.style.display = k < bossVals.length ? "" : "none";
+      if (k >= bossVals.length) return;
+      bb.querySelector("i").style.width = bossVals[k] / 2 + "%";
+      bb.querySelector(".nm").textContent = seen[k].name;
+    });
   });
   // buffs
   const bl = [];

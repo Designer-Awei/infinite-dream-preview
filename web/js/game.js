@@ -14,7 +14,9 @@ import { FOX_RIDE_RANGE, DRAGON_FIREBALL, PETS } from './petdata.js';
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
 
-export const RIFT_CHANCE = 0.25;
+export const RIFT_CHANCE = 0.15;
+// 双首领: a boss room sometimes holds two of its boss (decided from the run seed, so every peer agrees); its rewards double
+export const TWIN_BOSS_CHANCE = 0.1;
 export class Game {
   constructor({ mode = "solo", pvp = false, seed = (Math.random() * 1e9) | 0, fx, opt = {} }) {
     this.mode = mode; // solo | host | client
@@ -22,7 +24,7 @@ export class Game {
     this.petTrial = !pvp && !!opt.petTrial;
     this.petFields = [];
     // mode options: map (chapter) for PVE, endless corridor, PVP rule set
-    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl" };
+    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}) }; // twinBoss: force 双首领 on/off (tests)
     this.endless = !pvp && this.opt.endless;
     this.mapDef = MAPS[this.opt.map];
     this.pvpRule = PVP_MODES[this.opt.pvpMode];
@@ -230,6 +232,7 @@ export class Game {
     if (this.endless && idx % 10 === 0) this.raresSeen = 0;
     this.room = def;
     const kind = def.kind;
+    this.twinBoss = kind === "boss" && !this.pvp && !this.petTrial && (this.opt.twinBoss ?? rng(this.seed + idx * 577 + 13)() < TWIN_BOSS_CHANCE);
     const md = this.roomMap(idx);
     // every room uses its own map's look and floor hazard (the boss fights on home ground); shops have no hazard patches
     this.hazard = md.hazard;
@@ -302,6 +305,7 @@ export class Game {
     if (kind === "event") this.npc = { x: this.map.center.x - 5 * T, y: this.map.center.y - 20, id: NPCS[def.event] ? def.event : "altar", talked: false };
     const floor = this.endless ? `无尽回廊 · 第 ${idx + 1} 层` : `第 ${idx + 1} 层 · ${md.name}`;
     this.banner = { text: this.pvp ? `竞技场 · ${this.pvpRule.name}` : kind === "boss" ? (this.endless ? `第 ${idx + 1} 层 · 首领` : `首领 · ${(ENEMIES[def.boss] || ENEMIES.boss_eye).name}`) : kind === "shop" ? "补给站" : floor, sub: this.pvp ? this.pvpRule.goalText : kind === "shop" ? "扭蛋机 / 补给 · 准备好后进入传送门" : kind === "boss" ? "击败它！" : md.hazardText || "清除所有敌人", t: 2.4 };
+    if (this.twinBoss) this.banner = { text: `双首领 · ${(ENEMIES[def.boss] || ENEMIES.boss_eye).name} ×2`, sub: "击败两只首领 · 奖励翻倍", t: 2.8 };
     if (def.event) this.banner = { text: EVENTS[def.event].name, sub: `走近${NPCS[def.event].name}，按攻击键交谈`, t: 2.4 };
     else if (def.challenge) this.banner = { text: `挑战 · ${CHALLENGES[def.challenge].name}`, sub: CHALLENGES[def.challenge].desc + " · 清场额外选一次卡", t: 3 };
     else if (def.treasure) this.banner = { text: "宝藏房", sub: "稀有怪物出没，道具更多", t: 2.4 };
@@ -333,7 +337,8 @@ export class Game {
     if (this.wave >= waves.length) return false;
     if (this.room.boss) {
       const c = this.map.center;
-      this.spawnEnemy(this.room.boss, c.x, c.y - 60, false, 1.4);
+      if (this.twinBoss) for (const s of [-1, 1]) this.spawnEnemy(this.room.boss, c.x + s * 72, c.y - 60, false, 1.4);
+      else this.spawnEnemy(this.room.boss, c.x, c.y - 60, false, 1.4);
       return true;
     }
     const list = [...waves[this.wave]];
@@ -882,11 +887,18 @@ export class Game {
     this.emit({ t: "win" });
   }
   bossDown(e) {
-    this.runStats.boss = true;
     if (this.host && !this.pvp && Math.random() < .35) {
       const mapId = Object.keys(MAPS).find(id => MAPS[id] === this.roomMap(this.roomIdx)) || this.opt.map;
       this.dropCurio(mapId, e.x, e.y);
     }
+    // 双首领: the first one down only bursts; the room is won (and the minions swept) when the last boss falls
+    if (this.enemies.some((q) => q !== e && q.boss && !q.dead && q.hp > 0)) {
+      this.shake = 10;
+      this.vfx("explosions/plasma-explosion", e.x, e.y - 30, { palette: ["#1a0610", "#4a1028", "#8a2040", "#d04060", "#ff8090", "#ffd0d0", "#ffffff"] });
+      this.text(e.x, e.y - 60, "还剩一只！", "#ffd84a", 1.4, 1.4);
+      return;
+    }
+    this.runStats.boss = true;
     this.shake = 14;
     this.vfx("explosions/plasma-explosion", e.x, e.y - 30, { palette: ["#1a0610", "#4a1028", "#8a2040", "#d04060", "#ff8090", "#ffd0d0", "#ffffff"] });
     this.after(0.5, () => this.vfx("ui/confetti", e.x, e.y - 40));
@@ -1242,12 +1254,14 @@ export class Game {
     if (this.phase !== "fight") return;
     this.phase = "clear";
     this.sound("clear");
-    if (this.room.kind === "boss") this.runStats.xpBosses = (this.runStats.xpBosses || 0) + 1;
+    if (this.room.kind === "boss") this.runStats.xpBosses = (this.runStats.xpBosses || 0) + (this.twinBoss ? 2 : 1);
+    if (this.room.kind === "boss" && this.twinBoss) this.runStats.twinBosses = (this.runStats.twinBosses || 0) + 1;
     else if (["combat", "elite"].includes(this.room.kind)) this.runStats.xpRooms = (this.runStats.xpRooms || 0) + 1;
     this.runStats.rooms = Math.max(this.runStats.rooms, this.roomIdx + 1);
     // a boss always drops a 梦境矿场 shovel: it lands with a light beam; walk over it to pick it up
     // (it is counted at the settlement either way)
     if (this.room.kind === "boss") this.dropShovel();
+    if (this.room.kind === "boss" && this.twinBoss) this.dropShovel(true);
     // a boss sometimes leaves a 梦境裂隙: a 90-second dig (solo only)
     if (this.room.kind === "boss" && this.mode === "solo" && !this.petTrial && Math.random() < RIFT_CHANCE) {
       this.banner = { text: "梦境裂隙出现！", sub: "限时挖宝的机会", t: 2 };
@@ -1286,13 +1300,15 @@ export class Game {
     for (const q of this.pickups) if (q.kind === "coin") q.magnet = true;
   }
   /** boss reward for 梦境矿场: 金 10% / 银 35% / 铜 55%, dropped at the centre with a beam in its colour */
-  dropShovel() {
-    if (this.shovelRoom === this.roomIdx) return;
+  dropShovel(second = false) {
+    if (!second && this.shovelRoom === this.roomIdx) return;
     this.shovelRoom = this.roomIdx;
     const r = Math.random(), kind = r < 0.1 ? "au" : r < 0.45 ? "ag" : "cu";
     const c = this.map.center, col = { cu: "#ff9a4a", ag: "#d8e4ff", au: "#ffd84a" }[kind];
     this.runStats.shovel = kind;
     (this.runStats.shovels ||= []).push(kind);
+    // 双首领's second shovel goes straight into the settlement (one shovel stands on the ground)
+    if (second) return this.after(0.6, () => this.text(c.x - 46, c.y - 38, "双首领 · " + { cu: "铜铲", ag: "银铲", au: "金铲" }[kind] + " +1", col, 1.2, 1.6));
     this.shovelItem = { kind, x: c.x + 46, y: c.y + 2, t: 0, col };
     // drawShovelDrop renders the pillar and shovel without the sword baked into loot-beam.
     this.text(this.shovelItem.x, this.shovelItem.y - 40, { cu: "铜铲", ag: "银铲", au: "金铲" }[kind] + "掉落！", col, 1.2, 1.4);

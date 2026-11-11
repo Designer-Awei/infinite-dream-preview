@@ -248,7 +248,8 @@ export const app = {
     const first = win && !endless && !m.maps[o.map];
     const mul = endless ? 1 : md.reward || 1;
     const riftBonus = (rs.riftDeclines || 0) * REWARD.riftSkip;
-    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0)) * mul) + (first ? REWARD.firstBoss : 0) + riftBonus;
+    // 双首领 pays its boss reward twice
+    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0) + (rs.twinBosses || 0) * REWARD.boss) * mul) + (first ? REWARD.firstBoss : 0) + riftBonus;
     if (win && !endless) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
     const prevBest = m.stats.endlessBest || 0;
     if (endless) m.stats.endlessBest = Math.max(prevBest, rs.rooms);
@@ -275,8 +276,10 @@ export const app = {
     if (petXP) extras.push(["宠物经验",`${PETS[this.me.pet.id].name} +${petXP}`]);
     if (petOver > 0 && addPool(petOver)) extras.push(["经验池", `+${petOver}（宠物经验溢出）`]);
     // 宠物蛋：每击败一个首领 1 颗（一局最多 3 颗），在宠物仓库孵化
-    const eggs = grantEggs(Math.min(3, rs.xpBosses || 0));
+    // 双首领 counts as two bosses and lifts the cap by one; a declined 梦境裂隙 sometimes leaves one more
+    const eggs = grantEggs(Math.min(3 + (rs.twinBosses || 0), rs.xpBosses || 0) + (rs.riftEggs || 0));
     if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);
+    if (rs.twinBosses) extras.push(["双首领", `${rs.twinBosses} 次 · 首领奖励翻倍`]);
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {
@@ -294,7 +297,7 @@ export const app = {
       extras.push(["星砂泉", `+${rs.eventStars} 星砂`]);
     }
     if (rs.challenges || rs.events) extras.push(["梦境航线", `挑战成功 ${rs.challenges || 0} · 事件 ${rs.events || 0}`]);
-    if (riftBonus) extras.push(["放弃裂隙", `${rs.riftDeclines} 次 · +${riftBonus}<i class="cur gem"></i>`]);
+    if (riftBonus) extras.push(["放弃裂隙", `${rs.riftDeclines} 次 · +${riftBonus}<i class="cur gem"></i>${rs.riftEggs ? ` · 宠物蛋 +${rs.riftEggs}` : ""}`]);
     // 怪物图鉴 + 梦境藏品
     const met = recordCodex(g.seen, g.killedTypes);
     if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);
@@ -350,7 +353,7 @@ export const app = {
     g.riftPromptRoom = g.roomIdx;
     this.paused = true;
     let chosen = false;
-    const modal = UI.showMsg("梦境裂隙", `首领倒下时撕开了一道裂隙：<br>进入后有 <b>90 秒</b>限时挖宝：电量无限、不消耗铲子、矿物更密集，时间到自动带出全部收获。${g.endless ? '<div class="rift-tip">无尽模式：挖宝结束后返回当前进度继续闯关，不会提前结算。</div>' : ''}<div class="rift-tip">放弃进入：本局结算额外获得 ${REWARD.riftSkip} 晶石。</div>`, "进入裂隙", () => {
+    const modal = UI.showMsg("梦境裂隙", `首领倒下时撕开了一道裂隙：<br>进入后有 <b>90 秒</b>限时挖宝：电量无限、不消耗铲子、矿物更密集，时间到自动带出全部收获。${g.endless ? '<div class="rift-tip">无尽模式：挖宝结束后返回当前进度继续闯关，不会提前结算。</div>' : ''}<div class="rift-tip">放弃进入：本局结算额外获得 ${REWARD.riftSkip} 晶石，并有 ${Math.round(REWARD.riftSkipEgg * 100)}% 概率再得 1 颗宠物蛋。</div>`, "进入裂隙", () => {
       if (chosen || this.game !== g) return;
       chosen = true;
       this.startRift();
@@ -363,9 +366,10 @@ export const app = {
       chosen = true;
       modal.remove();
       g.runStats.riftDeclines = (g.runStats.riftDeclines || 0) + 1;
+      if (Math.random() < REWARD.riftSkipEgg) g.runStats.riftEggs = (g.runStats.riftEggs || 0) + 1;
       this.paused = false;
       if (!g.endless) g.victory();
-      else UI.toast(`已放弃裂隙，本局结算额外 +${REWARD.riftSkip} 晶石`, 2000);
+      else UI.toast(`已放弃裂隙，本局结算额外 +${REWARD.riftSkip} 晶石${g.runStats.riftEggs ? "（宠物蛋已记入）" : ""}`, 2000);
     }));
   },
   startRift() {
