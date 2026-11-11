@@ -11,6 +11,7 @@ export function attachPet(game,p,value){
   const pet=!game.pvp&&validPet(value);if(!pet)return;
   p.pet={...pet,x:p.x,y:p.y,r:8,face:0,anim:0,walkT:0,moving:false,castT:0,castMax:0,attackCd:.5,skillCd:2,auraCd:10,blinkT:0,warpSeq:0,route:[],room:-1};
   const def=PETS[pet.id];p.st[def.stat]*=1+def.bonus[pet.stage-1]*(pet.tr?.carry||1);p.mounted=false; // 词条「共鸣」放大携带加成
+  p.st.crit+=(pet.tr?.crit||1)-1;p.st.critX=(p.st.critX||0)+(pet.tr?.critx||1)-1; // 「鹰眼」暴击率、「致命」暴击伤害：加在角色身上
 }
 export function resetPet(game,p){if(p.pet)Object.assign(p.pet,{x:p.x,y:p.y+12,route:[],room:game.roomIdx,castT:0,moving:false,blinkT:0,targetId:null,state:'idle',returning:false,nav:null,navCd:0,stuck:0});}
 export function petScale(p){return p.mounted?1.04:[1.08,.95,.85][p.pet.stage-1];}
@@ -204,6 +205,8 @@ function skill(game,p,target,angle,ultimate=false){
   else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:(ultimate?18:5+q.stage*3)*(q.tr?.dmg||1),follow:ultimate},ultimate?5:3.2,ultimate);
   else{q.castT=q.castMax=1.1;game.line(m.x,m.y,m.x+4,m.y-56,'#ffe36a',2,.3,'bolt',null,.08);game.line(m.x,m.y,m.x,m.y,'#ffe36a',10,.3,'spark');game.after(.3,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,(10+q.stage*5)*(q.tr?.dmg||1),petMuzzle(p));});}
 }
+/** 雷影穿梭 only goes off with a foe inside its range: an empty press keeps the charge (no wasted ultimate) */
+export function mountedUltBlocked(game,p){return !!(p.mounted&&p.pet?.id==='fox'&&!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false));}
 export function mountedUlt(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
   game.text(p.x,overheadY(p),PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);

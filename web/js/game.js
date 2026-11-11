@@ -8,7 +8,7 @@ import { castSkill, castUlt, fireAttack, onBulletHit } from "./skills.js";
 import { updateEnemy, spawnBossAdds } from "./enemies.js";
 import { rollCurio, rareOf, CURIOS } from "./codex.js";
 import { levelBonuses } from "./progression.js";
-import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink } from "./pets.js";
+import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink, mountedUltBlocked } from "./pets.js";
 import { flyingMount, visualTilesIn } from './petcombat.js';
 import { FOX_RIDE_RANGE, DRAGON_FIREBALL, PETS } from './petdata.js';
 
@@ -70,7 +70,7 @@ export class Game {
       hp: c.hp + talent("t_hp"), maxHp: c.hp + talent("t_hp"), core: kit.core ? 1 : 0, shield: c.shield + talent("t_shield2"), maxShield: c.shield + talent("t_shield2"),
       atkCd: 0, atkCount: 0, rampT: 0, idleFire: 1, skillCd: 0, ult: 0.3 * talent("t_ult"), dashCd: 0, dashT: 0, dashDx: 0, dashDy: 0,
       invuln: 0, hurtT: 0, lastHit: 99, shieldT: 0, recoil: 0, castT: 0,
-      st: { dmg: 1 + 0.04 * talent("t_dmg"), rate: 1 + 0.02 * talent("t_rate"), crit: 0.05 + 0.03 * talent("t_crit"), multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1 + 0.03 * talent("t_range"), bspd: 1, size: 1, cd: 1 - 0.04 * talent("t_cd"), ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield"), mag: 1 + 0.15 * talent("t_magnet"), elite: 1 + 0.05 * talent("t_elite"), replay: 0.1 * talent("t_replay") },
+      st: { dmg: 1 + 0.04 * talent("t_dmg"), rate: 1 + 0.02 * talent("t_rate"), crit: 0.05 + 0.03 * talent("t_crit"), critX: 0, multi: 0, pierce: 0, bounce: 0, speed: 1 + 0.03 * talent("t_speed"), range: 1 + 0.03 * talent("t_range"), bspd: 1, size: 1, cd: 1 - 0.04 * talent("t_cd"), ultG: 1, vamp: 0, coin: 1 + 0.12 * talent("t_coin"), shieldRegen: 1 + 0.1 * talent("t_shield"), mag: 1 + 0.15 * talent("t_magnet"), elite: 1 + 0.05 * talent("t_elite"), replay: 0.1 * talent("t_replay") },
       cards: {}, fusions: [], links: [],
       buff: {}, // name -> seconds left
       coins: 15 * talent("t_start_coin"), cubes: 0,
@@ -479,7 +479,7 @@ export class Game {
     let crit = false;
     if (p && !src.noCrit) {
       const c = p.dodgeCrit > 0 ? 1 : p.st.crit;
-      if (Math.random() < c) (crit = true), (dmg *= BAL.critMul);
+      if (Math.random() < c) (crit = true), (dmg *= BAL.critMul + (p.st.critX || 0)); // 宠物词条「致命」加暴击倍率
     }
     if (p && (e.elite || e.boss)) dmg *= p.st.elite || 1; // 对抗训练
     if (e.vulnT > 0) dmg *= 1.25;
@@ -1625,7 +1625,10 @@ export class Game {
     }
     if (inp.ult) {
       inp.ult = false;
-      if (p.ult >= 1) {
+      if (p.ult >= 1 && mountedUltBlocked(this, p)) {
+        // 灵狐骑乘大招: nothing to cut in range — keep the charge, say why (at most once a second)
+        if (!(this.time < (p.ultNoFoeT || 0))) (p.ultNoFoeT = this.time + 1), this.text(p.x, p.y - 46, "范围内没有敌人", "#ffe69a", 1, 0.8);
+      } else if (p.ult >= 1) {
         const a = inp.castAim?.ult ?? aim ?? p.face;
         p.ult = 0;
         castUlt(this, p, a, inp.castAim?.ult != null ? null : p.target);

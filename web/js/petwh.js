@@ -126,7 +126,7 @@ export function showWarehouse(onClose) {
     const st = petState();
     const rc = rainbowChance(st.rb) * 100;
     const items = Object.entries(PET_ITEMS).filter(([k]) => st.items[k] > 0).map(([k, it]) => `<span>${it.name} <b>${st.items[k]}</b></span>`).join("");
-    $(".wh-wallet").innerHTML = `<span>宠物蛋 <b>${eggCount(st)}</b></span>${items}<span>经验池 <b>${st.pool}</b></span><span>星砂 <b>${mineState().stars}</b></span><span title="每次孵化或融合没出流彩，下次概率 +0.05%，最高 5%；出了流彩后回到 0.2%">流彩 <b class="wh-rc">${rc.toFixed(rc < 1 ? 2 : 1)}%</b></span>`;
+    $(".wh-wallet").innerHTML = `${items}<span>经验池 <b>${st.pool}</b></span><span>星砂 <b>${mineState().stars}</b></span><span title="每次孵化或融合没出流彩，下次概率 +0.05%，最高 5%；出了流彩后回到 0.2%">流彩 <b class="wh-rc">${rc.toFixed(rc < 1 ? 2 : 1)}%</b></span>`;
   };
   const grid = () => {
     const st = petState(), g = $(".wh-grid");

@@ -24,6 +24,9 @@ export const TRAITS = {
   rate: { name: "迅捷", desc: "宠物攻速", top: 20 },
   cd: { name: "灵动", desc: "宠物技能冷却", top: 20, minus: true },
   carry: { name: "共鸣", desc: "携带加成", top: 40 },
+  // these two act on the character that carries the pet, not on the pet
+  crit: { name: "鹰眼", desc: "角色暴击率", top: 10, owner: true },
+  critx: { name: "致命", desc: "角色暴击效果", top: 40, owner: true },
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
 // 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality
@@ -178,7 +181,7 @@ function cleanPet(v) {
 export const petQuality = (p) => p.q ?? 0;
 /** the battle multipliers of a pet's traits */
 export function traitMul(traits) {
-  const tr = { dmg: 1, rate: 1, cd: 1, carry: 1 };
+  const tr = { dmg: 1, rate: 1, cd: 1, carry: 1, crit: 1, critx: 1 };
   for (const [k, v] of traits || []) if (TRAITS[k]) tr[k] = k === "cd" ? 1 - v / 100 : 1 + v / 100;
   return tr;
 }
