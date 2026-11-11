@@ -111,6 +111,7 @@ export const NPCS = {
   gamble: { name: "骰子狐", bye: "下次再来玩呀～" },
   spring: { name: "泉之精灵", bye: "一路顺风～" },
   curse: { name: "宝箱怪", bye: "嘎吱……" },
+  merchant: { name: "奇遇商人", bye: "有缘再会，旅人～" },
 };
 
 // events: one choice each. apply(game, p) runs on the host; returns a short result line (shown as floating text)
@@ -142,5 +143,20 @@ export const EVENTS = {
       { label: "打开", apply: (g, p) => { g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return "诅咒：敌人生命 +20%"; } },
       { label: "离开", apply: () => "" },
     ],
+  },
+  // a shop instead of a choice: paid with the account's 金铲 (梦境矿场) or 晶石, goods go straight to the account.
+  // Two purchases a room, each kind once; 离开 only closes (come back while purchases remain). See game.merchantBuy
+  merchant: {
+    name: "奇遇小铺", text: "「宠物蛋和兑换卡，挑两样吧～同一样只卖一次哦。」",
+    shop: {
+      buys: 2,
+      goods: [
+        { id: "egg_base", name: "宠物蛋", sub: "品质随机", egg: "base", cost: { au: 2 } },
+        { id: "egg_ur", name: "UR 宠物蛋", sub: "稀有及以上", egg: "ur", cost: { au: 5 } },
+        { id: "egg_hur", name: "HUR 宠物蛋", sub: "史诗及以上", egg: "hur", cost: { au: 10 } },
+        { id: "card", name: "兑换卡", sub: "换 SSR 或积攒点", card: 1, cost: { gem: 2000 } },
+      ],
+    },
+    options: [],
   },
 };

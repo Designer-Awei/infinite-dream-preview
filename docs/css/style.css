@@ -478,6 +478,8 @@ body.touchmode .keys, body.touchmode .pcskills { display: none; }
 .tbtn .ico, .pcs .ico { position: absolute; left: 50%; top: 48%; width: 62%; height: 62%; transform: translate(-50%, -50%); image-rendering: pixelated; z-index: 2; pointer-events: none; filter: drop-shadow(0 2px 0 rgba(0,0,0,.35)); transition: transform .12s; }
 /* the PixelLab skill / dash emblems carry their own padding: shown larger so they fill the button */
 .tbtn .ico[src*="assets/skills/"], .pcs .ico[src*="assets/skills/"] { width: 86%; height: 86%; top: 50%; }
+/* Grok's lightning / ult art runs to the PNG edge (diagonal), so it is drawn smaller to stay inside the circle */
+.tbtn .ico[src*="skills/grok_"], .pcs .ico[src*="skills/grok_"] { width: 74%; height: 74%; }
 body:not(.mining) .b-ult:not(.ready) .ico, body:not(.mining) .s-ult:not(.ready) .ico { filter: grayscale(.85) brightness(.75); }
 .tbtn .lb { position: absolute; left: 50%; bottom: -17px; transform: translateX(-50%); font-size: 10px; white-space: nowrap; z-index: 3; opacity: .9; }
 .b-atk .lb { bottom: -15px; }
@@ -1519,6 +1521,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .char-xp-detail .level-star { margin-left: 4px; }
 .hp-cur { display: flex; gap: 8px; align-items: baseline; margin: 3px 0; }
 .hp-cur .chip { flex: none; }
+.help-p .hp-cur .chip.w4 { min-width: 6.2em; text-align: center; }
 .hp-cur .cur-gem { background: #3ab0ff; } .hp-cur .cur-ore { background: #8a7a6a; } .hp-cur .cur-star { background: #ffd84a; color: #1a1020; }
 .hp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
 .modal.bg-close { cursor: pointer; } .modal.bg-close > * { cursor: auto; }
@@ -1797,6 +1800,14 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .hp-orow .cur.gem { width: .9em; height: .9em; margin: 0 1px; }
 /* Cubic's glyphs sit ~2px above the centre of their line box: nudge the text so it centres on the icon */
 .hp-orow > b, .hp-orow > em, .hp-orow > span { position: relative; top: 2px; }
+/* 孵化品质表 (梦境宠物): egg icon + name, then one column per quality */
+.hp-erow > img.egg { width: 18px; height: 22px; margin: 0 2px; }
+.hp-erow > i { flex: none; width: 22px; }
+.hp-erow > b { width: 6.4em; }
+.hp-erow > em { width: 3.3em; text-align: center; }
+.hp-erow.hd { margin-bottom: 0; }
+.hp-erow.hd > em { top: 0; }
+.hp-note { font-size: 12px; opacity: .8; margin: 2px 0 4px; }
 
 /* 梦核 owners: the name shimmers in flowing colours (the text-shadow outline would paint over a clipped gradient,
    so the outline comes from drop-shadows instead) */
@@ -2520,3 +2531,28 @@ body.touchmode .pet-ride-btn small { display:none; }
    gacha tile's bottom line like a hatched pet does, and wobbling like a ready egg to invite a tap */
 .lb-pet .lb-pet-egg { position: absolute; left: 0; right: 0; bottom: 8%; height: 62%; width: auto; aspect-ratio: 24 / 30; margin: 0 auto; image-rendering: pixelated; transform-origin: 50% 90%; animation: whWobble 1.2s ease-in-out infinite; }
 .lb-pet .lb-pet-egg { animation: whWobble 2s ease-in-out infinite; } /* same wobble as the notice bar's egg */
+/* 奇遇商人: four goods side by side, the goods are the main area; 离开 bottom-right */
+.ev-shop { margin: 0 0 8px; }
+.sh-goods { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.sh-good { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 6px 8px; border: 2px solid var(--ink); border-radius: 10px; background: radial-gradient(ellipse at 50% 30%, rgba(140,110,230,.45), rgba(14,8,36,.7) 75%); }
+.sh-good.e-ur { background: radial-gradient(ellipse at 50% 30%, rgba(90,168,255,.5), rgba(14,8,36,.7) 75%); }
+.sh-good.e-hur { background: radial-gradient(ellipse at 50% 30%, rgba(194,123,255,.55), rgba(14,8,36,.7) 75%); }
+.sh-good.e-card { background: radial-gradient(ellipse at 50% 30%, rgba(255,216,74,.45), rgba(14,8,36,.7) 75%); }
+.sh-good.sold { filter: grayscale(.7) brightness(.75); }
+.sh-pic { height: 54px; display: flex; align-items: center; justify-content: center; }
+.sh-pic canvas { height: 50px; width: auto; image-rendering: pixelated; }
+.sh-pic img { height: 46px; image-rendering: pixelated; }
+.sh-good b { font-weight: normal; font-size: 14px; color: #fff; white-space: nowrap; }
+.sh-good small { font-size: 11px; color: #c8c0e8; white-space: nowrap; }
+.sh-price { display: inline-flex; align-items: center; gap: 3px; font-size: 13px; color: #ffe36a; white-space: nowrap; margin: 2px 0 4px; }
+.sh-price.poor { color: #ff8a8a; }
+.sh-cur { width: 16px; height: 16px; image-rendering: pixelated; }
+.sh-price .cur.gem, .sh-wallet .cur.gem { width: .9em; height: .9em; }
+.sh-good .btn { min-width: 0; width: 76px; padding-left: 0; padding-right: 0; text-shadow: none; -webkit-text-stroke: 2.5px #000; paint-order: stroke fill; }
+.sh-foot { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 12px; color: #e8dcff; }
+.sh-wallet { display: inline-flex; align-items: center; gap: 3px; }
+.shop-mode.event-panel { width: min(520px, 92vw); }
+@media (max-height: 420px) { .sh-pic { height: 40px; } .sh-pic canvas { height: 38px; } .sh-pic img { height: 34px; } .sh-good { padding: 5px 4px 6px; } .sh-good b { font-size: 13px; } .sh-good .btn { width: 64px; } }
+.sh-good.sold { filter: none; }
+.sh-good.sold .sh-pic, .sh-good.sold b, .sh-good.sold small, .sh-good.sold .sh-price { opacity: .45; }
+.sh-good .btn.gray { -webkit-text-stroke: 0; }

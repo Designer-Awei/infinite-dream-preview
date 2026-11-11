@@ -11,7 +11,10 @@ view, full body, crisp dark outline, same style and size as the style image"):
   gamble - fox-eared gambler girl, red and gold vest, tiny top hat, holding up a big white die
   spring - small water spirit girl of translucent light blue water, fountain hair, star droplets
   curse  - mimic treasure chest in purple glowing chains, open toothy lid, tongue, one big eye
-Idle actions: crystal pulses / tosses and catches the die / floats and bobs / breathes, tongue wags, blinks.
+  merchant - wandering merchant girl, big straw hat with a teal ribbon, brown hooded travel cloak, huge backpack
+             piled with spotted pet eggs and a lantern, a small golden shovel in one hand (seed 11, candidate 1)
+Idle actions: crystal pulses / tosses and catches the die / floats and bobs / breathes, tongue wags, blinks /
+bounces the shovel, eggs wobble, lantern sways (animate seed 3).
 """
 import json, sys
 from pathlib import Path
@@ -19,7 +22,7 @@ from PIL import Image
 
 ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "web" / "assets" / "npc"
-IDS = ["altar", "gamble", "spring", "curse"]
+IDS = ["altar", "gamble", "spring", "curse", "merchant"]
 N, CELL, FPS = 9, 96, 8
 # the mimic's eye stays shut for frames 3..7: play its open-eyed frames twice, then the blink once
 SEQ = {"curse": [0, 1, 2, 1, 0, 1, 2, 1, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8]}

@@ -1,7 +1,9 @@
 // 梦境航线界面：事件房的对话面板（走近访客按攻击键打开，头像 + 台词 + 选项；骰子狐是押单双的掷骰小游戏）。
 // 选路不再用面板：清场后房间里会出现 2～3 扇不同颜色的传送门（见 game.js openForkPortals）。
 import { el } from "./util.js";
-import { uiRoot, btn } from "./ui.js";
+import { uiRoot, btn, toast } from "./ui.js";
+import { drawEgg } from "./petwh.js";
+import { iconURL } from "./icons.js";
 import { EVENTS, NPCS } from "./route.js";
 import { A } from "./assets.js";
 import { sfx } from "./audio.js";
@@ -161,6 +163,48 @@ function diceDialog(game, md, ev, hooks) {
   buttons();
 }
 
+// ---------------------------------------------------------------- 奇遇商人's goods
+/** the merchant's shop: four goods side by side (picture, name, what it is, price), two purchases, each kind once.
+ *  Paid from the account (金铲 / 晶石) through hooks.buy; 离开 only closes, so you can come back while purchases remain */
+function shopDialog(game, md, ev, hooks) {
+  const box = md.querySelector(".ev-opts"), shop = ev.shop, area = el("div", "ev-shop");
+  md.querySelector(".event-panel").classList.add("dice-mode", "shop-mode");
+  area.innerHTML = `<div class="sh-goods"></div><div class="sh-foot o1"><span class="sh-left"></span><span class="sh-wallet"></span></div>`;
+  box.before(area);
+  const price = (c) => (c.au ? `<img class="sh-cur" src="${iconURL("shovel_au", 2)}" alt="">金铲 ×${c.au}` : `<i class="cur gem"></i>${c.gem}`);
+  const draw = () => {
+    const w = hooks.wallet(), bought = hooks.bought(), left = shop.buys - bought.length, grid = area.querySelector(".sh-goods");
+    area.querySelector(".sh-left").textContent = left > 0 ? `还能买 ${left} 样 · 同一样只卖一次` : "两样都买好了";
+    area.querySelector(".sh-wallet").innerHTML = `<img class="sh-cur" src="${iconURL("shovel_au", 2)}" alt="">${w.au} · <i class="cur gem"></i>${w.gem}`;
+    grid.innerHTML = "";
+    for (const g of shop.goods) {
+      const has = bought.includes(g.id), afford = g.cost.au ? w.au >= g.cost.au : w.gem >= g.cost.gem;
+      const card = el("div", "sh-good" + (has ? " sold" : "") + (g.egg ? " e-" + g.egg : " e-card"));
+      card.innerHTML = `<div class="sh-pic"></div><b class="o1">${g.name}</b><small class="o1">${g.sub}</small><span class="sh-price o1${afford ? "" : " poor"}">${price(g.cost)}</span>`;
+      if (g.egg) {
+        const c = el("canvas");
+        drawEgg(c, 0, g.egg);
+        card.querySelector(".sh-pic").appendChild(c);
+      } else card.querySelector(".sh-pic").innerHTML = `<img src="${iconURL("cardgold", 3)}" alt="">`;
+      const b = btn(has ? "已购" : "购买", has ? "gray small" : "small", () => {
+        const r = hooks.buy(g);
+        if (!r.ok) return r.reason && toast(r.reason);
+        sfx("coin");
+        draw();
+      });
+      b.disabled = has || left <= 0 || !afford;
+      card.appendChild(b);
+      grid.appendChild(card);
+    }
+    box.innerHTML = "";
+    box.appendChild(btn("离开", "gray", () => {
+      md.remove();
+      hooks.close();
+    }));
+  };
+  draw();
+}
+
 /** an event room's choice; onPick(k) with k = option index. A dice event (ev.dice) runs its own game via hooks */
 export function showEvent(game, onPick, hooks = null) {
   const id = game.room.event, ev = EVENTS[id], npc = NPCS[id], md = el("div", "modal event-modal");
@@ -169,8 +213,8 @@ export function showEvent(game, onPick, hooks = null) {
   if (face) md.querySelector(".ev-face-box").appendChild(face);
   else md.querySelector(".ev-face-box").remove();
   const box = md.querySelector(".ev-opts");
-  if (ev.dice && hooks) {
-    diceDialog(game, md, ev, hooks);
+  if ((ev.dice || ev.shop) && hooks) {
+    (ev.shop ? shopDialog : diceDialog)(game, md, ev, hooks);
     uiRoot().appendChild(md);
     return md;
   }

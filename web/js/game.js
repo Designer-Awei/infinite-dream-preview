@@ -1362,12 +1362,32 @@ export class Game {
     if (nv.rounds === 1) this.runStats.events = (this.runStats.events || 0) + 1;
     this.onUi("hud");
   }
+  /** 奇遇商人: whether this player may still buy `id` here (two purchases a room, each kind once) */
+  merchantCheck(id) {
+    const nv = this.npc, ev = this.room && EVENTS[this.room.event], shop = ev?.shop;
+    if (!nv || !shop || this.eventDone) return { ok: false, reason: "商人已经走了" };
+    const bought = nv.bought || [];
+    if (!shop.goods.some((g) => g.id === id)) return { ok: false, reason: "没有这件商品" };
+    if (bought.includes(id)) return { ok: false, reason: "这件已经买过了" };
+    if (bought.length >= shop.buys) return { ok: false, reason: `每次只能买 ${shop.buys} 样` };
+    return { ok: true };
+  }
+  /** a purchase went through (paid from the account by the caller): record it, float the result */
+  merchantBought(pid, id) {
+    const p = this.player(pid), nv = this.npc, ev = this.room && EVENTS[this.room.event], good = ev?.shop?.goods.find((g) => g.id === id);
+    if (!p || !nv || !good) return;
+    (nv.bought ||= []).push(id);
+    if (nv.bought.length === 1) this.runStats.events = (this.runStats.events || 0) + 1;
+    this.text(p.x, p.y - 60, `获得 ${good.name}`, "#ffe14a", 1.4);
+    this.sound("coin");
+    this.onUi("hud");
+  }
   /** the event dialog closed without a final choice (骰子狐's 离开): the way on opens, the visitor stays until its rounds run out */
   closeEvent() {
     const nv = this.npc, ev = this.room && EVENTS[this.room.event];
     if (!nv || this.eventDone) return;
     nv.open = false;
-    if (ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) {
+    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys)) {
       this.eventDone = true;
       nv.done = true;
       this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);

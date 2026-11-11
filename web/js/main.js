@@ -200,6 +200,24 @@ export const app = {
         coins: () => me.coins,
         roll: (odd, ratio) => (this.game === g ? g.rollDice(me.id, odd, ratio) : null),
         settle: () => this.game === g && g.settleDice(me.id),
+        // 奇遇商人: what the account holds, and a purchase paid from it (金铲 / 晶石), goods straight into the account
+        wallet: () => ({ au: mineState().shovels.au || 0, gem: load().tokens || 0 }),
+        bought: () => (this.game === g && g.npc?.bought) || [],
+        buy: (good) => {
+          if (this.game !== g) return { ok: false, reason: "" };
+          const chk = g.merchantCheck(good.id);
+          if (!chk.ok) return chk;
+          const m = load(), ms = mineState();
+          if (good.cost.au && (ms.shovels.au || 0) < good.cost.au) return { ok: false, reason: "金铲不够" };
+          if (good.cost.gem && (m.tokens || 0) < good.cost.gem) return { ok: false, reason: "晶石不够" };
+          if (good.cost.au) ms.shovels.au -= good.cost.au;
+          if (good.cost.gem) m.tokens -= good.cost.gem;
+          if (good.card) ms.cards = (ms.cards || 0) + good.card;
+          save();
+          if (good.egg) grantEggs(1, good.egg);
+          g.merchantBought(me.id, good.id);
+          return { ok: true };
+        },
         close: () => {
           this.paused = false;
           if (this.game === g) g.closeEvent();
