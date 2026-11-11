@@ -10,3 +10,7 @@ test/--*/
 /art/*
 !/art/references/
 /.cache/
+
+# Python bytecode caches
+__pycache__/
+*.pyc
