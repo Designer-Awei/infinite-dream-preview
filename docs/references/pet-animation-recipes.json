@@ -48,7 +48,7 @@
   },
   "atlases": {
     "web/assets/pets/pets.png": {
-      "sha256": "8e9cd1950c6c68a38af7dabb5289c0f5f8cca3a051957c6a39e0888cb1f3eeba",
+      "sha256": "f3950497cd86e014125007a9007811ae03f1ab95154a199b2d7f3c3b0d2150d7",
       "size": [
         4096,
         3328
@@ -131,8 +131,7 @@
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints",
-        "wing_claw_retouch": "2026-11-11：手工修图去掉近侧翅膀骨翼关节处的白色小爪：穿过该处的描边按直线延续，其余以周围翼膜底色（中位数）填补，不混入高光；轮廓边缘按周围原描边补回。其余像素不变。"
+        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -195,16 +194,16 @@
         "frame_rgba_sha256": [
           "a593435d24818d5043323aa274b1d195f070a3fd2f42dfeb6d01a6d97ae51330",
           "84bf91645527d0c7f619238fff647db62870759600f8df85ed5c55445e33b43f",
-          "73e0671457000af9b225d9d649aff063d7c720ddae2b28be8f9e6878457e3090",
-          "aec567f0f40e3b77d7ff4936dbd9b6533fecf48d4abfc6bf605e5922be385138",
-          "144edd87234332ea1238f0f2ca9ffd547ca5f0599eb101823d9968e65b5dbe1f",
-          "43de7b016a5012f923d846243702fa4b4739f72f9af3371f3537d2b24f586418",
-          "1bf14644f7083d8d6a84c81f4e2bf68e76b100cb3ef5a10a97aeeb98d6230432",
-          "98054020f3aab122e459c65b974298c46babdc592984c83dabfbea289d598534",
+          "be2ea2bbf28060f7737befcdd6de96b4de2e8fa11a4a92c26db23b641d46b62e",
+          "3200ec1d20071a1f225f8155d68d58096af752d5da199b1fe57b066af6949c39",
+          "a459570e0addd475fa997637d43886d9c8a756442872a4572010f0221fe03914",
+          "2b887bf998b8083b25ef35745c2ca5824463ae033af1af7f284483dabab4939f",
+          "df677389b07d1905204e874f3ab42ee0fb1c8d0562a750b85ac0b2935d8e339b",
+          "5c1aa357acf48a5eb579badba3eda3b7381f5d71477c72d04e47cecadc018b53",
           "8c4646a2198fbdf953937d7644838ab9d3d891693fc9fcfe51e0edd2f1c575bb",
-          "26f155f6b7972b89782b9aec1d55b34b7a05315642984c19aa800ff8aedd3b68",
-          "8e5df06f6f9207764eb833b4827cf2595316172a959c1d4b19a9ff393cff8c28",
-          "31dcb12dde64774d903d58fe60e9effb1224fe8038b16b45fa8aea361b7c956a",
+          "1e754e754a8c2f480e5511097b14a9f971e004982687c2d22df6e12fafc6ab53",
+          "16a38a20263aca8b1a2c3816f6c3809a81781ee792b13569b4fb1004d70abfd5",
+          "63318406fa6b8c8339917b70f01cce69f59861a9f26d41475e2143ae21602ab6",
           "a593435d24818d5043323aa274b1d195f070a3fd2f42dfeb6d01a6d97ae51330"
         ]
       }
@@ -884,8 +883,7 @@
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints",
-        "wing_claw_retouch": "2026-11-11：手工修图去掉近侧翅膀骨翼关节处的白色小爪：穿过该处的描边按直线延续，其余以周围翼膜底色（中位数）填补，不混入高光；轮廓边缘按周围原描边补回。其余像素不变。"
+        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -947,14 +945,14 @@
         ],
         "frame_rgba_sha256": [
           "5ba758f1cb91fa59f6f8d836c59fc56af9aad405e38b65d13d071a9b4c7abf39",
-          "9da874444d87b7ab8ec6dcafd25313cfdcdccc111733097e11d89a56d922a0a8",
-          "47f7656112a514b4d1ee9e96880aa2b3a2fc725bb8d638c7727853d2c55fd7b1",
-          "b634541fb71b0e56edc875b74abb2267298079545fe3162c46f127368f72907d",
-          "f07d6d52dd0c701ca2a9cc3eb16806283a873bd66f97497f3f2cf28f0586271d",
-          "5de5e7c8080a021c2ae560803a2c53dc1e7d8e7f3f876d117509f5623fc9938e",
-          "95575c12bf37cbdee012b959b66a05f2e6e5d53b147f64e8b77ffaefd8258479",
-          "33b563c64946901c377790111076561f960c51ee878472dd6eef0691dd73349e",
-          "00872715077ed3c7203dbeddd60bbeaa0b5ff37805f568d91bd8da5b126d5a76",
+          "cc34c2c404cff0a73ad4c8d52232022699c04c94adbffdc87fa799b8d171dc4b",
+          "e809899b6d957da0c80bdf480ba1e38e277368855ab8b71ee0f17d2d42741fea",
+          "349c6b96a01203deaf3a1afdd7965ccc7bc319f7dd7e387248f0e4dab10ac6b8",
+          "81c53f9cc0f897e881611445a11bc4db93202c8358588647885d1c3b2a65b847",
+          "0e37c8c9cebaf0ab9fa3784d3b1cce9ac11c610a5162a732c15e9f722e44c11a",
+          "d9ab191891dc06cd91287daa7a0fb08ffac813fc2be3766627f54ec996f25fc4",
+          "ae0c325385a1e364aa8933887e801e3bcfd2550a1677b85c000cdaa66c098cf7",
+          "550a1e93ab1fbcca92b9e2273d7d02fdaa158a17fd01f1d90069855dd8ce1e99",
           "b9cb90b7f4a1ee371ca4c69764e82586f169b6641964583b5b2b951f051ec48f",
           "1a39e44802ccfa5f5c8c3d9f361fceb857cf344353501c2c151f17a463f12f1a",
           "72b5e62b45919c284a3f51da0d1cba9f80de495cb4cbedd75e922a4454cb22c5",
@@ -1009,8 +1007,7 @@
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints",
-        "wing_claw_retouch": "2026-11-11：手工修图去掉近侧翅膀骨翼关节处的白色小爪：穿过该处的描边按直线延续，其余以周围翼膜底色（中位数）填补，不混入高光；轮廓边缘按周围原描边补回。其余像素不变。"
+        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -1075,11 +1072,11 @@
           "fae0c518e7ff9e2a2e478da8e5fd5fe23b3dcdfbfc9081b5f04c74465663605a",
           "118313eec04f6871a6c7828174ee0f9340bd7ee50b451b739b57498ace0ab239",
           "6005c97ace2a42f8f0ea2a8e2a7b6e28d5d6d435e387559f7b26c166114089ef",
-          "122d26e7e5117d821131f44ffbbe64ddc0a9026e754a715679175d71707332b0",
-          "30b16588b49afba9f4672819089715e9f25b00857d32fe4eeeffe2838f1be08f",
-          "bb41d5af4a3053ae172466411e46aff7563de0e6369117814c3a1be3c412981d",
-          "d5e242d3a2708ea97451d097bd27da660118c791d140a127f02355f8039b7a91",
-          "9f0d17419a5c2c4545b0cee2f0ba68eca5072f3855316209f7a1791935407aec",
+          "1d301865fb24ecd31ec0ebf83611202be68ce1737b95908a8a9aa3df56165789",
+          "072fe00138b54639f49da01f01b68bd28aeae16d752f98648684d18550926a6f",
+          "3da3411f0b18c49e2f70b7fdc0778426b9c5ba4db66195020d15d3aef2bb160b",
+          "c54e495fb826a5c4faa22886437c9cb214d9b8d62893a0c1a4d2bdc5e38c89a9",
+          "b9ddbdf4960b5c0f25c47c7904ff768dc146b136794f011c91a19ad452a43a42",
           "e55f114ce06626e0344b13f4f984ebf9858ac2401a7fc453ecb605f9e1372579",
           "4663616bf553bb24be0c390c285043744eb4ed617adf55944a1f65ca4925a400",
           "dbf861a225b00b334e8ab05199cfc21b86534ae1a0f4ee053a3a4c6a6fc214c1",
@@ -1134,8 +1131,7 @@
         "no_low_resolution_intermediate": true
       },
       "cleanup": {
-        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints",
-        "wing_claw_retouch": "2026-11-11：手工修图去掉近侧翅膀骨翼关节处的白色小爪：穿过该处的描边按直线延续，其余以周围翼膜底色（中位数）填补，不混入高光；轮廓边缘按周围原描边补回。其余像素不变。"
+        "alpha_cleanup": "alpha<=8 and detached components<=32, never RGB colour key; exact supplied endpoints"
       },
       "runtime": {
         "atlas": "web/assets/pets/pets.png",
@@ -1198,7 +1194,7 @@
         "frame_rgba_sha256": [
           "5ba758f1cb91fa59f6f8d836c59fc56af9aad405e38b65d13d071a9b4c7abf39",
           "35ba3d3474728ff890bae83b122cde310a8ee0a700a958cdc852c189ed8850e4",
-          "19973bddedfcb53e327e39ac5c6aae7bc0f15385cc121d47f94ad08105358781",
+          "18095c055f46954dba20b524b8337aa658d1a38c874d82ed1f629d6b64cfc45b",
           "85c577b885d1f512820a1572ea7621afb985e4153ded4bf2e941ac5b9734d96d",
           "0a53594807cd980eaf91af7a6fd5087db9e8455437786c8973d19aea90946fda",
           "825c0a6eeffc49eb525422d22c176805a4ef03ae8cf58edb5a6675f8c7300287",
