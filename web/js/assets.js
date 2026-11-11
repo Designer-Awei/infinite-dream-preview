@@ -111,7 +111,10 @@ export async function loadAll(progress = () => {}) {
   // event visitors (梦境航线): one row of idle frames each
   try {
     const [meta, image] = await Promise.all([json(base + "npc/npc.json"), img(base + "npc/npc.png")]);
-    A.npc = { meta, image };
+    // a visitor drawn in high resolution has its own strip (file, cell px, k = world px per source px)
+    const files = [...new Set(Object.values(meta.npcs).map((m) => m.file).filter(Boolean))];
+    const sheets = Object.fromEntries(await Promise.all(files.map(async (f) => [f, await img(base + "npc/" + f)])));
+    A.npc = { meta, image, sheets };
   } catch {}
   try {
     await document.fonts.load("12px Cubic");

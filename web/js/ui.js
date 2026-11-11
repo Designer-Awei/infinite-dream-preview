@@ -80,7 +80,7 @@ const TRAIT_NOTE = {
   cd: "宠物技能冷却缩短",
   carry: "放大宠物给角色的携带加成，例：终极火龙伤害 +18%，共鸣 40% 时变为 +25.2%",
   crit: "携带它的角色暴击率直接相加（角色基础 5%）",
-  critx: "携带它的角色暴击伤害倍率相加（基础 180%，+40% 即 220%）",
+  critx: "携带它的角色暴击伤害倍率相加（基础 180%，+100% 即 280%）",
 };
 function traitTable() {
   const qs = QUALITY.filter((q) => !q.rainbow);

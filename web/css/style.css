@@ -2133,6 +2133,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ev-top { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
 .ev-face-box { flex: none; width: 64px; height: 64px; border-radius: 10px; background: radial-gradient(circle at 50% 60%, #4a3a7a, #241a3a 70%); border: 2px solid #8a6cff; overflow: hidden; }
 .ev-face { width: 64px; height: 64px; image-rendering: pixelated; display: block; }
+.ev-face.hd { image-rendering: auto; }
 .ev-say { flex: 1; min-width: 0; text-align: left; }
 .ev-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 2px; }
 .ev-head h2 { margin: 0; font-size: 18px; }

@@ -12,16 +12,18 @@ import { sfx } from "./audio.js";
 function portrait(id) {
   const N = A.npc, m = N && N.meta.npcs[id];
   if (!m) return null;
-  const s = N.meta.cell, c = el("canvas", "ev-face");
-  c.width = s;
-  c.height = s;
+  const s = m.file ? m.cell : N.meta.cell, c = el("canvas", "ev-face"), src = m.file ? N.sheets[m.file] : N.image, row = m.file ? 0 : m.row;
+  const [fx, fy, fw] = m.face || [0, 0, s]; // a wide scene shows a square crop around the visitor in its portrait
+  c.width = fw;
+  c.height = fw;
+  if (m.file) c.classList.add("hd"); // a 256px strip is scaled down smoothly into the small portrait box
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
   let f = 0, live = true;
   const tick = () => {
     if (!live || !c.isConnected) return;
-    g.clearRect(0, 0, s, s);
-    g.drawImage(N.image, (m.seq ? m.seq[f % m.seq.length] : f % m.n) * s, m.row * s, s, s, 0, 0, s, s);
+    g.clearRect(0, 0, fw, fw);
+    g.drawImage(src, (m.seq ? m.seq[f % m.seq.length] : f % m.n) * s + fx, row * s + fy, fw, fw, 0, 0, fw, fw);
     f++;
     setTimeout(tick, 1000 / N.meta.fps);
   };

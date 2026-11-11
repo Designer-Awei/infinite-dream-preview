@@ -26,7 +26,7 @@ export const TRAITS = {
   carry: { name: "共鸣", desc: "携带加成", top: 40 },
   // these two act on the character that carries the pet, not on the pet
   crit: { name: "鹰眼", desc: "角色暴击率", top: 10, owner: true },
-  critx: { name: "致命", desc: "角色暴击效果", top: 40, owner: true },
+  critx: { name: "致命", desc: "角色暴击效果", top: 100, owner: true },
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
 // 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality

@@ -773,10 +773,10 @@ export class Renderer {
   }
   /** an event visitor: its idle loop from assets/npc (a plain marker if the atlas is missing), feet at (x, y + 8) */
   drawNpc(g, n) {
-    const x = Math.round(n.x), y = Math.round(n.y);
+    const x = Math.round(n.x), y = Math.round(n.y), wide = A.npc?.meta.npcs[n.id]?.file; // a whole scene (chair + sack) gets a wider shadow
     g.fillStyle = "rgba(10,20,10,0.35)";
     g.beginPath();
-    g.ellipse(x, y + 8, 16, 5, 0, 0, TAU);
+    g.ellipse(x, y + 8, wide ? 40 : 16, wide ? 6 : 5, 0, 0, TAU);
     g.fill();
     const N = A.npc, m = N && N.meta.npcs[n.id];
     if (!m) {
@@ -784,7 +784,14 @@ export class Renderer {
       g.fillRect(x - 8, y - 30, 16, 36);
       return;
     }
-    const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n, s = N.meta.cell;
+    const seq = m.seq, i = Math.floor(this.t * N.meta.fps), f = seq ? seq[i % seq.length] : i % m.n;
+    if (m.file) {
+      // high-resolution strip: native frames drawn at k world px per source px (crisp at the 2x canvas)
+      const s = m.cell, k = m.k, im = N.sheets[m.file];
+      g.drawImage(im, f * s, 0, s, s, x - m.ox * k, y + 8 - m.oy * k, s * k, s * k);
+      return;
+    }
+    const s = N.meta.cell;
     g.drawImage(N.image, f * s, m.row * s, s, s, x - m.ox, y + 8 - m.oy, s, s);
   }
   drawShopItem(g, it, me) {
