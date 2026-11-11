@@ -79,7 +79,8 @@
       "items": {
         "type": "string",
         "pattern": "^[0-9a-f]{40}$"
-      }
+      },
+      "description": "本仓完整 hash；单提交条目只列同一轮更早的提交，自身提交由工具反查"
     },
     "related_commits": {
       "type": "array",
@@ -140,7 +141,8 @@
       }
     },
     "source": {
-      "type": "object"
+      "type": "object",
+      "description": "{\"file\",\"line_start\",\"line_end\"} 原文；{\"git\": 完整hash}；或单提交条目的 {\"self\": true}（所在提交由历史反查）"
     },
     "order": {
       "type": "integer"

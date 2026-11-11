@@ -69,14 +69,14 @@ def select(rows, args):
             continue
         if args.id and row['id'] != args.id:
             continue
-        if args.commit and not any(h.startswith(args.commit) for h in row['commit_ids']):
+        if args.commit and not any(h.startswith(args.commit) for h in commits_of(ROOT.parent / row['repository'], row)):
             continue
         haystack = json.dumps(row, ensure_ascii=False).casefold()
         if not all(word in haystack for word in needles):
             root = ROOT.parent / row['repository']
             haystack += detail(root, row).casefold()
             for reference in row['validation']['refs']:
-                haystack += read_reference(root, reference).casefold()
+                haystack += read_reference(root, reference, row['id']).casefold()
             if not all(word in haystack for word in needles):
                 continue
         result.append(row)
@@ -89,7 +89,10 @@ def source_lines(path):
     return path.read_text(encoding='utf-8-sig').splitlines()
 
 
-def read_reference(root, source):
+def read_reference(root, source, entry_id=None):
+    if source == SELF:
+        own = self_commits(root).get(entry_id)
+        return git(root, 'show', '-s', '--format=%B', own) if own else ''
     if source.get('git'):
         return git(root, 'show', '-s', '--format=%B', source['git'])
     path = (root / source['file']).resolve()
@@ -101,7 +104,34 @@ def read_reference(root, source):
 
 
 def detail(root, row):
-    return read_reference(root, row['source'])
+    return read_reference(root, row['source'], row['id'])
+
+
+SELF = {'self': True}
+
+
+@lru_cache(maxsize=4)
+def self_commits(root):
+    """{entry id: commit} for entries written in the same commit as their change (source {"self": true}): the commit
+    that first added the entry's line to the journal. Derived from history, so it survives rebases and never needs a
+    second commit to learn its own hash."""
+    log = subprocess.check_output([GIT, 'log', '--reverse', '--format=@@%H', '-p', '-U0', '--no-color', '--', str(JOURNAL)],
+                                  cwd=root).decode('utf-8', 'replace')
+    found, commit = {}, None
+    for line in log.splitlines():
+        if line.startswith('@@') and len(line) == 42:
+            commit = line[2:]
+        elif line.startswith('+{') and '"source":{"self":true}' in line:
+            match = re.search(r'"id":"([^"]+)"', line)
+            if match and match.group(1) not in found:
+                found[match.group(1)] = commit
+    return found
+
+
+def commits_of(root, row):
+    """The entry's commits: the listed ones, plus its own commit for a self entry once that commit exists."""
+    own = self_commits(root).get(row['id']) if row['source'] == SELF else None
+    return [*row['commit_ids'], own] if own else list(row['commit_ids'])
 
 
 def validate(root, rows=None):
@@ -142,7 +172,14 @@ def validate(root, rows=None):
         require(isinstance(row['validation']['refs'], list), 'Invalid validation references')
         for source in [row['source'], *row['validation']['refs']]:
             require(isinstance(source, dict), 'Invalid source')
-            if 'git' in source:
+            if source == SELF:
+                require(row['source'] == SELF, 'Only a self entry can cite its own commit')
+                own = self_commits(root).get(row['id'])
+                # once committed, that commit must carry the change itself, not just the journal line
+                if own and source is row['source']:
+                    touched = git(root, 'show', '--format=', '--name-only', own).splitlines()
+                    require(any(name != str(JOURNAL) for name in touched), f'{row["id"]}: self entry was committed without its change ({own[:12]})')
+            elif 'git' in source:
                 require(set(source) == {'git'} and source['git'] in commits, 'Invalid source commit')
             else:
                 require(set(source) == {'file', 'line_start', 'line_end'}, 'Invalid file source')
@@ -166,7 +203,7 @@ def validate(root, rows=None):
     # Only the historical snapshot is audited here. Pure new journal commits do not self-reference.
     report = json.loads((root / 'docs/references/history/migration.json').read_text(encoding='utf-8'))
     old_commits = set(git(root, 'rev-list', report['source_head']).splitlines())
-    represented = {h for row in rows for h in row['commit_ids']}
+    represented = {h for row in rows for h in commits_of(root, row)}
     require(old_commits <= represented, 'Historical commits omitted')
     archive = root / report['archive']
     require(hashlib.sha256(archive.read_bytes()).hexdigest() == report['archive_sha256'], 'Source archive changed')
@@ -189,9 +226,25 @@ def get_entry(root, entry_id):
 def build_entry(root, fields):
     """Fill mechanical fields; worker, module, title, solution and real commits stay explicit."""
     require(isinstance(fields, dict) and not (set(fields) - REQUIRED), 'Unknown entry fields')
-    for key in ('worker', 'module', 'title', 'solution', 'commit_ids'):
+    for key in ('worker', 'module', 'title', 'solution'):
         require(key in fields, f'Missing required input: {key}')
-    require(isinstance(fields['commit_ids'], list) and fields['commit_ids'], 'A real committed change is required')
+    fields = dict(fields)
+    fields.setdefault('commit_ids', [])
+    require(isinstance(fields['commit_ids'], list), 'commit_ids must be an array')
+    if not fields['commit_ids'] or fields.get('source') == SELF:
+        # single-commit mode: the entry goes into the same commit as the change; its hash is resolved from history
+        at = datetime.now(timezone(timedelta(hours=8)))
+        for h in fields['commit_ids']:
+            require(isinstance(h, str) and re.fullmatch('[0-9a-f]{40}', h), 'Use the complete commit hash')
+        row = {'id': f'{root.name}-self-{at.strftime("%Y%m%d%H%M%S")}-{uuid.uuid4().hex[:8]}', 'date': at.date().isoformat(),
+               'repository': root.name, 'worker_basis': 'explicit_write_api', 'kind': 'change',
+               'problem': None, 'related_commits': [], 'status': 'committed',
+               'validation': {'status': 'not_recorded', 'summary': '', 'refs': []},
+               'release_status': 'unknown', 'superseded_by': [], 'source': dict(SELF),
+               'order': int(at.timestamp()) * 100}
+        row.update(fields)
+        row['source'] = dict(SELF)
+        return row
     primary = fields['commit_ids'][0]
     require(isinstance(primary, str) and re.fullmatch('[0-9a-f]{40}', primary), 'Use the complete commit hash')
     require(primary in git(root, 'rev-list', '--all').splitlines(), 'Commit does not exist in this repository')
@@ -308,6 +361,7 @@ def main(argv=None):
     parser.add_argument('--fields', help='Comma-separated JSON fields')
     parser.add_argument('--validate', action='store_true')
     parser.add_argument('--stats', action='store_true')
+    parser.add_argument('--pending', action='store_true', help='Self entries still waiting for their commit')
     operations = parser.add_mutually_exclusive_group()
     operations.add_argument('--get', metavar='ID', help='Return one entry and the revision for a precise update')
     operations.add_argument('--append', metavar='JSON_FILE', help='Append one object or an atomic batch; - reads stdin')
@@ -317,7 +371,7 @@ def main(argv=None):
     parser.add_argument('--dry-run', action='store_true', help='Validate and preview a write without changing the journal')
     args = parser.parse_args(argv)
     if args.get or args.append or args.update:
-        if args.all or args.query or args.validate or args.stats:
+        if args.all or args.query or args.validate or args.stats or args.pending:
             parser.error('Read/write one explicit repository; do not combine with a cross-repository query')
         root = ROOT.parent / (args.repo or ROOT.name)
         if args.get:
@@ -351,6 +405,13 @@ def main(argv=None):
     if args.validate:
         return
     rows = [row for root in roots for row in load(root)]
+    if args.pending:
+        for root in roots:
+            own = self_commits(root)
+            for row in load(root):
+                if row['source'] == SELF and row['id'] not in own:
+                    print(json.dumps({key: row[key] for key in BRIEF}, ensure_ascii=False, separators=(',', ':')))
+        return
     if args.stats:
         print(json.dumps({'records': len(rows), 'repositories': dict(Counter(r['repository'] for r in rows)),
                           'workers': dict(Counter(r['worker'] for r in rows)),
@@ -358,7 +419,8 @@ def main(argv=None):
         return
     fields = args.fields.split(',') if args.fields else BRIEF
     for row in select(rows, args):
-        result = dict(row) if args.full else {key: row[key] for key in fields}
+        shown = dict(row, commit_ids=commits_of(ROOT.parent / row['repository'], row))
+        result = shown if args.full else {key: shown[key] for key in fields}
         if args.detail:
             result['detail'] = detail(ROOT.parent / row['repository'], row)
         print(json.dumps(result, ensure_ascii=False, separators=(',', ':')))

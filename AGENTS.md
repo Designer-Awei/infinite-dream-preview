@@ -4,6 +4,6 @@
 - 唯一持续维护日志：[worklog.jsonl](worklog.jsonl)，必须填写worker，禁止继续追加WORK_LOG.md。
 - 先用 python tools/worklog.py 关键词 --limit 5 定位条目；跨仓加 --all；按需 --full 或 --detail，不整篇载入。
 - 字段和追加规则：[WORKLOG.md](docs/rules/WORKLOG.md)。写入后执行 python tools/worklog.py --validate。
-- 写日志用tools/worklog.py --append或--get/--update，先--dry-run；禁止Agent手工重写JSONL。函数不会自动执行git提交/推送。
-- 所有产物只在E:/Rouge-Game，先预览验证，正式仓需用户当前确认；真实变更提交后再记日志并推送，保留身份及CI/CD。
+- 写日志用tools/worklog.py --append或--get/--update，先--dry-run；禁止Agent手工重写JSONL。改动与日志同一提交：先--append（不填commit_ids），再一起git commit；同一轮微调合并一条。
+- 所有产物只在E:/Rouge-Game，先预览验证，正式仓需用户当前确认；改动与日志一起提交后推送，保留身份及CI/CD。
 - 素材仅入库最终运行资源与art/references原图；art其他目录仅留本地。先查docs/rules/ASSETS.md，宠物配方用tools/pixellab/pet_recipe.py按ID查询，勿遍历中间素材。
