@@ -965,8 +965,18 @@ export class Game {
         continue;
       }
       if(b.kind==='pet_dragon'&&b.big){if(this.stepDragonFireball(b,dt))this.bullets.splice(i,1);continue;}
-      b.x += b.vx * dt;
-      b.y += b.vy * dt;
+      if (b.guide) {
+        // 凤凰骑乘: on along the aim line at its speed, the sideways gap (mouth vs. mount centre) easing to nothing
+        const gd = b.guide, ux = Math.cos(gd.a), uy = Math.sin(gd.a), rx = b.x - gd.x, ry = b.y - gd.y;
+        const along = rx * ux + ry * uy + gd.spd * dt, side = (-rx * uy + ry * ux) * Math.exp(-gd.k * dt);
+        const nx = gd.x + along * ux - side * uy, ny = gd.y + along * uy + side * ux;
+        if (dt > 0) (b.vx = (nx - b.x) / dt), (b.vy = (ny - b.y) / dt);
+        b.x = nx;
+        b.y = ny;
+      } else {
+        b.x += b.vx * dt;
+        b.y += b.vy * dt;
+      }
       let gone = b.life <= 0;
       const gy = b.y + (b.h || 0); // collide with walls at ground level (bullets fly at chest height)
       const t = tileAt(m, b.x, gy);

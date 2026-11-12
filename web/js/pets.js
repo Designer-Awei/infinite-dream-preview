@@ -77,7 +77,8 @@ export function petMuzzle(p){
 }
 // 骑乘火龙普攻的指向原点：坐骑整体的中心（x 取站位，不随左右翻转跳变）。火球仍从龙嘴喷出，飞行中收束到这条指向线上
 export function mountedAimOrigin(p){
- if(p.mounted&&p.pet?.id==='dragon')return{x:p.x,y:mountedCenter(p).y};
+ // 火龙 / 凤凰: aimed from the middle of the whole mount (rider + pet); the shot still leaves the mouth and eases onto that line
+ if(p.mounted&&(p.pet?.id==='dragon'||p.pet?.id==='phoenix'))return{x:p.x,y:mountedCenter(p).y};
  return mountedAttackOrigin(p);
 }
 export function mountedAttackOrigin(p){
@@ -122,9 +123,10 @@ function strike(game,p,x,y,r,damage,ultimate=false,bounds=null){
   props(game,p,damage,(cx,cy)=>Math.hypot(cx-x,cy-y)<=r+12&&(!bounds||Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r),ultimate);
   game.sound('shoot_thunder',.1);
 }
-function shot(game,p,angle,mounted=false){
+function shot(game,p,angle,mounted=false,guide=null,h=null){
   const q=p.pet,def=PETS[q.id],m=petMuzzle(p),dmg=(mounted?CHARS[p.cid].atk.dmg*1.25:5+q.stage*4)*(q.tr?.dmg||1);
-  game.bullets.push(game.mkBullet(p,{x:m.x,y:m.y,h:q.y-m.y,a:angle,spd:q.id==='fox'?360:290,dmg,elem:def.elem,kind:'pet_'+q.id,r:q.id==='dragon'?5:3,life:1.15,pierce:mounted&&q.id==='phoenix'?2:0,slow:q.id==='phoenix'?.5:0}));
+  const b=game.mkBullet(p,{x:m.x,y:m.y,h:h??q.y-m.y,a:angle,spd:q.id==='fox'?360:290,dmg,elem:def.elem,kind:'pet_'+q.id,r:q.id==='dragon'?5:3,life:1.15,pierce:mounted&&q.id==='phoenix'?2:0,slow:q.id==='phoenix'?.5:0});
+  if(guide)b.guide=guide;game.bullets.push(b);
   game.sound(q.id==='fox'?'shoot_thunder':q.id==='phoenix'?'shoot_water':'shoot_dragon',.12);
 }
 export function mountedAttack(game,p,angle,target){
@@ -139,6 +141,11 @@ export function mountedAttack(game,p,angle,target){
     const b=game.mkBullet(p,{x:m.x,y:m.y,h:0,a,spd:DRAGON_FIREBALL.speed,dmg:CHARS[p.cid].atk.dmg*DRAGON_FIREBALL.damageScale,elem:'dragon',kind:'pet_dragon',r:DRAGON_FIREBALL.radius,life,big:true});
     b.guide={x:o.x,y:o.y,a};game.bullets.push(b);
     game.sound('shoot_dragon',.08);return true;
+  }
+  if(p.pet.id==='phoenix'){
+    // like the dragon: aim line from the mount's centre, the feather leaves the mouth and converges onto it (b.guide)
+    const o=mountedAimOrigin(p),a=target?Math.atan2(target.y-target.r-o.y,target.x-o.x):angle;
+    shot(game,p,a,true,{x:o.x,y:o.y,a,spd:290,k:DRAGON_FIREBALL.converge},p.y-o.y);return true;
   }
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;
 }
