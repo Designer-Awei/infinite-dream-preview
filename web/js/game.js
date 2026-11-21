@@ -1,5 +1,5 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
-import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES } from "./data.js";
+import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES } from "./data.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
@@ -472,6 +472,8 @@ export class Game {
     let m = p.st.dmg * cubeDamage(p.cubes,this.endless);
     if (p.buff.star > 0) m *= 1.3;
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
+    if (p.buff.berserk > 0) m *= 1.8; // 觉醒·狂暴协议
+    if (p.cards.ev_midas) m *= 1 + Math.min(0.6, Math.floor((p.coins || 0) / 100) * 0.06); // 觉醒·算力印钞机
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
     return m;
   }
@@ -487,6 +489,12 @@ export class Game {
       if (Math.random() < c) (crit = true), (dmg *= BAL.critMul + (p.st.critX || 0)); // 宠物词条「致命」加暴击倍率
     }
     if (p && (e.elite || e.boss)) dmg *= p.st.elite || 1; // 对抗训练
+    if (crit && p.cards.ev_grad && !src.evoBoom && Math.random() < 0.3) {
+      // 觉醒·梯度爆炸: a crit sometimes bursts on the target (half the hit, around it, no further crits)
+      this.vfx("explosions/cartoon-pow", e.x, e.y - 12, { life: 0.45, text: "" });
+      const half = amount * 0.5;
+      this.after(0, () => { for (const o of this.enemiesNear(e.x, e.y, 34)) if (o !== e) this.hit(o, half, { p, noCrit: true, noReact: true, evoBoom: true }); });
+    }
     if (e.vulnT > 0) dmg *= 1.25;
     if (e.freezeT > 0) dmg *= 1.15;
     dmg = Math.max(0.5, dmg);
@@ -644,7 +652,7 @@ export class Game {
       this.spawnItem(e.elite ? R.pick(["cube", "star", "rage", "infuse"]) : k, e.x, e.y);
     }
     if (p) {
-      if (p.cards.vamp && Math.random() < 0.08 * p.cards.vamp && p.hp < p.maxHp) (p.hp++), this.text(p.x, p.y - 60, "+1", "#ff6a8a");
+      if ((p.cards.vamp || p.cards.ev_undying) && Math.random() < 0.08 * ((p.cards.vamp || 0) + (p.cards.ev_undying ? 2 : 0)) && p.hp < p.maxHp) (p.hp++), this.text(p.x, p.y - 60, "+1", "#ff6a8a");
       if (p.cards.kill_boom) {
         this.vfx("explosions/cartoon-pow", e.x, e.y - 10, { life: 0.5, text: "" });
         for (const o of this.enemiesNear(e.x, e.y, 46)) if (o !== e) this.hit(o, 10 * p.cards.kill_boom, { p, noReact: true });
@@ -790,6 +798,13 @@ export class Game {
       if (p.shield <= 0) {
         this.sound("shieldbreak");
         if (p.kit.eq.t_firewall && p.fwCd <= this.time) this.firewall(p);
+        if (p.cards.ev_berserk && (p.berserkCd || 0) <= this.time) {
+          // 觉醒·狂暴协议
+          p.buff.berserk = 4;
+          p.berserkCd = this.time + 10;
+          this.text(p.x, p.y - 70, "狂暴！", "#ff4a6a", 1.3, 1.2);
+          this.vfx("fire/fire-ring", p.x, p.y, { life: 0.7 });
+        }
         if (p.cards.shield_nova) {
           this.vfx("ice/frost-nova", p.x, p.y, { palette: ["#06101e", "#10284a", "#20508a", "#4a90d0", "#8ac8ff", "#c0e4ff", "#eef8ff", "#ffffff"], speed2: 2, opts: { reach: 70 } });
           for (const o of this.enemiesNear(p.x, p.y, 80)) (this.hit(o, 18, { p, noReact: true })), this.knock(o, p.x, p.y, 300);
@@ -1334,7 +1349,8 @@ export class Game {
   }
   cardPool(p) {
     const meta = { cards: (p.kit && p.kit.cards) || [] };
-    return [...CARDS, ...fusionCards(p.cid)].filter((c) => {
+    // ready 觉醒卡 ride along (weight 0: offerCards puts one first; counted so an "empty" pool still opens the chest)
+    return [...CARDS, ...fusionCards(p.cid), ...EVOLUTIONS.filter((ev) => evoReady(p.cards, ev))].filter((c) => {
       if ((p.cards[c.id] || 0) >= c.max) return false;
       if (c.locked) {
         if (c.tag === "混搭" && c.kind === "skill") return meta.cards.includes("links");
@@ -1431,9 +1447,13 @@ export class Game {
     }
     const out = [];
     const rr = rng((Math.random() * 1e9) | 0);
+    // a completed recipe is always the first card of the next offer
+    const evos = pool.filter((c) => c.r === "UR");
+    for (const c of evos) pool.splice(pool.indexOf(c), 1);
+    if (evos.length) out.push(rr.pick(evos));
     while (out.length < n && pool.length) {
       let c = rr.weighted(pool, (c) => RARITY[c.r].w * (c.tag === "混搭" ? 1.6 : 1));
-      if (rarityFloor && out.length === 0) {
+      if (rarityFloor && out.length === 0 && !evos.length) {
         const hi = pool.filter((q) => q.r === "SR" || q.r === "SSR");
         if (hi.length) c = rr.pick(hi);
       }
@@ -1450,6 +1470,11 @@ export class Game {
     delete this.cardOffers[pid];
     if (p.local) this.onUi("cardsClosed");
     applyCard(this, p, cardId);
+    // a recipe just completed: say so (the evolution comes with the next offer)
+    for (const ev of EVOLUTIONS) if (evoReady(p.cards, ev) && !(p.evoHint ||= {})[ev.id]) {
+      p.evoHint[ev.id] = 1;
+      this.after(0.5, () => this.text(p.x, p.y - 78, `觉醒就绪 · ${ev.name}`, "#ff8ae6", 1.3, 1.8));
+    }
     if (p.startCards > 0) (p.startCards--, this.after(0.4, () => this.offerCards(p, 3, "SR")));
     this.sound("card");
     this.vfx("pickups/collect-burst", p.x, p.y - 10, { palette: ELEM[CHARS[p.cid].elem].ramp });
@@ -1530,6 +1555,7 @@ export class Game {
     if (p.mounted) spd *= 1.25;
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) spd *= 1.15; // SSR 混合专家
     if (p.buff.speed > 0) spd *= 1.4;
+    if (p.buff.berserk > 0) spd *= 1.25;
     if (p.buff.ultOn > 0 && p.cid === "grok") spd *= 1.4;
     if (p.buff.inkHaste > 0) spd *= 1.3;
     if (p.buff.slow > 0) spd *= 0.6;
@@ -1597,6 +1623,13 @@ export class Game {
       p.invuln = Math.max(p.invuln, BAL.dashInvuln);
       p.dashCd = BAL.dashCd;
       if (p.cards.dodge_crit) p.dodgeCrit = 2.5;
+      if (p.cards.ev_phantom) {
+        // 觉醒·残影闪击: shorter dodge cooldown; the spot left behind bursts a moment later
+        p.dashCd *= 0.7;
+        const gx = p.x, gy = p.y, dmg = CHARS[p.cid].atk.dmg * 4;
+        this.vfx("pickups/collect-burst", gx, gy - 10, { palette: ELEM[CHARS[p.cid].elem].ramp });
+        if (this.host) this.after(0.4, () => this.explodeAt(gx, gy - 8, 56, 0, dmg, p));
+      }
       this.sound("dash");
     }
     inp.dash = false;
@@ -1624,6 +1657,7 @@ export class Game {
         p.castT = 0.25;
         let rate = c.atk.rate * p.st.rate;
         if (p.buff.rage > 0) rate *= 1.6;
+        if (p.buff.berserk > 0) rate *= 1.4;
         if (p.cid === "grok") rate *= 1 + c.atk.ramp * (p.rampT / 2) * (p.buff.ultOn > 0 ? 1 : 1);
         if (p.cid === "grok" && p.buff.ultOn > 0) rate *= 1.6;
         p.atkCd = p.mounted&&p.pet?.id==='dragon'?DRAGON_FIREBALL.interval:1/rate;
@@ -1644,7 +1678,7 @@ export class Game {
         p.skillCd = CHARS[p.cid].skill.cd * p.st.cd;
         // Fixed percentage points per manual cast, never multiplied by ult-gain stats.
         // Echo/linked casts above share this activation and do not grant it again.
-        p.ult = Math.min(1, p.ult + p.growth.skillCharge);
+        p.ult = Math.min(1, p.ult + p.growth.skillCharge + (p.cards.ev_perpetual ? 0.1 : 0)); // 觉醒·永动机 +10%
         p.castT = 0.4;
         this.sound("skill");
       }
@@ -1857,6 +1891,13 @@ export function applyCard(g, p, id) {
     case "cd_down": s.cd *= 0.8; break;
     case "ult_charge": s.ultG *= 1.3; break;
     case "vamp": s.vamp++; break;
+    // 觉醒卡
+    case "ev_storm": s.multi += 2; s.pierce += 2; break;
+    case "ev_grad": s.critX = (s.critX || 0) + 1; break;
+    case "ev_chain": s.bounce += 3; s.range *= 1.25; break;
+    case "ev_perpetual": s.cd *= 0.7; break;
+    case "ev_undying": p.maxHp += 4; p.hp = p.maxHp; break;
+    case "ev_midas": s.coin *= 1.5; break;
   }
   if (id.startsWith("fa_")) p.fusions.push(id.slice(3));
   if (id.startsWith("fs_")) p.links.push(id.slice(3));

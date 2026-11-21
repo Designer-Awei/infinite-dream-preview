@@ -1522,6 +1522,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .char-xp-detail .level-star { margin-left: 4px; }
 .hp-cur { display: flex; gap: 8px; align-items: baseline; margin: 3px 0; }
 .hp-cur .chip { flex: none; }
+.help-p .hp-cur .chip.w5 { min-width: 7.4em; text-align: center; }
 .help-p .hp-cur .chip.w4 { min-width: 6.2em; text-align: center; }
 .hp-cur .cur-gem { background: #3ab0ff; } .hp-cur .cur-ore { background: #8a7a6a; } .hp-cur .cur-star { background: #ffd84a; color: #1a1020; }
 .hp-chips { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -2562,3 +2563,13 @@ body.touchmode .pet-ride-btn small { display:none; }
 .shop-mode .ev-top > .ev-leave { flex: none; align-self: flex-start; margin-left: 6px; transform: translateY(calc(13px - 50%)); }
 .shop-mode .ev-top > .ev-leave:active { transform: translateY(calc(13px - 50% + 4px)); }
 .shop-mode .ev-top > .ev-leave { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+
+/* 觉醒卡 (UR): rainbow card, two fused ingredient icons, recipe line under the text */
+.card2.UR { background: linear-gradient(180deg, #fff0fb, #ffc8f0 55%, #d8c8ff); box-shadow: 0 7px 0 var(--ink), 0 0 36px rgba(255,90,216,.9); }
+.card2.UR .c-frame { inset: -9px; border-radius: 21px; background: conic-gradient(from var(--spin), #ff5ad8, #ffd84a, #5affc8, #5ab4ff, #b05aff, #ff5ad8); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; padding: 5px; animation: flowRing 1.4s linear infinite; z-index: -1; }
+.card2.UR .c-rar { background: linear-gradient(90deg, #ff5ad8, #ffb21e, #3ad0ff); }
+.c-art.evo { background: radial-gradient(circle at 50% 55%, #fff, #ff9ae6 45%, #6a2aa0); }
+.c-art.evo .c-ico.ea { margin-right: 16%; }
+.c-art.evo .c-ico.eb { position: absolute; right: 12%; bottom: 10%; width: 34%; height: auto; filter: drop-shadow(0 0 4px #fff); }
+.c-evo { margin-top: 3px; font-size: 11px; line-height: 1.25; color: #d62aa8; -webkit-text-stroke: 0; text-shadow: none; }
+.card2.UR .c-evo { color: #8a2aa0; }

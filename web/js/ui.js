@@ -1,5 +1,5 @@
 // HTML overlay: lobby, roster, gacha, net rooms, HUD, card picks, pause, results.
-import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
+import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, EVOLUTIONS, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
 import { load, save, unlockProgress, pull, checkUnlocks } from "./save.js";
 import { A } from "./assets.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
@@ -27,7 +27,10 @@ export function toast(msg, ms = 1800) {
   root.appendChild(t);
   setTimeout(() => t.remove(), ms);
 }
-const cardById = (id, cid) => CARDS.find((c) => c.id === id) || fusionCards(cid).find((c) => c.id === id);
+const cardById = (id, cid) => CARDS.find((c) => c.id === id) || EVOLUTIONS.find((c) => c.id === id) || fusionCards(cid).find((c) => c.id === id);
+// small icon for a card in build lists: fusion → that girl's skill, 觉醒 → its main ingredient
+const cardIcon = (id) => (id.startsWith("ev_") ? EVOLUTIONS.find((c) => c.id === id)?.icon || id : id.startsWith("f") ? id.slice(3) + (id[1] === "a" ? "_atk" : "_skill") : id);
+const cardName = (id) => CARDS.find((c) => c.id === id)?.name || id;
 export function spriteCanvas(cid, view = "front") {
   const s = A.girls[cid], c = document.createElement("canvas");
   const top = s.top || 0;
@@ -118,6 +121,7 @@ export function showHelp() {
         ["treasure", "金门。只有一小波怪，但必出本图稀有怪物（必掉梦境藏品），地上道具更多。"],
         ["boss", "暗紫门。第 7 层首领战，击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip" style="background:${NODE[k].col};color:#1a1020">${NODE[k].name}</span><span>${t}</span></div>`).join("")}
+      ${H("觉醒卡")}凑齐配方（第一张满到要求的张数、再有第二张）后，下一次开箱或扭蛋的第一张必是 UR 觉醒卡，原卡保留、觉醒效果叠加；卡面上“可觉醒”提示它通往哪张。${EVOLUTIONS.map((ev) => `<div class="hp-cur"><span class="chip w5" style="background:#ff8ae6;color:#1a1020">${ev.name}</span><span><b>${Object.entries(ev.need).map(([k, n]) => cardName(k) + (n > 1 ? "×" + n : "")).join(" + ")}</b>：${ev.desc}</span></div>`).join("")}
       ${H("挑战规则")}${Object.values(CHALLENGES).map((c) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.challenge.col};color:#1a1020">${c.name}</span><span>${c.desc}。</span></div>`).join("")}
       ${H("事件访客")}${[
         ["altar", "献上 1 点生命上限，换一次 SR / SSR 三选一；也可以直接离开。"],
@@ -458,16 +462,23 @@ export function showCards(game, me, ids, onPick) {
     if (c.fuse) {
       const fe = ELEM[CHARS[c.fuse].elem];
       art = `<div class="c-art fuse" style="--ac:${fe.color}"><img class="c-por" src="assets/portrait_${c.fuse}.png" alt=""><img class="c-badge" src="${iconURL(c.kind === "atk" ? c.fuse + "_atk" : skillIcon(c.fuse, "skill"), 3)}" alt=""></div>`;
+    } else if (c.r === "UR") {
+      // 觉醒卡: the two ingredients fused
+      const [a, b] = Object.keys(c.need);
+      art = `<div class="c-art evo"><i class="c-rays"></i><img class="c-ico ea" src="${iconURL(a, 4)}" alt=""><img class="c-ico eb" src="${iconURL(b, 3)}" alt=""></div>`;
     } else art = `<div class="c-art" style="--ac:${RARITY[c.r].color}"><i class="c-rays"></i><img class="c-ico" src="${iconURL(id, 4)}" alt=""></div>`;
+    // an ingredient of a 觉醒 recipe says what it leads to
+    const evo = c.r === "UR" ? null : EVOLUTIONS.find((ev) => ev.need[id] && !me.cards[ev.id]);
+    const evoLine = c.r === "UR" ? `<div class="c-evo">${Object.entries(c.need).map(([k, n]) => cardName(k) + (n > 1 ? "×" + n : "")).join(" + ")}</div>` : evo ? `<div class="c-evo">可觉醒 · ${evo.name}</div>` : "";
     const pips = c.max > 1 ? `<div class="c-pips">${Array.from({ length: c.max }, (_, k) => `<i class="${k < lv ? "on" : k === lv ? "new" : ""}"></i>`).join("")}</div>` : `<div class="c-pips one">${lv ? "已拥有" : "唯一"}</div>`;
-    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${c.r}</div>${art}<div class="c-body"><div class="c-name">${c.name}</div><span class="c-tag o1">${c.tag}</span><div class="c-desc">${c.desc}</div>${pips}</div><div class="c-key">${i + 1}</div>`;
+    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${c.r}</div>${art}<div class="c-body"><div class="c-name">${c.name}</div><span class="c-tag o1">${c.tag}</span><div class="c-desc">${c.desc}</div>${evoLine}${pips}</div><div class="c-key">${i + 1}</div>`;
     d.onclick = () => pick(id, d);
     wrap.appendChild(d);
     els.push(d);
   });
   const owned = Object.entries(me.cards);
   const b = $(".build", md);
-  if (owned.length) b.innerHTML = owned.map(([id, n]) => `<span><img src="${iconURL(id.startsWith("f") ? id.slice(3) + (id[1] === "a" ? "_atk" : "_skill") : id, 2)}" alt="">${cardById(id, me.cid)?.name || id}${n > 1 ? "×" + n : ""}</span>`).join("");
+  if (owned.length) b.innerHTML = owned.map(([id, n]) => `<span><img src="${iconURL(cardIcon(id), 2)}" alt="">${cardById(id, me.cid)?.name || id}${n > 1 ? "×" + n : ""}</span>`).join("");
   let done = false;
   function pick(id, d) {
     if (done) return;
