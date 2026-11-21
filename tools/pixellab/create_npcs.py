@@ -21,8 +21,9 @@ view, full body, crisp dark outline, same style and size as the style image"):
              arcade slot machine prop, glossy red rounded cabinet with gold trim, dome marquee ringed with bulbs and a golden 7,
              three cream reels cherry / 7 / star, golden lever with a red ball on the right, coin tray overflowing with coins;
              seed 37, candidate 0), animated by /animate-with-text-v3 (first = last frame, 8 frames, seed 9: bulbs blink and
-             sparkle, reels flicker, coins twinkle, the machine stays put); hard alpha, the closing frame dropped, written
-             straight to web/assets/npc/slot.png with its npc.json entry (ox/oy from the bounding box, face = square crop).
+             sparkle, reels flicker, coins twinkle, the machine stays put); hard alpha, the closing frame dropped, every frame
+             mirrored so the machine faces right (lever on its left), written straight to web/assets/npc/slot.png with its
+             npc.json entry (ox/oy from the bounding box, face = square crop; both mirrored too).
   bloodpact - 96px strip (bloodpact.png, 8 frames, k 1): /generate-image-v2 with the same style image (prompt: cute
              blood-pact merchant girl, deep crimson hooded cloak with gold trim, glowing red eyes, glowing red contract
              scroll + black feather quill, heart-shaped lantern at the belt, floating red runes; seed 58, candidate 2),

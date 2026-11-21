@@ -112,11 +112,11 @@ export const NPCS = {
   spring: { name: "泉之精灵", bye: "一路顺风～" },
   curse: { name: "宝箱怪", bye: "嘎吱……" },
   merchant: { name: "奇遇商人", bye: "有缘再会，旅人～" },
-  slot: { name: "命运老虎机", bye: "叮叮当～欢迎下次光临！" },
+  slot: { name: "老虎机", bye: "叮叮当～欢迎下次光临！" },
   bloodpact: { name: "血契商人", bye: "契约已成……愿你承受得住。" },
 };
 
-// 命运老虎机: each pull costs coins and stops three reels; weights per reel (of 10)
+// 老虎机: each pull costs coins and stops three reels; weights per reel (of 10)
 export const SLOT_SYMS = [
   { id: "cherry", name: "樱桃", w: 3 },
   { id: "seven", name: "7", w: 1 },
@@ -175,7 +175,7 @@ export const EVENTS = {
   // a slot machine instead of a choice: three pulls a room, each costs `cost` coins (game.spinSlot / settleSlot);
   // card wins are offered when the dialog closes
   slot: {
-    name: "命运老虎机", text: "「投 15 金币拉一次杆，三格一样有大奖～小心骷髅哦！」",
+    name: "老虎机", text: "「投 15 金币拉一次杆，三格一样有大奖～小心骷髅哦！」",
     slot: { spins: 3, cost: 15 },
     options: [],
   },

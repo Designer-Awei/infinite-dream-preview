@@ -166,7 +166,7 @@ function diceDialog(game, md, ev, hooks) {
   buttons();
 }
 
-// ---------------------------------------------------------------- 命运老虎机
+// ---------------------------------------------------------------- 老虎机
 // 8×8 reel symbols in SLOT_SYMS order (cherry, seven, star, heart, skull), the same pixel art as the machine's own reels
 const SLOT_PX = [
   ["....gg..", "...g.g..", "..g...g.", ".rr..rr.", "rRrr.rRr", "rrrr.rrr", ".rr...rr", "........"],

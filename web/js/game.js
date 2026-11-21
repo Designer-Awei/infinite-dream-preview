@@ -1597,7 +1597,7 @@ export class Game {
     this.sound("coin");
     this.onUi("hud");
   }
-  /** 命运老虎机: pay and spin three reels (host); the dialog animates them, then calls settleSlot */
+  /** 老虎机: pay and spin three reels (host); the dialog animates them, then calls settleSlot */
   spinSlot(pid) {
     const p = this.player(pid), nv = this.npc, ev = this.room && EVENTS[this.room.event], sl = ev?.slot;
     if (!p || !nv || !sl || (nv.spins || 0) >= sl.spins || p.coins < sl.cost || nv.spin) return null;
@@ -1638,7 +1638,7 @@ export class Game {
       nv.done = true;
       this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);
     }
-    // 命运老虎机: a card won on the reels is offered now (the way on opens after the pick)
+    // 老虎机: a card won on the reels is offered now (the way on opens after the pick)
     if (nv.cardWin) {
       const p = this.players[0], fl = nv.cardWin;
       nv.cardWin = null;
