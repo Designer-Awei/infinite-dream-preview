@@ -29,7 +29,7 @@ export function showPacts(onClose) {
     }
     md.querySelector(".pact-sum").innerHTML = `<div class="ps-big outline">${lv}</div><div class="ps-t o1">本局晶石 ×${(1 + 0.08 * lv).toFixed(2)}</div><div class="ps-s">只在单人闯关生效</div>`;
     const best = m.pactBest || {};
-    md.querySelector(".pact-best").innerHTML = `<div class="pb-h">最高通关</div>` + [...MAP_ORDER.map((id) => [MAPS[id].name, best[id] || 0]), ["无尽回廊（10 层）", best.endless || 0]].map(([n, b]) => `<div class="pb-r"><span>${n}</span><b>${b || "—"}</b></div>`).join("");
+    md.querySelector(".pact-best").innerHTML = `<div class="pb-h">最高通关（无尽以第 10 层计）</div>` + [...MAP_ORDER.map((id) => [MAPS[id].name, best[id] || 0]), ["无尽回廊", best.endless || 0]].map(([n, b]) => `<div class="pb-r"><span>${n}</span><b>${b || "—"}</b></div>`).join("");
     const got = m.pactClaim || [];
     md.querySelector(".pact-ms").innerHTML = `<div class="pb-h">里程碑（首次以该等级通关）</div>` + PACT_MILESTONES.map((ms) => `<div class="pm-r${got.includes(ms.lv) ? " got" : lv >= ms.lv ? " ready" : ""}"><span class="pm-lv">${ms.lv}</span><span>${ms.name}</span><i>${got.includes(ms.lv) ? "已领" : ""}</i></div>`).join("");
   };
