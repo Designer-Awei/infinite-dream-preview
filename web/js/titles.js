@@ -148,6 +148,15 @@ export function drawTitlePlate(g, id, x, y, t) {
   // a light sweep across 史诗 and up
   if (R.fx.includes("shine") || T.r === "x") {
     const u = ((t * 0.6) % 1.6) - 0.3, sx = x0 + u * w;
+    // only inside the plate's fill (inside the frame line): clip to it
+    g.save();
+    g.beginPath();
+    if (T.r === "l" || T.r === "x") {
+      g.moveTo(x0 + 5, y0 + 1); g.lineTo(x0 + w - 5, y0 + 1); g.lineTo(x0 + w, y0 + h / 2);
+      g.lineTo(x0 + w - 5, y0 + h - 1); g.lineTo(x0 + 5, y0 + h - 1); g.lineTo(x0, y0 + h / 2);
+      g.closePath();
+    } else g.rect(x0 + 1, y0 + 1, w - 2, h - 2);
+    g.clip();
     g.globalCompositeOperation = "lighter";
     g.fillStyle = "rgba(255,255,255,0.35)";
     g.beginPath();
@@ -155,6 +164,7 @@ export function drawTitlePlate(g, id, x, y, t) {
     g.closePath();
     g.fill();
     g.globalCompositeOperation = "source-over";
+    g.restore();
   }
   g.fillStyle = col;
   g.textAlign = "center";
