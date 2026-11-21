@@ -5,6 +5,7 @@ import { uiRoot, btn, toast } from "./ui.js";
 import { drawEgg } from "./petwh.js";
 import { iconURL } from "./icons.js";
 import { EVENTS, NPCS, SLOT_SYMS } from "./route.js";
+import { CURSES } from "./data.js";
 import { A } from "./assets.js";
 import { sfx } from "./audio.js";
 
@@ -292,6 +293,59 @@ function shopDialog(game, md, ev, hooks) {
   draw();
 }
 
+// ---------------------------------------------------------------- 血契商人
+/** three pact cards (cost in red, gain in gold) and 签订 on each; up to `max` signed. The 诅咒契 names its curse up
+ *  front. 离开 sits top-right like the merchant's. */
+function pactDialog(game, md, ev, hooks) {
+  const box = md.querySelector(".ev-opts"), P = ev.pact, area = el("div", "ev-pact");
+  md.querySelector(".event-panel").classList.add("dice-mode", "pact-mode");
+  area.innerHTML = `<div class="pc-deals"></div><div class="pc-foot o1"></div>`;
+  box.before(area);
+  const nv = game.npc;
+  if (!nv.curseOffer) {
+    const free = Object.keys(CURSES).filter((k) => !game.curses.includes(k));
+    nv.curseOffer = free[(Math.random() * free.length) | 0] || null;
+  }
+  const draw = () => {
+    const done = nv.deals || [], left = P.max - done.length, me = game.players[0];
+    area.querySelector(".pc-foot").innerHTML = `${left > 0 ? `还能签 ${left} 份` : "两份契约已签"} · 当前诅咒 ${game.curses.length ? game.curses.map((c) => `<em>${CURSES[c].name}</em>`).join(" ") : "无"} · 金币 ${me.coins}`;
+    const grid = area.querySelector(".pc-deals");
+    grid.innerHTML = "";
+    for (const d of P.deals) {
+      const signed = done.includes(d.id);
+      let cost = d.cost, why = "";
+      if (d.id === "curse") {
+        cost = nv.curseOffer ? `背上诅咒·${CURSES[nv.curseOffer].name}<small>${CURSES[nv.curseOffer].desc}</small>` : "诅咒已满";
+        if (!nv.curseOffer || game.curses.length >= 5) why = "诅咒已满";
+      }
+      if (d.id === "blood" && me.maxHp <= 2) why = "生命上限太低";
+      if (d.id === "atone" && !game.curses.length) why = "没有诅咒";
+      else if (d.id === "atone" && me.coins < 40) why = "金币不足";
+      const card = el("div", "pc-deal d-" + d.id + (signed ? " signed" : ""));
+      card.innerHTML = `<div class="pc-pic"><img src="${iconURL(d.id === "blood" ? "vamp" : d.id === "curse" ? "curse" : "purify", 3)}" alt=""></div><b class="o1">${d.name}</b><div class="pc-cost">代价：${cost}</div><div class="pc-gain">获得：${d.gain}</div>`;
+      const b = btn(signed ? "已签订" : why || "签订", signed || why ? "gray small" : "small", () => {
+        const r = hooks.deal(d.id);
+        if (!r) return;
+        sfx("card");
+        card.classList.add("stamp");
+        toast(r);
+        setTimeout(draw, 350);
+      });
+      b.disabled = signed || !!why || left <= 0;
+      card.appendChild(b);
+      grid.appendChild(card);
+    }
+  };
+  md.querySelector(".ev-who")?.remove();
+  box.remove();
+  md.querySelector(".ev-top").appendChild(btn("离开", "blue ev-leave", () => {
+    md.querySelector(".ev-face")?.stop?.();
+    md.remove();
+    hooks.close();
+  }));
+  draw();
+}
+
 /** an event room's choice; onPick(k) with k = option index. A dice event (ev.dice) runs its own game via hooks */
 export function showEvent(game, onPick, hooks = null) {
   const id = game.room.event, ev = EVENTS[id], npc = NPCS[id], md = el("div", "modal event-modal");
@@ -300,8 +354,8 @@ export function showEvent(game, onPick, hooks = null) {
   if (face) md.querySelector(".ev-face-box").appendChild(face);
   else md.querySelector(".ev-face-box").remove();
   const box = md.querySelector(".ev-opts");
-  if ((ev.dice || ev.shop || ev.slot) && hooks) {
-    (ev.shop ? shopDialog : ev.slot ? slotDialog : diceDialog)(game, md, ev, hooks);
+  if ((ev.dice || ev.shop || ev.slot || ev.pact) && hooks) {
+    (ev.shop ? shopDialog : ev.slot ? slotDialog : ev.pact ? pactDialog : diceDialog)(game, md, ev, hooks);
     uiRoot().appendChild(md);
     return md;
   }

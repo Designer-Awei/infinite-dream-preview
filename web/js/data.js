@@ -334,7 +334,24 @@ export const CARDS = [
   { id: "shield_nova", r: "SR", tag: "机制", name: "防御反制", desc: "护盾破碎时释放冲击波（18伤害并击退）", max: 1, locked: true },
   { id: "echo", r: "SSR", tag: "机制", name: "自洽回声", desc: "小技能有 35% 概率再释放一次", max: 1, locked: true },
   { id: "second_ult", r: "SSR", tag: "机制", name: "持续学习", desc: "释放大招后立即返还 40% 充能", max: 1, locked: true },
+  // 血契与诅咒: only offered while the run carries a curse (curse: true)
+  { id: "pain_power", r: "SR", tag: "诅咒", name: "以痛为力", desc: "每背负 1 个诅咒，伤害 +10%", max: 1, curse: true },
+  { id: "curse_res", r: "SR", tag: "诅咒", name: "诅咒共鸣", desc: "每背负 1 个诅咒，暴击率 +5%、护盾上限 +1", max: 1, curse: true },
+  { id: "blood_gift", r: "SR", tag: "诅咒", name: "血之馈赠", desc: "背负诅咒时击杀 6% 概率回复 1 生命，清空房间额外 +15 金币", max: 1, curse: true },
+  { id: "purify", r: "R", tag: "诅咒", name: "净化之火", desc: "立刻解除 1 个诅咒并回复 2 点生命", max: 2, curse: true },
 ];
+// 诅咒: run-long burdens from the 血契商人, the 诅咒宝箱 and the slot machine's skulls (each once; at most 5).
+// Removed by 净化之火 or the merchant's 赎罪契. Effects are applied/undone in game.addCurse / removeCurse.
+export const CURSES = {
+  weak: { name: "虚弱", desc: "伤害 -12%" },
+  slow: { name: "迟缓", desc: "移速 -10%" },
+  brittle: { name: "易碎", desc: "护盾上限 -1" },
+  greed: { name: "贫穷", desc: "金币获取 -35%" },
+  hostile: { name: "敌意", desc: "敌人生命 +15%" },
+  heavy: { name: "沉重", desc: "闪避冷却 +40%" },
+  bleed: { name: "失血", desc: "每进入新房间失去 1 点生命（不致死）" },
+};
+export const CURSE_MAX = 5;
 // 觉醒卡 (card evolutions): own `need` (card id → count; the first entry is the card to max) and the UR evolution is
 // guaranteed as the first card of the next offer. The ingredients stay; the evolution adds on top (one each per run).
 export const EVOLUTIONS = [

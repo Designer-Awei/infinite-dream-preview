@@ -214,6 +214,7 @@ export const app = {
         roll: (odd, ratio) => (this.game === g ? g.rollDice(me.id, odd, ratio) : null),
         settle: () => this.game === g && g.settleDice(me.id),
         spin: () => (this.game === g ? g.spinSlot(me.id) : null),
+        deal: (id) => (this.game === g ? g.bloodDeal(me.id, id) : null),
         settleSlot: () => this.game === g && g.settleSlot(me.id),
         // 奇遇商人: what the account holds, and a purchase paid from it (金铲 / 晶石), goods straight into the account
         wallet: () => ({ au: mineState().shovels.au || 0, gem: load().tokens || 0 }),

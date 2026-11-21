@@ -1,5 +1,5 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
-import { T, BAL, AFFIXES, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
+import { T, BAL, AFFIXES, CURSES, CURSE_MAX, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
 import { applyTitle } from "./titles.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
@@ -45,6 +45,7 @@ export class Game {
     this.time = 0;
     this.shake = 0;
     this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0, riftDeclines: 0 };
+    this.curses = []; // 诅咒 ids carried this run (see addCurse)
     // 怪物图鉴: what this run met and beat; 藏品 dropped by rare monsters (saved at the end of the run)
     this.seen = {};
     this.killedTypes = {};
@@ -235,6 +236,8 @@ export class Game {
     return MAPS[ids[Math.floor(idx / 10) % ids.length]];
   }
   loadRoom(idx, def) {
+    // 诅咒·失血: every new room costs a life point (never the last one)
+    if (this.curses?.includes("bleed") && idx > 0) for (const p of this.players) if (!p.dead && p.hp > 1) (p.hp--), (p.hurtT = 0.3);
     if (this.endless && idx % 10 === 0) this.raresSeen = 0;
     this.room = def;
     const kind = def.kind;
@@ -384,7 +387,7 @@ export class Game {
       marks: {}, tide: 0, tideBy: null, sun: 0, bubble: 0, inkMark: 0, inkCd: 0, burnT: 0, burnDps: 0, slowT: 0, slowK: 0, stunT: 0, freezeT: 0, vulnT: 0, burnTick: 0,
       spawnT: delay, wob: Math.random() * 6, lastBy: null,
     };
-    e.hp *= this.curseHp || 1; // 诅咒宝箱
+    e.hp *= (this.curseHp || 1) * (this.curses.includes("hostile") ? 1.15 : 1); // 诅咒宝箱 / 诅咒·敌意
     // 噩梦契约
     if (this.pact.hp) e.hp *= 1 + 0.25 * this.pact.hp;
     if (this.pact.boss && d.boss) e.hp *= 1.5;
@@ -492,6 +495,7 @@ export class Game {
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
     if (p.buff.berserk > 0) m *= 1.8; // 觉醒·狂暴协议
     if (p.buff.pd > 0) m *= 1.5; // 完美闪避
+    if (p.cards.pain_power) m *= 1 + 0.1 * this.curses.length; // 以痛为力
     if (p.cards.ev_midas) m *= 1 + Math.min(0.6, Math.floor((p.coins || 0) / 100) * 0.06); // 觉醒·算力印钞机
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
     return m;
@@ -504,7 +508,7 @@ export class Game {
     let dmg = amount * (p ? this.dmgMul(p) : 1);
     let crit = false;
     if (p && !src.noCrit) {
-      const c = p.dodgeCrit > 0 ? 1 : p.st.crit;
+      const c = p.dodgeCrit > 0 ? 1 : p.st.crit + (p.cards.curse_res ? 0.05 * this.curses.length : 0); // 诅咒共鸣
       if (Math.random() < c) (crit = true), (dmg *= BAL.critMul + (p.st.critX || 0)); // 宠物词条「致命」加暴击倍率
     }
     if (p && (e.elite || e.boss)) dmg *= p.st.elite || 1; // 对抗训练
@@ -668,6 +672,85 @@ export class Game {
     e.kbx += Math.cos(a) * power;
     e.kby += Math.sin(a) * power;
   }
+  /** 诅咒: add one (a given id, or a random one not yet carried); applies its effect to every player. Returns the id. */
+  addCurse(id = null) {
+    if (this.curses.length >= CURSE_MAX) return null;
+    const free = Object.keys(CURSES).filter((k) => !this.curses.includes(k));
+    if (!id) id = free[(Math.random() * free.length) | 0];
+    if (!id || this.curses.includes(id)) return null;
+    this.curses.push(id);
+    for (const p of this.players) this.curseFx(p, id, 1);
+    const p = this.players[0];
+    if (p) {
+      this.text(p.x, p.y - 74, `诅咒·${CURSES[id].name}`, "#c890ff", 1.6, 1.2);
+      this.vfx("arcane/rune-circle", p.x, p.y, { palette: ["#14061e", "#5a1a8a", "#a050e0", "#e0c0ff"] });
+    }
+    this.sound("hurt", 0.4);
+    this.onUi("hud");
+    return id;
+  }
+  removeCurse(id) {
+    const i = this.curses.indexOf(id);
+    if (i < 0) return false;
+    this.curses.splice(i, 1);
+    for (const p of this.players) this.curseFx(p, id, -1);
+    const p = this.players[0];
+    if (p) this.text(p.x, p.y - 74, `解除·${CURSES[id].name}`, "#fff2a8", 1.4, 1.1);
+    this.sound("heal", 0.5);
+    this.onUi("hud");
+    return true;
+  }
+  /** apply (d = 1) or undo (d = -1) a curse's stat side on one player (the rest is read live from this.curses) */
+  curseFx(p, id, d) {
+    const s = p.st;
+    if (id === "weak") s.dmg *= d > 0 ? 0.88 : 1 / 0.88;
+    if (id === "slow") s.speed *= d > 0 ? 0.9 : 1 / 0.9;
+    if (id === "brittle") (p.maxShield = Math.max(1, p.maxShield - d)), (p.shield = Math.min(p.shield, p.maxShield));
+    if (p.cards.curse_res) (p.maxShield += d), d > 0 && (p.shield += 1); // 诅咒共鸣: +1 shield per curse
+  }
+  /** 血契商人: make one of the room's deals (host). Returns a result line, or null if it can't be made */
+  bloodDeal(pid, id) {
+    const p = this.player(pid), nv = this.npc;
+    if (!p || !nv || (nv.deals || []).includes(id)) return null;
+    let out = null;
+    if (id === "blood" && p.maxHp > 2) {
+      p.maxHp--;
+      p.hp = Math.min(p.hp, p.maxHp);
+      nv.cardWin = "SSR";
+      out = "生命上限 -1 · 离开时挑一张 SSR 卡";
+    } else if (id === "curse" && this.curses.length < CURSE_MAX) {
+      const c = this.addCurse(nv.curseOffer || null);
+      if (!c) return null;
+      out = `背上诅咒·${CURSES[c].name} · ${this.grantMaterial(p)}`;
+    } else if (id === "atone" && this.curses.length && p.coins >= 40) {
+      p.coins -= 40;
+      const c = this.curses.at(-1);
+      this.removeCurse(c);
+      out = `-40 金币 · 解除诅咒·${CURSES[c].name}`;
+    }
+    if (!out) return null;
+    nv.deals = [...(nv.deals || []), id];
+    if (nv.deals.length === 1) this.runStats.events = (this.runStats.events || 0) + 1;
+    this.sound("card", 0.5);
+    this.onUi("hud");
+    return out;
+  }
+  /** 觉醒材料: one level of a missing ingredient for the 觉醒卡 closest to ready (else 80 coins) */
+  grantMaterial(p) {
+    let best = null;
+    for (const ev of EVOLUTIONS) {
+      if (p.cards[ev.id]) continue;
+      const miss = Object.entries(ev.need).filter(([k, n]) => (p.cards[k] || 0) < n), left = miss.reduce((a, [k, n]) => a + n - (p.cards[k] || 0), 0);
+      if (miss.length && (!best || left < best.left)) best = { ev, card: miss[0][0], left };
+    }
+    const c = best && CARDS.find((q) => q.id === best.card);
+    if (!c || (p.cards[c.id] || 0) >= c.max) {
+      p.coins += 80;
+      return "+80 金币";
+    }
+    applyCard(this, p, c.id);
+    return `觉醒材料：${c.name}${best.left <= 1 ? `（${best.ev.name} 就绪）` : ""}`;
+  }
   /** 精英词缀 on death: 分裂 two small copies, 爆裂 a bomb */
   affixDeath(e) {
     if (e.affix === "split" && this.enemies.length < 40)
@@ -695,6 +778,7 @@ export class Game {
     if (e.elite) this.runStats.elites++;
     if (p) p.kills++;
     if (p && (e.elite || e.boss) && p.st.replay) p.ult = Math.min(1, p.ult + p.st.replay); // 经验回放
+    if (p && p.cards.blood_gift && this.curses.length && Math.random() < 0.06 && p.hp < p.maxHp) (p.hp++), this.text(p.x, p.y - 60, "+1", "#ff6a7a", 1); // 血之馈赠
     if (e.affix && this.host) this.affixDeath(e);
     const col = { slime: ["#061412", "#12594a", "#47c752", "#a6f06a", "#f0ffd2"], slime_purple: ["#140a1e", "#4d1f6e", "#b05be0", "#e0a6ff", "#fff0ff"] }[e.type];
     this.vfx("spawn/poof", e.x, e.y + 2, col ? { palette: col } : {});
@@ -1366,6 +1450,7 @@ export class Game {
     if (this.phase !== "fight") return;
     this.phase = "clear";
     this.sound("clear");
+    for (const p of this.players) if (p.cards.blood_gift && this.curses.length) (p.coins += 15), this.text(p.x, p.y - 70, "血之馈赠 +15", "#ff6a7a", 1.2); // 血之馈赠
     if (this.room.kind === "boss") this.runStats.xpBosses = (this.runStats.xpBosses || 0) + (this.twinBoss ? 2 : 1);
     if (this.room.kind === "boss" && this.twinBoss) this.runStats.twinBosses = (this.runStats.twinBosses || 0) + 1;
     else if (["combat", "elite"].includes(this.room.kind)) this.runStats.xpRooms = (this.runStats.xpRooms || 0) + 1;
@@ -1439,6 +1524,7 @@ export class Game {
     // ready 觉醒卡 ride along (weight 0: offerCards puts one first; counted so an "empty" pool still opens the chest)
     return [...CARDS, ...fusionCards(p.cid), ...EVOLUTIONS.filter((ev) => evoReady(p.cards, ev))].filter((c) => {
       if ((p.cards[c.id] || 0) >= c.max) return false;
+      if (c.curse && !this.curses.length) return false; // 诅咒 cards only while cursed
       if (c.locked) {
         if (c.tag === "混搭" && c.kind === "skill") return meta.cards.includes("links");
         return meta.cards.includes(c.id);
@@ -1535,7 +1621,7 @@ export class Game {
     if (q.heal) p.hp = Math.min(p.maxHp, p.hp + q.heal);
     if (q.maxHp) (p.maxHp += q.maxHp), (p.hp = p.maxHp);
     if (q.hurt) p.hp = Math.max(1, p.hp - q.hurt);
-    if (q.curse) this.curseHp = (this.curseHp || 1) * q.curse;
+    if (q.curse) this.addCurse() || (this.curseHp = (this.curseHp || 1) * 1.1); // 三连骷髅: a random curse (all 5 carried: enemies +10%)
     if (q.card && (!nv.cardWin || q.card === "SSR")) nv.cardWin = q.card;
     this.text(p.x, p.y - 60, q.kind === "miss" ? "落空" : q.coins ? `${q.coins > 0 ? "+" : ""}${q.coins} 金币` : q.kind === "curse" ? "诅咒" : "中奖！", q.kind === "curse" || q.kind === "miss" ? "#ff8080" : "#ffe14a", 1.4);
     this.sound(q.kind === "jackpot" || q.kind === "win" ? "card" : q.kind === "small" ? "coin" : "hurt");
@@ -1547,7 +1633,7 @@ export class Game {
     const nv = this.npc, ev = this.room && EVENTS[this.room.event];
     if (!nv || this.eventDone) return;
     nv.open = false;
-    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys) || (ev?.slot && (nv.spins || 0) >= ev.slot.spins)) {
+    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys) || (ev?.slot && (nv.spins || 0) >= ev.slot.spins) || (ev?.pact && (nv.deals || []).length >= ev.pact.max)) {
       this.eventDone = true;
       nv.done = true;
       this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);
@@ -1748,7 +1834,7 @@ export class Game {
       p.dashDy = dy / l;
       p.dashT = BAL.dashTime;
       p.invuln = Math.max(p.invuln, BAL.dashInvuln + (p.tfx?.pd || 0));
-      p.dashCd = BAL.dashCd * (1 - (p.tfx?.dash || 0)); // 称号·幻影舞者
+      p.dashCd = BAL.dashCd * (1 - (p.tfx?.dash || 0)) * (this.curses.includes("heavy") ? 1.4 : 1); // 称号·幻影舞者 / 诅咒·沉重
       if ((p.pdCd || 0) <= this.time) (p.pdWin = this.time + BAL.dashInvuln + (p.tfx?.pd || 0)), (p.pdDone = false);
       if (p.cards.dodge_crit) p.dodgeCrit = 2.5;
       if (p.cards.ev_phantom) {
@@ -1928,7 +2014,7 @@ export class Game {
           q.y += Math.sin(a) * 320 * dt;
         }
         if (bd < 16 && q.t > 0.3) {
-          const ck = best.st.coin * (this.pact.poor ? 0.5 : 1), v = Math.random() < (ck % 1) ? Math.ceil(ck) : Math.floor(ck); // 噩梦契约·贫瘠噩梦
+          const ck = best.st.coin * (this.pact.poor ? 0.5 : 1) * (this.curses.includes("greed") ? 0.65 : 1), v = Math.random() < (ck % 1) ? Math.ceil(ck) : Math.floor(ck); // 噩梦契约·贫瘠噩梦
           best.coins += v;
           this.runStats.coins += v;
           this.sound("coin", 0.05);
@@ -2025,6 +2111,9 @@ export function applyCard(g, p, id) {
     case "cd_down": s.cd *= 0.8; break;
     case "ult_charge": s.ultG *= 1.3; break;
     case "vamp": s.vamp++; break;
+    // 血契与诅咒
+    case "curse_res": p.maxShield += g.curses.length; p.shield += g.curses.length; break;
+    case "purify": if (g.curses.length) g.removeCurse(g.curses.at(-1)); p.hp = Math.min(p.maxHp, p.hp + 2); break;
     // 觉醒卡
     case "ev_storm": s.multi += 2; s.pierce += 2; break;
     case "ev_grad": s.critX = (s.critX || 0) + 1; break;

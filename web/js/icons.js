@@ -350,6 +350,45 @@ const DRAW = {
     p.rect(7, 10, 2, 2, c.hi);
   },
   // ---- cards & talents
+  // 血契与诅咒
+  pain_power(p) {
+    // a blade dripping blood
+    p.line(5, 15, 16, 4, "#c8202e", 2);
+    p.line(6, 15, 16, 5, "#7a0a18", 1);
+    p.poly([[15, 3], [18, 2], [17, 5]], RED.hi);
+    p.line(3, 11, 8, 16, "#3a1020", 2);
+    p.line(2, 18, 5, 15, "#5a1828", 2);
+    p.rect(10, 12, 2, 3, RED.base); p.rect(10, 15, 2, 2, RED.light); p.rect(14, 9, 1, 3, RED.base);
+  },
+  curse_res(p) {
+    // a violet eye in a cursed sigil ring
+    p.ring(10, 10, 8, 2, VIOLET.dark);
+    p.poly([[2, 10], [10, 5], [18, 10], [10, 15]], "#f0e4ff");
+    p.disc(10, 10, 3, VIOLET.base);
+    p.disc(10, 10, 1, "#1a0a28");
+    p.rect(8, 8, 1, 1, "#ffffff");
+  },
+  blood_gift(p) {
+    // a blood drop wrapped in a gold ribbon
+    p.poly([[10, 2], [15, 10], [15, 14], [12, 17], [8, 17], [5, 14], [5, 10]], RED.base);
+    p.poly([[10, 4], [13, 10], [10, 9]], RED.light);
+    p.line(4, 12, 16, 12, GOLD.base, 2);
+    p.rect(9, 10, 3, 4, GOLD.light);
+  },
+  purify(p) {
+    // a white-gold flame burning a dark mark away
+    p.disc(10, 14, 5, "#2a1a3a");
+    flame(p, { light: "#ffffff", base: "#ffe890", dark: "#d0a030", hi: "#ffffff" });
+  },
+  curse(p) {
+    // a cracked violet skull-mark: the 诅咒 badge
+    p.disc(10, 9, 7, VIOLET.base);
+    p.rect(5, 13, 10, 4, VIOLET.base);
+    p.disc(7, 9, 2, "#1a0a28"); p.disc(13, 9, 2, "#1a0a28");
+    p.rect(9, 12, 2, 2, "#1a0a28");
+    p.rect(6, 15, 1, 2, VIOLET.dark); p.rect(9, 15, 1, 2, VIOLET.dark); p.rect(12, 15, 1, 2, VIOLET.dark);
+    p.line(11, 2, 9, 6, VIOLET.light);
+  },
   sword(p) {
     p.line(5, 15, 16, 4, STEEL.light, 2);
     p.line(6, 15, 16, 5, STEEL.dark, 1);

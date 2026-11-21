@@ -23,6 +23,11 @@ view, full body, crisp dark outline, same style and size as the style image"):
              seed 37, candidate 0), animated by /animate-with-text-v3 (first = last frame, 8 frames, seed 9: bulbs blink and
              sparkle, reels flicker, coins twinkle, the machine stays put); hard alpha, the closing frame dropped, written
              straight to web/assets/npc/slot.png with its npc.json entry (ox/oy from the bounding box, face = square crop).
+  bloodpact - 96px strip (bloodpact.png, 8 frames, k 1): /generate-image-v2 with the same style image (prompt: cute
+             blood-pact merchant girl, deep crimson hooded cloak with gold trim, glowing red eyes, glowing red contract
+             scroll + black feather quill, heart-shaped lantern at the belt, floating red runes; seed 58, candidate 2),
+             /animate-with-text-v3 first = last, 8 frames, seed 4 (breathing, cloak sway, scroll flutter, runes rising);
+             face = the hooded head (top half of the figure).
 Idle actions (96px row visitors): crystal pulses / tosses and catches the die / floats and bobs / breathes, tongue wags, blinks.
 """
 import json, sys

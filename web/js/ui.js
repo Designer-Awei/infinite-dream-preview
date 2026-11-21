@@ -1,5 +1,5 @@
 // HTML overlay: lobby, roster, gacha, net rooms, HUD, card picks, pause, results.
-import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, EVOLUTIONS, PACTS, AFFIXES, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
+import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, EVOLUTIONS, PACTS, AFFIXES, CURSES, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
 import { load, save, unlockProgress, pull, checkUnlocks } from "./save.js";
 import { A } from "./assets.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
@@ -112,6 +112,7 @@ export function showHelp() {
   const SECS = [
     ["闯关基础", `${H("电脑操作")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
       ${H("手机操作")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放
+      ${H("诅咒")}血契商人的诅咒契、诅咒宝箱、老虎机三连骷髅会让本局背上诅咒（最多 5 个，同种不重复），名字以紫色标签显示在金币下方，点开看效果：${Object.values(CURSES).map((c) => `${c.name}（${c.desc}）`).join("、")}。背负诅咒时宝箱会出现「诅咒」卡：以痛为力、诅咒共鸣、血之馈赠、净化之火（解除诅咒）；赎罪契也能解除。
       ${H("精英词缀")}精英怪（不含首领）各带一个词缀，名字写在血条上方「精英·词缀」：${AFFIXES.map((q) => `<span style="color:${q.color}">${q.name}</span>（${q.desc}）`).join("、")}。
       ${H("完美闪避")}敌人的子弹、撞击或技能即将命中时闪避穿过去，触发「完美闪避」：闪避冷却立刻刷新、3 秒内伤害 +50%、大招充能 +6%；单人时进入 1.6 秒「子弹时间」——敌人、敌弹和敌方技能放慢到 30%，你照常行动（2 秒冷却）。
       ${H("闯关循环")}每局 7 层，单人主线走「梦境航线」：第 1 层固定战斗，第 7 层是首领；中间每层清场后会同时出现 2～3 扇颜色不同的传送门（同一层的门一定是不同房间），走进哪扇就去哪种房间。合作模式仍为固定顺序：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
@@ -134,7 +135,8 @@ export function showHelp() {
         ["spring", "二选一：生命和护盾回满，或装走 20 星砂（结算时到账）。"],
         ["curse", "打开得到一次技能卡三选一，但本局之后的敌人生命 +20%（可叠加）；也可以离开。"],
         ["merchant", "用账号里的金铲和晶石买东西，直接进账号：宠物蛋 2 金铲、UR 宠物蛋 5 金铲、HUR 宠物蛋 10 金铲、兑换卡 2000 晶石；每个房间最多买 2 样，同一样只卖一次，没买完离开还能回来。"],
-        ["slot", "每次投 15 局内金币拉杆，每个房间 3 次：三个 7 大奖（+100 金币并在离开时挑一张 SSR 卡）；三连樱桃 +60、三连星星离开时选卡、三连爱心生命上限 +1；两个相同有小奖；骷髅会扣金币或带来诅咒。"],
+        ["bloodpact", "三份契约最多签两份：血之契（生命上限 -1，离开时挑一张 SSR 卡）、诅咒契（背上写明的诅咒，换一份觉醒材料：直接补齐离觉醒最近的配方缺的一张卡）、赎罪契（40 金币解除最近的诅咒）。"],
+        ["slot", "每次投 15 局内金币拉杆，每个房间 3 次：三个 7 大奖（+100 金币并在离开时挑一张 SSR 卡）；三连樱桃 +60、三连星星离开时选卡、三连爱心生命上限 +1；两个相同有小奖；骷髅会扣金币，三连骷髅背上随机诅咒。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.event.col};color:#1a1020">${EVENTS[k].name}</span><span>${NPCS[k].name === EVENTS[k].name ? "" : NPCS[k].name + "："}${t}</span></div>`).join("")}
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
@@ -276,7 +278,7 @@ export function showHud(game, me) {
   hud.innerHTML = `
    <div class="tl"><div class="face"><img src="assets/portrait_${me.cid}.png"></div>
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar sh"><i></i><span class="o1"></span></div>
-     <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div><div class="pvpscore"></div></div></div></div>
+     <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div><div class="pvpscore"></div></div><div class="hcurses"></div></div></div>
    <div class="tc"><div class="pips"></div><div class="bossbars" style="display:none"><div class="bossbar"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div><div class="bossbar" style="display:none"><div class="nm o1"></div><div class="bar"><i></i></div></div></div></div>
    <div class="tr"><div class="buffs"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
    <div class="banner-slot"></div>
@@ -332,6 +334,12 @@ export function updateHud(game, me) {
   const set = (k, v, fn) => {
     if (hudCache[k] !== v) (hudCache[k] = v), fn(v);
   };
+  // 诅咒: one violet tag per curse under the coins; tap one for what it does
+  set("curses", (game.curses || []).join(","), (v) => {
+    const box = hud.querySelector(".hcurses");
+    box.innerHTML = v ? v.split(",").map((id) => `<button class="hc-tag" data-id="${id}"><img src="${iconURL("curse", 1)}" alt="">${CURSES[id].name}</button>`).join("") : "";
+    box.querySelectorAll(".hc-tag").forEach((b) => (b.onclick = (e) => (e.stopPropagation(), toast(`诅咒·${CURSES[b.dataset.id].name}：${CURSES[b.dataset.id].desc}`))));
+  });
   set('mounted',!!me.mounted, mounted=>{
     const b=hud.querySelector('.pet-ride-btn');if(b){b.querySelector('span').textContent=mounted?'下骑':'骑乘';b.disabled=!!me.dead||!!me.downed;}
     for(const slot of ['atk','ult']) {

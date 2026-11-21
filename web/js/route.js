@@ -1,7 +1,7 @@
 // 梦境航线：单人主线每局生成一张 7 步分支路线，每一步在 2～3 个房间里选 1 个。
 // 节点全部复用现有房间：战斗 / 精英 / 补给 / 首领，加上三种轻量新房间：事件（一次选择）、挑战（战斗 + 一条规则，
 // 清场多拿一次选卡）、宝藏（一小波怪，必出本图稀有怪，道具更多）。
-import { RUN } from "./data.js";
+import { RUN, CURSES } from "./data.js";
 import { rng } from "./util.js";
 import { PAL } from "../pixelfx/core/color.js";
 
@@ -113,6 +113,7 @@ export const NPCS = {
   curse: { name: "宝箱怪", bye: "嘎吱……" },
   merchant: { name: "奇遇商人", bye: "有缘再会，旅人～" },
   slot: { name: "命运老虎机", bye: "叮叮当～欢迎下次光临！" },
+  bloodpact: { name: "血契商人", bye: "契约已成……愿你承受得住。" },
 };
 
 // 命运老虎机: each pull costs coins and stops three reels; weights per reel (of 10)
@@ -132,7 +133,7 @@ export function slotPayout(reels) {
   if (three === "cherry") return { kind: "win", text: "三连樱桃！+60 金币", coins: 60 };
   if (three === "star") return { kind: "win", text: "三连星星！离开时挑一张卡", coins: 0, card: "SR" };
   if (three === "heart") return { kind: "win", text: "三连爱心！生命上限 +1 并回满", coins: 0, maxHp: 1 };
-  if (three === "skull") return { kind: "curse", text: "三连骷髅……扣 1 点生命，之后敌人生命 +10%", coins: 0, hurt: 1, curse: 1.1 };
+  if (three === "skull") return { kind: "curse", text: "三连骷髅……扣 1 点生命，背上一个随机诅咒", coins: 0, hurt: 1, curse: true };
   if (two === "seven") return { kind: "small", text: "两个 7！+40 金币", coins: 40 };
   if (two === "cherry") return { kind: "small", text: "两颗樱桃，+30 金币", coins: 30 };
   if (two === "star") return { kind: "small", text: "两颗星星，+25 金币", coins: 25 };
@@ -165,9 +166,9 @@ export const EVENTS = {
     ],
   },
   curse: {
-    name: "诅咒宝箱", text: "（宝箱怪咧开嘴，锁链哗啦作响）打开能选一张卡，但之后的敌人生命 +20%。",
+    name: "诅咒宝箱", text: "（宝箱怪咧开嘴，锁链哗啦作响）打开能选一张卡，但会背上一个随机诅咒。",
     options: [
-      { label: "打开", apply: (g, p) => { g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return "诅咒：敌人生命 +20%"; } },
+      { label: "打开", apply: (g, p) => { const c = g.addCurse(); if (!c) g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return c ? `背上诅咒·${CURSES[c].name}` : "诅咒：敌人生命 +20%"; } },
       { label: "离开", apply: () => "" },
     ],
   },
@@ -176,6 +177,17 @@ export const EVENTS = {
   slot: {
     name: "命运老虎机", text: "「投 15 金币拉一次杆，三格一样有大奖～小心骷髅哦！」",
     slot: { spins: 3, cost: 15 },
+    options: [],
+  },
+  // 血契商人: three pacts, sign up to two (game.bloodDeal): 血之契 max life -1 → an SSR pick on leaving; 诅咒契 a named
+  // curse → a 觉醒材料 (a missing ingredient card for the nearest 觉醒卡, else 80 coins); 赎罪契 40 coins → lift a curse
+  bloodpact: {
+    name: "血契商人", text: "「每份契约都有代价，最多签两份。」",
+    pact: { max: 2, deals: [
+      { id: "blood", name: "血之契", cost: "生命上限 -1", gain: "离开时挑一张 SSR 卡" },
+      { id: "curse", name: "诅咒契", cost: "背上诅咒", gain: "获得觉醒材料" },
+      { id: "atone", name: "赎罪契", cost: "40 金币", gain: "解除最近的诅咒" },
+    ] },
     options: [],
   },
   // a shop instead of a choice: paid with the account's 金铲 (梦境矿场) or 晶石, goods go straight to the account.

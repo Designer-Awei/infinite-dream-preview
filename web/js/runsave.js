@@ -7,7 +7,7 @@ import { uiRoot, btn } from "./ui.js";
 
 const KEY = "ai-girls-dungeon-run-v1";
 // what is carried over: the run's own state on the game and on the player (everything else is rebuilt by the room)
-const G_KEYS = ["roomIdx", "route", "runStats", "seen", "killedTypes", "curiosFound", "raresSeen", "curseHp", "time"];
+const G_KEYS = ["roomIdx", "route", "runStats", "seen", "killedTypes", "curiosFound", "raresSeen", "curseHp", "curses", "time"];
 const P_KEYS = ["hp", "maxHp", "shield", "maxShield", "core", "st", "cards", "fusions", "links", "coins", "cubes", "ult", "revives", "kills", "reactions", "orbs", "barrier", "startCards"];
 const pick = (o, keys) => Object.fromEntries(keys.filter((k) => o[k] !== undefined).map((k) => [k, o[k]]));
 
