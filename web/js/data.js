@@ -172,6 +172,8 @@ export const ENEMIES = {
   boss_witch: { name: "霜镜女巫", title: "镜中之冰", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
   boss_worm: { name: "熔岩巨蠕", title: "地心吞噬者", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
   boss_judge: { name: "雷霆审判者", title: "无尽的终审", hp: 3500, spd: 44, r: 18, ai: "boss_judge", sprite: "thunder_judge", coin: [30, 30], fly: true, boss: true },
+  // 诅咒宝箱 turned monster: the event visitor's own strip (npc.png row 3), hops at you like a frog; always spawned elite
+  mimic: { name: "宝箱怪", sprScale: 0.6, hp: 70, spd: 62, r: 13, ai: "leap", sprite: "mimic", coin: [8, 12], touch: 1 },
   judge_core: { name: "雷暴核心", hp: 150, spd: 0, r: 13, ai: "storm_core", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   core_pylon: { name: "冷却塔", hp: 140, spd: 0, r: 13, ai: "pylon", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   witch_clone: { name: "冰镜分身", hp: 1, spd: 0, r: 14, ai: "witch_clone", sprite: "frost_witch_clone", coin: [0, 0], fly: true, mirror: true },

@@ -24,6 +24,9 @@ view, full body, crisp dark outline, same style and size as the style image"):
              sparkle, reels flicker, coins twinkle, the machine stays put); hard alpha, the closing frame dropped, every frame
              mirrored so the machine faces right (lever on its left), written straight to web/assets/npc/slot.png with its
              npc.json entry (ox/oy from the bounding box, face = square crop; both mirrored too).
+  dew      - 64px item icon (web/assets/ui/dew.png, 淬灵露): /generate-image-v2 with the same style image (prompt: a round
+             glass flask with a cork, glowing cyan essence with white sparkles and a droplet emblem; 64×64, seed 44,
+             candidate 0), hard alpha, used as is.
   bloodpact - 96px strip (bloodpact.png, 8 frames, k 1): /generate-image-v2 with the same style image (prompt: cute
              blood-pact merchant girl, deep crimson hooded cloak with gold trim, glowing red eyes, glowing red contract
              scroll + black feather quill, heart-shaped lantern at the belt, floating red runes; seed 58, candidate 2),

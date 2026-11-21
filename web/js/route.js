@@ -142,6 +142,24 @@ export function slotPayout(reels) {
   return { kind: "miss", text: "落空了……", coins: 0 };
 }
 
+// 诅咒宝箱 fates (weights of 100): 加成 an in-run boon, 淬灵露 an out-of-run pet item (into the 宠物仓库 at the
+// settlement), 宝箱怪 the chest turns into an elite and pays when beaten, 诅咒 a random curse and a card pick
+export const CHEST_FATES = [
+  { id: "boon", w: 35 },
+  { id: "dew", w: 25 },
+  { id: "mimic", w: 25 },
+  { id: "curse", w: 15 },
+];
+export const CHEST_BOONS = [
+  { id: "hp", text: "生命上限 +1，并回满生命", icon: "heart" },
+  { id: "dmg", text: "本局伤害 +10%", icon: "sword" },
+  { id: "speed", text: "本局移速 +8%", icon: "boot" },
+  { id: "coins", text: "+60 金币", icon: "coin" },
+  { id: "card", text: "关上宝箱后挑一张 SR 起的卡", icon: "cardgold" },
+];
+// the chest's reward when beaten as 宝箱怪: its coins, a supply chest (the room's clear), and this chance of 淬灵露
+export const MIMIC_DEW = 0.4;
+
 // events: one choice each. apply(game, p) runs on the host; returns a short result line (shown as floating text)
 export const EVENTS = {
   altar: {
@@ -165,12 +183,11 @@ export const EVENTS = {
       { label: "装星砂", apply: (g) => { g.runStats.eventStars = (g.runStats.eventStars || 0) + 20; return "+20 星砂"; } },
     ],
   },
+  // 诅咒宝箱: open it in the dialog (game.openCurseChest) — the lid rattles, then one of four fates (CHEST_FATES)
   curse: {
-    name: "诅咒宝箱", text: "（宝箱怪咧开嘴，锁链哗啦作响）打开能选一张卡，但会背上一个随机诅咒。",
-    options: [
-      { label: "打开", apply: (g, p) => { const c = g.addCurse(); if (!c) g.curseHp = (g.curseHp || 1) * 1.2; g.offerCards(p, 3); return c ? `背上诅咒·${CURSES[c].name}` : "诅咒：敌人生命 +20%"; } },
-      { label: "离开", apply: () => "" },
-    ],
+    name: "诅咒宝箱", text: "「打开我呀～可能是宝贝，也可能是……我。」",
+    chest: true,
+    options: [],
   },
   // a slot machine instead of a choice: three pulls a room, each costs `cost` coins (game.spinSlot / settleSlot);
   // card wins are offered when the dialog closes

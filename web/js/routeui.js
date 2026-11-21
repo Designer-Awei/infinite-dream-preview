@@ -346,6 +346,66 @@ function pactDialog(game, md, ev, hooks) {
   draw();
 }
 
+// ---------------------------------------------------------------- 诅咒宝箱
+/** the chest itself fills the left (the visitor's frames, crisp ×2); the right lists what may be inside until
+ *  打开: the lid rattles ~0.9 s, then the fate card (icon, title, what happened). A 宝箱怪 fate closes with 迎战！ and
+ *  the fight starts (game.closeEvent). 离开 before opening keeps the chest for later. */
+function chestDialog(game, md, ev, hooks) {
+  const box = md.querySelector(".ev-opts"), nv = game.npc, area = el("div", "ev-chest");
+  md.querySelector(".event-panel").classList.add("dice-mode", "pact-mode", "chest-mode");
+  area.innerHTML = `<div class="ch-stage"><canvas class="ch-box" width="96" height="96"></canvas></div><div class="ch-side"></div>`;
+  box.before(area);
+  box.remove();
+  md.querySelector(".ev-who")?.remove();
+  const cv = area.querySelector(".ch-box"), g = cv.getContext("2d"), N = A.npc, m = N?.meta.npcs.curse, side = area.querySelector(".ch-side");
+  g.imageSmoothingEnabled = false;
+  let f = 0, live = true, mode = nv.chest ? "done" : "idle";
+  const tick = () => {
+    if (!live || !cv.isConnected) return;
+    g.clearRect(0, 0, 96, 96);
+    if (m) g.drawImage(N.image, (m.seq ? m.seq[f % m.seq.length] : f % m.n) * 96, m.row * 96, 96, 96, 0, 0, 96, 96);
+    f++;
+    setTimeout(tick, mode === "shake" ? 60 : 1000 / N.meta.fps);
+  };
+  if (m) requestAnimationFrame(tick);
+  const close = () => {
+    live = false;
+    md.querySelector(".ev-face")?.stop?.();
+    md.remove();
+    hooks.close();
+  };
+  const ico = (k) => (k === "dew" ? "assets/ui/dew.png" : k === "mimic" ? null : iconURL(k, 3));
+  const idle = () => {
+    side.innerHTML = `<div class="ch-q o1">打开后会是……</div><div class="ch-fates">${[["heart", "局内加成", "生命·伤害·金币等"], ["dew", "淬灵露", "局外宠物道具"], ["mimic", "宝箱怪", "变精英，打赢有奖"], ["curse", "诅咒", "背诅咒，可选卡"]].map(([k, n, d]) => `<div class="ch-fate f-${k}">${k === "mimic" ? `<i class="ch-mimic"></i>` : `<img src="${ico(k)}" alt="">`}<b class="o1">${n}</b><span>${d}</span></div>`).join("")}</div><div class="ch-acts"></div>`;
+    side.querySelector(".ch-acts").appendChild(btn("打开", "", open));
+  };
+  const reveal = (r) => {
+    side.innerHTML = `<div class="ch-res r-${r.fate}"><div class="ch-pic">${r.icon === "mimic" ? `<i class="ch-mimic big"></i>` : `<img src="${ico(r.icon)}" alt="">`}</div><b class="outline">${r.title}</b><p class="o1">${r.text}</p></div><div class="ch-acts"></div>`;
+    side.querySelector(".ch-acts").appendChild(btn(r.fate === "mimic" ? "迎战！" : "收下", r.fate === "mimic" ? "red" : "", close));
+  };
+  let opening = false;
+  function open() {
+    if (opening) return;
+    opening = true;
+    const r = hooks.openChest?.();
+    if (!r) return void (opening = false);
+    sfx("click");
+    mode = "shake";
+    area.classList.add("rattle");
+    side.querySelector(".ch-acts .btn").disabled = true; // keeps its place: the panel must not jump while it rattles
+    setTimeout(() => {
+      mode = "done";
+      area.classList.remove("rattle");
+      area.classList.add(r.fate === "mimic" ? "burst-red" : r.fate === "curse" ? "burst-purple" : "burst-gold");
+      sfx(r.fate === "mimic" || r.fate === "curse" ? "hurt" : "ssr");
+      reveal(r);
+    }, 900);
+  }
+  md.querySelector(".ev-top").appendChild(btn("离开", "blue ev-leave", close));
+  if (nv.chest) reveal(nv.chest);
+  else idle();
+}
+
 /** an event room's choice; onPick(k) with k = option index. A dice event (ev.dice) runs its own game via hooks */
 export function showEvent(game, onPick, hooks = null) {
   const id = game.room.event, ev = EVENTS[id], npc = NPCS[id], md = el("div", "modal event-modal");
@@ -354,8 +414,8 @@ export function showEvent(game, onPick, hooks = null) {
   if (face) md.querySelector(".ev-face-box").appendChild(face);
   else md.querySelector(".ev-face-box").remove();
   const box = md.querySelector(".ev-opts");
-  if ((ev.dice || ev.shop || ev.slot || ev.pact) && hooks) {
-    (ev.shop ? shopDialog : ev.slot ? slotDialog : ev.pact ? pactDialog : diceDialog)(game, md, ev, hooks);
+  if ((ev.dice || ev.shop || ev.slot || ev.pact || ev.chest) && hooks) {
+    (ev.shop ? shopDialog : ev.slot ? slotDialog : ev.pact ? pactDialog : ev.chest ? chestDialog : diceDialog)(game, md, ev, hooks);
     uiRoot().appendChild(md);
     return md;
   }

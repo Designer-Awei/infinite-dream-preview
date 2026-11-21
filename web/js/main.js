@@ -215,6 +215,7 @@ export const app = {
         settle: () => this.game === g && g.settleDice(me.id),
         spin: () => (this.game === g ? g.spinSlot(me.id) : null),
         deal: (id) => (this.game === g ? g.bloodDeal(me.id, id) : null),
+        openChest: () => (this.game === g ? g.openCurseChest(me.id) : null),
         settleSlot: () => this.game === g && g.settleSlot(me.id),
         // 奇遇商人: what the account holds, and a purchase paid from it (金铲 / 晶石), goods straight into the account
         wallet: () => ({ au: mineState().shovels.au || 0, gem: load().tokens || 0 }),
@@ -333,6 +334,13 @@ export const app = {
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
     if (drops.length) extras.push(["梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
+    // 诅咒宝箱: 淬灵露 found this run go into the 宠物仓库
+    if (rs.eventItems) {
+      const ps = petState(); // (one read: petState() re-normalizes the save object each call)
+      ps.items.ur = (ps.items.ur || 0) + rs.eventItems;
+      save();
+      extras.push(["淬灵露", `+${rs.eventItems}（宠物仓库使用）`]);
+    }
     if (rs.eventStars) {
       // 星砂泉: star sand carried out of the run
       mineState().stars += rs.eventStars;

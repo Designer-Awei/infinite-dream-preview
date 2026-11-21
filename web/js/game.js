@@ -1,7 +1,7 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
 import { T, BAL, AFFIXES, CURSES, CURSE_MAX, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
 import { applyTitle } from "./titles.js";
-import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout } from "./route.js";
+import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout, CHEST_FATES, CHEST_BOONS, MIMIC_DEW } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
 import { sfx } from "./audio.js";
@@ -708,6 +708,53 @@ export class Game {
     if (id === "brittle") (p.maxShield = Math.max(1, p.maxShield - d)), (p.shield = Math.min(p.shield, p.maxShield));
     if (p.cards.curse_res) (p.maxShield += d), d > 0 && (p.shield += 1); // 诅咒共鸣: +1 shield per curse
   }
+  /** 诅咒宝箱: open the chest (host), once a room. Rolls one of CHEST_FATES and applies what happens now; a card pick
+   *  and the 宝箱怪 fight wait for the dialog to close (closeEvent). Returns { fate, icon, title, text } */
+  openCurseChest(pid) {
+    const p = this.player(pid), nv = this.npc;
+    if (!p || !nv || nv.chest) return null;
+    let fate = R.weighted(CHEST_FATES.map((f) => f.id), (id) => CHEST_FATES.find((f) => f.id === id).w);
+    if (fate === "curse" && this.curses.length >= CURSE_MAX) fate = "boon";
+    let out;
+    if (fate === "boon") {
+      const pool = CHEST_BOONS.filter((b) => b.id !== "card" || this.cardPool(p).length), b = pool[(Math.random() * pool.length) | 0];
+      if (b.id === "hp") (p.maxHp++), (p.hp = p.maxHp);
+      if (b.id === "dmg") p.st.dmg += 0.1;
+      if (b.id === "speed") p.st.speed += 0.08;
+      if (b.id === "coins") p.coins += 60;
+      if (b.id === "card") nv.cardWin = "SR";
+      out = { fate, icon: b.icon, title: "宝箱里是加成！", text: b.text };
+      this.vfx("pickups/loot-beam", nv.x, nv.y + 10, { layer: "back", life: 1.6, opts: { item: false } });
+    } else if (fate === "dew") {
+      this.runStats.eventItems = (this.runStats.eventItems || 0) + 1;
+      out = { fate, icon: "dew", title: "宝箱里有淬灵露！", text: "淬灵露 ×1（结算后放进宠物仓库，能给宠物词条 +2~5%）" };
+      this.vfx("pickups/loot-beam", nv.x, nv.y + 10, { layer: "back", life: 1.6, opts: { item: false } });
+    } else if (fate === "mimic") {
+      out = { fate, icon: "mimic", title: "是宝箱怪！", text: "它现出原形扑了过来！击败它：金币、补给箱选卡，还有机会掉淬灵露" };
+    } else {
+      const c = this.addCurse();
+      nv.cardWin = "R";
+      out = { fate, icon: "curse", title: "宝箱里窜出诅咒！", text: `背上诅咒·${CURSES[c].name}（${CURSES[c].desc}），关上宝箱后挑一张卡` };
+    }
+    nv.chest = out;
+    this.runStats.events = (this.runStats.events || 0) + 1;
+    this.sound(fate === "mimic" || fate === "curse" ? "hurt" : "card", 0.5);
+    this.onUi("hud");
+    return out;
+  }
+  /** the 宝箱怪 fate, after the dialog: the visitor leaves the room and the elite stands where the chest was */
+  startMimic(nv) {
+    this.npc = null;
+    const e = this.spawnEnemy("mimic", nv.x, nv.y + 8, true, 0);
+    e.mimic = true;
+    if (e.affix === "split") e.affix = "regen"; // one chest, one prize: never splits into copies
+    this.vfx("shadow/dark-explosion", nv.x, nv.y + 6, { speed2: 1.4 });
+    this.shake = Math.max(this.shake, 6);
+    this.banner = { text: "宝箱怪现出原形！", sub: "击败它拿走宝藏", t: 2 };
+    this.phase = "fight";
+    this.wave = (this.room.waves || []).length;
+    this.waveDelay = 0.8;
+  }
   /** 血契商人: make one of the room's deals (host). Returns a result line, or null if it can't be made */
   bloodDeal(pid, id) {
     const p = this.player(pid), nv = this.npc;
@@ -780,6 +827,11 @@ export class Game {
     if (p && (e.elite || e.boss) && p.st.replay) p.ult = Math.min(1, p.ult + p.st.replay); // 经验回放
     if (p && p.cards.blood_gift && this.curses.length && Math.random() < 0.06 && p.hp < p.maxHp) (p.hp++), this.text(p.x, p.y - 60, "+1", "#ff6a7a", 1); // 血之馈赠
     if (e.affix && this.host) this.affixDeath(e);
+    // 诅咒宝箱's 宝箱怪 beaten: a chance of 淬灵露 on top of its coins and the room's supply chest
+    if (e.mimic && Math.random() < MIMIC_DEW) {
+      this.runStats.eventItems = (this.runStats.eventItems || 0) + 1;
+      this.text(e.x, e.y - 50, "淬灵露 +1", "#9ef0ff", 1.3, 1.8);
+    }
     const col = { slime: ["#061412", "#12594a", "#47c752", "#a6f06a", "#f0ffd2"], slime_purple: ["#140a1e", "#4d1f6e", "#b05be0", "#e0a6ff", "#fff0ff"] }[e.type];
     this.vfx("spawn/poof", e.x, e.y + 2, col ? { palette: col } : {});
     this.sound("kill", 0.05);
@@ -1633,11 +1685,13 @@ export class Game {
     const nv = this.npc, ev = this.room && EVENTS[this.room.event];
     if (!nv || this.eventDone) return;
     nv.open = false;
-    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys) || (ev?.slot && (nv.spins || 0) >= ev.slot.spins) || (ev?.pact && (nv.deals || []).length >= ev.pact.max)) {
+    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys) || (ev?.slot && (nv.spins || 0) >= ev.slot.spins) || (ev?.pact && (nv.deals || []).length >= ev.pact.max) || (ev?.chest && nv.chest)) {
       this.eventDone = true;
       nv.done = true;
-      this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);
+      if (nv.chest?.fate !== "mimic") this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);
     }
+    // 诅咒宝箱 · 宝箱怪: the fight starts as the dialog closes
+    if (nv.chest?.fate === "mimic") return void this.startMimic(nv);
     // 老虎机: a card won on the reels is offered now (the way on opens after the pick)
     if (nv.cardWin) {
       const p = this.players[0], fl = nv.cardWin;

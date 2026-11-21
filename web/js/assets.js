@@ -115,6 +115,13 @@ export async function loadAll(progress = () => {}) {
     const files = [...new Set(Object.values(meta.npcs).map((m) => m.file).filter(Boolean))];
     const sheets = Object.fromEntries(await Promise.all(files.map(async (f) => [f, await img(base + "npc/" + f)])));
     A.npc = { meta, image, sheets };
+    // 宝箱怪 as a monster (诅咒宝箱's 宝箱怪 fate): the visitor's idle row as a critter strip
+    const mm = meta.npcs.curse, cs = meta.cell;
+    if (mm && mm.row != null) {
+      const st = canvas(cs * mm.n, cs);
+      st.getContext("2d").drawImage(image, 0, mm.row * cs, cs * mm.n, cs, 0, 0, cs * mm.n, cs);
+      A.critters.mimic = { img: st, w: cs, h: cs, n: mm.n, fps: 8, ox: mm.ox, oy: mm.oy, white: silhouette(st, "#ffffff"), red: silhouette(st, "#ff5050"), blue: silhouette(st, "#bfefff") };
+    }
   } catch {}
   try {
     await document.fonts.load("12px Cubic");
