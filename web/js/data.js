@@ -168,6 +168,7 @@ export const ENEMIES = {
   // bosses of the other two maps
   boss_frost: { name: "冰封史莱姆王", hp: 3300, spd: 50, r: 22, ai: "boss_frost", sprite: "slime_frost", coin: [30, 30], boss: true, scale: 3 },
   boss_core: { name: "过热核心", hp: 3600, spd: 36, r: 18, ai: "boss_core", sprite: "skull_core", coin: [30, 30], fly: true, boss: true, scale: 2.4 },
+  boss_root: { name: "根须之心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
 };
 
 // rooms of one run: the core loop
@@ -188,7 +189,7 @@ export const ROOM_NAMES = { combat: "战斗", shop: "补给站", boss: "首领" 
 // rare: each map's rare monster (ENEMIES[*].rare) shows up in a combat room now and then
 export const MAPS = {
   grass: { name: "数据草原", theme: 0, hazard: "mud", hazardText: "泥沼会减速 · 清除所有敌人", hp: 1, reward: 1, desc: "入门地图：泥沼减速，藤蔓蛇碰到会减速，首领是幻觉之眼。", need: null,
-    swap: { snake: [["snake_vine", 0.5], ["beetle", 0.35]], bat: ["snake_vine", 0.15], slime: ["mushroom", 0.3], frog: ["beetle", 0.25] }, elites: ["frog_big"], boss: "boss_eye" },
+    swap: { snake: [["snake_vine", 0.5], ["beetle", 0.35]], bat: ["snake_vine", 0.15], slime: ["mushroom", 0.3], frog: ["beetle", 0.25] }, elites: ["frog_big"], boss: "boss_eye", bosses: ["boss_eye", "boss_root"] },
   ice: { name: "显存冰原", theme: 2, hazard: "ice", hazardText: "冰面会打滑 · 清除所有敌人", hp: 1.3, reward: 1.35, desc: "冰面会打滑；霜冻爬虫、冰晶眼球会让你减速，首领是冰封史莱姆王。", need: "grass",
     swap: { slime: [["slime_blue", 0.6], ["hedgehog", 0.25]], slime_purple: ["hedgehog", 0.4], frog: [["hedgehog", 0.4], ["ghost", 0.3]], bat: ["bat_ice", 0.7], eyeball: [["eye_ice", 0.5], ["frostling", 0.35]], snake: [["snake_ice", 0.6], ["bat_ice", 0.3]], jelly: ["jelly_ice", 0.7], wisp: ["frostling", 0.5] }, elites: ["slime_frost"], boss: "boss_frost" },
   lava: { name: "算力熔炉", theme: 3, hazard: "lava", hazardText: "熔岩会灼烧 · 清除所有敌人", hp: 1.6, reward: 1.7, desc: "熔岩地块持续灼烧（敌人也会）；熔岩史莱姆死后留下火池，炎蝠碰到会着火，首领是过热核心。", need: "ice",
@@ -207,8 +208,13 @@ const ENDLESS_POOL = [
   ["ghost", "jelly", "wisp", "skull", "snake", "eyeball"],
   ["skull", "snake", "wisp", "jelly", "ghost", "frog", "eyeball"],
 ];
+// every boss in the game; the endless corridor's boss floors cycle through them in a seeded order
+export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_core"];
 export function endlessRoom(i, seed) {
-  if (i % 10 === 9) return { kind: "boss", boss: "boss_eye" };
+  if (i % 10 === 9) {
+    const n = ALL_BOSSES.length, k = Math.floor(i / 10), off = (seed >>> 0) % n;
+    return { kind: "boss", boss: ALL_BOSSES[(off + k) % n], anyBoss: true };
+  }
   if (i % 5 === 4) return { kind: "shop" };
   let x = (seed ^ (i * 2654435761)) >>> 0;
   const rnd = () => ((x = (x * 1664525 + 1013904223) >>> 0) / 4294967296);

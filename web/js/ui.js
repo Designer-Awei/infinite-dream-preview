@@ -119,7 +119,7 @@ export function showHelp() {
         ["event", "紫门。没有敌人，房间里站着一位访客，走近按攻击键交谈（每层的门里最多一扇事件）。"],
         ["challenge", "深红门。普通战斗加一条随机规则，清场成功额外再选一次卡（可出 SR 及以上）。"],
         ["treasure", "金门。只有一小波怪，但必出本图稀有怪物（必掉梦境藏品），地上道具更多。"],
-        ["boss", "暗紫门。第 7 层首领战，击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
+        ["boss", "暗紫门。第 7 层首领战（数据草原随机遇到幻觉之眼或根须之心；无尽回廊每 10 层轮换全部首领），击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip" style="background:${NODE[k].col};color:#1a1020">${NODE[k].name}</span><span>${t}</span></div>`).join("")}
       ${H("觉醒卡")}凑齐配方（第一张满到要求的张数、再有第二张）后，下一次开箱或扭蛋的第一张必是 UR 觉醒卡，原卡保留、觉醒效果叠加；卡面上“可觉醒”提示它通往哪张。${EVOLUTIONS.map((ev) => `<div class="hp-cur"><span class="chip w5" style="background:#ff8ae6;color:#1a1020">${ev.name}</span><span><b>${Object.entries(ev.need).map(([k, n]) => cardName(k) + (n > 1 ? "×" + n : "")).join(" + ")}</b>：${ev.desc}</span></div>`).join("")}
       ${H("挑战规则")}${Object.values(CHALLENGES).map((c) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.challenge.col};color:#1a1020">${c.name}</span><span>${c.desc}。</span></div>`).join("")}

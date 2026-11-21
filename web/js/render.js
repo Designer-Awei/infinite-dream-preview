@@ -650,6 +650,54 @@ export class Renderer {
       g.beginPath();
       g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
       g.fill();
+    } else if (z.kind === "thorncage") {
+      // 根须之心: a ring of thorns closing in (red-tinted while it is still harmless, then green and biting)
+      const n = 18, bite = z.t >= 0.45, fade = clamp(z.life * 3) * clamp(z.t * 5);
+      g.globalAlpha = 0.35 * fade;
+      g.strokeStyle = bite ? "#3a8a2a" : "#ff6060";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.62, 0, 0, TAU);
+      g.stroke();
+      g.globalAlpha = fade;
+      for (let i = 0; i < n; i++) {
+        const a = (i / n) * TAU + z.t * 0.6, x = z.x + Math.cos(a) * z.r, y = z.y + Math.sin(a) * z.r * 0.62, h = bite ? 13 : 7;
+        g.fillStyle = "#14281a";
+        g.beginPath(); g.moveTo(x - 4, y + 2); g.lineTo(x + 4, y + 2); g.lineTo(x, y - h - 1); g.closePath(); g.fill();
+        g.fillStyle = bite ? "#4f9e40" : "#7a5a3a";
+        g.beginPath(); g.moveTo(x - 3, y + 1); g.lineTo(x + 3, y + 1); g.lineTo(x, y - h); g.closePath(); g.fill();
+        g.fillStyle = "#d8ffa0";
+        g.fillRect(Math.round(x), Math.round(y - h), 1, 2);
+      }
+    } else if (z.kind === "vinesweep") {
+      // 根须之心: two thorny vines swing round (same angle formula as enemies.js vineAngle)
+      const a = (z.id % 7) * 0.9 + Math.max(0, z.t - 0.6) * 2.1, wind = z.t < 0.6, fade = clamp(z.life * 3);
+      for (const arm of [a, a + Math.PI]) {
+        const ex = z.x + Math.cos(arm) * z.r, ey = z.y + Math.sin(arm) * z.r * 0.7;
+        if (wind) {
+          g.globalAlpha = 0.25 + 0.25 * Math.sin(this.t * 30);
+          g.strokeStyle = "#ff6060";
+          g.lineWidth = 10;
+          g.beginPath(); g.moveTo(z.x, z.y); g.lineTo(ex, ey); g.stroke();
+          continue;
+        }
+        g.globalAlpha = fade;
+        for (const [w, col] of [[13, "#0e2412"], [9, "#2e7232"], [3, "#7fc85a"]]) {
+          g.strokeStyle = col;
+          g.lineWidth = w;
+          g.beginPath();
+          for (let k = 0; k <= 12; k++) {
+            const u = 0.12 + (k / 12) * 0.88, wob = Math.sin(u * 9 + this.t * 8) * 5 * u, px = z.x + (ex - z.x) * u - Math.sin(arm) * wob, py = z.y + (ey - z.y) * u + Math.cos(arm) * wob;
+            k ? g.lineTo(px, py) : g.moveTo(px, py);
+          }
+          g.stroke();
+        }
+        g.fillStyle = "#d8c08a";
+        for (let k = 2; k <= 11; k += 1.5) {
+          const u = k / 12, px = z.x + (ex - z.x) * u, py = z.y + (ey - z.y) * u, s = k % 3 < 1.5 ? 1 : -1;
+          g.fillRect(Math.round(px - Math.sin(arm) * 7 * s), Math.round(py + Math.cos(arm) * 7 * s), 2, 3);
+        }
+      }
     } else if (z.kind === "poison") {
       // bubbling toxic pool (drawn by hand, Brawl Stars style poison)
       const fade = clamp(z.life * 2) * clamp(z.t * 3);

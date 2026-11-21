@@ -1,7 +1,7 @@
 // Enemy behaviours and the boss.
 import { dist, angTo, TAU, R } from "./util.js";
 const CHARS_SPEED = 110;
-import { moveCircle, flowDir, los, tileAt, BUSH } from "./map.js";
+import { moveCircle, flowDir, los, tileAt, BUSH, WALL } from "./map.js";
 
 function nearestPlayer(g, e) {
   let best = null, bd = 1e9, hidden = true;
@@ -210,6 +210,9 @@ export function updateEnemy(g, e, dt) {
       break;
     case "boss_core":
       bossCore(g, e, p, d, dt);
+      break;
+    case "boss_root":
+      bossRoot(g, e, p, d, dt);
       break;
   }
 }
@@ -445,3 +448,113 @@ function bossCore(g, e, p, d, dt) {
     e.cd = 1;
   }
 }
+
+// ----------------------------------------------------------------- 数据草原 boss: 根须之心
+// rooted in place (never moves or flinches). Root spikes rip along marked lines toward each player; spore pods are
+// lobbed out and sprout into spore nodes; from phase 2 a thorn cage closes in round a player; from phase 3 two
+// thorny vines sweep round it. On every phase change it shuts itself in bark for 2.5 s (takes 20% damage) and calls
+// in vine snakes.
+function bossRoot(g, e, p, d, dt) {
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  e.face = 1;
+  e.guardT = Math.max(0, (e.guardT || 0) - dt);
+  if (e.phase !== phase) {
+    const first = e.phase == null;
+    e.phase = phase;
+    if (!first) {
+      g.text(e.x, e.y - 120, phase === 2 ? "根须护体！" : "千根齐发！", "#a6f05a", 1.6, 1.5);
+      g.vfx("nature/root-snare", e.x, e.y, { opts: { size: 1.4 } });
+      g.sound("boss");
+      e.guardT = 2.5;
+      spawnBossAdds(g, e, phase === 2 ? ["snake_vine", "snake_vine", "mushroom"] : ["snake_vine", "snake_vine", "mushroom", "mushroom"]);
+    }
+  }
+  const k = phase === 3 ? 1.3 : phase === 2 ? 1.12 : 1;
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 14) g.hurt(q, 1, e);
+  if (e.cd > 0 || !g.host) return;
+  const opts = ["roots", "spores", "roots"];
+  if (phase >= 2) opts.push("cage", "roots");
+  if (phase >= 3) opts.push("sweep", "cage");
+  // never the same special twice in a row
+  let pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === e.lastPick && pick !== "roots") pick = "roots";
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null); // tests
+  e.lastPick = pick;
+  if (pick === "roots") {
+    // a crack runs from the heart toward each player (and, later, fans out to the sides); spikes erupt along it
+    const lines = [];
+    for (const q of g.alivePlayers()) {
+      const a = angTo(e.x, e.y, q.x, q.y);
+      lines.push(a);
+      if (phase >= 2) lines.push(a + 0.55, a - 0.55);
+    }
+    for (const a of lines) {
+      const len = 360;
+      g.line(e.x, e.y, e.x + Math.cos(a) * len, e.y + Math.sin(a) * len, "#a6f05a", 16, 0.75, "warn");
+      for (let s = 40, i = 0; s <= len; s += 26, i++) {
+        const x = e.x + Math.cos(a) * s, y = e.y + Math.sin(a) * s;
+        if (tileAt(g.map, x, y) === WALL) break;
+        g.after(0.75 + i * 0.045, () => {
+          if (e.dead) return;
+          g.vfx("nature/earth-spike", x, y + 6, { opts: { size: 0.7 } });
+          for (const q of g.alivePlayers()) if (dist(q.x, q.y, x, y) < 20) g.hurt(q, 1, { src: e, x, y, groundHazard: true });
+        });
+      }
+    }
+    g.sound("explode", 0.2);
+    e.cd = 2.1 / k;
+  } else if (pick === "spores") {
+    // pods arc out and land round the players; each sprouts a spore node (left alone, they pile up)
+    const n = phase === 1 ? 3 : 4;
+    for (let i = 0; i < n; i++) {
+      const q = g.alivePlayers()[i % Math.max(1, g.alivePlayers().length)] || p;
+      const tx = q.x + (Math.random() - 0.5) * 160, ty = q.y + (Math.random() - 0.5) * 110;
+      const b = g.mkBullet(null, { side: "e", x: e.x, y: e.y - 50, h: 0, a: 0, spd: 0, dmg: 1, kind: "orb", r: 6, life: 3, elem: null, big: true,
+        arcTo: { x0: e.x, y0: e.y - 50, x: tx, y: ty, dur: 0.9 + i * 0.12 }, onLand: (bb) => {
+          g.vfx("nature/spore-burst", bb.x, bb.y, {});
+          for (const qq of g.alivePlayers()) if (dist(qq.x, qq.y, bb.x, bb.y) < 26) g.hurt(qq, 1, { src: e, x: bb.x, y: bb.y, groundHazard: true });
+          if (g.enemies.length < 9 && Math.random() < 0.5 && tileAt(g.map, bb.x, bb.y) !== WALL) g.spawnEnemy("mushroom", bb.x, bb.y, false, 0.6); // some pods sprout
+        } });
+      b.src = e;
+      g.bullets.push(b);
+      g.vfx("arcane/rune-circle", tx, ty, { life: 0.9 + i * 0.12, palette: ["#0a1a08", "#2f6a1e", "#6fd23a", "#d8ffa0"] });
+    }
+    g.sound("shoot_water", 0.25);
+    e.cd = 2.4 / k;
+  } else if (pick === "cage") {
+    // thorns ring a player and close in; dodge out through the ring before it shuts
+    const q = g.alivePlayers()[(Math.random() * g.alivePlayers().length) | 0] || p;
+    const dur = 1.8;
+    g.addZone({ kind: "thorncage", x: q.x, y: q.y, r: 92, life: dur + 0.5, side: "e", update: (z) => {
+      z.r = z.t < dur ? 92 - (92 - 18) * Math.min(1, z.t / dur) ** 1.6 : 18;
+      if (z.t < 0.45) return; // the ring appears, then starts to bite
+      z.hitT = (z.hitT || 0) - 1 / 60;
+      for (const qq of g.alivePlayers()) {
+        const dd = dist(qq.x, qq.y, z.x, z.y);
+        if (Math.abs(dd - z.r) < 9 || (z.t >= dur && dd < z.r + 6)) if (g.hurt(qq, 1, { src: e, x: z.x, y: z.y, groundHazard: true })) qq.buff.slow = 1.2;
+      }
+    } });
+    g.text(q.x, q.y - 54, "荆棘囚笼！", "#a6f05a", 1.2, 0.9);
+    g.sound("boss", 0.4);
+    e.cd = 2.6 / k;
+  } else if (pick === "sweep") {
+    // two thorny vines sweep a full turn round the heart; jump them with a dodge or stay out of reach
+    g.addZone({ kind: "vinesweep", x: e.x, y: e.y - 20, r: 170, life: 3.6, side: "e", update: (z) => {
+      if (z.t < 0.6) return; // wind-up: the vines rise
+      const a = vineAngle(z);
+      for (const qq of g.alivePlayers()) {
+        const dd = dist(qq.x, qq.y, z.x, z.y);
+        if (dd > z.r || dd < 20) continue;
+        const qa = angTo(z.x, z.y, qq.x, qq.y);
+        for (const arm of [a, a + Math.PI]) {
+          const diff = Math.abs(((qa - arm + Math.PI * 3) % TAU) - Math.PI);
+          if (diff * dd < 12) g.hurt(qq, 1, { src: e, x: z.x, y: z.y });
+        }
+      }
+    } });
+    g.text(e.x, e.y - 120, "藤鞭横扫！", "#a6f05a", 1.3, 1);
+    e.cd = 4.2 / k;
+  }
+}
+/** where the 藤鞭横扫 vines point at zone time z.t (same on host and clients) */
+export const vineAngle = (z) => (z.id % 7) * 0.9 + Math.max(0, z.t - 0.6) * 2.1;

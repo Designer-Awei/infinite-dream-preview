@@ -199,15 +199,15 @@ export class Game {
   roomDef(i) {
     if (this.route) return this.mapRoom(nodeRoom(this.route.cols[i][this.route.at], i, this.seed));
     if (this.endless) {
-      const d = endlessRoom(i, this.seed), md = this.roomMap(i);
-      return d && d.kind === "boss" && md.boss ? { ...d, boss: md.boss } : d;
+      return endlessRoom(i, this.seed); // its boss floors cycle through every boss
     }
     return this.mapRoom(RUN[i]);
   }
   /** the map (chapter) swaps some enemies for its own residents */
   mapRoom(def) {
     const md = this.mapDef;
-    if (def && def.kind === "boss" && md.boss) return { ...def, boss: md.boss };
+    // a map with several bosses picks one per run from the seed
+    if (def && def.kind === "boss" && md.boss) return { ...def, boss: md.bosses ? md.bosses[Math.floor(rng(this.seed + 9157)() * md.bosses.length)] : md.boss };
     if (!def || !def.waves || !md.swap) return def;
     const rr = rng(this.seed + 4242 + (def.waves.length || 0));
     const sw = md.swap, el = md.elites || [];
@@ -496,6 +496,7 @@ export class Game {
       this.after(0, () => { for (const o of this.enemiesNear(e.x, e.y, 34)) if (o !== e) this.hit(o, half, { p, noCrit: true, noReact: true, evoBoom: true }); });
     }
     if (e.vulnT > 0) dmg *= 1.25;
+    if (e.guardT > 0) dmg *= 0.2; // 根须之心 shut in bark
     if (e.freezeT > 0) dmg *= 1.15;
     dmg = Math.max(0.5, dmg);
     e.hp -= dmg;

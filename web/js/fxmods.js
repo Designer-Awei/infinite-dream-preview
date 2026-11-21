@@ -49,6 +49,10 @@ import * as m46 from "../pixelfx/fx/scifi/force-field.js";
 import * as m47 from "../pixelfx/fx/explosions/cartoon-pow.js";
 import * as m48 from "../pixelfx/fx/explosions/dirt-explosion.js";
 import * as m49 from "../pixelfx/fx/fire/fire-tornado.js";
+import * as m50 from "../pixelfx/fx/nature/earth-spike.js";
+import * as m51 from "../pixelfx/fx/nature/root-snare.js";
+import * as m52 from "../pixelfx/fx/nature/spore-burst.js";
+import * as m53 from "../pixelfx/fx/fire/fire-ring.js";
 export const FX_MODS = {
   "fire/fire-tornado": m49,
   "water/splash": m0,
@@ -100,4 +104,8 @@ export const FX_MODS = {
   "scifi/force-field": m46,
   "explosions/cartoon-pow": m47,
   "explosions/dirt-explosion": m48,
+  "nature/earth-spike": m50,
+  "nature/root-snare": m51,
+  "nature/spore-burst": m52,
+  "fire/fire-ring": m53,
 };

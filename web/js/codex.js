@@ -29,7 +29,7 @@ export function curioIcon(id) { return `assets/curios/${id}.png`; }
 
 /** codex pages: which monsters live where (an entry may only appear once) */
 export const CODEX = [
-  { id: "grass", name: "数据草原", list: ["slime", "bat", "eyeball", "frog", "snake", "snake_vine", "mushroom", "beetle", "frog_big", "boss_eye", "slime_gold"] },
+  { id: "grass", name: "数据草原", list: ["slime", "bat", "eyeball", "frog", "snake", "snake_vine", "mushroom", "beetle", "frog_big", "boss_eye", "boss_root", "slime_gold"] },
   { id: "ice", name: "显存冰原", list: ["slime_blue", "bat_ice", "eye_ice", "snake_ice", "jelly_ice", "hedgehog", "frostling", "slime_frost", "boss_frost", "jelly_aurora"] },
   { id: "lava", name: "算力熔炉", list: ["slime_lava", "bat_fire", "snake_lava", "salamander", "imp", "skull_core", "boss_core", "skull_obsidian"] },
   { id: "any", name: "各地通用", list: ["slime_purple", "ghost", "jelly", "skull", "wisp"] },
@@ -42,7 +42,7 @@ const DESC = {
   bat: "飞得快、轨迹乱，成群出现。", eyeball: "远远地瞄准你射出光弹。", frog: "蓄力后跳向你，落地有冲击。",
   ghost: "能穿墙，一次射出三发减速弹。", skull: "停下来施法，放出一圈火弹。", jelly: "周期性放电，靠近会被电到。",
   wisp: "冲过来自爆，打倒它也会爆炸。", snake: "蛇形游走，速度很快。", snake_vine: "碰到会被藤蔓缠住减速。",
-  frog_big: "草原的精英，跳跃冲击范围更大。", boss_eye: "数据草原的首领：弹幕、冲撞、召唤眼球。",
+  frog_big: "草原的精英，跳跃冲击范围更大。", boss_eye: "数据草原的首领：弹幕、冲撞、召唤眼球。", boss_root: "数据草原的另一位首领，扎根不动：根刺沿裂缝突袭、孢子荚落地发芽、荆棘囚笼收拢、双藤横扫；换阶段时缩进树皮减伤。",
   bat_ice: "碰到会被冻得减速。", eye_ice: "射出会减速的冰晶弹。", slime_frost: "冰原的精英，被打倒会分裂成两只小史莱姆。",
   boss_frost: "显存冰原的首领：冰刺、分裂、冰面滑行。", slime_lava: "死后留下火池，持续灼烧。", bat_fire: "碰到会着火。",
   skull_core: "熔炉的精英，火弹圈更密。", boss_core: "算力熔炉的首领：过热光束与火海。", snake_lava: "红褐色的熔岩蛇，碰到会着火。",
