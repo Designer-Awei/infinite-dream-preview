@@ -358,13 +358,13 @@ export const CURSE_MAX = 5;
 // guaranteed as the first card of the next offer. The ingredients stay; the evolution adds on top (one each per run).
 export const EVOLUTIONS = [
   { id: "ev_storm", r: "UR", tag: "觉醒", name: "全连接风暴", need: { multishot: 2, pierce: 1 }, icon: "multishot", desc: "普攻再 +2 弹道，穿透 +2", max: 1 },
-  { id: "ev_grad", r: "UR", tag: "觉醒", name: "梯度爆炸", need: { crit: 2, atk_up: 2 }, icon: "crit", desc: "暴击伤害 +100%；暴击时 30% 概率在目标处爆炸（该击 50% 范围伤害）", max: 1 },
+  { id: "ev_grad", r: "UR", tag: "觉醒", name: "梯度爆炸", need: { crit: 2, atk_up: 2 }, icon: "crit", desc: "暴伤 +100%；暴击 30% 概率引爆目标（50% 范围伤害）", max: 1 },
   { id: "ev_chain", r: "UR", tag: "觉醒", name: "链式推理", need: { bounce: 2, range_up: 1 }, icon: "bounce", desc: "普攻弹射 +3 次，锁敌范围 +25%", max: 1 },
   { id: "ev_perpetual", r: "UR", tag: "觉醒", name: "永动机", need: { cd_down: 2, ult_charge: 1 }, icon: "cd_down", desc: "小技能冷却 -30%；每次释放小技能额外充能大招 10%", max: 1 },
   { id: "ev_undying", r: "UR", tag: "觉醒", name: "不死模型", need: { vamp: 2, hp_up: 1 }, icon: "vamp", desc: "生命上限 +4 并回满；击杀回血概率 +16%", max: 1 },
-  { id: "ev_phantom", r: "UR", tag: "觉醒", name: "残影闪击", need: { dodge_crit: 1, speed_up: 2 }, icon: "dodge_crit", desc: "闪避冷却 -30%；闪避起点留下残影，0.4 秒后爆炸（普攻 ×4 范围伤害）", max: 1 },
-  { id: "ev_berserk", r: "UR", tag: "觉醒", name: "狂暴协议", need: { low_rage: 1, shield_up: 2 }, icon: "low_rage", desc: "护盾破碎时狂暴 4 秒：伤害 +80%、攻速 +40%、移速 +25%（10 秒冷却）", max: 1 },
-  { id: "ev_midas", r: "UR", tag: "觉醒", name: "算力印钞机", need: { coin_up: 2, big_bullet: 1 }, icon: "coin_up", desc: "金币获取 +50%；每持有 100 金币伤害 +6%（最多 +60%）", max: 1 },
+  { id: "ev_phantom", r: "UR", tag: "觉醒", name: "残影闪击", need: { dodge_crit: 1, speed_up: 2 }, icon: "dodge_crit", desc: "闪避冷却 -30%；起点留残影，0.4 秒后爆炸（普攻×4）", max: 1 },
+  { id: "ev_berserk", r: "UR", tag: "觉醒", name: "狂暴协议", need: { low_rage: 1, shield_up: 2 }, icon: "low_rage", desc: "破盾狂暴 4 秒：伤害+80% 攻速+40% 移速+25%，冷却 10 秒", max: 1 },
+  { id: "ev_midas", r: "UR", tag: "觉醒", name: "算力印钞机", need: { coin_up: 2, big_bullet: 1 }, icon: "coin_up", desc: "金币 +50%；每持有 100 金币伤害 +6%（最多 +60%）", max: 1 },
 ];
 export const evoReady = (cards, ev) => !cards[ev.id] && Object.entries(ev.need).every(([k, n]) => (cards[k] || 0) >= n);
 // fusion cards are generated per character (the "技能混搭" core): every 3rd attack also fires that girl's bullet,

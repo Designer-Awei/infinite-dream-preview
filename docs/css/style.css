@@ -2776,3 +2776,16 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* 设置: a vector gear (the font has no ⚙, and the system fallback looked like a sun) */
 .set-btn svg { display: block; width: 22px; height: 22px; color: var(--ink); }
 .topbar .tb-ico > span { font-size: 20px !important; filter: drop-shadow(1.5px 0 0 var(--ink)) drop-shadow(-1.5px 0 0 var(--ink)) drop-shadow(0 1.5px 0 var(--ink)) drop-shadow(0 -1.5px 0 var(--ink)); }
+/* 暂停 · 构筑: icon tiles instead of name tags (a long 无尽 build used to overflow the panel) */
+.pause-p .pz-build { display: block; width: min(640px, 84vw); max-width: none; margin-top: 2px; font-size: 11px; }
+.pz-build .pb-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+.pz-build .pb-head b { font-weight: normal; font-size: 13px; color: #fff; }
+.pz-build .pb-head span { color: #c8b8e8; }
+.pz-build .pb-grid { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-start; }
+.pz-build .pb-t { position: relative; width: 30px; height: 30px; padding: 0; border: 2px solid var(--rc); border-radius: 7px; background: rgba(10,6,24,.6); box-shadow: 0 0 0 2px var(--ink); cursor: pointer; }
+.pz-build .pb-t img { width: 22px; height: 22px; image-rendering: pixelated; display: block; margin: 2px auto 0; }
+.pz-build .pb-t b { position: absolute; right: -4px; bottom: -5px; min-width: 13px; padding: 0 2px; border-radius: 5px; background: var(--ink); color: #fff; font-size: 10px; font-weight: normal; line-height: 13px; }
+.pz-build .pb-t.on { background: rgba(255,255,255,.18); transform: translateY(-1px); }
+.pz-build .pb-info { margin-top: 6px; min-height: 16px; text-align: left; color: #e8dcff; line-height: 1.35; }
+.pz-build .pb-info b { font-weight: normal; }
+.pz-build .pb-head span { border: 0; background: none; padding: 0; }
