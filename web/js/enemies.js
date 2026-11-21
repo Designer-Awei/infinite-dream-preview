@@ -2,6 +2,7 @@
 import { dist, angTo, TAU, R } from "./util.js";
 const CHARS_SPEED = 110;
 import { moveCircle, flowDir, los, tileAt, BUSH, WALL } from "./map.js";
+import { T } from "./data.js";
 
 function nearestPlayer(g, e) {
   let best = null, bd = 1e9, hidden = true;
@@ -222,6 +223,27 @@ export function updateEnemy(g, e, dt) {
       break;
     case "boss_worm":
       bossWorm(g, e, p, d, dt);
+      break;
+    case "boss_judge":
+      bossJudge(g, e, p, d, dt);
+      break;
+    case "storm_core":
+      // 雷霆审判者's storm core: hangs still, arcs to its judge (the arc hurts), fires a slow volt shot now and then
+      e.face = 1;
+      if (g.host) {
+        const judge = g.enemies.find((q) => q.id === e.coreId && !q.dead);
+        if (!judge) e.hp = 0, e.dead = true, e.silent = true;
+        else {
+          e.shotT = (e.shotT ?? 2 + Math.random()) - dt;
+          if (e.shotT <= 0) (e.shotT = 3.2), shoot(g, e, angTo(e.x, e.y - 20, p.x, p.y), { spd: 110, h: 20, r: 5, kind: "volt" });
+          if ((e.beamT = (e.beamT || 0) - dt) <= 0) {
+            e.beamT = 0.3;
+            const x0 = e.x, y0 = e.y - 22, x1 = judge.x, y1 = judge.y - 50;
+            g.line(x0, y0, x1, y1, "#8ad8ff", 3, 0.32, "zap");
+            for (const q of g.alivePlayers()) if (segDist(q.x, q.y - 12, x0, y0, x1, y1) < 12) if (g.hurt(q, 1, { src: e, x: q.x, y: q.y })) q.buff.slow = 1;
+          }
+        }
+      }
       break;
     case "pylon":
       // 过热核心's coolant pylon: stands still, beams cold light to its core, pulses a slowing shot now and then
@@ -868,3 +890,179 @@ function erupt(g, e, phase) {
 
 /** 幻觉之眼's 凝视光束 angle at zone time z.t (z.a0 / z.dir travel with the zone; clients read the same) */
 export const gazeAngle = (z) => (z.a0 ?? 0) + (z.dir ?? 1) * Math.min(1.8, Math.max(0, z.t - 0.7) * 0.95);
+
+// ----------------------------------------------------------------- 无尽回廊 boss: 雷霆审判者
+// floats round the hall. 网格落雷: the floor splits into a 6×4 grid, marked cells are struck 1.3 s later (stand in a
+// safe cell); 连锁闪电: strikes walk from a player's spot in a chain; 雷光突进: a marked line, then it blinks along it
+// in a bolt; 雷弹: a fan of volt shots. On reaching phase 2 and 3 it raises storm cores: while any stands it takes 20%
+// damage, arcs run from every core to it (crossing one hurts) and 终审 charges; break them all in 12 s or the whole
+// hall is struck for 2. Breaking the last core stuns it for 3 s (takes +50%).
+const segDist = (px, py, x0, y0, x1, y1) => {
+  const dx = x1 - x0, dy = y1 - y0, L = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / L));
+  return Math.hypot(px - x0 - dx * u, py - y0 - dy * u);
+};
+/** the 6×4 cells of a 网格落雷 (same on host and clients): mode 0 random (≥3 safe), 1 checker, 2 stripes; +10 inverts */
+export function verdictCells(map, seed, mode) {
+  const cols = 6, rows = 4, cw = ((map.W - 2) * T) / cols, ch = ((map.H - 2) * T) / rows, out = [], m = mode % 10;
+  let s = (seed >>> 0) || 1;
+  const rnd = () => (s = (Math.imul(s, 1103515245) + 12345) >>> 0) / 4294967296;
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) {
+    const hit = m === 1 ? (i + j + seed) % 2 === 0 : m === 2 ? (i + seed) % 2 === 0 : rnd() > 0.3;
+    out.push({ x: T + i * cw, y: T + j * ch, w: cw, h: ch, hit });
+  }
+  if (m === 0) for (let k = 0; out.filter((c) => !c.hit).length < 3 && k < 40; k++) out[(seed * 7 + k * 5) % out.length].hit = false;
+  if (mode >= 10) for (const c of out) c.hit = !c.hit;
+  return out;
+}
+function bossJudge(g, e, p, d, dt) {
+  const c = g.map.center, cores = g.enemies.filter((q) => q.type === "judge_core" && !q.dead && q.coreId === e.id).length;
+  e.guardT = cores ? 1 : 0;
+  if (e.hadCores && !cores && !e.verdictFired) {
+    e.overheat = 3;
+    g.text(e.x, e.y - 120, "审判中断！", "#ffe060", 1.6, 1.4);
+    g.vfx("lightning/thunderclap", e.x, e.y - 40, {});
+  }
+  e.hadCores = cores > 0;
+  if (cores) {
+    e.charge = (e.charge || 0) + dt;
+    const pct = Math.floor((e.charge / 12) * 4);
+    if (pct !== e.chargeShown && pct > 0 && pct < 4) (e.chargeShown = pct), g.text(e.x, e.y - 130, `终审充能 ${pct * 25}%`, "#8ad8ff", 1.2, 1);
+    if (e.charge >= 12 && g.host) {
+      // 雷霆终审: the whole hall is struck; the cores burn out
+      e.verdictFired = true;
+      g.text(c.x, c.y - 120, "雷霆终审！", "#ffe060", 2, 1.6);
+      g.vfx("lightning/thunderclap", e.x, e.y - 40, {});
+      for (const q of g.alivePlayers()) {
+        g.line(q.x, q.y - 300, q.x, q.y, "#d8f4ff", 4, 0.4, "bolt", null, 0.08);
+        g.vfx("lightning/zap-hit", q.x, q.y - 10, {});
+        g.hurt(q, 2, { src: e, x: q.x, y: q.y, groundHazard: true });
+      }
+      for (const q of g.enemies) if (q.type === "judge_core" && q.coreId === e.id) (q.hp = 0), (q.dead = true), (q.silent = true);
+      g.sound("explode", 0.6);
+      e.charge = 0;
+    }
+  } else (e.charge = 0), (e.chargeShown = 0), (e.verdictFired = false);
+  if (e.overheat > 0) {
+    e.overheat -= dt;
+    e.vulnT = Math.max(e.vulnT || 0, 0.2);
+    e.flash = Math.max(e.flash || 0, Math.sin(e.t * 30) > 0 ? 0.05 : 0);
+    return;
+  }
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  if (e.phase !== phase) {
+    const first = e.phase == null;
+    e.phase = phase;
+    if (!first) {
+      g.text(e.x, e.y - 120, phase === 2 ? "法庭肃静！" : "终审判决！", "#ffe060", 1.6, 1.5);
+      g.vfx("lightning/thunderclap", e.x, e.y - 40, {});
+      g.sound("boss");
+      e.forcePick = "cores";
+      e.cd = 0.3;
+    }
+  }
+  const k = phase === 3 ? 1.3 : phase === 2 ? 1.12 : 1, H = 50;
+  // drift round the hall on a slow figure-eight
+  if (e.st !== "blink") {
+    const tx = c.x + Math.sin(e.t * 0.4) * 170, ty = c.y - 20 + Math.sin(e.t * 0.8) * 60, a0 = angTo(e.x, e.y, tx, ty);
+    if (dist(e.x, e.y, tx, ty) > 6) moveCircle(g.map, e, Math.cos(a0) * d.spd * dt, Math.sin(a0) * d.spd * dt, true);
+  }
+  e.face = p.x < e.x ? -1 : 1;
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 10) if (g.hurt(q, 1, e)) q.buff.slow = 1;
+  if (e.cd > 0 || !g.host) return;
+  const opts = ["verdict", "volley", "chain", "verdict", "blink"];
+  if (phase >= 2) opts.push("chain", "blink");
+  if (phase >= 3) opts.push("verdict2", "verdict2");
+  let pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === e.lastPick && pick !== "volley") pick = "volley";
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null);
+  e.lastPick = pick;
+  const verdict = (seed, mode) => {
+    g.addZone({ kind: "verdict", x: c.x, y: c.y, r: 0, life: 1.75, side: "e", a0: seed, dir: mode, update: (z) => {
+      if (z.struck || z.t < 1.3) return;
+      z.struck = true;
+      const cells = verdictCells(g.map, seed, mode);
+      let n = 0;
+      for (const cl of cells) if (cl.hit) {
+        const x = cl.x + cl.w / 2, y = cl.y + cl.h / 2;
+        g.line(x + (Math.random() - 0.5) * 30, y - 320, x, y, "#c8f0ff", 3, 0.3, "bolt", null, 0.06);
+        if (n++ % 3 === 0) g.vfx("lightning/zap-hit", x, y, {});
+        for (const q of g.alivePlayers()) if (q.x > cl.x && q.x < cl.x + cl.w && q.y > cl.y && q.y < cl.y + cl.h) if (g.hurt(q, 1, { src: e, x, y, groundHazard: true })) q.buff.slow = 1.2;
+      }
+      g.sound("explode", 0.45);
+    } });
+  };
+  if (pick === "cores") {
+    const n = phase >= 3 ? 4 : 3;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + 0.6, x = c.x + Math.cos(a) * 190, y = c.y + Math.sin(a) * 105;
+      const q = g.spawnEnemy("judge_core", x, y, false, 0.5);
+      q.coreId = e.id;
+    }
+    e.charge = 0;
+    g.text(e.x, e.y - 100, "雷暴核心！12 秒内打掉它们！", "#8ad8ff", 1.4, 1.8);
+    g.sound("boss", 0.5);
+    e.cd = 1.4;
+  } else if (pick === "verdict" || pick === "verdict2") {
+    const seed = 1 + ((Math.random() * 9000) | 0), mode = phase === 1 ? 0 : [0, 1, 2][(Math.random() * 3) | 0];
+    verdict(seed, mode);
+    if (pick === "verdict2") g.after(1.45, () => !e.dead && verdict(seed, mode + 10)); // then the other half
+    g.text(e.x, e.y - 120, pick === "verdict2" ? "反转判决！" : "落雷审判！", "#ffe060", 1.2, 1);
+    g.vfx("lightning/charge-up", e.x, e.y - 40, {});
+    g.sound("portal", 0.4);
+    e.cd = (pick === "verdict2" ? 3.4 : 2.3) / k;
+  } else if (pick === "volley") {
+    const n = phase === 1 ? 5 : 7, base = angTo(e.x, e.y - H, p.x, p.y - 12);
+    for (let w = 0; w < (phase >= 3 ? 2 : 1); w++)
+      g.after(w * 0.35, () => {
+        if (e.dead) return;
+        for (let i = 0; i < n; i++) shoot(g, e, base + (i - (n - 1) / 2) * 0.17 + w * 0.085, { spd: 175 * k, h: H, r: 5, kind: "volt" });
+      });
+    g.sound("shoot_water", 0.3);
+    e.cd = 1.5 / k;
+  } else if (pick === "chain") {
+    // strikes walk from a player's spot: each lands 0.28 s after the last, a short hop on
+    for (const q of g.alivePlayers()) {
+      let x = q.x, y = q.y, a = Math.random() * TAU;
+      const hops = phase === 1 ? 4 : 6;
+      for (let i = 0; i < hops; i++) {
+        const sx = x, sy = y;
+        g.vfx("arcane/rune-circle", sx, sy, { life: 0.7 + i * 0.28, palette: ["#0a1030", "#3a64ff", "#8ad8ff", "#ffffff"] });
+        g.after(0.7 + i * 0.28, () => {
+          g.line(sx, sy - 300, sx, sy, "#d8f4ff", 3, 0.28, "bolt", null, 0.05);
+          for (const o of g.alivePlayers()) if (dist(o.x, o.y, sx, sy) < 26) if (g.hurt(o, 1, { src: e, x: sx, y: sy, groundHazard: true })) o.buff.slow = 1;
+          g.sound("shoot_water", 0.15);
+        });
+        a += (Math.random() - 0.5) * 1.6;
+        x = Math.max(T * 2, Math.min((g.map.W - 2) * T, x + Math.cos(a) * 48));
+        y = Math.max(T * 2, Math.min((g.map.H - 2) * T, y + Math.sin(a) * 40));
+      }
+    }
+    e.cd = 2.2 / k;
+  } else if (pick === "blink") {
+    // a marked line through a player; it blinks to the far end in a bolt, hurting anyone on the line
+    const times = phase >= 3 ? 2 : 1;
+    for (let w = 0; w < times; w++)
+      g.after(w * 1.1, () => {
+        if (e.dead) return;
+        const q = g.alivePlayers()[(Math.random() * g.alivePlayers().length) | 0] || p, a = angTo(e.x, e.y, q.x, q.y);
+        let ex = Math.max(T * 3, Math.min((g.map.W - 3) * T, q.x + Math.cos(a) * 90)), ey = Math.max(T * 3, Math.min((g.map.H - 3) * T, q.y + Math.sin(a) * 90));
+        // never end inside a pillar: pull back along the line until the spot is clear
+        for (let i = 0; i < 12 && tileAt(g.map, ex, ey) === WALL; i++) (ex += (e.x - ex) * 0.15), (ey += (e.y - ey) * 0.15);
+        const x0 = e.x, y0 = e.y;
+        g.line(x0, y0, ex, ey, "#ffe060", 10, 0.65, "warn");
+        e.st = "blink";
+        g.after(0.65, () => {
+          if (e.dead) return;
+          g.vfx("arcane/blink-out", e.x, e.y - 40, { palette: ["#0a1030", "#3a64ff", "#8ad8ff", "#ffffff"] });
+          e.x = ex;
+          e.y = ey;
+          g.line(x0, y0 - 30, ex, ey - 30, "#c8f0ff", 4, 0.35, "bolt", null, 0.08);
+          g.vfx("arcane/blink-in", ex, ey - 40, { palette: ["#0a1030", "#3a64ff", "#8ad8ff", "#ffffff"] });
+          for (const o of g.alivePlayers()) if (segDist(o.x, o.y, x0, y0, ex, ey) < 22) if (g.hurt(o, 1, { src: e, x: o.x, y: o.y })) o.buff.slow = 1;
+          g.sound("explode", 0.3);
+          e.st = "idle";
+        });
+      });
+    e.cd = (times === 2 ? 3 : 1.9) / k;
+  }
+}

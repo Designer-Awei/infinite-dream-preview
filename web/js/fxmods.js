@@ -58,6 +58,7 @@ import * as m55 from "../pixelfx/fx/ice/icicle-fall.js";
 import * as m56 from "../pixelfx/fx/arcane/blink-in.js";
 import * as m57 from "../pixelfx/fx/arcane/blink-out.js";
 import * as m58 from "../pixelfx/fx/explosions/big-explosion.js";
+import * as m59 from "../pixelfx/fx/lightning/charge-up.js";
 export const FX_MODS = {
   "fire/fire-tornado": m49,
   "water/splash": m0,
@@ -117,5 +118,6 @@ export const FX_MODS = {
   "ice/icicle-fall": m55,
   "arcane/blink-in": m56,
   "arcane/blink-out": m57,
+  "lightning/charge-up": m59,
   "explosions/big-explosion": m58,
 };

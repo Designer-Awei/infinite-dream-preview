@@ -10,6 +10,7 @@ import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, mounte
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
+import { verdictCells } from "./enemies.js";
 
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -527,6 +528,33 @@ export class Renderer {
   drawEnemy(g, e, game) {
     const d = e.def, s = A.critters[d.sprite];
     if (!s) return;
+    if (d.ai === "storm_core") {
+      // 雷霆审判者's storm core, drawn by hand: a dark crystal held in a spinning gold cage, lightning in its heart
+      g.save();
+      const x = Math.round(e.x), y = Math.round(e.y), bob = Math.round(Math.sin(this.t * 3 + e.id) * 2), cy = y - 26 + bob, pul = 0.5 + 0.5 * Math.sin(this.t * 7 + e.id);
+      g.fillStyle = "rgba(10,14,40,0.45)";
+      g.beginPath(); g.ellipse(x, y, 13, 4.5, 0, 0, TAU); g.fill();
+      const dia = (r, col) => { g.fillStyle = col; g.beginPath(); g.moveTo(x, cy - r * 1.5); g.lineTo(x + r, cy); g.lineTo(x, cy + r * 1.5); g.lineTo(x - r, cy); g.closePath(); g.fill(); };
+      dia(10, "#0a0c18"); dia(9, e.flash > 0 ? "#ffffff" : "#2a3a8a"); dia(5, e.flash > 0 ? "#ffffff" : "#5a8aff");
+      g.fillStyle = "#d8f4ff"; g.fillRect(x - 3, cy - 8, 2, 6);
+      // the cage: two gold bands seen edge-on, turning
+      for (let i = 0; i < 2; i++) {
+        const a = this.t * 2 + i * Math.PI / 2, rx = Math.abs(Math.cos(a)) * 13 + 2;
+        g.strokeStyle = "#0a0c18"; g.lineWidth = 3;
+        g.beginPath(); g.ellipse(x, cy, rx, 15, 0, 0, TAU); g.stroke();
+        g.strokeStyle = i ? "#e8be3c" : "#b07c1c"; g.lineWidth = 1.5;
+        g.beginPath(); g.ellipse(x, cy, rx, 15, 0, 0, TAU); g.stroke();
+      }
+      g.globalCompositeOperation = "lighter";
+      g.fillStyle = `rgba(120,204,255,${0.2 + 0.25 * pul})`;
+      g.beginPath(); g.arc(x, cy, 14 + pul * 4, 0, TAU); g.fill();
+      g.strokeStyle = "#c8f0ff"; g.lineWidth = 1;
+      g.beginPath(); g.moveTo(x, cy);
+      for (let i = 1; i <= 3; i++) { const a = this.t * 9 + e.id + i; g.lineTo(x + Math.cos(a) * i * 4, cy + Math.sin(a * 1.3) * i * 4); }
+      g.stroke();
+      g.restore();
+      return;
+    }
     if (d.ai === "pylon") {
       // 过热核心's coolant pylon, drawn by hand: a riveted metal tower with a pulsing ice crystal on top
       g.save();
@@ -763,6 +791,42 @@ export class Renderer {
           g.beginPath(); g.moveTo(z.x, z.y); g.lineTo(ex, ey); g.stroke();
         }
         g.globalCompositeOperation = "source-over";
+      }
+    } else if (z.kind === "verdict") {
+      // 雷霆审判者's 网格落雷: struck cells glow yellow and pulse faster as the strike nears, safe cells stay dark with a
+      // calm blue frame; at the strike the struck cells flash white
+      const cells = (z._cells && z._seed === z.a0 && z._mode === z.dir) ? z._cells : ((z._seed = z.a0), (z._mode = z.dir), (z._cells = verdictCells(game.map, z.a0, z.dir)));
+      const pre = z.t < 1.3, k = clamp(z.t / 1.3), fade = clamp(z.life * 4);
+      for (const c of cells) {
+        const x = Math.round(c.x) + 2, y = Math.round(c.y) + 2, w = Math.round(c.w) - 4, h = Math.round(c.h) - 4;
+        if (!c.hit) {
+          if (!pre) continue;
+          g.globalAlpha = 0.5 * fade;
+          g.strokeStyle = "#5ab8ff";
+          g.lineWidth = 2;
+          g.strokeRect(x + 4, y + 4, w - 8, h - 8);
+          continue;
+        }
+        if (pre) {
+          const pul = 0.5 + 0.5 * Math.sin(this.t * (8 + k * 22));
+          g.globalAlpha = (0.12 + 0.22 * k) * (0.6 + 0.4 * pul);
+          g.fillStyle = "#ffd84a";
+          g.fillRect(x, y, w, h);
+          g.globalAlpha = 0.5 + 0.4 * pul;
+          g.strokeStyle = "#ffe880";
+          g.lineWidth = 2;
+          g.strokeRect(x, y, w, h);
+          // a shrinking inner frame shows how long is left
+          const s = (1 - k) * Math.min(w, h) * 0.45;
+          g.globalAlpha = 0.6;
+          g.strokeRect(x + s, y + s * (h / w), w - 2 * s, h - 2 * s * (h / w));
+        } else {
+          g.globalAlpha = clamp((z.t - 1.3) * -3 + 1) * fade;
+          g.globalCompositeOperation = "lighter";
+          g.fillStyle = "#c8f0ff";
+          g.fillRect(x, y, w, h);
+          g.globalCompositeOperation = "source-over";
+        }
       }
     } else if (z.kind === "frostring") {
       // 霜镜女巫: a spreading ring of frost (bright rim, frosted band inside it, ice glints)
@@ -1020,7 +1084,7 @@ export class Renderer {
       const x = b.x - 0, y = b.y - (b.z || 0);
       if (b.side === "e") {
         const r = b.r + (b.big ? 1 : 0);
-        const col = b.kind === "fire" ? 0xff8a2a : b.kind === "ghost" ? 0x9ab8ff : 0xff3a6a;
+        const col = b.kind === "fire" ? 0xff8a2a : b.kind === "ghost" ? 0x9ab8ff : b.kind === "volt" ? 0x78d0ff : 0xff3a6a;
         const hex = "#" + col.toString(16).padStart(6, "0");
         P.circle(x, y, r + 1, H("#2a0a14"), 1);
         P.circle(x, y, r, H(hex), 1);

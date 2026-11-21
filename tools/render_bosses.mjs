@@ -13,6 +13,7 @@ const LIST = {
   frost_witch: ["frost-witch", {}],
   frost_witch_clone: ["frost-witch", { noShadow: true }],
   lava_worm: ["lava-worm", {}],
+  thunder_judge: ["thunder-judge", {}],
 };
 const want = process.argv.slice(3).length ? process.argv.slice(3) : Object.keys(LIST);
 const manifest = JSON.parse(readFileSync(OUT + "critters.json", "utf8"));
