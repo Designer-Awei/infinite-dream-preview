@@ -39,4 +39,4 @@ for (const name of want) {
   manifest.npcs[name] = { file: `${name}.png`, cell: W, k: 1, n, ox, oy, ...extra };
   console.log(name, W, H, n);
 }
-writeFileSync(OUT + "npc.json", JSON.stringify(manifest));
+writeFileSync(OUT + "npc.json", JSON.stringify(manifest, null, 1) + "\n");
