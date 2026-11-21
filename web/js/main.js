@@ -281,6 +281,7 @@ export const app = {
     // 双首领 counts as two bosses and lifts the cap by one; a declined 梦境裂隙 sometimes leaves one more
     const eggs = grantEggs(Math.min(3 + (rs.twinBosses || 0), rs.xpBosses || 0) + (rs.riftEggs || 0));
     if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);
+    if (rs.perfect) extras.push(["完美闪避", `${rs.perfect} 次`]);
     if (rs.twinBosses) extras.push(["双首领", `${rs.twinBosses} 次 · 首领奖励翻倍`]);
     if (plv) {
       // a clear (a won chapter, or ten endless floors) records the level per map and pays new milestones once

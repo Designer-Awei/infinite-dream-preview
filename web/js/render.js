@@ -233,6 +233,22 @@ export class Renderer {
       this.vig = v;
     }
     // (vignette is a CSS overlay: cheaper than a full-screen blend every frame)
+    if (game.witchT > 0) {
+      // 子弹时间 (完美闪避): the world goes violet and slow, a pulsing frame and a ripple from the start
+      const k = Math.min(1, game.witchT * 3, (1.6 - game.witchT) * 8);
+      g.fillStyle = `rgba(70,30,140,${0.22 * k})`;
+      g.fillRect(0, 0, VIEW_W, VIEW_H);
+      g.strokeStyle = `rgba(200,170,255,${(0.35 + 0.15 * Math.sin(this.t * 10)) * k})`;
+      g.lineWidth = 6;
+      g.strokeRect(3, 3, VIEW_W - 6, VIEW_H - 6);
+      if (game.witchT > 1.2 && me) {
+        const u = (1.6 - game.witchT) / 0.4, sx = me.x - cx, sy = me.y - 20 - cy;
+        g.strokeStyle = `rgba(230,210,255,${1 - u})`;
+        g.lineWidth = 3;
+        g.beginPath(); g.arc(sx, sy, 20 + u * 260, 0, TAU); g.stroke();
+      }
+      this.text(g, "子弹时间", VIEW_W / 2, 80, "#d8c8ff", 13);
+    }
     if (me && me.hurtT > 0) {
       g.fillStyle = `rgba(255,40,60,${me.hurtT * 0.6})`;
       g.fillRect(0, 0, VIEW_W, VIEW_H);

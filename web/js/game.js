@@ -483,6 +483,7 @@ export class Game {
     if (p.buff.star > 0) m *= 1.3;
     if (p.cards.low_rage && p.hp <= 2) m *= 1.6;
     if (p.buff.berserk > 0) m *= 1.8; // 觉醒·狂暴协议
+    if (p.buff.pd > 0) m *= 1.5; // 完美闪避
     if (p.cards.ev_midas) m *= 1 + Math.min(0.6, Math.floor((p.coins || 0) / 100) * 0.06); // 觉醒·算力印钞机
     if (p.kit && p.kit.eq.t_moe && p.hp * 2 <= p.maxHp) m *= 1.3; // SSR 混合专家
     return m;
@@ -781,10 +782,27 @@ export class Game {
     return w + (Math.random() < v - w ? 1 : 0);
   }
   /** hurt a player by n points */
+  /** 完美闪避: an attack met the player inside the dash window. Solo: 子弹时间 (enemies, their shots and their zones run
+   *  at 30% for 1.6 s); everyone: the dash comes back at once, +50% damage for 3 s, a little ult. 2 s cooldown. */
+  perfectDodge(p) {
+    p.pdDone = true;
+    p.pdCd = this.time + 2;
+    p.dashCd = 0;
+    p.buff.pd = 3;
+    p.ult = Math.min(1, p.ult + 0.06);
+    this.runStats.perfect = (this.runStats.perfect || 0) + 1;
+    if (this.mode === "solo") this.witchT = 1.6;
+    this.text(p.x, p.y - 64, "完美闪避！", "#ffe36a", 1.4, 1.1);
+    this.vfx("arcane/blink-in", p.x, p.y - 20, { palette: ["#1a1030", "#7a5aff", "#c8b0ff", "#ffffff"] });
+    this.sound("portal", 0.35);
+  }
   hurt(p, n, src = {}) {
     if (!p || p.dead || p.downed) return false;
     if ((p.mounted&&p.pet?.id==='fox'&&p.pet.blinkT>0)||(flyingMount(p)&&(src.groundHazard||src.kind==='poison'))) return false;
-    if (p.invuln > 0 || p.dashT > 0 || p.buff.star > 0) return false;
+    if (p.invuln > 0 || p.dashT > 0 || p.buff.star > 0) {
+      if ((p.pdWin || 0) > this.time && !p.pdDone && src && (src.side === "e" || src.src || src.def)) this.perfectDodge(p); // 完美闪避: dodged right through it
+      return false;
+    }
     if (p.barrier > 0) {
       p.barrier = 0;
       this.vfx("impacts/shield-block", p.x, p.y, { palette: ELEM.sun.ramp, flip: (src.x ?? p.x) < p.x });
@@ -974,10 +992,10 @@ export class Game {
     }
     return b.life<=0;
   }
-  updateBullets(dt) {
+  updateBullets(dt0) {
     const m = this.map;
     for (let i = this.bullets.length - 1; i >= 0; i--) {
-      const b = this.bullets[i];
+      const b = this.bullets[i], dt = this.witchT > 0 && b.side === "e" ? dt0 * 0.3 : dt0;
       b.t += dt;
       b.life -= dt;
       if (b.arcTo) {
@@ -1111,7 +1129,10 @@ export class Game {
     }
     for (const p of this.players) this.updatePlayer(p, dt);
     updatePets(this, dt);
-    for (const e of this.enemies) if (!e.dead) updateEnemy(this, e, dt);
+    // 子弹时间 (完美闪避, solo): enemies, enemy shots and enemy zones run slow; players, pets and their shots don't
+    const edt = this.witchT > 0 ? dt * 0.3 : dt;
+    if (this.witchT > 0) this.witchT -= dt;
+    for (const e of this.enemies) if (!e.dead) updateEnemy(this, e, edt);
     // lava burns walking enemies too
     if (this.hazard === "lava" && this.host)
       for (const e of this.enemies) if (!e.dead && !e.def.fly && e.spawnT <= 0 && mudAt(this.map, e.x, e.y) && (e.lavaCd || 0) < this.time) (e.lavaCd = this.time + 1), this.hit(e, 8, { noReact: true });
@@ -1636,6 +1657,7 @@ export class Game {
       p.dashT = BAL.dashTime;
       p.invuln = Math.max(p.invuln, BAL.dashInvuln);
       p.dashCd = BAL.dashCd;
+      if ((p.pdCd || 0) <= this.time) (p.pdWin = this.time + BAL.dashInvuln), (p.pdDone = false);
       if (p.cards.dodge_crit) p.dodgeCrit = 2.5;
       if (p.cards.ev_phantom) {
         // 觉醒·残影闪击: shorter dodge cooldown; the spot left behind bursts a moment later
@@ -1759,9 +1781,9 @@ export class Game {
     }
   }
 
-  updateZones(dt) {
+  updateZones(dt0) {
     for (let i = this.zones.length - 1; i >= 0; i--) {
-      const z = this.zones[i];
+      const z = this.zones[i], dt = this.witchT > 0 && z.side === "e" ? dt0 * 0.3 : dt0;
       z.t += dt;
       z.life -= dt;
       if (z.update && this.host) z.update(z, dt);
