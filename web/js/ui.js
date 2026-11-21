@@ -523,7 +523,9 @@ export function showPause(game, opts) {
     tg("音乐", () => m.music, () => ((m.music = !m.music), setMusic(m.music)),true),
     tg("自动攻击", () => m.autoFire, () => (m.autoFire = !m.autoFire)),
   );
-  $(".r2", md).append(btn(opts.quitLabel || "放弃本局", "red pz-act", () => (md.remove(), opts.quit())), btn("继续", "pz-act", () => (md.remove(), opts.resume())));
+  $(".r2", md).append(btn(opts.quitLabel || "放弃本局", "red pz-act", () => (md.remove(), opts.quit())));
+  if (opts.saveQuit) $(".r2", md).append(btn("保存退出", "blue pz-act", () => (md.remove(), opts.saveQuit()))), $(".r2", md).classList.add("c3");
+  $(".r2", md).append(btn("继续", "pz-act", () => (md.remove(), opts.resume())));
   const me = opts.me;
   if (me) {
     const owned = Object.entries(me.cards);

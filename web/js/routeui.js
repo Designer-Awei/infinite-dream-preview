@@ -223,11 +223,13 @@ function slotDialog(game, md, ev, hooks) {
     let lastTick = 0;
     const tick = (now) => {
       if (!area.isConnected) return;
-      const t = now - t0;
+      // (a frame's timestamp can be a little older than the click that started the spin: clamp, or the reel index
+      // goes negative, drawing throws and the reels freeze mid-spin)
+      const t = Math.max(0, now - t0), m5 = (k) => ((k % 5) + 5) % 5;
       reels.forEach((g, i) => {
         if (t >= stops[i]) return drawReel(g, r.reels[i]);
         const ph = (t / 55 + i * 0.3) % 1, step = Math.floor(t / 55 + i * 0.3);
-        drawReel(g, (cur[i] + step) % 5, Math.round(ph * 10), (cur[i] + step + 1) % 5);
+        drawReel(g, m5(cur[i] + step), Math.round(ph * 10), m5(cur[i] + step + 1));
       });
       if (t - lastTick > 90 && t < stops[2]) (lastTick = t), sfx("click", 0.02);
       if (t < stops[2]) return requestAnimationFrame(tick);

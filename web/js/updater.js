@@ -17,6 +17,9 @@ const REMOTES = [
   "https://designer-awei.github.io/infinite-dream-preview/",
   "https://cdn.jsdelivr.net/gh/Designer-Awei/infinite-dream-preview@main/docs/",
 ];
+// changed files may also come straight from the repository: it has the new build the moment it is pushed, while the
+// Pages / CDN copies can lag a minute behind (a file there that still has the old content fails its hash check)
+const RAW = "https://raw.githubusercontent.com/Designer-Awei/infinite-dream-preview/main/docs/";
 const native = () => !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
 export let localVersion = "";
 /** the installed app shell: { version: "1.<nativeRev>.<build>", rev } (rev 0 = an old APK without the App plugin) */
@@ -132,7 +135,7 @@ export async function initUpdater() {
   // booted the bundled copy although a newer, complete folder exists (persist didn't stick): just switch, no download
   if (!runningHot) {
     const applied = lsGet("updApplied");
-    if (applied && applied > localVersion && (await folderOK(FS, dirOf(applied), applied))) {
+    if (applied && applied > localVersion && !playing() && (await folderOK(FS, dirOf(applied), applied))) {
       const tr = lsGet(LS_TRY);
       if (!tr || tr.v !== applied || tr.n < 2) return switchTo(FS, WV, dirOf(applied), applied).catch(() => {});
     }
@@ -140,6 +143,11 @@ export async function initUpdater() {
   setTimeout(() => checkUpdate(FS, WV), 1500);
 }
 
+/** a run, a mine dive or an online room is going on: never switch (reload) under the player */
+const playing = () => {
+  const a = window.__app;
+  return !!(a && ((a.game && !a.ended) || a.dive || a.net));
+};
 let checking = false;
 async function checkUpdate(FS, WV) {
   if (checking) return;
@@ -164,32 +172,48 @@ async function checkUpdate(FS, WV) {
     const tr = lsGet(LS_TRY);
     if (tr && tr.v === remote.version && tr.n >= 2) return; // that folder failed to boot twice; wait for a newer build
     lsSet("updApplied", remote.version);
+    if (playing()) return; // switched on the next launch
     return switchTo(FS, WV, dir, remote.version).catch(() => {});
   }
   const names = Object.keys(remote.files);
   const changed = names.filter((f) => !local.files[f] || local.files[f].h !== remote.files[f].h);
   const bytes = changed.reduce((a, f) => a + remote.files[f].s, 0);
-  const ui = progressUI(remote.version, changed.length, bytes);
+  // in the middle of a game: download quietly and apply it on the next launch instead of reloading now
+  const quiet = playing();
+  const ui = quiet ? { set() {}, done() {}, fail() {} } : progressUI(remote.version, changed.length, bytes);
   try {
     let done = 0, got = 0;
     for (const f of names) {
       const isNew = changed.includes(f);
       const want = remote.files[f].h;
-      let buf = null;
-      // changed files come from GitHub (fallback mirror if the first is stale/unreachable); others from the local copy
-      const sources = isNew ? [base, ...REMOTES.filter((r) => r !== base)].map((r) => r + f + "?v=" + want) : [f];
-      for (const src of sources) {
-        try {
-          const r = await fetch(src, { cache: "no-store" });
-          if (!r.ok) continue;
-          const b = await r.arrayBuffer();
-          if ((await sha12(b)) === want) {
-            buf = b;
-            break;
+      let buf = null, stale = 0, net = 0;
+      // changed files come from GitHub (other mirrors and the repository itself if one is stale / unreachable), tried
+      // up to 3 rounds a few seconds apart; unchanged ones from the local copy
+      const sources = isNew ? [base, ...REMOTES.filter((r) => r !== base), RAW].map((r) => r + f + "?v=" + want) : [f];
+      for (let round = 0; round < (isNew ? 3 : 1) && !buf; round++) {
+        if (round) await new Promise((r) => setTimeout(r, 2500 * round));
+        for (const src of sources) {
+          try {
+            const r = await fetch(src, { cache: "no-store" });
+            if (!r.ok) {
+              net++;
+              continue;
+            }
+            const b = await r.arrayBuffer();
+            if ((await sha12(b)) === want) {
+              buf = b;
+              break;
+            }
+            stale++;
+          } catch {
+            net++;
           }
-        } catch {}
+        }
       }
-      if (!buf) throw new Error("下载失败：" + f);
+      if (!buf) {
+        const why = stale ? "服务器还在同步新版本（刚发布的几分钟内常见）" : "网络连接失败，请检查网络";
+        throw new Error(`${why}\n文件：${f}`);
+      }
       await FS.writeFile({ path: dir + "/" + f, data: b64(buf), directory: "DATA", recursive: true });
       done++;
       if (isNew) got += buf.byteLength;
@@ -199,13 +223,19 @@ async function checkUpdate(FS, WV) {
     await FS.writeFile({ path: dir + "/update.json", data: JSON.stringify(remote), encoding: "utf8", directory: "DATA", recursive: true });
     lsSet("updApplied", remote.version);
     lsSet(LS_TRY, null);
+    if (quiet || playing()) {
+      ui.close?.();
+      toastNote("新版本已下载，下次启动时更新");
+      return;
+    }
     ui.done();
     await new Promise((r) => setTimeout(r, 600));
     // switch the WebView to the new folder (reloads the page); it is persisted on the next successful boot
     await switchTo(FS, WV, dir, remote.version);
   } catch (e) {
-    ui.fail(e.message || String(e));
     FS.rmdir({ path: dir, directory: "DATA", recursive: true }).catch(() => {});
+    checking = false;
+    ui.fail(e.message || String(e), () => !playing() && checkUpdate(FS, WV));
   }
 }
 
@@ -242,6 +272,11 @@ function showNativeUpdate(need) {
   acts.appendChild(btnEl("稍后", "gray small", later));
   document.getElementById("ui").appendChild(md);
 }
+function toastNote(msg) {
+  const t = el("div", "toast outline", msg);
+  document.getElementById("ui").appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
 function btnEl(label, cls, fn) {
   const b = el("button", "btn " + cls, label);
   b.onclick = fn;
@@ -264,9 +299,18 @@ function progressUI(version, n, bytes) {
       bar.style.width = "100%";
       t.textContent = "更新完成，正在重启…";
     },
-    fail(msg) {
-      t.textContent = "更新失败，下次启动再试（" + msg + "）";
-      setTimeout(() => md.remove(), 2500);
+    close() {
+      md.remove();
+    },
+    fail(msg, retry) {
+      const [why, file] = String(msg).split("\n");
+      md.querySelector("h2").textContent = "更新失败";
+      bar.parentNode.remove();
+      t.innerHTML = `<div style="color:#ffd84a;font-size:15px;margin:6px 0 2px">${why}</div><small>${file || ""}</small><div style="margin-top:4px">不影响游戏，可以先继续玩；稍后重试或下次启动会自动再更新</div>`;
+      const row = el("div", "row upd-acts");
+      row.style.cssText = "justify-content:center;gap:12px;margin-top:10px";
+      row.append(btnEl("稍后", "gray small", () => md.remove()), btnEl("重试", "small", () => (md.remove(), retry && retry())));
+      t.after(row);
     },
   };
 }

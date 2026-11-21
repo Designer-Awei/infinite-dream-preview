@@ -12,6 +12,7 @@ import { mountItemDemo, hasLiveDemo } from "./itemdemo.js";
 import { localVersion, nativeInfo } from "./updater.js";
 import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMask, WALL, BUSH, CRATE, BARREL, LIFT } from "./map.js";
 import { T } from "./data.js";
+import { loadRun, offerResume } from "./runsave.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
 import { showPets } from "./petui.js";
@@ -163,7 +164,10 @@ export function showLobby() {
   q(".help-btn", s).onclick = () => (sfx("click"), showHelp());
   q(".codex-btn", s).onclick = () => (sfx("click"), import("./codex.js").then((C) => C.showCodex()));
   const play = q(".lb-play", s);
-  const pb = btn(`<span class="pt">开始冒险</span>`, "big play-btn", () => {
+  // 冒险续玩: an unfinished solo run turns the button into 继续冒险 (asks 继续 / 放弃 first)
+  const saved = loadRun();
+  const pb = btn(`<span class="pt">${saved ? "继续冒险" : "开始冒险"}</span>`, "big play-btn" + (saved ? " resume" : ""), () => {
+    if (loadRun()) return offerResume(app, () => updatePlay(s));
     // launch: the hero leaps off the island while two doors slide shut, then the run starts behind them
     s.classList.add("launch");
     app.closeDoors().then(() => app.startSolo());
@@ -712,8 +716,11 @@ function updatePlay(s, cid) {
   if (cid) s.dataset.cid = cid;
   const pm = m.playMode || {}, id = pm.endless ? "endless" : pm.map || "grass";
   const charOk = m.chars.includes(s.dataset.cid || m.sel), mOk = modeOpen(id);
-  pb.disabled = !charOk || !mOk;
-  q(".pt", pb).textContent = !charOk ? "未解锁" : !mOk ? "模式未解锁" : "开始冒险";
+  const saved = loadRun(); // 冒险续玩 takes the button over whatever is selected
+  pb.disabled = !saved && (!charOk || !mOk);
+  pb.classList.toggle("resume", !!saved);
+  q(".pt", pb).textContent = saved ? "继续冒险" : !charOk ? "未解锁" : !mOk ? "模式未解锁" : "开始冒险";
+
 }
 
 function showSettings() {

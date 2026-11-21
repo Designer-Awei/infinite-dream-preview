@@ -17,6 +17,7 @@ import * as UI from "./ui.js";
 import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
+import { saveRun, clearRun, restoreRun, canCheckpoint } from "./runsave.js";
 import { PETS, PET_EVOLVE, MINE_EGG_CHANCE, petExperience } from "./petdata.js";
 import { grantPetXP, grantEggs, petState, findPet, addPool } from "./petsave.js";
 import { showEvent } from "./routeui.js";
@@ -159,12 +160,23 @@ export const app = {
     this.petGranted = 0; // pet xp already saved during this run (live evolution)
     this.petCheckT = 0;
     g.onUi = (k, pid) => this.onGameUi(k, pid);
-    if (cfg.mode !== "client") g.startRun();
+    if (cfg.mode !== "client") cfg.resume ? restoreRun(this, cfg.resume) : g.startRun();
     UI.showHud(g, this.me);
     playMusic(cfg.pvp ? "boss" : "battle");
     renderer.follow(g, this.me, 0, true);
     // equipped SSR talents of every player (host / solo simulates them)
-    if (cfg.mode !== "client") g.applyLoadouts();
+    if (cfg.mode !== "client" && !cfg.resume) g.applyLoadouts();
+  },
+  /** 冒险续玩: rebuild the saved solo run and drop the player at the start of its room */
+  resumeRun(d) {
+    try {
+      this.begin({ ...d.cfg, resume: d });
+    } catch (e) {
+      console.error(e);
+      clearRun();
+      UI.toast("存档的冒险无法继续，已清除");
+      this.toLobby();
+    }
   },
   onGameUi(kind, pid) {
     const g = this.game;
@@ -232,6 +244,7 @@ export const app = {
     }
     else if (kind === "room") {
       renderer.follow(g, this.me, 0, true);
+      saveRun(this); // 冒险续玩 checkpoint
       if (g.room && g.room.kind === "boss") playMusic("boss");
       else if (!g.pvp) playMusic("battle");
     }
@@ -239,6 +252,7 @@ export const app = {
   endRun(win) {
     if (this.ended) return;
     this.ended = true;
+    clearRun();
     if (this.petTrial) {
       const id = this.petTrial, rs = this.game.runStats;
       UI.showResult({title:"宠物试炼结束",sub:`${PETS[id].name} · 试用收益不保存`,rows:[["清理房间",rs.rooms],["击败敌人",rs.kills],["造成伤害",Math.round(rs.dmg)]],extras:[["宠物试用","未消耗货币，不保存收益"]],tokens:0,win,cid:this.me.cid},()=>this.startPetTrial(id),()=>this.toLobby());
@@ -475,6 +489,13 @@ export const app = {
     this.pauseMd = UI.showPause(this.game, {
       me: this.me,
       resume: () => ((this.paused = false), (this.pauseMd = null)),
+      // 冒险续玩: back to the lobby keeping the checkpoint taken when this room was entered
+      saveQuit: canCheckpoint(this) ? () => {
+        this.paused = false;
+        this.pauseMd = null;
+        UI.closeCards();
+        this.toLobby();
+      } : null,
       quit: () => {
         this.paused = false;
         this.pauseMd = null;

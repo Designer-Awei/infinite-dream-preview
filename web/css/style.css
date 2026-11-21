@@ -1486,7 +1486,17 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 /* pause: both rows the same height and the same total width */
 .pause-p .row { display: grid !important; width: min(460px, 78vw); gap: 10px; padding-bottom: 6px; }
 .pause-p .r1 { grid-template-columns: repeat(3, 1fr); }
-.pause-p .r2 { grid-template-columns: repeat(2, 1fr); }
+.pause-p .r2 { grid-template-columns: repeat(2, 1fr); } .pause-p .r2.c3 { grid-template-columns: repeat(3, 1fr); }
+/* 冒险续玩 */
+.play-btn.resume { background: linear-gradient(180deg, #7ae0ff, #2a8ad8); }
+.resume-md { display: flex; align-items: center; justify-content: center; }
+.resume-p { min-width: min(420px, 86vw); text-align: center; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.resume-p h2 { margin: 0; font-size: 24px; font-weight: normal; }
+.resume-p .rs-where { font-size: 16px; color: #ffe36a; }
+.resume-p .rs-info { display: flex; gap: 14px; font-size: 13px; color: #fff; }
+.resume-p .rs-tip { font-size: 11px; color: #b8b0e0; }
+.resume-p .rs-acts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
+.resume-p .rs-acts .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 2.5px #000; paint-order: stroke fill; }
 .pause-p .pz-tg, .pause-p .pz-act { min-width: 0; width: 100%; height: 48px; font-size: 17px; padding: 0 6px; }
 .mine-hub .mh-tl > * { flex: none; }
 .mine-hub .mh-tl .mh-help { width: 34px; }
