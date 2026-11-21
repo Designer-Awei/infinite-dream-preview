@@ -4,7 +4,7 @@ import { el } from "./util.js";
 import { uiRoot, btn, toast } from "./ui.js";
 import { drawEgg } from "./petwh.js";
 import { iconURL } from "./icons.js";
-import { EVENTS, NPCS } from "./route.js";
+import { EVENTS, NPCS, SLOT_SYMS } from "./route.js";
 import { A } from "./assets.js";
 import { sfx } from "./audio.js";
 
@@ -16,7 +16,7 @@ function portrait(id) {
   const [fx, fy, fw] = m.face || [0, 0, s]; // a wide scene shows a square crop around the visitor in its portrait
   c.width = fw;
   c.height = fw;
-  if (m.file) c.classList.add("hd"); // a 256px strip is scaled down smoothly into the small portrait box
+  if (m.file && m.cell > 128) c.classList.add("hd"); // a 256px strip is scaled down smoothly into the small portrait box
   const g = c.getContext("2d");
   g.imageSmoothingEnabled = false;
   let f = 0, live = true;
@@ -165,6 +165,86 @@ function diceDialog(game, md, ev, hooks) {
   buttons();
 }
 
+// ---------------------------------------------------------------- 命运老虎机
+// 8×8 reel symbols in SLOT_SYMS order (cherry, seven, star, heart, skull), the same pixel art as the machine's own reels
+const SLOT_PX = [
+  ["....gg..", "...g.g..", "..g...g.", ".rr..rr.", "rRrr.rRr", "rrrr.rrr", ".rr...rr", "........"],
+  ["yyyyyyy.", "YYYYYyy.", "....yy..", "...yy...", "..yy....", "..yy....", "..YY....", "........"],
+  ["...y....", "...y....", "yyyYyyy.", ".yyYyy..", "..yyy...", ".yy.yy..", ".y...y..", "........"],
+  [".rr.rr..", "rRrrrrr.", "rrrrrrr.", ".rrrrr..", "..rrr...", "...r....", "........", "........"],
+  ["..www...", ".wwwww..", ".k.w.k..", ".wwwww..", "..w.w...", "..www...", "........", "........"],
+];
+const SLOT_COL = { g: "#3aa84a", r: "#d8283c", R: "#ff8a8a", y: "#e8b020", Y: "#fff2a8", w: "#6a5a7a", k: "#1a1020" };
+/** one reel: 10×10 canvas, the symbol `s` drawn with a vertical offset (for the scroll) */
+function drawReel(g, s, off = 0, s2 = null) {
+  g.fillStyle = "#f4efe2";
+  g.fillRect(0, 0, 10, 10);
+  const put = (sym, dy) => SLOT_PX[sym].forEach((row, j) => [...row].forEach((ch, i) => {
+    if (ch === "." || j + dy < 0 || j + dy > 9) return;
+    g.fillStyle = SLOT_COL[ch];
+    g.fillRect(i + 1, j + dy + 1, 1, 1);
+  }));
+  put(s, off);
+  if (s2 != null) put(s2, off - 10);
+}
+/** the slot game: pull (pays the cost), three reels spin and stop left to right, the payout lands; 离开 only closes */
+function slotDialog(game, md, ev, hooks) {
+  const box = md.querySelector(".ev-opts"), nv = game.npc, S = ev.slot;
+  const area = el("div", "ev-dice ev-slot");
+  area.innerHTML = `<div class="dice-round o1"></div><div class="slot-reels">${"<canvas width='10' height='10'></canvas>".repeat(3)}</div><div class="dice-res outline">777 大奖 · 三连有奖</div><div class="dice-sub o1">两个相同小奖 · 骷髅有风险</div>`;
+  box.before(area);
+  md.querySelector(".event-panel").classList.add("dice-mode");
+  const reels = [...area.querySelectorAll(".slot-reels canvas")].map((c) => c.getContext("2d")), $ = (q) => area.querySelector(q);
+  reels.forEach((g, i) => drawReel(g, [0, 1, 2][i]));
+  let busy = false;
+  const buttons = () => {
+    box.innerHTML = "";
+    const left = S.spins - (nv.spins || 0), coins = hooks.coins();
+    $(".dice-round").textContent = left <= 0 ? `${S.spins} 次都拉完了` : coins >= S.cost ? `第 ${(nv.spins || 0) + 1} / ${S.spins} 次 · 每次 ${S.cost} 金币` : `还剩 ${left} 次 · 金币不足 ${S.cost}`;
+    if (left > 0 && coins >= S.cost) box.appendChild(btn(`拉杆 ${S.cost}`, "", pull));
+    box.appendChild(btn("离开", "gray", () => {
+      if (busy) return;
+      md.remove();
+      hooks.close();
+    }));
+  };
+  const pull = () => {
+    if (busy) return;
+    const r = hooks.spin();
+    if (!r) return;
+    busy = true;
+    box.querySelectorAll(".btn").forEach((b) => (b.disabled = true));
+    $(".dice-res").textContent = "……";
+    $(".dice-res").style.color = "";
+    $(".dice-sub").textContent = "";
+    area.classList.remove("win", "lose");
+    const t0 = performance.now(), stops = [700, 1050, 1400];
+    const cur = [0, 1, 2].map(() => (Math.random() * 5) | 0);
+    let lastTick = 0;
+    const tick = (now) => {
+      if (!area.isConnected) return;
+      const t = now - t0;
+      reels.forEach((g, i) => {
+        if (t >= stops[i]) return drawReel(g, r.reels[i]);
+        const ph = (t / 55 + i * 0.3) % 1, step = Math.floor(t / 55 + i * 0.3);
+        drawReel(g, (cur[i] + step) % 5, Math.round(ph * 10), (cur[i] + step + 1) % 5);
+      });
+      if (t - lastTick > 90 && t < stops[2]) (lastTick = t), sfx("click", 0.02);
+      if (t < stops[2]) return requestAnimationFrame(tick);
+      const q = r.pay, good = q.kind === "jackpot" || q.kind === "win" || q.kind === "small";
+      area.classList.add(good ? "win" : "lose");
+      $(".dice-res").textContent = r.reels.map((i) => SLOT_SYMS[i].name).join(" · ");
+      $(".dice-res").style.color = good ? "#ffe14a" : "#ff8a8a";
+      $(".dice-sub").textContent = q.text;
+      hooks.settleSlot();
+      busy = false;
+      buttons();
+    };
+    requestAnimationFrame(tick);
+  };
+  buttons();
+}
+
 // ---------------------------------------------------------------- 奇遇商人's goods
 /** the merchant's shop: four goods side by side (picture, name, what it is, price), two purchases, each kind once.
  *  Paid from the account (金铲 / 晶石) through hooks.buy; 离开 only closes, so you can come back while purchases remain */
@@ -213,13 +293,13 @@ function shopDialog(game, md, ev, hooks) {
 /** an event room's choice; onPick(k) with k = option index. A dice event (ev.dice) runs its own game via hooks */
 export function showEvent(game, onPick, hooks = null) {
   const id = game.room.event, ev = EVENTS[id], npc = NPCS[id], md = el("div", "modal event-modal");
-  md.innerHTML = `<div class="panel event-panel"><div class="ev-top"><div class="ev-face-box"></div><div class="ev-say"><div class="ev-head"><h2 class="outline">${ev.name}</h2><span class="ev-who o1">${npc ? npc.name : ""}</span></div><p class="o1">${ev.text}</p></div></div><div class="ev-opts"></div></div>`;
+  md.innerHTML = `<div class="panel event-panel"><div class="ev-top"><div class="ev-face-box"></div><div class="ev-say"><div class="ev-head"><h2 class="outline">${ev.name}</h2><span class="ev-who o1">${npc && npc.name !== ev.name ? npc.name : ""}</span></div><p class="o1">${ev.text}</p></div></div><div class="ev-opts"></div></div>`;
   const face = portrait(id);
   if (face) md.querySelector(".ev-face-box").appendChild(face);
   else md.querySelector(".ev-face-box").remove();
   const box = md.querySelector(".ev-opts");
-  if ((ev.dice || ev.shop) && hooks) {
-    (ev.shop ? shopDialog : diceDialog)(game, md, ev, hooks);
+  if ((ev.dice || ev.shop || ev.slot) && hooks) {
+    (ev.shop ? shopDialog : ev.slot ? slotDialog : diceDialog)(game, md, ev, hooks);
     uiRoot().appendChild(md);
     return md;
   }

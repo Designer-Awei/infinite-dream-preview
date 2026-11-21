@@ -1,6 +1,6 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
 import { T, BAL, AFFIXES, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
-import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS } from "./route.js";
+import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
 import { sfx } from "./audio.js";
@@ -1502,15 +1502,53 @@ export class Game {
     this.sound("coin");
     this.onUi("hud");
   }
+  /** 命运老虎机: pay and spin three reels (host); the dialog animates them, then calls settleSlot */
+  spinSlot(pid) {
+    const p = this.player(pid), nv = this.npc, ev = this.room && EVENTS[this.room.event], sl = ev?.slot;
+    if (!p || !nv || !sl || (nv.spins || 0) >= sl.spins || p.coins < sl.cost || nv.spin) return null;
+    const tot = SLOT_SYMS.reduce((a, q) => a + q.w, 0), pick = () => {
+      let r = Math.random() * tot;
+      return SLOT_SYMS.findIndex((q) => (r -= q.w) < 0);
+    };
+    p.coins -= sl.cost;
+    nv.spins = (nv.spins || 0) + 1;
+    const reels = nv.forceReels || [pick(), pick(), pick()];
+    nv.spin = { reels, pay: slotPayout(reels) };
+    this.onUi("hud");
+    return nv.spin;
+  }
+  settleSlot(pid) {
+    const p = this.player(pid), nv = this.npc, r = nv && nv.spin;
+    if (!p || !r) return;
+    nv.spin = null;
+    const q = r.pay;
+    if (q.coins) p.coins = Math.max(0, p.coins + q.coins);
+    if (q.heal) p.hp = Math.min(p.maxHp, p.hp + q.heal);
+    if (q.maxHp) (p.maxHp += q.maxHp), (p.hp = p.maxHp);
+    if (q.hurt) p.hp = Math.max(1, p.hp - q.hurt);
+    if (q.curse) this.curseHp = (this.curseHp || 1) * q.curse;
+    if (q.card && (!nv.cardWin || q.card === "SSR")) nv.cardWin = q.card;
+    this.text(p.x, p.y - 60, q.kind === "miss" ? "落空" : q.coins ? `${q.coins > 0 ? "+" : ""}${q.coins} 金币` : q.kind === "curse" ? "诅咒" : "中奖！", q.kind === "curse" || q.kind === "miss" ? "#ff8080" : "#ffe14a", 1.4);
+    this.sound(q.kind === "jackpot" || q.kind === "win" ? "card" : q.kind === "small" ? "coin" : "hurt");
+    if (nv.spins === 1) this.runStats.events = (this.runStats.events || 0) + 1;
+    this.onUi("hud");
+  }
   /** the event dialog closed without a final choice (骰子狐's 离开): the way on opens, the visitor stays until its rounds run out */
   closeEvent() {
     const nv = this.npc, ev = this.room && EVENTS[this.room.event];
     if (!nv || this.eventDone) return;
     nv.open = false;
-    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys)) {
+    if ((ev?.dice && (nv.rounds || 0) >= ev.dice.rounds) || (ev?.shop && (nv.bought || []).length >= ev.shop.buys) || (ev?.slot && (nv.spins || 0) >= ev.slot.spins)) {
       this.eventDone = true;
       nv.done = true;
       this.text(nv.x, nv.y - 70, NPCS[nv.id].bye, "#e8dcff", 1, 1.6);
+    }
+    // 命运老虎机: a card won on the reels is offered now (the way on opens after the pick)
+    if (nv.cardWin) {
+      const p = this.players[0], fl = nv.cardWin;
+      nv.cardWin = null;
+      this.offerCards(p, 3, fl);
+      if (this.cardOffers[p.id]) return void (this.phase = "cards");
     }
     if (this.phase === "event") this.openPortal();
   }
@@ -1533,7 +1571,8 @@ export class Game {
     while (out.length < n && pool.length) {
       let c = rr.weighted(pool, (c) => RARITY[c.r].w * (c.tag === "混搭" ? 1.6 : 1));
       if (rarityFloor && out.length === 0 && !evos.length) {
-        const hi = pool.filter((q) => q.r === "SR" || q.r === "SSR");
+        const ssr = rarityFloor === "SSR" ? pool.filter((q) => q.r === "SSR") : [];
+        const hi = ssr.length ? ssr : pool.filter((q) => q.r === "SR" || q.r === "SSR");
         if (hi.length) c = rr.pick(hi);
       }
       out.push(c);

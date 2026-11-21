@@ -132,7 +132,8 @@ export function showHelp() {
         ["spring", "二选一：生命和护盾回满，或装走 20 星砂（结算时到账）。"],
         ["curse", "打开得到一次技能卡三选一，但本局之后的敌人生命 +20%（可叠加）；也可以离开。"],
         ["merchant", "用账号里的金铲和晶石买东西，直接进账号：宠物蛋 2 金铲、UR 宠物蛋 5 金铲、HUR 宠物蛋 10 金铲、兑换卡 2000 晶石；每个房间最多买 2 样，同一样只卖一次，没买完离开还能回来。"],
-      ].map(([k, t]) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.event.col};color:#1a1020">${EVENTS[k].name}</span><span>${NPCS[k].name}：${t}</span></div>`).join("")}
+        ["slot", "每次投 15 局内金币拉杆，每个房间 3 次：三个 7 大奖（+100 金币并在离开时挑一张 SSR 卡）；三连樱桃 +60、三连星星离开时选卡、三连爱心生命上限 +1；两个相同有小奖；骷髅会扣金币或带来诅咒。"],
+      ].map(([k, t]) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.event.col};color:#1a1020">${EVENTS[k].name}</span><span>${NPCS[k].name === EVENTS[k].name ? "" : NPCS[k].name + "："}${t}</span></div>`).join("")}
       ${H("技能卡")}清场后开箱三选一技能卡，构筑你的流派。
       ${H("生存")}护盾受击后几秒自动回复，生命不会。
       ${H("首领与裂隙")}首领倒下时地上会掉一把梦境矿场的铲子（带光柱），捡没捡都会在结算时计入。偶尔还会撕开「梦境裂隙」：90 秒限时挖宝，电量无限；无尽模式挖宝后返回原进度继续，放弃进入则在本局结算额外获得 ${REWARD.riftSkip} 晶石，并有 ${Math.round(REWARD.riftSkipEgg * 100)}% 概率再得 1 颗宠物蛋。<br>双首领：首领房有 10% 概率出现两只同样的首领（横幅提示），两只都击败才算胜利，首领晶石奖励、铲子、宠物蛋和首领经验都翻倍。
