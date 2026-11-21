@@ -139,7 +139,7 @@ export const ENEMIES = {
   jelly: { name: "漏电水母", hp: 34, spd: 36, r: 12, ai: "pulse", sprite: "jelly", coin: [1, 3], fly: true },
   wisp: { name: "游离进程", hp: 10, spd: 70, r: 8, ai: "kamikaze", sprite: "wisp", coin: [0, 1], fly: true },
   snake: { name: "死循环蛇", hp: 22, spd: 72, r: 10, ai: "snake", sprite: "snake", coin: [1, 2], touch: 1 },
-  boss_eye: { name: "幻觉之眼", hp: 3000, spd: 40, r: 16, ai: "boss_eye", sprite: "eyeball", coin: [30, 30], fly: true, boss: true, scale: 2 },
+  boss_eye: { name: "幻觉之眼", title: "幻觉之源", hp: 3000, spd: 40, r: 16, ai: "boss_eye", sprite: "eyeball", coin: [30, 30], fly: true, boss: true, scale: 2 },
   // map residents (recoloured critters) — 数据草原
   snake_vine: { name: "藤蔓蛇", hp: 26, spd: 70, r: 10, ai: "snake", sprite: "snake_vine", coin: [1, 2], touch: 1, chill: true },
   frog_big: { name: "巨型跳转蛙", hp: 80, spd: 44, r: 16, ai: "leap", sprite: "frog_big", coin: [3, 5], touch: 1, scale: 1.5 },
@@ -166,11 +166,11 @@ export const ENEMIES = {
   jelly_aurora: { name: "极光水母", hp: 110, spd: 40, r: 13, ai: "pulse", sprite: "jelly_aurora", coin: [8, 12], fly: true, rare: "ice", scale: 1.2 },
   skull_obsidian: { name: "黑曜骷髅", hp: 130, spd: 32, r: 13, ai: "caster", sprite: "skull_obsidian", coin: [8, 12], fly: true, rare: "lava", scale: 1.2, shot: { cd: 2.4, spd: 130, n: 12, ring: true, burn: true } },
   // bosses of the other two maps
-  boss_frost: { name: "冰封史莱姆王", hp: 3300, spd: 50, r: 22, ai: "boss_frost", sprite: "slime_frost", coin: [30, 30], boss: true, scale: 3 },
-  boss_core: { name: "过热核心", hp: 3600, spd: 36, r: 18, ai: "boss_core", sprite: "skull_core", coin: [30, 30], fly: true, boss: true, scale: 2.4 },
-  boss_root: { name: "根须之心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
-  boss_witch: { name: "霜镜女巫", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
-  boss_worm: { name: "熔岩巨蠕", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
+  boss_frost: { name: "冰封史莱姆王", title: "冻结的缓存", hp: 3300, spd: 50, r: 22, ai: "boss_frost", sprite: "slime_frost", coin: [30, 30], boss: true, scale: 3 },
+  boss_core: { name: "过热核心", title: "熔毁倒计时", hp: 3600, spd: 36, r: 18, ai: "boss_core", sprite: "skull_core", coin: [30, 30], fly: true, boss: true, scale: 2.4 },
+  boss_root: { name: "根须之心", title: "腐化的林心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
+  boss_witch: { name: "霜镜女巫", title: "镜中之冰", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
+  boss_worm: { name: "熔岩巨蠕", title: "地心吞噬者", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
   core_pylon: { name: "冷却塔", hp: 140, spd: 0, r: 13, ai: "pylon", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   witch_clone: { name: "冰镜分身", hp: 1, spd: 0, r: 14, ai: "witch_clone", sprite: "frost_witch_clone", coin: [0, 0], fly: true, mirror: true },
 };
