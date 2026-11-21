@@ -229,7 +229,14 @@ export function normalizePets(value) {
     return v && EGGS[v.kind] && Number.isFinite(v.t0) ? { kind: v.kind, t0: v.t0, dur: clampInt(v.dur, 0, 36e5) } : null;
   });
   const dexClaim = (Array.isArray(value?.dexClaim) ? value.dexClaim : []).filter((n) => DEX_REWARDS.some((r) => r.n === n));
-  const out = { v: 2, list, equipped, eggs, items, pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex, slots, dexClaim };
+  // 称号 counters: hatches, 传说-or-better pets ever got, kinds ever owned as 流彩 (seeded from the warehouse for old saves)
+  const sv = value?.stats || {};
+  const stats = {
+    hatch: Math.max(clampInt(sv.hatch, 0, 999999), list.length),
+    legend: Math.max(clampInt(sv.legend, 0, 999999), list.filter((p) => p.q >= 4).length),
+    rbKinds: [...new Set([...(Array.isArray(sv.rbKinds) ? sv.rbKinds.filter((id) => PET_ORDER.includes(id)) : []), ...list.filter((p) => p.q === 5).map((p) => p.id)])],
+  };
+  const out = { v: 2, list, equipped, eggs, items, pool: clampInt(value?.pool, 0, 999999), rb: clampInt(value?.rb, 0, 99999), dex, slots, dexClaim, stats };
   Object.defineProperty(out, "owned", {
     enumerable: false,
     get() {

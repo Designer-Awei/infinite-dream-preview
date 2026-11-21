@@ -18,6 +18,7 @@ import { showLobby, showGacha } from "./lobby.js";
 import { Net } from "./net.js";
 import { initUpdater } from "./updater.js";
 import { saveRun, clearRun, restoreRun, canCheckpoint } from "./runsave.js";
+import { grantTitle } from "./titles.js";
 import { PETS, PET_EVOLVE, MINE_EGG_CHANCE, petExperience } from "./petdata.js";
 import { grantPetXP, grantEggs, petState, findPet, addPool } from "./petsave.js";
 import { showEvent } from "./routeui.js";
@@ -273,6 +274,7 @@ export const app = {
     if (endless) m.stats.endlessBest = Math.max(prevBest, rs.rooms);
     m.tokens += tokens;
     m.stats.kills += rs.kills;
+    m.stats.perfect = (m.stats.perfect || 0) + (rs.perfect || 0); // 称号·幻影舞者
     m.stats.reactions += rs.reactions;
     m.stats.runs++;
     if (!endless) m.stats.best = Math.max(m.stats.best, rs.rooms);
@@ -311,7 +313,7 @@ export const app = {
           m.pactClaim.push(ms.lv);
           if (ms.gems) m.tokens += ms.gems;
           if (ms.cards) { const ms2 = mineState(); ms2.cards = (ms2.cards || 0) + ms.cards; }
-          if (ms.title) m.title = ms.title;
+          if (ms.title) grantTitle("nightmare");
           save();
           for (const [kind, n] of ms.eggs || []) grantEggs(n, kind);
           extras.push(["契约里程碑", `噩梦 ${ms.lv} · ${ms.name}`]);
@@ -453,6 +455,7 @@ export const app = {
     ms.stars += res.stars;
     res.record = res.depth > ms.best;
     ms.best = Math.max(ms.best, res.depth);
+    ms.kills = (ms.kills || 0) + (res.kills || 0);
     save();
     res.questsDone = progressQuests(res).map(questText);
     // 矿场掉蛋：a safe extraction with something dug or fought finds a 宠物蛋 now and then

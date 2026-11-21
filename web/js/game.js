@@ -1,5 +1,6 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
 import { T, BAL, AFFIXES, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
+import { applyTitle } from "./titles.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
@@ -96,6 +97,7 @@ export class Game {
       p.hp += growth.hp;
       p.maxHp += growth.hp;
     }
+    applyTitle(p, kit.title, !this.pvp); // 称号: plate over the head; its effect in PVE
     attachPet(this, p, kit.pet);
     this.players.push(p);
     return p;
@@ -506,6 +508,7 @@ export class Game {
       if (Math.random() < c) (crit = true), (dmg *= BAL.critMul + (p.st.critX || 0)); // 宠物词条「致命」加暴击倍率
     }
     if (p && (e.elite || e.boss)) dmg *= p.st.elite || 1; // 对抗训练
+    if (p && e.boss && p.tfx?.boss) dmg *= 1 + p.tfx.boss; // 称号·首领猎手
     if (crit && p.cards.ev_grad && !src.evoBoom && Math.random() < 0.3) {
       // 觉醒·梯度爆炸: a crit sometimes bursts on the target (half the hit, around it, no further crits)
       this.vfx("explosions/cartoon-pow", e.x, e.y - 12, { life: 0.45, text: "" });
@@ -571,7 +574,7 @@ export class Game {
     }
   }
   react(e, key, p, spreadElem) {
-    const R0 = REACTIONS[key], amp = p && p.cards.reaction_amp ? 1 + 0.6 * p.cards.reaction_amp : 1;
+    const R0 = REACTIONS[key], amp = (p && p.cards.reaction_amp ? 1 + 0.6 * p.cards.reaction_amp : 1) * (1 + (p?.tfx?.react || 0)); // 称号·元素指挥家
     const dmg = R0.dmg * amp * (1 + 0.08 * reactionRoom(this.roomIdx,this.endless));
     this.runStats.reactions++;
     if (p) p.reactions = (p.reactions || 0) + 1;
@@ -859,10 +862,16 @@ export class Game {
       p.invuln = 0.3;
       return false;
     }
+    if (p.tfx?.guard && Math.random() < p.tfx.guard) {
+      // 称号·噩梦主宰: the blow is shrugged off whole
+      this.text(p.x, p.y - 60, "免伤", "#ff8ad8", 1.1);
+      p.invuln = 0.4;
+      return false;
+    }
     n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 噩梦契约·凶猛噩梦
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
-    p.invuln = BAL.hurtInvuln;
+    p.invuln = BAL.hurtInvuln + (p.tfx?.inv || 0); // 称号·地心之王
     p.hurtT = 0.3;
     this.shake = Math.max(this.shake, p.local ? 6 : 2);
     let left = n;
@@ -1738,9 +1747,9 @@ export class Game {
       p.dashDx = dx / l;
       p.dashDy = dy / l;
       p.dashT = BAL.dashTime;
-      p.invuln = Math.max(p.invuln, BAL.dashInvuln);
-      p.dashCd = BAL.dashCd;
-      if ((p.pdCd || 0) <= this.time) (p.pdWin = this.time + BAL.dashInvuln), (p.pdDone = false);
+      p.invuln = Math.max(p.invuln, BAL.dashInvuln + (p.tfx?.pd || 0));
+      p.dashCd = BAL.dashCd * (1 - (p.tfx?.dash || 0)); // 称号·幻影舞者
+      if ((p.pdCd || 0) <= this.time) (p.pdWin = this.time + BAL.dashInvuln + (p.tfx?.pd || 0)), (p.pdDone = false);
       if (p.cards.dodge_crit) p.dodgeCrit = 2.5;
       if (p.cards.ev_phantom) {
         // 觉醒·残影闪击: shorter dodge cooldown; the spot left behind bursts a moment later

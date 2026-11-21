@@ -11,6 +11,7 @@ import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
 import { verdictCells } from "./enemies.js";
+import { drawTitlePlate } from "./titles.js";
 
 const shovelIcon = (k) => icon("shovel_" + k);
 const HC = new Map();
@@ -470,8 +471,10 @@ export class Renderer {
     if (tileAt(game.map, p.x, p.y) === BUSH && p !== me && p.pvpEnemy) return;
     const y = p.y - (p.mounted ? mountedHeadHeight(p)??68 : (set.foot-(set.top||0))/(set.k||1)) - 8, w = 34, x = p.x - w / 2;
     const col = p === me ? "#5dff7a" : p.pvpEnemy ? "#ff4a5a" : "#4ab8ff";
-    // name
-    if (game.players.length > 1 || p !== me) this.text(g, p.name, p.x, y - 9, col, 10);
+    // name, and the worn 称号 above it (everyone sees everyone's)
+    const named = game.players.length > 1 || p !== me;
+    if (named) this.text(g, p.name, p.x, y - 9, col, 10);
+    if (p.title) drawTitlePlate(g, p.title, p.x, y - (named ? 22 : 10), this.t);
     g.fillStyle = "#14101c";
     g.fillRect(x - 1, y - 1, w + 2, 6);
     g.fillStyle = "#3a1a24";

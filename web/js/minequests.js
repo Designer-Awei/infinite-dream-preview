@@ -72,6 +72,7 @@ export function claimQuest(i) {
   if (!q || q.claimed || q.prog < q.n) return null;
   q.claimed = true;
   ms.stars += q.stars;
+  ms.questsDone = (ms.questsDone || 0) + 1; // 矿场称号 counter
   save();
   return q;
 }

@@ -11,8 +11,12 @@ export function petState() {
 export function findPet(ref, state = petState()) {
   return state.list.find((p) => p.uid === ref) || state.owned[ref] || null;
 }
-const addPet = (state, p) => {
+const addPet = (state, p, hatched = false) => {
   state.list.push(p);
+  // 称号 counters
+  if (hatched) state.stats.hatch++;
+  if (p.q >= 4) state.stats.legend++;
+  if (p.q === 5 && !state.stats.rbKinds.includes(p.id)) state.stats.rbKinds.push(p.id);
   (state.dex[p.id] ||= { skins: [] });
   const k = p.skin || "base";
   if (!state.dex[p.id].skins.includes(k)) state.dex[p.id].skins.push(k);
@@ -44,7 +48,7 @@ export function hatchEgg(kind = "base") {
   if (!egg || state.eggs[kind] <= 0) return null;
   state.eggs[kind]--;
   const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: egg.floor });
-  addPet(state, p);
+  addPet(state, p, true);
   save();
   return p;
 }
@@ -219,7 +223,7 @@ export function hatchNow(kind) {
   ms.stars -= cost;
   state.eggs[kind]--;
   const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: EGGS[kind].floor });
-  addPet(state, p);
+  addPet(state, p, true);
   save();
   return { ok: true, pet: p, cost };
 }
@@ -229,7 +233,7 @@ export function hatchSlot(i) {
   if (!sl || slotLeft(sl) > 0) return null;
   state.slots[i] = null;
   const p = rollPet(PET_ORDER[Math.floor(Math.random() * PET_ORDER.length)], Math.random, { rainbow: rollRainbow(state), floor: EGGS[sl.kind].floor });
-  addPet(state, p);
+  addPet(state, p, true);
   save();
   return { pet: p, kind: sl.kind };
 }

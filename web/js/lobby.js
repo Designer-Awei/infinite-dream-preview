@@ -13,6 +13,8 @@ import { localVersion, nativeInfo } from "./updater.js";
 import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMask, WALL, BUSH, CRATE, BARREL, LIFT } from "./map.js";
 import { T } from "./data.js";
 import { loadRun, offerResume } from "./runsave.js";
+import { checkTitles, titleState, titleHTML, TITLE_ORDER, TITLES } from "./titles.js";
+import { showTitles, announceTitles } from "./titleui.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
 import { showPets } from "./petui.js";
@@ -102,6 +104,7 @@ export function showLobby() {
   s.innerHTML = `<div class="sparkles"></div><div class="lb-glow"></div>
   <div class="topbar">
     <div class="logo outline">无限梦境<span>INFINITE DREAM</span></div>
+    <button class="ttl-entry" title="称号"></button>
     <div class="spacer"></div>
     <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
@@ -120,6 +123,16 @@ export function showLobby() {
   </div>`;
   root.appendChild(s);
   q(".pname", s).textContent = m.name;
+  // 称号 entry beside the logo: the worn title's plate (or a plain 称号 tag with how many are owned)
+  const te = q(".ttl-entry", s);
+  const drawTtl = () => {
+    const t = titleState(), n = Object.keys(t.own).filter((id) => TITLES[id]).length;
+    te.innerHTML = t.eq ? titleHTML(t.eq) : `<span class="ttl t-c te-none"><i class="tt-sh"></i><b>称号 ${n}/${TITLE_ORDER.length}</b></span>`;
+  };
+  te.onclick = () => (sfx("click"), showTitles("adv", drawTtl));
+  const freshTitles = checkTitles();
+  drawTtl();
+  if (freshTitles.length) setTimeout(() => s.isConnected && announceTitles(freshTitles, drawTtl), 700);
   q(".name-pill", s).onclick = () => (sfx("click"), showRename(s));
   q(".set-btn", s).onclick = () => (sfx("click"), showSettings());
   // the partner entry (宠物仓库): the carried pet (with its 异色), else the most grown one; an egg when there are only eggs

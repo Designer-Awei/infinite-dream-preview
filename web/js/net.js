@@ -10,6 +10,7 @@ import { fireAttack } from "./skills.js";
 import { angTo } from "./util.js";
 import { levelBonuses } from "./progression.js";
 import { validPet } from "./petdata.js";
+import { TITLES } from "./titles.js";
 import { animateClientPets } from "./pets.js";
 
 const PREFIX = "aigirls-dungeon-v1-";
@@ -663,6 +664,7 @@ function cleanKit(k) {
   out.core = k.core ? 1 : 0;
   out.level = levelBonuses(k.level).level;
   out.pet = validPet(k.pet);
+  out.title = typeof k.title === "string" && TITLES[k.title] ? k.title : null; // 称号 (shown over the head; effect in PVE)
   if (Object.keys(out.eq).length > LOADOUT_SLOTS) out.eq = {};
   out.cards = Array.isArray(k.cards) ? k.cards.filter((c) => typeof c === "string").slice(0, 40) : [];
   return out;
