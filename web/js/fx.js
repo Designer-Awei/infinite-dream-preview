@@ -53,6 +53,7 @@ const HEAVY = new Set([
   "holy/sunburst", "holy/heal-aoe", "lightning/thunderclap", "ice/frost-nova", "scifi/force-field",
   "nature/poison-cloud", "fire/fire-breath", "explosions/plasma-explosion", "explosions/implosion",
 ]);
+const BUSY = 22;
 export class FxLayer {
   constructor(w = VIEW_W, h = VIEW_H) {
     this.w = w;
@@ -110,6 +111,18 @@ export class FxLayer {
     if (!mod || !this.enabled) return null;
     // route portals stand side by side (up to three at a fork): never let one evict another, even in low-effects mode
     const cap = id==='nature/earth-spike'?(this.lite?6:14):id==='fire/fire-tornado'||id==='arcane/portal'?4:HEAVY.has(id) ? (this.lite ? 1 : 2) : this.lite ? 4 : 8;
+    // the same effect following the same unit (a shield recast while one is up): refresh it instead of stacking
+    // copies — they would look the same and each costs a full repaint (perf: stacked shields were the top cost)
+    if (o.follow && mod.meta.loop) for (let i = 0; i < this.list.length; i++) {
+      const f = this.list[i];
+      if (f.id !== id || f.follow !== o.follow || f.stopped) continue;
+      if (String(f.options.palette) === String(o.palette ?? f.options.palette)) {
+        if (f.life !== Infinity) f.life = Math.max(f.life, o.life ?? Infinity);
+        return f;
+      }
+      this.list.splice(i, 1);
+      break;
+    }
     let n = 0, old = -1;
     for (let i = 0; i < this.list.length; i++) if (this.list[i].id === id) {
       if (old < 0) old = i;
@@ -127,6 +140,8 @@ export class FxLayer {
     if (o.opts) Object.assign(opts, o.opts);
     const fx = createFx(mod, opts);
     fx.id = id;
+    const stop = fx.stop;
+    fx.stop = function () { this.stopped = true; return stop.apply(this, arguments); };
     fx.heavy = HEAVY.has(id);
     if (fx.heavy) this.hNew = true;
     fx.layer = o.layer || "front";
@@ -187,7 +202,12 @@ export class FxLayer {
     this.back.ox = this.front.ox = this.cam[0] = cx;
     this.back.oy = this.front.oy = this.cam[1] = cy;
     this.airShield.ox=cx;this.airShield.oy=cy;this.airShieldUsed=false;
-    const re = this.hNew || now - this.hT >= (this.lite ? 48 : 30);
+    // load shedding: when painting the effects gets expensive (twin bosses + stacked ultimates, or many live
+    // effects) every effect joins the heavy ones on the cached layer, repainted at ~30 Hz (~22 Hz when very heavy)
+    // and shifted with the camera in between, instead of every display frame. Measured, with hysteresis.
+    const pc = this.paintMs || 0, busy = this.list.length > BUSY || (this.busy ? pc > 3 : pc > 5);
+    if (busy !== this.busy) (this.busy = busy), (this.hNew = true);
+    const re = this.hNew || now - this.hT >= (this.lite ? 48 : busy && pc > 10 ? 45 : 30);
     if (re) {
       this._clear(this.hback);
       this._clear(this.hfront);
@@ -197,12 +217,13 @@ export class FxLayer {
       this.hNew = false;
     }
     this.backUsed = this.frontUsed = false;
+    const t0 = performance.now(), paints = re || !busy;
     for (const f of this.list) {
       if(f.id==='holy/divine-shield'&&f.follow&&!f.follow.dead&&!f.follow.downed&&flyingMount(f.follow)){
         this.airShieldUsed=true;f.draw(this.airShield);continue;
       }
       const back = f.layer === "back";
-      if (f.heavy) {
+      if (f.heavy || busy) {
         if (re) f.draw(back ? this.hback : this.hfront);
         continue;
       }
@@ -214,6 +235,8 @@ export class FxLayer {
       this._comp(this.hback, this.cHB, this.cHLB);
       this._comp(this.hfront, this.cHF, this.cHLF);
     }
+    // cost of a frame that actually painted (EMA), what the shedding above decides on
+    if (paints) this.paintMs = (this.paintMs || 0) * 0.85 + (performance.now() - t0) * 0.15;
   }
   _clear(fr) {
     const b = fr.bbox;

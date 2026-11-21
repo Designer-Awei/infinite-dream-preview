@@ -91,9 +91,10 @@ export class Painter {
     if (x > D[2]) D[2] = x;
     if (y < D[1]) D[1] = y;
     if (y > D[3]) D[3] = y;
-    const i = y * this.w + x, d = this.C[i], da = (d >>> 24) / 255, oa = a + da * (1 - a), k = a / oa;
-    const ch = (s) => ((((c >>> s) & 255) * k + ((d >>> s) & 255) * (1 - k)) & 255);
-    this.C[i] = (((oa * 255) & 255) << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0);
+    const i = y * this.w + x, d = this.C[i], da = (d >>> 24) / 255, oa = a + da * (1 - a), k = a / oa, j = 1 - k;
+    // channels inlined (perf: this runs per pixel of every translucent fill; a closure here cost an allocation per call)
+    const r = ((c & 255) * k + (d & 255) * j) & 255, g = (((c >>> 8) & 255) * k + ((d >>> 8) & 255) * j) & 255, b = (((c >>> 16) & 255) * k + ((d >>> 16) & 255) * j) & 255;
+    this.C[i] = (((oa * 255) & 255) << 24) | (b << 16) | (g << 8) | r;
   }
   /** Translucent pixel at a local point. */
   blend(x, y, c, a) { this.blendPx(this.cellX(x, y), this.cellY(x, y), c, a); }
@@ -133,11 +134,14 @@ export class Painter {
     }
     const sx0 = Math.max(Math.floor(ax), this.ox), sx1 = Math.min(Math.ceil(bx), this.ox + this.w - 1);
     const sy0 = Math.max(Math.floor(ay), this.oy), sy1 = Math.min(Math.ceil(by), this.oy + this.h - 1);
-    for (let sy = sy0; sy <= sy1; sy++)
-      for (let sx = sx0; sx <= sx1; sx++) {
-        const cx = sx + 0.5, cy = sy + 0.5;
-        fn(this.fromX(cx, cy), this.fromY(cx, cy), sx, sy);
-      }
+    // fromX/fromY inlined and stepped along the row (perf: the inner loop of every filled shape)
+    const tx = this.tx, ty = this.ty, cs = this.cs, sn = this.sn, f = this.fx;
+    for (let sy = sy0; sy <= sy1; sy++) {
+      const dy = sy + 0.5 - ty, dx0 = sx0 + 0.5 - tx;
+      let lx = (dx0 * cs + dy * sn) * f, ly = -dx0 * sn + dy * cs;
+      const stx = cs * f, sty = -sn;
+      for (let sx = sx0; sx <= sx1; sx++, lx += stx, ly += sty) fn(lx, ly, sx, sy);
+    }
   }
 
   /**

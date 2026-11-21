@@ -29,7 +29,7 @@ export const act = {
 
 // CY: the bubble's centre above the feet; o.cy lets the game raise it for taller characters (set per draw)
 let CY = -22;
-const TILT = 0.34, N = 4, FLOOR_SY = 0.26;
+const TILT = 0.34, N = 4, FLOOR_SY = 0.26, COS_T = Math.cos(TILT), SIN_T = Math.sin(TILT);
 
 // a point of the sphere (lat, lon) seen from a little above: screen x, y and depth z (> 0 faces us)
 function onSphere(r, lat, lon) {
@@ -40,26 +40,43 @@ function onSphere(r, lat, lon) {
 // the sheen: a diagonal band crossing the bubble once a loop, then a rest
 const sheen = (t, T) => -1.7 + 3.4 * clamp(((t / T) % 1) / 0.55);
 
+// lattice scratch: per screen-ish cell the nearest depth seen and whether the sheen is on it (reused every frame:
+// perf, this ran a Map of fresh arrays per point per frame)
+let LS = 0, LF = new Float32Array(0), LH = new Uint8Array(0), LX = new Float32Array(0), LY = new Float32Array(0), LK = new Int32Array(0), LM = new Int32Array(0), LGEN = 1;
 function lattice(p, t, o, back) {
-  const C = fit(o.palette, 8), r = o.radius, T = meta.duration, phi = (t / T) * (Math.PI / N), sw = sheen(t, T), seen = new Map();
+  const C = fit(o.palette, 8), r = o.radius, T = meta.duration, phi = (t / T) * (Math.PI / N), sw = sheen(t, T);
+  const S = Math.ceil(r) * 2 + 6, n = S * S, x0 = -Math.ceil(r) - 3, y0 = Math.floor(CY) - Math.ceil(r) - 3;
+  if (n > LS) (LS = n), (LF = new Float32Array(n)), (LH = new Uint8Array(n)), (LX = new Float32Array(n)), (LY = new Float32Array(n)), (LM = new Int32Array(n)), (LK = new Int32Array(n));
+  const gen = ++LGEN;
+  let cnt = 0;
   // gather the lines' pixels first, so each is drawn once
-  const dot = (x, y, z) => {
+  const dot = (lat, lon) => {
+    const cl = Math.cos(lat), X = r * cl * Math.sin(lon), Y = r * Math.sin(lat), Z = r * cl * Math.cos(lon);
+    const x = X, y = CY - (Y * COS_T - Z * SIN_T), z = Y * SIN_T + Z * COS_T;
     if (z < 0 !== back) return;
-    const key = Math.floor(x) * 1000 + Math.floor(y), f = Math.abs(z) / r, q = (x - (y - CY)) / (r * 1.414), hot = Math.abs(q - sw) < 0.12 ? 1 : 0, v = seen.get(key);
-    if (!v || f < v[2]) seen.set(key, [x, y, f, hot || (v ? v[3] : 0)]);
+    const cx = Math.floor(x) - x0, cy = Math.floor(y) - y0;
+    if (cx < 0 || cy < 0 || cx >= S || cy >= S) return;
+    const key = cy * S + cx, f = Math.abs(z) / r, q = (x - (y - CY)) / (r * 1.414), hot = Math.abs(q - sw) < 0.12 ? 1 : 0;
+    if (LM[key] !== gen) {
+      LM[key] = gen; LK[cnt++] = key; LF[key] = f; LH[key] = hot; LX[key] = x; LY[key] = y;
+    } else {
+      if (f < LF[key]) (LF[key] = f), (LX[key] = x), (LY[key] = y);
+      if (hot) LH[key] = 1;
+    }
   };
   // meridians, turning
   for (let k = 0; k < 2 * N; k++) {
     const lon = phi + (k * Math.PI) / N;
-    for (let lat = -Math.PI / 2; lat <= Math.PI / 2; lat += 0.7 / r) dot(...onSphere(r, lat, lon));
+    for (let lat = -Math.PI / 2; lat <= Math.PI / 2; lat += 0.7 / r) dot(lat, lon);
   }
   // the equator
-  for (let lon = 0; lon < TAU; lon += 0.7 / r) dot(...onSphere(r, 0, lon));
+  for (let lon = 0; lon < TAU; lon += 0.7 / r) dot(0, lon);
   // behind: faint and broken. In front: bright where the surface turns away, a translucent wash of gold
   // where it faces us, so the character still shows through
-  for (const [x, y, f, hot] of seen.values()) {
+  for (let i = 0; i < cnt; i++) {
+    const key = LK[i], x = LX[key], y = LY[key], f = LF[key];
     if (back) p.blend(x, y, C[4], 0.32);
-    else if (hot) p.px(x, y, WHITE);
+    else if (LH[key]) p.px(x, y, WHITE);
     else if (f < 0.4) p.px(x, y, C[6]);
     else p.blend(x, y, f < 0.7 ? C[6] : C[5], f < 0.7 ? 0.8 : 0.55);
   }
@@ -67,11 +84,12 @@ function lattice(p, t, o, back) {
 
 function film(p, t, o, back) {
   const C = fit(o.palette, 8), r = o.radius, sw = sheen(t, meta.duration);
+  const ir2 = 1 / (r * r), iq = 1 / (r * 1.414), a0 = back ? 0.07 : 0.03, hk = back ? 0.06 : 0.2;
   p.each(-r - 1, CY - r - 1, r + 1, CY + r + 1, (x, y, sx, sy) => {
-    const d = Math.hypot(x, y - CY) / r;
-    if (d >= 1) return;
-    const q = (x - (y - CY)) / (r * 1.414), hot = Math.max(0, 1 - Math.abs(q - sw) / 0.22);
-    const a = (back ? 0.07 : 0.03) + 0.26 * Math.pow(d, 6) + 0.2 * hot * (back ? 0.3 : 1);
+    const yy = y - CY, d2 = (x * x + yy * yy) * ir2;
+    if (d2 >= 1) return;
+    const q = (x - yy) * iq, hot = Math.max(0, 1 - Math.abs(q - sw) / 0.22);
+    const a = a0 + 0.26 * d2 * d2 * d2 + hk * hot;
     p.blendPx(sx, sy, hot > 0.5 && !back ? C[6] : C[5], a);
   });
 }
