@@ -1,4 +1,4 @@
-// 梦魇契约 panel (lobby): pick the run's optional terms with steppers; shows the level, the 晶石 bonus, best
+// 噩梦契约 panel (lobby): pick the run's optional terms with steppers; shows the level, the 晶石 bonus, best
 // clears per map and the one-time milestones.
 import { PACTS, PACT_MAX, pactLevel, PACT_MILESTONES, MAPS, MAP_ORDER } from "./data.js";
 import { load, save } from "./save.js";
@@ -10,7 +10,7 @@ export function showPacts(onClose) {
   const m = load();
   m.pact = m.pact || {};
   const md = el("div", "modal pact-md");
-  md.innerHTML = `<div class="pact-p"><div class="pact-head"><h2 class="outline">梦魇契约</h2><span class="pact-lv o1"></span><span class="pact-x"></span></div>
+  md.innerHTML = `<div class="pact-p"><div class="pact-head"><h2 class="outline">噩梦契约</h2><span class="pact-lv o1"></span><span class="pact-x"></span></div>
     <div class="pact-body"><div class="pact-list"></div><div class="pact-side"><div class="pact-sum"></div><div class="pact-best"></div><div class="pact-ms"></div></div></div></div>`;
   const list = md.querySelector(".pact-list");
   const draw = () => {

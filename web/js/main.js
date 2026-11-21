@@ -249,7 +249,7 @@ export const app = {
     const mul = endless ? 1 : md.reward || 1;
     const riftBonus = (rs.riftDeclines || 0) * REWARD.riftSkip;
     // 双首领 pays its boss reward twice
-    // 梦魇契约: +8% 晶石 a level on the run's own earnings
+    // 噩梦契约: +8% 晶石 a level on the run's own earnings
     const plv = pactLevel(g.pact), pmul = 1 + 0.08 * plv;
     const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0) + (rs.twinBosses || 0) * REWARD.boss) * mul * pmul) + (first ? REWARD.firstBoss : 0) + riftBonus;
     if (win && !endless) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
@@ -297,11 +297,11 @@ export const app = {
           if (ms.title) m.title = ms.title;
           save();
           for (const [kind, n] of ms.eggs || []) grantEggs(n, kind);
-          extras.push(["契约里程碑", `梦魇 ${ms.lv} · ${ms.name}`]);
+          extras.push(["契约里程碑", `噩梦 ${ms.lv} · ${ms.name}`]);
         }
       }
       save();
-      extras.push(["梦魇契约", note]);
+      extras.push(["噩梦契约", note]);
     }
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);

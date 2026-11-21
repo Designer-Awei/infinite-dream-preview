@@ -58,7 +58,7 @@ export class Game {
   get host() {
     return this.mode !== "client";
   }
-  /** the run's 梦魇契约 terms (solo PVE only) */
+  /** the run's 噩梦契约 terms (solo PVE only) */
   get pact() {
     return this.mode === "solo" && !this.pvp ? this.opt.pact || {} : {};
   }
@@ -354,7 +354,7 @@ export class Game {
     for (let i = 0; i < extra; i++) list.push(rr.pick(waves[this.wave]).replace("*", ""));
     const spots = rr.shuffle([...this.map.spots]).filter((s) => this.players.every((p) => dist(s.x, s.y, p.x, p.y) > 150));
     list.forEach((k, i) => {
-      const elite = k.endsWith("*") || (!!this.pact.elite && !ENEMIES[k.replace("*", "")]?.boss && rr() < 0.15); // 梦魇契约·精英泛滥
+      const elite = k.endsWith("*") || (!!this.pact.elite && !ENEMIES[k.replace("*", "")]?.boss && rr() < 0.15); // 噩梦契约·精英泛滥
       const s = spots[i % spots.length];
       this.spawnEnemy(k.replace("*", ""), s.x, s.y, elite, 0.6 + i * 0.12);
     });
@@ -383,7 +383,7 @@ export class Game {
       spawnT: delay, wob: Math.random() * 6, lastBy: null,
     };
     e.hp *= this.curseHp || 1; // 诅咒宝箱
-    // 梦魇契约
+    // 噩梦契约
     if (this.pact.hp) e.hp *= 1 + 0.25 * this.pact.hp;
     if (this.pact.boss && d.boss) e.hp *= 1.5;
     if (this.pact.speed && d.spd) e.def = { ...d, spd: d.spd * 1.2 };
@@ -797,7 +797,7 @@ export class Game {
       p.invuln = 0.3;
       return false;
     }
-    n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 梦魇契约·凶猛梦魇
+    n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 噩梦契约·凶猛噩梦
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
     p.invuln = BAL.hurtInvuln;
@@ -937,7 +937,7 @@ export class Game {
   // ------------------------------------------------------------ bullets
   mkBullet(p, o) {
     return {
-      id: nid(), side: o.side || "p", owner: p ? p.id : null, x: o.x, y: o.y, vx: Math.cos(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), vy: Math.sin(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), // 梦魇契约·弹幕加速
+      id: nid(), side: o.side || "p", owner: p ? p.id : null, x: o.x, y: o.y, vx: Math.cos(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), vy: Math.sin(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), // 噩梦契约·弹幕加速
       r: o.r || 4, dmg: o.dmg, elem: o.elem, kind: o.kind, life: o.life ?? 1.2, pierce: o.pierce || 0, bounce: o.bounce || 0, hits: new Set(),
       splash: o.splash || 0, splashDmg: o.splashDmg || 0, slow: o.slow, burn: o.burn, knock: o.knock || 0, fusion: o.fusion, from: o.from, t: 0,
       h: o.h || 0, wave: o.wave, shieldGive: o.shieldGive, noReact: o.noReact, big: o.big, arcTo: o.arcTo, onLand: o.onLand,
@@ -1451,7 +1451,7 @@ export class Game {
   }
   /** roll 3 card offers for a player (host) */
   offerCards(p, n = 3, rarityFloor = null) {
-    if (this.pact.cards) n = Math.min(n, 2); // 梦魇契约·卡池封锁
+    if (this.pact.cards) n = Math.min(n, 2); // 噩梦契约·卡池封锁
     const pool = this.cardPool(p);
     if (!pool.length) {
       delete this.cardOffers[p.id];
@@ -1814,7 +1814,7 @@ export class Game {
           q.y += Math.sin(a) * 320 * dt;
         }
         if (bd < 16 && q.t > 0.3) {
-          const ck = best.st.coin * (this.pact.poor ? 0.5 : 1), v = Math.random() < (ck % 1) ? Math.ceil(ck) : Math.floor(ck); // 梦魇契约·贫瘠梦魇
+          const ck = best.st.coin * (this.pact.poor ? 0.5 : 1), v = Math.random() < (ck % 1) ? Math.ceil(ck) : Math.floor(ck); // 噩梦契约·贫瘠噩梦
           best.coins += v;
           this.runStats.coins += v;
           this.sound("coin", 0.05);
@@ -1886,7 +1886,7 @@ export class Game {
 }
 
 /** apply a skill card's effect */
-/** 梦魇契约 terms, clamped to each term's ranks (solo PVE only: PVP and online rooms play without) */
+/** 噩梦契约 terms, clamped to each term's ranks (solo PVE only: PVP and online rooms play without) */
 function cleanPact(pact) {
   const out = {};
   if (pact && typeof pact === "object") for (const q of PACTS) { const v = Math.min(q.max, Math.max(0, pact[q.id] | 0)); if (v) out[q.id] = v; }

@@ -168,10 +168,10 @@ export function showLobby() {
     s.classList.add("launch");
     app.closeDoors().then(() => app.startSolo());
   });
-  // 梦魇契约 chip beside the play button: shows the level, opens the terms
+  // 噩梦契约 chip beside the play button: shows the level, opens the terms
   const prow = el("div", "lb-playrow");
   const plv = pactLevel(m.pact || {});
-  const pk = el("button", "pact-chip" + (plv ? " on" : ""), `<span class="pc-t outline">梦魇</span><span class="pc-n outline">${plv}</span>`);
+  const pk = el("button", "pact-chip" + (plv ? " on" : ""), `<span class="pc-t outline">噩梦</span><span class="pc-n outline">${plv}</span>`);
   pk.onclick = () => (sfx("click"), import("./pactui.js").then((P) => P.showPacts(() => { const v = pactLevel(load().pact || {}); pk.classList.toggle("on", !!v); pk.querySelector(".pc-n").textContent = v; })));
   prow.append(pk, pb);
   play.appendChild(prow);

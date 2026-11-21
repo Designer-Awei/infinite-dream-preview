@@ -2584,7 +2584,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 @keyframes bbBar { 0% { transform: scaleY(0); } 12%, 82% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
 @keyframes bossCardIn { 0% { transform: scale(1.6); opacity: 0; filter: blur(4px); } 60% { transform: scale(.96); opacity: 1; filter: none; } 100% { transform: scale(1); } }
 
-/* 梦魇契约: a square chip beside 开始冒险, and its panel */
+/* 噩梦契约: a square chip beside 开始冒险, and its panel */
 .lb-playrow { display: flex; gap: 8px; align-items: stretch; }
 .lb-playrow .play-btn { flex: 1; }
 .pact-chip { flex: none; width: clamp(54px, 7vw, 76px); border: 3px solid var(--ink); border-radius: 14px; background: linear-gradient(180deg, #4a3a7a, #2a1e50); color: #fff; box-shadow: 0 5px 0 var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; cursor: pointer; font: inherit; }

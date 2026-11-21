@@ -214,17 +214,17 @@ const ENDLESS_POOL = [
   ["ghost", "jelly", "wisp", "skull", "snake", "eyeball"],
   ["skull", "snake", "wisp", "jelly", "ghost", "frog", "eyeball"],
 ];
-// 梦魇契约: optional terms picked before a solo run (lobby). Each rank adds `pts` to the 梦魇等级; the level raises the
+// 噩梦契约: optional terms picked before a solo run (lobby). Each rank adds `pts` to the 噩梦等级; the level raises the
 // run's 晶石 by 8% a point and clearing a map at a new best level pays the milestones below once each.
 export const PACTS = [
-  { id: "hp", name: "坚韧梦魇", desc: "敌人生命 +25%", max: 3, pts: 1 },
+  { id: "hp", name: "坚韧噩梦", desc: "敌人生命 +25%", max: 3, pts: 1 },
   { id: "bullet", name: "弹幕加速", desc: "敌方子弹速度 +20%", max: 2, pts: 1 },
-  { id: "speed", name: "狂躁梦魇", desc: "敌人移速 +20%", max: 1, pts: 1 },
-  { id: "poor", name: "贫瘠梦魇", desc: "局内金币 -50%", max: 1, pts: 1 },
+  { id: "speed", name: "狂躁噩梦", desc: "敌人移速 +20%", max: 1, pts: 1 },
+  { id: "poor", name: "贫瘠噩梦", desc: "局内金币 -50%", max: 1, pts: 1 },
   { id: "elite", name: "精英泛滥", desc: "普通敌人 15% 概率成为精英", max: 1, pts: 2 },
   { id: "boss", name: "首领觉醒", desc: "首领生命 +50%，双首领概率 30%", max: 1, pts: 2 },
   { id: "cards", name: "卡池封锁", desc: "开箱只给两张卡", max: 1, pts: 2 },
-  { id: "dmg", name: "凶猛梦魇", desc: "每次受到伤害 +1", max: 1, pts: 3 },
+  { id: "dmg", name: "凶猛噩梦", desc: "每次受到伤害 +1", max: 1, pts: 3 },
   { id: "noshield", name: "护盾停转", desc: "护盾不会自动回复", max: 1, pts: 3 },
 ];
 export const PACT_MAX = PACTS.reduce((a, q) => a + q.max * q.pts, 0);
@@ -234,7 +234,7 @@ export const PACT_MILESTONES = [
   { lv: 8, name: "HUR 宠物蛋 ×1 · 1000 晶石", eggs: [["hur", 1]], gems: 1000 },
   { lv: 12, name: "兑换卡 ×2 · 2000 晶石", cards: 2, gems: 2000 },
   { lv: 16, name: "HUR 宠物蛋 ×2 · 3000 晶石", eggs: [["hur", 2]], gems: 3000 },
-  { lv: PACT_MAX, name: "称号「梦魇主宰」· 5000 晶石", title: "梦魇主宰", gems: 5000 },
+  { lv: PACT_MAX, name: "称号「噩梦主宰」· 5000 晶石", title: "噩梦主宰", gems: 5000 },
 ];
 // every boss in the game; the endless corridor's boss floors cycle through them in a seeded order
 export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_witch", "boss_core", "boss_worm", "boss_judge"];
