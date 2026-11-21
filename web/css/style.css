@@ -2583,3 +2583,37 @@ body.touchmode .pet-ride-btn small { display:none; }
 .bb-bar.t { top: 0; transform-origin: top; } .bb-bar.b { bottom: 0; transform-origin: bottom; }
 @keyframes bbBar { 0% { transform: scaleY(0); } 12%, 82% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
 @keyframes bossCardIn { 0% { transform: scale(1.6); opacity: 0; filter: blur(4px); } 60% { transform: scale(.96); opacity: 1; filter: none; } 100% { transform: scale(1); } }
+
+/* 梦魇契约: a square chip beside 开始冒险, and its panel */
+.lb-playrow { display: flex; gap: 8px; align-items: stretch; }
+.lb-playrow .play-btn { flex: 1; }
+.pact-chip { flex: none; width: clamp(54px, 7vw, 76px); border: 3px solid var(--ink); border-radius: 14px; background: linear-gradient(180deg, #4a3a7a, #2a1e50); color: #fff; box-shadow: 0 5px 0 var(--ink); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0; cursor: pointer; font: inherit; }
+.pact-chip.on { background: linear-gradient(180deg, #b03060, #5a1030); box-shadow: 0 5px 0 var(--ink), 0 0 16px rgba(255,60,110,.6); }
+.pact-chip:active { transform: translateY(3px); box-shadow: 0 2px 0 var(--ink); }
+.pact-chip .pc-t { font-size: 12px; } .pact-chip .pc-n { font-size: 24px; line-height: 1; }
+.pact-md { display: flex; align-items: center; justify-content: center; }
+.pact-p { width: min(760px, 94vw); max-height: 92vh; background: linear-gradient(180deg, #3a2a6a, #24184a); border: 4px solid var(--ink); border-radius: 18px; padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 8px; }
+.pact-head { display: flex; align-items: center; gap: 10px; }
+.pact-head h2 { margin: 0; font-size: 24px; font-weight: normal; }
+.pact-head .pact-lv { color: #ff8aa8; font-size: 14px; }
+.pact-head .pact-x { margin-left: auto; }
+.pact-head .pact-x .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.pact-body { display: flex; gap: 10px; min-height: 0; overflow: hidden; }
+.pact-list { flex: 1.6; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; padding-right: 2px; }
+.pact-row { display: flex; align-items: center; gap: 6px; background: rgba(10,6,24,.45); border: 2px solid var(--ink); border-radius: 10px; padding: 1px 6px; }
+.pact-row.on { background: rgba(120,20,60,.55); }
+.pact-row .pr-t { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pact-row .pr-t b { font-weight: normal; font-size: 13px; line-height: 1.2; } .pact-row .pr-t small { font-size: 10px; color: #d8d0ff; line-height: 1.2; }
+.pact-row .pr-pips { display: flex; gap: 3px; } .pact-row .pr-pips i { width: 9px; height: 9px; border: 2px solid var(--ink); border-radius: 3px; background: #3a2e5a; }
+.pact-row .pr-pips i.on { background: #ff4a7a; }
+.pact-row .pr-pts { width: 26px; text-align: center; color: #ffd84a; font-size: 12px; }
+.pact-row .pr-b { width: 28px; height: 24px; font-size: 14px !important; padding: 0 !important; text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
+.pact-row .pr-b.off { opacity: .35; pointer-events: none; }
+.pact-side { flex: 1; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+.pact-sum { text-align: center; background: rgba(10,6,24,.45); border: 2px solid var(--ink); border-radius: 10px; padding: 4px; }
+.pact-sum .ps-big { font-size: 34px; color: #ff6a9a; line-height: 1.1; } .pact-sum .ps-t { font-size: 13px; color: #ffd84a; } .pact-sum .ps-s { font-size: 10px; color: #b8b0e0; }
+.pb-h { font-size: 12px; color: #ffd84a; margin-bottom: 2px; }
+.pb-r, .pm-r { display: flex; gap: 6px; font-size: 12px; align-items: center; } .pb-r b { margin-left: auto; font-weight: normal; color: #ff8aa8; }
+.pm-r { color: #b8b0e0; } .pm-r.ready { color: #fff; } .pm-r.got { color: #8ae08a; }
+.pm-r .pm-lv { width: 22px; text-align: center; border: 2px solid var(--ink); border-radius: 6px; background: #5a1030; color: #fff; font-size: 11px; }
+.pm-r i { margin-left: auto; font-style: normal; }

@@ -1,6 +1,6 @@
 // Lobby (Brawl Stars-style home: hero on a stage in the middle, info on the left, play button bottom-right)
 // and the capsule gacha with a staged pull sequence (crank → capsule → open → card flips → summary).
-import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS, CORE_FX, CORE_DETAIL } from "./data.js";
+import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_ORDER, LOADOUT_SLOTS, CORE_FX, CORE_DETAIL, pactLevel } from "./data.js";
 import { STASH_ITEM, redeemExchangeCard } from "./save.js";
 import { characterProgress } from "./save.js";
 import { claimable } from "./minequests.js";
@@ -168,7 +168,13 @@ export function showLobby() {
     s.classList.add("launch");
     app.closeDoors().then(() => app.startSolo());
   });
-  play.appendChild(pb);
+  // 梦魇契约 chip beside the play button: shows the level, opens the terms
+  const prow = el("div", "lb-playrow");
+  const plv = pactLevel(m.pact || {});
+  const pk = el("button", "pact-chip" + (plv ? " on" : ""), `<span class="pc-t outline">梦魇</span><span class="pc-n outline">${plv}</span>`);
+  pk.onclick = () => (sfx("click"), import("./pactui.js").then((P) => P.showPacts(() => { const v = pactLevel(load().pact || {}); pk.classList.toggle("on", !!v); pk.querySelector(".pc-n").textContent = v; })));
+  prow.append(pk, pb);
+  play.appendChild(prow);
   play.appendChild(el("div", "lb-stats o1", `击败 ${m.stats.kills} · 反应 ${m.stats.reactions} · 通关 ${m.stats.bossKills} · 最远 ${m.stats.best}/7`));
   // next goal (like Brawl Stars' trophy road progress): one slim line
   const next = CHAR_ORDER.find((id) => !m.chars.includes(id));

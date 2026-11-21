@@ -1,5 +1,5 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
-import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES } from "./data.js";
+import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
@@ -24,7 +24,7 @@ export class Game {
     this.petTrial = !pvp && !!opt.petTrial;
     this.petFields = [];
     // mode options: map (chapter) for PVE, endless corridor, PVP rule set
-    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}) }; // twinBoss: force 双首领 on/off (tests)
+    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", pact: cleanPact(opt.pact), ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}) }; // twinBoss: force 双首领 on/off (tests)
     this.endless = !pvp && this.opt.endless;
     this.mapDef = MAPS[this.opt.map];
     this.pvpRule = PVP_MODES[this.opt.pvpMode];
@@ -57,6 +57,10 @@ export class Game {
   }
   get host() {
     return this.mode !== "client";
+  }
+  /** the run's 梦魇契约 terms (solo PVE only) */
+  get pact() {
+    return this.mode === "solo" && !this.pvp ? this.opt.pact || {} : {};
   }
 
   // ------------------------------------------------------------ players
@@ -232,7 +236,7 @@ export class Game {
     if (this.endless && idx % 10 === 0) this.raresSeen = 0;
     this.room = def;
     const kind = def.kind;
-    this.twinBoss = kind === "boss" && !this.pvp && !this.petTrial && (this.opt.twinBoss ?? rng(this.seed + idx * 577 + 13)() < TWIN_BOSS_CHANCE);
+    this.twinBoss = kind === "boss" && !this.pvp && !this.petTrial && (this.opt.twinBoss ?? rng(this.seed + idx * 577 + 13)() < (this.pact.boss ? 0.3 : TWIN_BOSS_CHANCE));
     const md = this.roomMap(idx);
     // every room uses its own map's look and floor hazard (the boss fights on home ground); shops have no hazard patches
     this.hazard = md.hazard;
@@ -350,7 +354,7 @@ export class Game {
     for (let i = 0; i < extra; i++) list.push(rr.pick(waves[this.wave]).replace("*", ""));
     const spots = rr.shuffle([...this.map.spots]).filter((s) => this.players.every((p) => dist(s.x, s.y, p.x, p.y) > 150));
     list.forEach((k, i) => {
-      const elite = k.endsWith("*");
+      const elite = k.endsWith("*") || (!!this.pact.elite && !ENEMIES[k.replace("*", "")]?.boss && rr() < 0.15); // 梦魇契约·精英泛滥
       const s = spots[i % spots.length];
       this.spawnEnemy(k.replace("*", ""), s.x, s.y, elite, 0.6 + i * 0.12);
     });
@@ -379,6 +383,10 @@ export class Game {
       spawnT: delay, wob: Math.random() * 6, lastBy: null,
     };
     e.hp *= this.curseHp || 1; // 诅咒宝箱
+    // 梦魇契约
+    if (this.pact.hp) e.hp *= 1 + 0.25 * this.pact.hp;
+    if (this.pact.boss && d.boss) e.hp *= 1.5;
+    if (this.pact.speed && d.spd) e.def = { ...d, spd: d.spd * 1.2 };
     e.maxHp = e.hp;
     this.seen[type] = 1;
     this.enemies.push(e);
@@ -789,7 +797,7 @@ export class Game {
       p.invuln = 0.3;
       return false;
     }
-    n = this.scaleHurt(n, src);
+    n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 梦魇契约·凶猛梦魇
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
     p.invuln = BAL.hurtInvuln;
@@ -929,7 +937,7 @@ export class Game {
   // ------------------------------------------------------------ bullets
   mkBullet(p, o) {
     return {
-      id: nid(), side: o.side || "p", owner: p ? p.id : null, x: o.x, y: o.y, vx: Math.cos(o.a) * o.spd, vy: Math.sin(o.a) * o.spd,
+      id: nid(), side: o.side || "p", owner: p ? p.id : null, x: o.x, y: o.y, vx: Math.cos(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), vy: Math.sin(o.a) * o.spd * (o.side === "e" && this.pact.bullet ? 1 + 0.2 * this.pact.bullet : 1), // 梦魇契约·弹幕加速
       r: o.r || 4, dmg: o.dmg, elem: o.elem, kind: o.kind, life: o.life ?? 1.2, pierce: o.pierce || 0, bounce: o.bounce || 0, hits: new Set(),
       splash: o.splash || 0, splashDmg: o.splashDmg || 0, slow: o.slow, burn: o.burn, knock: o.knock || 0, fusion: o.fusion, from: o.from, t: 0,
       h: o.h || 0, wave: o.wave, shieldGive: o.shieldGive, noReact: o.noReact, big: o.big, arcTo: o.arcTo, onLand: o.onLand,
@@ -1443,6 +1451,7 @@ export class Game {
   }
   /** roll 3 card offers for a player (host) */
   offerCards(p, n = 3, rarityFloor = null) {
+    if (this.pact.cards) n = Math.min(n, 2); // 梦魇契约·卡池封锁
     const pool = this.cardPool(p);
     if (!pool.length) {
       delete this.cardOffers[p.id];
@@ -1598,7 +1607,7 @@ export class Game {
     // shield regen
     p.lastHit += dt;
     if (p.lastHit > BAL.shieldDelay && p.shield < p.maxShield) {
-      p.shieldT += this.room && this.room.noShield ? 0 : dt * p.st.shieldRegen;
+      p.shieldT += (this.room && this.room.noShield) || this.pact.noshield ? 0 : dt * p.st.shieldRegen;
       if (p.shieldT >= BAL.shieldTick) (p.shieldT = 0), p.shield++;
     }
     // lava floor
@@ -1805,7 +1814,7 @@ export class Game {
           q.y += Math.sin(a) * 320 * dt;
         }
         if (bd < 16 && q.t > 0.3) {
-          const v = Math.random() < (best.st.coin % 1) ? Math.ceil(best.st.coin) : Math.floor(best.st.coin);
+          const ck = best.st.coin * (this.pact.poor ? 0.5 : 1), v = Math.random() < (ck % 1) ? Math.ceil(ck) : Math.floor(ck); // 梦魇契约·贫瘠梦魇
           best.coins += v;
           this.runStats.coins += v;
           this.sound("coin", 0.05);
@@ -1877,6 +1886,12 @@ export class Game {
 }
 
 /** apply a skill card's effect */
+/** 梦魇契约 terms, clamped to each term's ranks (solo PVE only: PVP and online rooms play without) */
+function cleanPact(pact) {
+  const out = {};
+  if (pact && typeof pact === "object") for (const q of PACTS) { const v = Math.min(q.max, Math.max(0, pact[q.id] | 0)); if (v) out[q.id] = v; }
+  return out;
+}
 export function applyCard(g, p, id) {
   p.cards[id] = (p.cards[id] || 0) + 1;
   const s = p.st;

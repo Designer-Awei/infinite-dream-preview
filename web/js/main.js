@@ -1,5 +1,5 @@
 // Boot, the frame loop, and the app controller tying UI, game and network together.
-import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES, ENEMIES } from "./data.js";
+import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES, ENEMIES, PACTS, pactLevel, PACT_MILESTONES } from "./data.js";
 import { loadAll, A } from "./assets.js";
 import { loadFx, FxLayer } from "./fx.js";
 import { Renderer } from "./render.js";
@@ -55,7 +55,7 @@ function resize() {
 export function playMode() {
   const m = load(), pm = m.playMode || {};
   const map = MAPS[pm.map] && mapUnlocked(pm.map) ? pm.map : "grass";
-  return { map, endless: !!pm.endless && endlessUnlocked() };
+  return { map, endless: !!pm.endless && endlessUnlocked(), pact: m.pact || {} };
 }
 export function mapUnlocked(id) {
   const need = MAPS[id] && MAPS[id].need, m = load();
@@ -249,7 +249,9 @@ export const app = {
     const mul = endless ? 1 : md.reward || 1;
     const riftBonus = (rs.riftDeclines || 0) * REWARD.riftSkip;
     // 双首领 pays its boss reward twice
-    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0) + (rs.twinBosses || 0) * REWARD.boss) * mul) + (first ? REWARD.firstBoss : 0) + riftBonus;
+    // 梦魇契约: +8% 晶石 a level on the run's own earnings
+    const plv = pactLevel(g.pact), pmul = 1 + 0.08 * plv;
+    const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0) + (rs.twinBosses || 0) * REWARD.boss) * mul * pmul) + (first ? REWARD.firstBoss : 0) + riftBonus;
     if (win && !endless) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
     const prevBest = m.stats.endlessBest || 0;
     if (endless) m.stats.endlessBest = Math.max(prevBest, rs.rooms);
@@ -280,6 +282,27 @@ export const app = {
     const eggs = grantEggs(Math.min(3 + (rs.twinBosses || 0), rs.xpBosses || 0) + (rs.riftEggs || 0));
     if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);
     if (rs.twinBosses) extras.push(["双首领", `${rs.twinBosses} 次 · 首领奖励翻倍`]);
+    if (plv) {
+      // a clear (a won chapter, or ten endless floors) records the level per map and pays new milestones once
+      const cleared = endless ? rs.rooms >= 10 : win, key = endless ? "endless" : o.map;
+      m.pactBest = m.pactBest || {};
+      m.pactClaim = m.pactClaim || [];
+      let note = `等级 ${plv} · 晶石 ×${pmul.toFixed(2)}`;
+      if (cleared) {
+        if (plv > (m.pactBest[key] || 0)) (m.pactBest[key] = plv), (note += " · 新纪录");
+        for (const ms of PACT_MILESTONES) if (plv >= ms.lv && !m.pactClaim.includes(ms.lv)) {
+          m.pactClaim.push(ms.lv);
+          if (ms.gems) m.tokens += ms.gems;
+          if (ms.cards) { const ms2 = mineState(); ms2.cards = (ms2.cards || 0) + ms.cards; }
+          if (ms.title) m.title = ms.title;
+          save();
+          for (const [kind, n] of ms.eggs || []) grantEggs(n, kind);
+          extras.push(["契约里程碑", `梦魇 ${ms.lv} · ${ms.name}`]);
+        }
+      }
+      save();
+      extras.push(["梦魇契约", note]);
+    }
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
     if (first) extras.push([`首通 ${md.name}`, "+" + REWARD.firstBoss + '<i class="cur gem"></i>']);
     if (first) {

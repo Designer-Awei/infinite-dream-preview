@@ -1,5 +1,5 @@
 // HTML overlay: lobby, roster, gacha, net rooms, HUD, card picks, pause, results.
-import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, EVOLUTIONS, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
+import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, CARDS, fusionCards, EVOLUTIONS, PACTS, RARITY, GACHA, RUN, STATUS, ITEMS, REACTIONS, MAPS, MAP_ORDER, PVP_MODES, REWARD } from "./data.js";
 import { load, save, unlockProgress, pull, checkUnlocks } from "./save.js";
 import { A } from "./assets.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
@@ -122,6 +122,7 @@ export function showHelp() {
         ["boss", "暗紫门。第 7 层首领战（数据草原：幻觉之眼 / 根须之心；显存冰原：冰封史莱姆王 / 霜镜女巫；算力熔炉：过热核心 / 熔岩巨蠕；无尽回廊每 10 层轮换全部首领），击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip" style="background:${NODE[k].col};color:#1a1020">${NODE[k].name}</span><span>${t}</span></div>`).join("")}
       ${H("觉醒卡")}凑齐配方（第一张满到要求的张数、再有第二张）后，下一次开箱或扭蛋的第一张必是 UR 觉醒卡，原卡保留、觉醒效果叠加；卡面上“可觉醒”提示它通往哪张。${EVOLUTIONS.map((ev) => `<div class="hp-cur"><span class="chip w5" style="background:#ff8ae6;color:#1a1020">${ev.name}</span><span><b>${Object.entries(ev.need).map(([k, n]) => cardName(k) + (n > 1 ? "×" + n : "")).join(" + ")}</b>：${ev.desc}</span></div>`).join("")}
+      ${H("梦魇契约")}主页「开始冒险」左边的「梦魇」方块：单人闯关前自选难度条款，每级让本局晶石 +8%；以某个等级通关一张地图（无尽为打到第 10 层）记录该图最高等级，首次达到 4 / 8 / 12 / 16 / 19 级各领一次里程碑奖励（宠物蛋、兑换卡、晶石、称号「梦魇主宰」）。${PACTS.map((q) => `<div class="hp-cur"><span class="chip w4" style="background:#ff6a9a;color:#1a1020">${q.name}</span><span>${q.desc}${q.max > 1 ? `（每级，最多 ${q.max} 级）` : ""}，每级 +${q.pts} 梦魇</span></div>`).join("")}
       ${H("挑战规则")}${Object.values(CHALLENGES).map((c) => `<div class="hp-cur"><span class="chip w4" style="background:${NODE.challenge.col};color:#1a1020">${c.name}</span><span>${c.desc}。</span></div>`).join("")}
       ${H("事件访客")}${[
         ["altar", "献上 1 点生命上限，换一次 SR / SSR 三选一；也可以直接离开。"],
