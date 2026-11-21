@@ -44,11 +44,7 @@ export class Game {
     this.phase = "init";
     this.time = 0;
     this.shake = 0;
-    this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0, riftDeclines: 0, score: 0, comboMax: 0, flawless: 0 };
-    // 局内分数: kills (×连击 multiplier), rooms, 无伤 rooms, 完美闪避, the clear; 连击 breaks after 2.5 s or on a hit
-    this.combo = 0;
-    this.comboT = 0;
-    this.roomHurt = false;
+    this.runStats = { kills: 0, elites: 0, reactions: 0, rooms: 0, boss: false, dmg: 0, coins: 0, riftDeclines: 0 };
     // 怪物图鉴: what this run met and beat; 藏品 dropped by rare monsters (saved at the end of the run)
     this.seen = {};
     this.killedTypes = {};
@@ -239,7 +235,6 @@ export class Game {
     return MAPS[ids[Math.floor(idx / 10) % ids.length]];
   }
   loadRoom(idx, def) {
-    this.roomHurt = false; // 无伤 is judged per room
     if (this.endless && idx % 10 === 0) this.raresSeen = 0;
     this.room = def;
     const kind = def.kind;
@@ -673,13 +668,6 @@ export class Game {
     e.kbx += Math.cos(a) * power;
     e.kby += Math.sin(a) * power;
   }
-  /** 局内分数: add points (kills are boosted by the 连击 multiplier, up to ×2 at 50) */
-  addScore(n, combo = false) {
-    if (this.pvp || !this.host) return 0;
-    const k = combo ? 1 + Math.min(this.combo, 50) * 0.02 : 1, v = Math.round(n * k);
-    this.runStats.score += v;
-    return v;
-  }
   /** 精英词缀 on death: 分裂 two small copies, 爆裂 a bomb */
   affixDeath(e) {
     if (e.affix === "split" && this.enemies.length < 40)
@@ -705,13 +693,6 @@ export class Game {
     e.dead = true;
     this.runStats.kills++;
     if (e.elite) this.runStats.elites++;
-    if (!e.mirror && !this.pvp) {
-      this.combo++;
-      this.comboT = 2.5;
-      this.runStats.comboMax = Math.max(this.runStats.comboMax, this.combo);
-      if (this.combo % 10 === 0) this.text(e.x, e.y - 50, `${this.combo} 连击！`, "#ffd84a", 1.3, 1);
-      this.addScore(e.boss ? 500 : e.elite ? 60 : 10, true);
-    }
     if (p) p.kills++;
     if (p && (e.elite || e.boss) && p.st.replay) p.ult = Math.min(1, p.ult + p.st.replay); // 经验回放
     if (e.affix && this.host) this.affixDeath(e);
@@ -857,7 +838,6 @@ export class Game {
     p.buff.pd = 3;
     p.ult = Math.min(1, p.ult + 0.06);
     this.runStats.perfect = (this.runStats.perfect || 0) + 1;
-    this.addScore(30);
     if (this.mode === "solo") this.witchT = 1.6;
     this.text(p.x, p.y - 64, "完美闪避！", "#ffe36a", 1.4, 1.1);
     this.vfx("arcane/blink-in", p.x, p.y - 20, { palette: ["#1a1030", "#7a5aff", "#c8b0ff", "#ffffff"] });
@@ -891,8 +871,6 @@ export class Game {
     n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 噩梦契约·凶猛噩梦
     p.lastHit = 0;
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
-    this.combo = 0; // 连击 broken
-    this.roomHurt = true;
     p.invuln = BAL.hurtInvuln + (p.tfx?.inv || 0); // 称号·地心之王
     p.hurtT = 0.3;
     this.shake = Math.max(this.shake, p.local ? 6 : 2);
@@ -1002,7 +980,6 @@ export class Game {
   victory() {
     if (this.phase === "win") return;
     this.phase = "win";
-    this.addScore(2000); // 局内分数: the clear
     // the run is over: drop the portal so standing in it can't re-trigger the leave fade every 0.7 s
     this.portal = null;
     this.onUi("win");
@@ -1207,7 +1184,6 @@ export class Game {
     updatePets(this, dt);
     // 子弹时间 (完美闪避, solo): enemies, enemy shots and enemy zones run slow; players, pets and their shots don't
     const edt = this.witchT > 0 ? dt * 0.3 : dt;
-    if (this.combo && (this.comboT -= dt) <= 0) this.combo = 0; // 连击 timer
     if (this.witchT > 0) this.witchT -= dt;
     for (const e of this.enemies) if (!e.dead) updateEnemy(this, e, edt);
     // lava burns walking enemies too
@@ -1390,16 +1366,6 @@ export class Game {
     if (this.phase !== "fight") return;
     this.phase = "clear";
     this.sound("clear");
-    // 局内分数: the room, and 无伤 if nobody was hurt in it
-    if (!this.pvp && this.host) {
-      this.addScore(100);
-      if (!this.roomHurt && this.room.kind !== "event") {
-        this.addScore(150);
-        this.runStats.flawless++;
-        const p = this.players[0];
-        if (p) this.text(p.x, p.y - 70, "无伤 +150", "#7dffb0", 1.2, 1);
-      }
-    }
     if (this.room.kind === "boss") this.runStats.xpBosses = (this.runStats.xpBosses || 0) + (this.twinBoss ? 2 : 1);
     if (this.room.kind === "boss" && this.twinBoss) this.runStats.twinBosses = (this.runStats.twinBosses || 0) + 1;
     else if (["combat", "elite"].includes(this.room.kind)) this.runStats.xpRooms = (this.runStats.xpRooms || 0) + 1;

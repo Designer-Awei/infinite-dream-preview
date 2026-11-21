@@ -426,12 +426,3 @@ export const CORE_DETAIL = {
   doubao: "补给站射击间隔 0.5 → 0.35 秒，回血间隔 1.4 → 1 秒。",
   glm: "大招持续 3.5 → 5 秒，牵引力提高 50%。",
 };
-
-// 局内分数评级: the score against what a clean run of that length scores (≈400 a room, +2000 for the clear)
-export function scoreGrade(score, rooms, win, endless) {
-  const par = endless ? 450 * Math.max(1, rooms) : 400 * Math.max(1, rooms) + (win ? 2000 : 0), r = score / par;
-  let g = r >= 1.25 ? "S" : r >= 0.95 ? "A" : r >= 0.7 ? "B" : "C";
-  if (!win && !endless && g === "S") g = "A"; // a lost run tops out at A
-  return g;
-}
-export const GRADE_COL = { S: "#ffd84a", A: "#ff8ad8", B: "#6ac8ff", C: "#b8b0d0" };
