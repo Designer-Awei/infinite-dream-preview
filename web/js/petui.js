@@ -85,7 +85,7 @@ export function showPetDetail(uid, onClose) {
     const d = PETS[selected], row = ACTS.find((a) => a[0] === act);
     $(".pp-cap").textContent = row ? `${row[2]} · ${row[3](d)}` : "";
     if (!act) return demo?.pause();
-    const cfg = { id: selected, stage, act, cid: load().sel };
+    const cfg = { id: selected, stage, act, cid: load().sel, skin: ownOf(selected)?.skin || null }; // 异色 / 流彩 shown in the demo too (骑乘 included)
     if (demo) demo.set(cfg);
     else demo = mountPetDemo($(".pp-demo"), cfg);
   };

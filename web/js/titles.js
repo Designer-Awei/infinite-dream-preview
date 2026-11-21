@@ -90,7 +90,8 @@ export function titleHTML(id, extra = "") {
   const T = TITLES[id];
   if (!T) return "";
   const own = T.col ? ` style="--tc:${T.col};--tb:${T.bg || TITLE_RARITY[T.r].bg}"` : "";
-  return `<span class="ttl t-${T.r}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}><i class="tt-sh"></i><b>${T.name}</b></span>`;
+  const wings = T.r === "l" || T.r === "x" ? `<i class="tt-w l"></i><i class="tt-w r"></i>` : "";
+  return `<span class="ttl t-${T.r}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}>${wings}<i class="tt-sh"></i><b>${T.name}</b></span>`;
 }
 
 /** apply the worn title's effect to a new player (PVE only; the plate is shown in every mode) */
@@ -131,8 +132,14 @@ export function drawTitlePlate(g, id, x, y, t) {
   g.fillRect(x0 + w - 1, y0, 1, h);
   // little wings on the sides for 传说 / 流彩
   if (T.r === "l" || T.r === "x") {
-    g.fillRect(x0 - 3, y0 + 3, 2, 5);
-    g.fillRect(x0 + w + 1, y0 + 3, 2, 5);
+    const cy = y0 + h / 2, wing = (sx, d) => {
+      g.fillStyle = "#0c0814";
+      g.beginPath(); g.moveTo(sx, cy - 5); g.lineTo(sx + d * 6, cy); g.lineTo(sx, cy + 5); g.closePath(); g.fill();
+      g.fillStyle = col;
+      g.beginPath(); g.moveTo(sx, cy - 3); g.lineTo(sx + d * 3.6, cy); g.lineTo(sx, cy + 3); g.closePath(); g.fill();
+    };
+    wing(x0 - 1, -1);
+    wing(x0 + w + 1, 1);
   }
   // a light sweep across 史诗 and up
   if (R.fx.includes("shine") || T.r === "x") {

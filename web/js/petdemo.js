@@ -37,7 +37,7 @@ export function mountPetDemo(box, opt) {
     const cid = Object.hasOwn(CHARS, cfg.cid || "") ? cfg.cid : "deepseek";
     g = new Game({ mode: "solo", seed: 7 + Math.floor(Math.random() * 1000), fx: fxl, opt: { map: "grass" } });
     fxl.clearAll && fxl.clearAll();
-    p = g.addPlayer({ id: 1, cid, name: "", local: true, kit: { tal: {}, eq: {}, cards: [], pet: { id, stage } } });
+    p = g.addPlayer({ id: 1, cid, name: "", local: true, kit: { tal: {}, eq: {}, cards: [], pet: { id, stage, skin: cfg.skin || null } } });
     g.roomIdx = 0;
     g.loadRoom(0, { kind: "boss" });
     g.banner = null;

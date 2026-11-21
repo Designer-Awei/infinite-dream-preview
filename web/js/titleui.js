@@ -6,6 +6,7 @@ import { uiRoot, btn } from "./ui.js";
 import { sfx } from "./audio.js";
 import { TITLES, TITLE_ORDER, TITLE_RARITY, TITLE_TABS, titleState, equipTitle, checkTitles, titleHTML, drawTitlePlate } from "./titles.js";
 import { A } from "./assets.js";
+import { VIEW_W } from "./data.js";
 import { load } from "./save.js";
 
 export function showTitles(tab = "adv", onClose = null) {
@@ -26,7 +27,7 @@ export function showTitles(tab = "adv", onClose = null) {
     tabs.querySelectorAll(".ttl-tab").forEach((b) => b.classList.toggle("on", b.dataset.k === tab));
     // the worn one, previewed the way it looks in a run: the selected girl on the floor, name and plate over her head
     const cur = md.querySelector(".ttl-cur"), T = TITLES[t.eq];
-    cur.innerHTML = `<div class="tc-h o1">局内预览</div><canvas class="tc-cv" width="300" height="236"></canvas>${T ? `<div class="tc-r" style="color:${T.col || TITLE_RARITY[T.r].col}">${TITLE_RARITY[T.r].name}称号 · ${T.name}</div><div class="tc-fx">${T.fxText}</div>` : `<div class="tc-fx tc-none">未佩戴称号</div>`}`;
+    cur.innerHTML = `<canvas class="tc-cv"></canvas><div class="tc-tag o1">局内预览</div><div class="tc-cap">${T ? T.fxText : "未佩戴称号"}</div>`;
     preview(cur.querySelector(".tc-cv"), t.eq, md);
     // the tab's titles: owned first, then by rarity
     const ro = Object.keys(TITLE_RARITY);
@@ -53,19 +54,24 @@ export function showTitles(tab = "adv", onClose = null) {
 
 /** the in-run look: grass floor, the selected girl breathing, her name and the worn plate (2× like the game) */
 function preview(cv, id, md) {
-  const g = cv.getContext("2d"), m = load(), set = A.girls[m.sel], t0 = performance.now();
+  const cap = cv.parentElement.querySelector(".tc-cap"), g = cv.getContext("2d"), m = load(), set = A.girls[m.sel], t0 = performance.now();
   if (!set) return;
   const k = set.k || 1, W = set.w / k, H = set.foot / k, SH = set.h / k, clip = (set.clips || {}).idle_s;
   const draw = (now) => {
     if (!cv.isConnected) return;
-    const t = (now - t0) / 1000;
-    g.setTransform(2, 0, 0, 2, 0, 0);
+    const t = Math.max(0, now - t0) / 1000; // a frame's stamp can be older than t0: never a negative clip index
+    const dpr = devicePixelRatio || 1, cw = Math.max(1, Math.round(cv.clientWidth * dpr)), chh = Math.max(1, Math.round(cv.clientHeight * dpr));
+    if (cv.width !== cw || cv.height !== chh) (cv.width = cw), (cv.height = chh);
+    const S = Math.max(1, innerWidth / VIEW_W) * dpr, LW = cw / S, LH = chh / S; // world px the size they are in a run
+    g.setTransform(S, 0, 0, S, 0, 0);
     g.imageSmoothingEnabled = false;
-    for (let y = 0; y < 118; y += 16) for (let x = 0; x < 150; x += 16) {
-      g.fillStyle = ((x + y) / 16) % 2 ? "#7cc44c" : "#86cc54";
-      g.fillRect(x, y, 16, 16);
+    const ox = (LW / 2) % 32, oy = 0;
+    for (let y = -32 + oy; y < LH; y += 16) for (let x = -32 + ox; x < LW; x += 16) {
+      g.fillStyle = Math.round((x - ox + y - oy) / 16) % 2 ? "#7cc44c" : "#86cc54";
+      g.fillRect(Math.round(x), Math.round(y), 16, 16);
     }
-    const px = 75, py = 110;
+    const figH = (set.foot - (set.top || 0)) / k, capH = (cap.offsetHeight + 12) * dpr / S, need = figH + 36;
+    const px = Math.round(LW / 2), py = Math.round(Math.max(need, (LH - capH - need) / 2 + need));
     g.fillStyle = "rgba(10,30,10,0.35)";
     g.beginPath();
     g.ellipse(px, py, 14, 5, 0, 0, Math.PI * 2);

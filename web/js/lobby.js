@@ -104,7 +104,6 @@ export function showLobby() {
   s.innerHTML = `<div class="sparkles"></div><div class="lb-glow"></div>
   <div class="topbar">
     <div class="logo outline">无限梦境<span>INFINITE DREAM</span></div>
-    <button class="ttl-entry" title="称号"></button>
     <div class="spacer"></div>
     <button class="pill o1 name-pill" title="点击改名"><span>👤</span><span class="pname"></span></button>
     <button class="pill o1 curpill" data-cur="gem"><i class="cur gem"></i><span class="tok">${m.tokens}</span></button>
@@ -113,6 +112,7 @@ export function showLobby() {
     <button class="btn gray small fs-btn" title="全屏">⛶</button>
     <button class="btn gray small set-btn" title="设置">⚙</button>
   </div>
+  <button class="ttl-entry" title="称号"></button>
   <div class="lb-left"><div class="lb-info"></div><div class="lb-roster"></div></div>
   <div class="lb-center"><div class="lb-rays"></div><div class="lb-motes">${Array.from({ length: 14 }, (_, i) => `<i style="left:${8 + ((i * 37) % 84)}%;animation-delay:${(i * 0.53) % 4}s;animation-duration:${3 + (i % 4) * 0.7}s"></i>`).join("")}</div><div class="lb-island"></div><div class="lb-hero"><img alt=""></div><div class="lb-name outline"></div></div>
   <div class="lb-right">
@@ -128,6 +128,7 @@ export function showLobby() {
   const drawTtl = () => {
     const t = titleState(), n = Object.keys(t.own).filter((id) => TITLES[id]).length;
     te.innerHTML = t.eq ? titleHTML(t.eq) : `<span class="ttl t-c te-none"><i class="tt-sh"></i><b>称号 ${n}/${TITLE_ORDER.length}</b></span>`;
+    te.classList.toggle("winged", !!te.querySelector(".tt-w"));
   };
   te.onclick = () => (sfx("click"), showTitles("adv", drawTtl));
   const freshTitles = checkTitles();
