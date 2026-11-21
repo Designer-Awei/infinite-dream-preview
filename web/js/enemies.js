@@ -43,6 +43,9 @@ export function updateEnemy(g, e, dt) {
   }
   e.slowT -= dt;
   e.vulnT -= dt;
+  // 精英词缀
+  if (e.affix === "regen" && g.host && g.time - (e.hitAt ?? -9) > 2 && e.hp < e.maxHp) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.05 * dt);
+  if (e.affix === "frost" && g.host) for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < 72) q.buff.slow = Math.max(q.buff.slow || 0, 0.25);
   // knockback
   if (e.kbx || e.kby) {
     moveCircle(g.map, e, e.kbx * dt, e.kby * dt, e.def.fly, e.def.phase);

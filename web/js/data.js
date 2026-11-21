@@ -214,6 +214,17 @@ const ENDLESS_POOL = [
   ["ghost", "jelly", "wisp", "skull", "snake", "eyeball"],
   ["skull", "snake", "wisp", "jelly", "ghost", "frog", "eyeball"],
 ];
+// 精英词缀: every elite (not a boss) rolls one. swift moves 45% faster; shield carries a barrier of 50% of its life that
+// takes damage first (breaking it stuns 1.2 s); split bursts into two small copies on death; volatile leaves a bomb
+// that goes off 0.8 s after it dies; regen heals 5%/s once it has not been hit for 2 s; frost chills players nearby.
+export const AFFIXES = [
+  { id: "swift", name: "迅捷", color: "#7fe0ff", desc: "移速 +45%" },
+  { id: "shield", name: "坚盾", color: "#8ab4ff", desc: "带 50% 生命的护盾，先扣护盾，打破后眩晕 1.2 秒" },
+  { id: "split", name: "分裂", color: "#a6f06a", desc: "死后裂成两只小号分身" },
+  { id: "volatile", name: "爆裂", color: "#ff8a3a", desc: "死后原地留下炸弹，0.8 秒后爆炸" },
+  { id: "regen", name: "再生", color: "#ff7ab8", desc: "2 秒没挨打就每秒回 5% 生命" },
+  { id: "frost", name: "霜环", color: "#c8f0ff", desc: "身边一圈寒气，靠近会减速" },
+];
 // 噩梦契约: optional terms picked before a solo run (lobby). Each rank adds `pts` to the 噩梦等级; the level raises the
 // run's 晶石 by 8% a point and clearing a map at a new best level pays the milestones below once each.
 export const PACTS = [

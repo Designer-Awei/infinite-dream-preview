@@ -1,5 +1,5 @@
 // Draws the world: ground, y-sorted blocks/bushes/characters, pixelfx layers, bullets, overlays.
-import { T, VIEW_W, VIEW_H, CHARS, ELEM, ITEMS, ENEMIES, RS } from "./data.js";
+import { T, VIEW_W, VIEW_H, CHARS, ELEM, ITEMS, ENEMIES, RS, AFFIXES } from "./data.js";
 import { A, silhouette } from "./assets.js";
 import { WALL, WATER, BUSH, CRATE, BARREL, wallSprite, wallMask, crateSprite, bushSprite, drawSpikes, tileAt, THEMES, LIFT, renderGround, DRAGON_WALL_HP } from "./map.js";
 import { clamp, TAU, dist } from "./util.js";
@@ -634,6 +634,48 @@ export class Renderer {
       g.fill();
       g.globalCompositeOperation = "source-over";
     }
+    if (e.affix && e.spawnT <= 0) {
+      // 精英词缀 auras: 霜环 the chill radius, 再生 rising green pluses, 爆裂 a flickering fuse glow, 迅捷 speed streaks,
+      // 坚盾 a bubble, 分裂 a wobbling double outline
+      g.globalCompositeOperation = "lighter";
+      const t = this.t + e.id;
+      if (e.affix === "frost") {
+        g.strokeStyle = `rgba(200,240,255,${0.35 + 0.15 * Math.sin(t * 3)})`;
+        g.lineWidth = 2;
+        g.beginPath(); g.ellipse(e.x, e.y, 72, 40, 0, 0, TAU); g.stroke();
+        g.fillStyle = "rgba(160,220,255,0.08)";
+        g.fill();
+      } else if (e.affix === "regen") {
+        g.fillStyle = "#7aff9a";
+        for (let i = 0; i < 3; i++) {
+          const u = (t * 0.8 + i / 3) % 1, x = Math.round(e.x + Math.sin(i * 2.4 + t) * e.r), y = Math.round(e.y - e.r - u * 26);
+          g.globalAlpha = (1 - u) * fade;
+          g.fillRect(x - 2, y, 5, 1); g.fillRect(x, y - 2, 1, 5);
+        }
+      } else if (e.affix === "volatile") {
+        g.fillStyle = `rgba(255,120,40,${0.18 + 0.18 * (Math.sin(t * 9) > 0 ? 1 : 0)})`;
+        g.beginPath(); g.arc(e.x, e.y - e.r, e.r * 1.5, 0, TAU); g.fill();
+      } else if (e.affix === "swift") {
+        g.strokeStyle = "rgba(127,224,255,0.55)";
+        g.lineWidth = 1;
+        for (let i = 0; i < 3; i++) {
+          const u = (t * 3 + i / 3) % 1, y = Math.round(e.y - e.r * 0.5 - i * 6), x = e.x - e.face * (e.r + 4 + u * 12);
+          g.beginPath(); g.moveTo(x, y); g.lineTo(x - e.face * 8, y); g.stroke();
+        }
+      } else if (e.affix === "shield" && e.shieldHp > 0) {
+        g.strokeStyle = `rgba(138,180,255,${0.5 + 0.2 * Math.sin(t * 4)})`;
+        g.lineWidth = 2;
+        g.beginPath(); g.arc(e.x, e.y - e.r, e.r * 1.7, 0, TAU); g.stroke();
+        g.fillStyle = "rgba(138,180,255,0.1)";
+        g.fill();
+      } else if (e.affix === "split") {
+        g.strokeStyle = "rgba(166,240,106,0.5)";
+        g.lineWidth = 1;
+        for (const sd of [-1, 1]) { g.beginPath(); g.arc(e.x + sd * (3 + Math.sin(t * 5) * 2), e.y - e.r, e.r * 1.3, 0, TAU); g.stroke(); }
+      }
+      g.globalAlpha = fade;
+      g.globalCompositeOperation = "source-over";
+    }
     if (d.rare) {
       // rare monster: a golden halo and sparkles orbiting it
       g.globalCompositeOperation = "lighter";
@@ -695,7 +737,16 @@ export class Renderer {
       g.fillRect(px + i * 6 + 1, top - 8, 3, 3);
       i++;
     }
-    if (e.elite) this.text(g, "精英", e.x, top - 16, "#ffd84a", 10);
+    const af = e.affix && AFFIXES.find((a) => a.id === e.affix);
+    if (e.elite) this.text(g, af ? `精英·${af.name}` : "精英", e.x, top - 16, af ? af.color : "#ffd84a", 10);
+    if (e.shieldHp > 0) {
+      // 精英词缀·坚盾: a blue barrier bar over the life bar
+      const w = 30, x = e.x - w / 2;
+      g.fillStyle = "#14101c";
+      g.fillRect(x - 1, top - 5, w + 2, 4);
+      g.fillStyle = "#8ab4ff";
+      g.fillRect(x, top - 4, Math.round(w * clamp(e.shieldMax ? e.shieldHp / e.shieldMax : 1)), 2);
+    }
     if (e.hp >= e.maxHp && !e.elite) return;
     const w = e.elite ? 30 : 22, x = e.x - w / 2;
     g.fillStyle = e.elite ? "#ffcf4a" : "#14101c";

@@ -1,5 +1,5 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
-import { T, BAL, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
+import { T, BAL, AFFIXES, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
 import { generateRoom, renderGround, F as FLOOR, tileAt, mudAt, moveCircle, los, flowField, flowDir, WALL, WATER, BUSH, CRATE, BARREL, BLOCKS_SHOT, DRAGON_WALL_HP } from "./map.js";
@@ -387,7 +387,13 @@ export class Game {
     if (this.pact.hp) e.hp *= 1 + 0.25 * this.pact.hp;
     if (this.pact.boss && d.boss) e.hp *= 1.5;
     if (this.pact.speed && d.spd) e.def = { ...d, spd: d.spd * 1.2 };
+    // 精英词缀
+    if (elite && !d.boss && !d.mirror && this.host) {
+      e.affix = AFFIXES[(Math.random() * AFFIXES.length) | 0].id;
+      if (e.affix === "swift" && e.def.spd) e.def = { ...e.def, spd: e.def.spd * 1.45 };
+    }
     e.maxHp = e.hp;
+    if (e.affix === "shield") e.shieldHp = e.shieldMax = e.hp * 0.5;
     this.seen[type] = 1;
     this.enemies.push(e);
     if (delay > 0) this.fx.spawn("spawn/spawn-portal", x, y + 4, { layer: "back", speed2: 1.6, life: delay + 0.4, palette: elite ? ["#1a0800", "#4a1a00", "#8a3a00", "#c86a10", "#ffa030", "#ffd070", "#fff0c0", "#ffffff"] : undefined });
@@ -511,6 +517,23 @@ export class Game {
     if (e.overheat > 0) dmg *= 1.5; // 过热核心 stalled after its pylons fall
     if (e.freezeT > 0) dmg *= 1.15;
     dmg = Math.max(0.5, dmg);
+    e.hitAt = this.time;
+    if (e.shieldHp > 0) {
+      // 精英词缀·坚盾: the barrier soaks the hit first; breaking it stuns
+      const a = Math.min(e.shieldHp, dmg);
+      e.shieldHp -= a;
+      dmg -= a;
+      if (e.shieldHp <= 0) {
+        e.stunT = Math.max(e.stunT, 1.2);
+        this.text(e.x, e.y - e.r * 2 - 24, "护盾破碎！", "#8ab4ff", 1.1, 0.9);
+        this.vfx("impacts/shield-block", e.x, e.y - e.r, {});
+      }
+      if (dmg <= 0) {
+        e.flash = 0.1;
+        this.text(e.x + (Math.random() - 0.5) * 10, e.y - e.r * 2 - 8, Math.round(a), "#8ab4ff", 1, 0.6);
+        return a;
+      }
+    }
     e.hp -= dmg;
     e.flash = 0.1;
     e.lastBy = p ? p.id : e.lastBy;
@@ -642,6 +665,26 @@ export class Game {
     e.kbx += Math.cos(a) * power;
     e.kby += Math.sin(a) * power;
   }
+  /** 精英词缀 on death: 分裂 two small copies, 爆裂 a bomb */
+  affixDeath(e) {
+    if (e.affix === "split" && this.enemies.length < 40)
+      for (const sd of [-1, 1]) {
+        const q = this.spawnEnemy(e.type, e.x + sd * 14, e.y + 4, false, 0);
+        q.hp = q.maxHp = Math.max(1, e.maxHp * 0.18);
+        q.sizeK = 0.7;
+        q.r *= 0.75;
+        q.kbx = sd * 160;
+      }
+    if (e.affix === "volatile") {
+      const x = e.x, y = e.y;
+      this.vfx("arcane/rune-circle", x, y, { life: 0.8, palette: ["#1a0600", "#d8481c", "#ffa030", "#fff0a0"] });
+      this.after(0.8, () => {
+        this.vfx("explosions/small-explosion", x, y, {});
+        this.sound("explode", 0.3);
+        for (const o of this.alivePlayers()) if (dist(o.x, o.y, x, y) < 52) this.hurt(o, 1, { src: e, x, y, groundHazard: true });
+      });
+    }
+  }
   kill(e, p) {
     if (e.dead) return;
     e.dead = true;
@@ -649,6 +692,7 @@ export class Game {
     if (e.elite) this.runStats.elites++;
     if (p) p.kills++;
     if (p && (e.elite || e.boss) && p.st.replay) p.ult = Math.min(1, p.ult + p.st.replay); // 经验回放
+    if (e.affix && this.host) this.affixDeath(e);
     const col = { slime: ["#061412", "#12594a", "#47c752", "#a6f06a", "#f0ffd2"], slime_purple: ["#140a1e", "#4d1f6e", "#b05be0", "#e0a6ff", "#fff0ff"] }[e.type];
     this.vfx("spawn/poof", e.x, e.y + 2, col ? { palette: col } : {});
     this.sound("kill", 0.05);

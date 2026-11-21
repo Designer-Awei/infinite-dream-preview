@@ -1,6 +1,7 @@
 // Online play. The host runs the simulation; clients send input and render snapshots.
 // Transports: PeerJS WebRTC (static hosting, no account), BroadcastChannel (?local, two tabs), claude room (artifact).
-import { ENEMIES, CHARS, ELEM, GACHA, LOADOUT_SLOTS } from "./data.js";
+import { ENEMIES, CHARS, ELEM, GACHA, LOADOUT_SLOTS, AFFIXES } from "./data.js";
+const AFFIX_IDS = AFFIXES.map((a) => a.id);
 import { load, makeKit } from "./save.js";
 import * as UI from "./ui.js";
 import { sfx } from "./audio.js";
@@ -432,7 +433,7 @@ function snapshot(g) {
     const pet=p.pet?{id:p.pet.id,stage:p.pet.stage,skin:p.pet.skin||null,x:round2(p.pet.x),y:round2(p.pet.y),face:round2(p.pet.face),moving:p.pet.moving,castT:round2(p.pet.castT),castMax:round2(p.pet.castMax),anim:round2(p.pet.anim),walkT:round2(p.pet.walkT||0),blinkT:round2(p.pet.blinkT||0),warpSeq:p.pet.warpSeq||0}:null;
     return [p.id, r1(p.x), r1(p.y), round2(p.face), p.hp, p.maxHp, p.shield, p.maxShield, fl, Math.round(p.ult * 100), p.coins, p.cubes, Math.round(p.recoil), Math.round((Math.max(0, p.skillCd) / (CHARS[p.cid].skill.cd * p.st.cd)) * 100), Math.round((Math.max(0, p.dashCd) / 1.6) * 100), bf, p.target ? p.target.id : 0, p.cards, p.infuseElem || null, round2(p.reviveT), round2(p.respawnT || 0), p.barrier > 0 ? 1 : 0, p.st, p.fusions, pet, !!p.mounted];
   });
-  const E = g.enemies.map((e) => [e.id, e.type, r1(e.x), r1(e.y), Math.ceil(e.hp), Math.ceil(e.maxHp), (e.elite ? 1 : 0) | (e.flash > 0 ? 4 : 0) | (e.freezeT > 0 ? 8 : 0) | (e.slowT > 0 ? 16 : 0) | (e.burnT > 0 ? 32 : 0), e.st, r1(e.z || 0), e.face, Object.keys(e.marks).filter((k) => e.marks[k] > g.time).join(","), e.lx != null ? r1(e.lx) : null, e.ly != null ? r1(e.ly) : null, round2(Math.max(0, e.spawnT)), round2(e.cd), e.bubble > g.time ? 1 : 0]);
+  const E = g.enemies.map((e) => [e.id, e.type, r1(e.x), r1(e.y), Math.ceil(e.hp), Math.ceil(e.maxHp), (e.elite ? 1 : 0) | (e.flash > 0 ? 4 : 0) | ((AFFIX_IDS.indexOf(e.affix) + 1) << 7) | (e.shieldHp > 0 ? 1024 : 0) | (e.freezeT > 0 ? 8 : 0) | (e.slowT > 0 ? 16 : 0) | (e.burnT > 0 ? 32 : 0), e.st, r1(e.z || 0), e.face, Object.keys(e.marks).filter((k) => e.marks[k] > g.time).join(","), e.lx != null ? r1(e.lx) : null, e.ly != null ? r1(e.ly) : null, round2(Math.max(0, e.spawnT)), round2(e.cd), e.bubble > g.time ? 1 : 0]);
   const B = g.bullets.map((b) => [b.id, b.side === "e" ? 1 : 0, b.kind, r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), b.r, b.elem || 0, b.big ? 1 : 0, b.wave ? 1 : 0, b.arcTo ? [r1(b.arcTo.x0), r1(b.arcTo.y0), r1(b.arcTo.x), r1(b.arcTo.y), b.arcTo.dur, round2(b.t)] : 0, r1(b.h || 0), b.owner || 0, b.atk ? 1 : 0]);
   const Z = g.zones.map((z) => (z.a0 != null ? [z.id, z.kind, r1(z.x), r1(z.y), z.r, round2(z.life), round2(z.t), round2(z.a0), z.dir] : [z.id, z.kind, r1(z.x), r1(z.y), z.r, round2(z.life), round2(z.t)])); // a0/dir: 凝视光束 sweep
   const Q = g.pickups.map((q) => [q.id, q.kind, q.item || 0, r1(q.x), r1(q.y), r1(q.z || 0), round2(q.t), round2(q.life)]);
@@ -518,7 +519,7 @@ function applySnapshot(app, s) {
     const def = ENEMIES[a[1]];
     if (!e && g.seen) g.seen[a[1]] = 1; // 怪物图鉴: clients record what they met too
     if (!e) e = { id: a[0], kind: "enemy", type: a[1], def, x: a[2], y: a[3], anim: Math.random() * 3, marks: {}, r: def.r * (a[6] & 1 ? 1.2 : 1) * (def.scale || 1), boss: !!def.boss, z: 0, flash: 0 };
-    e.tx = a[2]; e.ty = a[3]; e.hp = a[4]; e.maxHp = a[5]; e.elite = !!(a[6] & 1); e.flash = a[6] & 4 ? 0.1 : e.flash;
+    e.tx = a[2]; e.ty = a[3]; e.hp = a[4]; e.maxHp = a[5]; e.elite = !!(a[6] & 1); e.affix = AFFIX_IDS[((a[6] >> 7) & 7) - 1]; e.shieldHp = a[6] & 1024 ? 1 : 0; e.flash = a[6] & 4 ? 0.1 : e.flash;
     e.freezeT = a[6] & 8 ? 1 : 0; e.slowT = a[6] & 16 ? 1 : 0; e.burnT = a[6] & 32 ? 1 : 0; e.st = a[7]; e.z = a[8]; e.face = a[9];
     e.marks = {};
     if (a[10]) for (const k of a[10].split(",")) e.marks[k] = g.time + 1;
