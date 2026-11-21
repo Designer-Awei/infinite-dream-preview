@@ -105,8 +105,8 @@ export async function loadAll(progress = () => {}) {
   const petImages=await Promise.all((petMeta.pages||[{file:'pets.png'}]).map((page,i)=>i===0?petImage:img(base+'pets/'+page.file)));
   A.pets = { meta: petMeta, image: petImage, images:petImages };
   await Promise.all(['fox','dragon','phoenix'].map(async id=>{
-    const [meta,image]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png')]);
-    A.mounts[id]={meta,image};
+    const [meta,image,mask]=await Promise.all([json(base+'pets/'+id+'-mounted.json'),img(base+'pets/'+id+'-mounted.png'),img(base+'pets/'+id+'-mounted-mask.png').catch(()=>null)]);
+    A.mounts[id]={meta,image,mask}; // mask: which pixels of a mounted frame are the pet (异色 recolour)
   }));
   // event visitors (梦境航线): one row of idle frames each
   try {

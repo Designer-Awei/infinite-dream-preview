@@ -37,10 +37,10 @@ function hsl2rgb(h, s, l) {
 }
 /** recolour an ImageData in place; memo = Map of rgb -> recoloured rgb shared by every frame of one skin
  *  (frames reuse the same colours, so most pixels are a lookup) */
-export function recolorData(d, rules, memo = new Map()) {
+export function recolorData(d, rules, memo = new Map(), mask = null) {
   const px = d.data;
   for (let i = 0; i < px.length; i += 4) {
-    if (!px[i + 3]) continue;
+    if (!px[i + 3] || (mask && !mask[i + 3])) continue; // mask: only the pet's pixels (骑乘 frames carry the rider too)
     const key = (px[i] << 16) | (px[i + 1] << 8) | px[i + 2], hit = memo.get(key);
     if (hit !== undefined) { px[i] = hit >> 16; px[i + 1] = (hit >> 8) & 255; px[i + 2] = hit & 255; continue; }
     let [h, s, l] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
@@ -103,6 +103,59 @@ export function skinnedFrame(skinId, img, sx, sy, w, h, t = 0) {
   g.globalCompositeOperation = "source-over";
   flowBuf.edges = cell.edges;
   return flowBuf;
+}
+// 骑乘: a mounted frame is the girl and her pet in one picture; <species>-mounted-mask.png (same layout, built by
+// tools/pixellab/mount_masks.py) marks the pet's pixels, so the 异色 recolour, the 流彩 rainbow and the aura only touch
+// the pet and the rider keeps her own colours
+const mcells = new Map(), mbuf = document.createElement("canvas"), mlay = document.createElement("canvas");
+function mountCell(skinId, img, mask, sx, sy, w, h) {
+  const key = `${skinId}|${img.src || img.width}|${sx}|${sy}`;
+  let c = mcells.get(key);
+  if (c) return c;
+  c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const g = c.getContext("2d", { willReadFrequently: true });
+  g.drawImage(img, sx, sy, w, h, 0, 0, w, h);
+  // the pet-only cut (alpha from the mask) — for the rainbow clip and the aura's edges
+  const pm = document.createElement("canvas");
+  pm.width = w; pm.height = h;
+  const pg = pm.getContext("2d", { willReadFrequently: true });
+  pg.drawImage(mask, sx, sy, w, h, 0, 0, w, h);
+  const md = pg.getImageData(0, 0, w, h).data;
+  const skin = PET_SKINS[skinId];
+  if (skin?.rules?.length) {
+    if (!memos.has(skinId)) memos.set(skinId, new Map());
+    g.putImageData(recolorData(g.getImageData(0, 0, w, h), skin.rules, memos.get(skinId), md), 0, 0);
+  }
+  pg.globalCompositeOperation = "source-in";
+  pg.drawImage(c, 0, 0);
+  c.pet = pm;
+  c.edges = topEdges(pg.getImageData(0, 0, w, h));
+  mcells.set(key, c);
+  return c;
+}
+/** a skinned mounted frame: rider untouched, pet recoloured (流彩: rainbow over the pet only) */
+export function skinnedMountFrame(skinId, img, mask, sx, sy, w, h, t = 0) {
+  const cell = mountCell(skinId, img, mask, sx, sy, w, h);
+  if (!PET_SKINS[skinId]?.flow) return cell;
+  for (const b of [mbuf, mlay]) if (b.width !== w || b.height !== h) (b.width = w), (b.height = h);
+  const L = mlay.getContext("2d"), grad = L.createLinearGradient(w * 0.2, h * 0.2, w * 0.8, h * 0.8), o = (t * 90) % 360;
+  for (let i = 0; i <= 12; i++) grad.addColorStop(i / 12, `hsl(${(o + i * 60) % 360} 95% 60%)`);
+  L.globalCompositeOperation = "source-over";
+  L.clearRect(0, 0, w, h);
+  L.drawImage(cell.pet, 0, 0);
+  L.globalCompositeOperation = "color";
+  L.fillStyle = grad;
+  L.fillRect(0, 0, w, h);
+  L.globalCompositeOperation = "destination-in";
+  L.drawImage(cell.pet, 0, 0);
+  const g = mbuf.getContext("2d");
+  g.globalCompositeOperation = "source-over";
+  g.clearRect(0, 0, w, h);
+  g.drawImage(cell, 0, 0);
+  g.drawImage(mlay, 0, 0);
+  mbuf.edges = cell.edges;
+  return mbuf;
 }
 /** silhouette points whose pixel above is empty: where flames / frost / sparks rise from (at most 28, evenly spread) */
 function topEdges(d) {

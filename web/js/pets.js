@@ -1,6 +1,6 @@
 // Host-authoritative companions; clients render plain snapshot state.
 import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS, DRAGON_FIREBALL, DRAGON_TORNADO } from './petdata.js';
-import { PET_SKINS, skinnedFrame, drawAura } from './petskins.js';
+import { PET_SKINS, skinnedFrame, skinnedMountFrame, drawAura } from './petskins.js';
 import { A } from './assets.js';
 import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
 import { updateCompanion, PET_MOTION } from './petai.js';
@@ -339,7 +339,9 @@ export function drawMountedPet(ctx,player,time,shadow=true) {
   const {pos}=mountedFrame(q,actor);
   ctx.save();ctx.translate(player.x??q.x,player.y??q.y);if(Math.cos(player.face??q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
   if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
-  ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
+  const skin=q.skin&&PET_SKINS[q.skin];
+  if(skin&&mount.mask){const cell=skinnedMountFrame(q.skin,mount.image,mount.mask,pos[0],pos[1],cw,ch,time);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 异色骑乘：只改宠物像素（蒙版区分人物与宠物）
+  else ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
 }
 // Clients only interpolate the host's companion state; damage and AI never run twice.
 export function animateClientPets(game,dt) {
