@@ -1,5 +1,5 @@
 // Boot, the frame loop, and the app controller tying UI, game and network together.
-import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES, ENEMIES, PACTS, pactLevel, PACT_MILESTONES } from "./data.js";
+import { VIEW_H, VIEW_W, setViewW, CHARS, REWARD, ELEM, RS, setRS, MAPS, MAP_ORDER, PVP_MODES, ENEMIES, PACTS, pactLevel, PACT_MILESTONES, scoreGrade } from "./data.js";
 import { loadAll, A } from "./assets.js";
 import { loadFx, FxLayer } from "./fx.js";
 import { Renderer } from "./render.js";
@@ -286,7 +286,12 @@ export const app = {
     for (const drop of drops) mineState().shovels[drop]++;
     if (drops.length) save();
     sfx(win ? "win" : "lose");
-    const rows = [[endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
+    // 局内分数评级 + best per map (无尽 its own)
+    const grade = scoreGrade(rs.score || 0, rs.rooms, win, endless), sKey = endless ? "endless" : o.map || "grass";
+    m.bestScore = m.bestScore || {};
+    const newBest = (rs.score || 0) > (m.bestScore[sKey] || 0);
+    if (newBest) (m.bestScore[sKey] = rs.score || 0), save();
+    const rows = [["分数", `${rs.score || 0}`], [endless ? "到达层数" : "清理房间", endless ? rs.rooms + "" : rs.rooms + " / 7"], ["击败敌人", rs.kills], ["精英", rs.elites], ["元素反应", rs.reactions], ["造成伤害", Math.round(rs.dmg)], ["承受伤害", rs.hurt || 0], ["技能卡", Object.keys(this.me.cards).length]];
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: rs.xpRooms, bosses: rs.xpBosses, win: win && !endless }));
     const extras = [];
     const petTotal = petExperience({seconds:this.progressSession?.seconds,rooms:rs.xpRooms,bosses:rs.xpBosses});
@@ -329,6 +334,7 @@ export const app = {
       if (nx) extras.push(["🔓 新地图", MAPS[nx].name]);
     }
     if (endless && rs.rooms > prevBest) extras.push(["无尽新纪录", rs.rooms + " 层"]);
+    extras.push([newBest ? "分数新纪录" : "本局评级", `${grade} · 最高 ${rs.comboMax || 0} 连击${rs.flawless ? ` · 无伤 ${rs.flawless} 间` : ""}`]);
     if (!endless && mul > 1) extras.push(["地图加成", "×" + mul]);
     if (unl.length) extras.push(["🔓 新角色解锁", unl.map((id) => CHARS[id].short).join("、")]);
     if (drops.length) extras.push(["梦境矿场", Object.keys(SHOVELS).filter(k => drops.includes(k)).map(k => `${SHOVELS[k].name}×${drops.filter(d => d === k).length}`).join("、")]);
@@ -355,7 +361,7 @@ export const app = {
     }
     const title = endless ? `无尽回廊 · 第 ${rs.rooms} 层` : win ? "通关！幻觉已破除" : "倒下了…";
     const sub = endless ? (rs.rooms > prevBest ? "刷新了最佳纪录！" : `最佳纪录 ${Math.max(prevBest, rs.rooms)} 层`) : win ? `${CHARS[this.me.cid].name} 击败了${md.name}的幻觉之眼` : "再接再厉，构筑会更强！";
-    UI.showResult({ title, sub, rows, extras, tokens, win: win || (endless && rs.rooms > prevBest), cid: this.me.cid },
+    UI.showResult({ title, sub, rows, extras, tokens, grade, win: win || (endless && rs.rooms > prevBest), cid: this.me.cid },
       this.net ? null : () => this.startSolo(),
       () => this.toLobby());
   },

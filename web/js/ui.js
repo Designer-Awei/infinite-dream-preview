@@ -113,6 +113,7 @@ export function showHelp() {
     ["闯关基础", `${H("电脑操作")}WASD 移动 · <b>J</b> 攻击（自动锁定范围内最近的敌人）· <b>K</b> 小技能 · <b>L</b> 大招 · 空格 闪避 · Esc 暂停
       ${H("手机操作")}左侧拖动摇杆移动 · 按住攻击键自动锁敌连射，拖动攻击键手动瞄准 · 技能 / 大招键轻点自动释放，拖动瞄准后松手释放
       ${H("精英词缀")}精英怪（不含首领）各带一个词缀，名字写在血条上方「精英·词缀」：${AFFIXES.map((q) => `<span style="color:${q.color}">${q.name}</span>（${q.desc}）`).join("、")}。
+      ${H("分数与评级")}闯关时屏幕上方显示分数：击败敌人得分（普通 10、精英 60、首领 500），乘以连击倍率（2.5 秒内连续击杀叠连击，每层 +2%，50 连击封顶 ×2，受伤或断档清零）；每清一个房间 +100，房间内无人受伤再 +150「无伤」，完美闪避 +30，通关 +2000。结算按分数给 S / A / B / C 评级（失败最高 A），并记录每张地图与无尽回廊的最高分。
       ${H("完美闪避")}敌人的子弹、撞击或技能即将命中时闪避穿过去，触发「完美闪避」：闪避冷却立刻刷新、3 秒内伤害 +50%、大招充能 +6%；单人时进入 1.6 秒「子弹时间」——敌人、敌弹和敌方技能放慢到 30%，你照常行动（2 秒冷却）。
       ${H("闯关循环")}每局 7 层，单人主线走「梦境航线」：第 1 层固定战斗，第 7 层是首领；中间每层清场后会同时出现 2～3 扇颜色不同的传送门（同一层的门一定是不同房间），走进哪扇就去哪种房间。合作模式仍为固定顺序：战斗 → 战斗 → 补给站 → 精英战 → 战斗 → 补给站 → 首领。
       ${H("房间类型")}${[
@@ -277,7 +278,7 @@ export function showHud(game, me) {
    <div class="tl"><div class="face"><img src="assets/portrait_${me.cid}.png"></div>
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar sh"><i></i><span class="o1"></span></div>
      <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div><div class="pvpscore"></div></div></div></div>
-   <div class="tc"><div class="pips"></div><div class="bossbars" style="display:none"><div class="bossbar"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div><div class="bossbar" style="display:none"><div class="nm o1"></div><div class="bar"><i></i></div></div></div></div>
+   <div class="tc"><div class="pips"></div><div class="hscore o1"><span class="hs-v">0</span><em class="hs-cb"></em></div><div class="bossbars" style="display:none"><div class="bossbar"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div><div class="bossbar" style="display:none"><div class="nm o1"></div><div class="bar"><i></i></div></div></div></div>
    <div class="tr"><div class="buffs"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
    <div class="banner-slot"></div>
    <div class="keys o1">WASD 移动 · J 攻击(自动锁敌) · K 技能 · L 大招 · 空格 闪避</div>
@@ -332,6 +333,16 @@ export function updateHud(game, me) {
   const set = (k, v, fn) => {
     if (hudCache[k] !== v) (hudCache[k] = v), fn(v);
   };
+  // 局内分数 and the 连击 counter (host side; hidden in the arena)
+  if (!game.pvp) {
+    set("score", game.runStats.score || 0, (v) => (hud.querySelector(".hscore .hs-v").textContent = `分数 ${v}`));
+    set("combo", game.combo >= 3 ? game.combo : 0, (v) => {
+      const cb = hud.querySelector(".hscore .hs-cb");
+      cb.textContent = v ? `${v} 连击 ×${(1 + Math.min(v, 50) * 0.02).toFixed(2)}` : "";
+      cb.classList.remove("pop");
+      if (v) void cb.offsetWidth, cb.classList.add("pop");
+    });
+  } else set("score", -1, () => (hud.querySelector(".hscore").style.display = "none"));
   set('mounted',!!me.mounted, mounted=>{
     const b=hud.querySelector('.pet-ride-btn');if(b){b.querySelector('span').textContent=mounted?'下骑':'骑乘';b.disabled=!!me.dead||!!me.downed;}
     for(const slot of ['atk','ult']) {
@@ -560,7 +571,7 @@ export function showResult(r, onAgain, onLobby) {
   // landscape two-column panel: everything (incl. the buttons) fits a 360px-tall phone screen without scrolling
   const md = el("div", "modal result");
   // Progress and new rewards come before routine bonuses. Stable ties retain run order.
-  const priority = (label) => /首通|新地图|新角色|新纪录|角色升级/.test(label) ? 0 : /梦境藏品/.test(label) ? 1 : /梦境裂隙|放弃裂隙/.test(label) ? 2 : /梦境矿场/.test(label) ? 3 : /怪物图鉴/.test(label) ? 4 : 5;
+  const priority = (label) => /首通|新地图|新角色|新纪录|角色升级|本局评级/.test(label) ? 0 : /梦境藏品/.test(label) ? 1 : /梦境裂隙|放弃裂隙/.test(label) ? 2 : /梦境矿场/.test(label) ? 3 : /怪物图鉴/.test(label) ? 4 : 5;
   const extras = [...(r.extras || [])].sort((a, b) => priority(a[0]) - priority(b[0]));
   if (!extras.length) extras.push(["本局晶石", `+${r.tokens}`]);
   const chip = ([label, value]) => {
@@ -571,7 +582,7 @@ export function showResult(r, onAgain, onLobby) {
   const hero = resultHero(r.cid, r.win);
   md.innerHTML = `<div class="panel res2 ${r.win ? "win" : "lose"}">
     <div class="res-l">
-      <h2 class="outline">${r.title}</h2>
+      <h2 class="outline">${r.title}</h2>${r.grade ? `<div class="res-grade outline g-${r.grade}">${r.grade}<small>评级</small></div>` : ""}
       <div class="res-sub o1">${r.sub || ""}</div>
       <div class="res-mid">${hero}<div class="res-rewards"><div class="res-gain" data-cur="gem"><span class="big outline">+${r.tokens}</span><div class="gem"></div></div></div></div>
       <div class="res-extras${extras.length > 2 ? " has-more" : ""}">${extras.slice(0, 2).map(chip).join("")}${extras.length > 2 ? `<button class="res-more o1" aria-haspopup="dialog" aria-expanded="false">其余 ${extras.length - 2} 项</button>` : ""}</div>

@@ -2709,3 +2709,15 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ttl-np .tn-i small { font-size: 12px; color: #fff; }
 .ttl-np .tn-acts { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; }
 .ttl-np .tn-acts .btn:not(.gray) { text-shadow: none; -webkit-text-stroke: 2.5px #000; paint-order: stroke fill; }
+
+/* 局内分数 + 连击 (under the room pips) */
+.hud .hscore { display: flex; gap: 8px; align-items: center; justify-content: center; margin-top: 2px; font-size: 12px; color: #fff; pointer-events: none; }
+.hud .hscore .hs-cb { font-style: normal; color: #ffd84a; font-size: 12px; }
+.hud .hscore .hs-cb.pop { animation: cbPop .25s ease-out; }
+@keyframes cbPop { from { transform: scale(1.5); } }
+/* 结算评级 stamp */
+.res2 .res-l { position: relative; }
+.res-grade { position: absolute; top: -6px; right: 4px; font-size: 54px; line-height: 1; transform: rotate(8deg); animation: gradeIn .5s cubic-bezier(.2,1.8,.4,1) .3s backwards; display: flex; flex-direction: column; align-items: center; }
+.res-grade small { font-size: 11px; margin-top: -2px; }
+.res-grade.g-S { color: #ffd84a; } .res-grade.g-A { color: #ff8ad8; } .res-grade.g-B { color: #6ac8ff; } .res-grade.g-C { color: #b8b0d0; }
+@keyframes gradeIn { from { transform: rotate(8deg) scale(3); opacity: 0; } }
