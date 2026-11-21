@@ -30,8 +30,10 @@ export const TRAITS = {
 };
 export const TRAIT_KEYS = Object.keys(TRAITS);
 // 异色 drawn by petskins.js; "flow" (流彩) only comes with the 流彩 quality
-export const SKIN_POOL = { dragon: ["frost", "sakura", "gold", "jade", "ember"], fox: ["sakura", "jade", "ember", "frost"], phoenix: ["blaze", "sakura", "gold", "jade"] };
+export const SKIN_POOL = { dragon: ["frost", "sakura", "gold", "jade"], fox: ["sakura", "jade", "ember", "frost"], phoenix: ["blaze", "sakura", "gold", "jade"] };
 export const skinsOf = (id) => [...SKIN_POOL[id], "flow"];
+/** 图鉴 entries in all: 原色 + every 异色 (流彩 included) of every kind */
+export const DEX_TOTAL = Object.keys(SKIN_POOL).reduce((a, id) => a + 1 + skinsOf(id).length, 0);
 export const SHINY_CHANCE = 0.06;
 // 融合：主宠（先选的）+ 副宠。种族 70% 随主宠、30% 随副宠；品质取两者较高，同品质且在史诗以下时 20% 再升一阶；
 // 异色按双亲里异色的只数：0 只 20%、1 只 50%、2 只必出，颜色在结果种族的异色里随机；流彩另按保底概率
@@ -72,14 +74,14 @@ export const DEX_REWARDS = [
   { n: 9, egg: "ur", text: "UR 宠物蛋 ×1" },
   { n: 12, pool: 600, text: "经验池 +600" },
   { n: 15, egg: "hur", text: "HUR 宠物蛋 ×1" },
-  { n: 19, item: "hur", text: "流彩晶 ×1" },
+  { n: 18, item: "hur", text: "流彩晶 ×1" }, // = DEX_TOTAL (19 before 火龙·炎魂 was retired)
 ];
 export const EGG_KINDS = Object.keys(EGGS);
 // 积攒 items: 淬灵露 raises one random trait 2~5 points up to its quality's cap (传说 and below);
 // 流彩晶 does the same for a 流彩 pet only, and may go past the cap, up to 150% of the top
 export const PET_ITEMS = {
-  ur: { name: "淬灵露", r: "UR", cost: 10, desc: "传说及以下 · 随机词条 +2~5%，至品质上限" },
-  hur: { name: "流彩晶", r: "HUR", cost: 20, desc: "仅流彩 · 随机词条 +2~5%，可破上限" },
+  ur: { name: "淬灵露", r: "UR", cost: 2, desc: "传说及以下 · 随机词条 +2~5%，至品质上限" },
+  hur: { name: "流彩晶", r: "HUR", cost: 5, desc: "仅流彩 · 随机词条 +2~5%，可破上限" },
 };
 export const OVERCAP = 1.5;
 export const isRainbow = (p) => p.q === 5;
@@ -168,7 +170,13 @@ function cleanTraits(v, uid, q0) {
   return { q, traits };
 }
 // 暗影 (purple) became 绯樱
-const skinOk = (id, k) => (k === "shadow" ? "sakura" : skinsOf(id).includes(k) ? k : null);
+// retired 异色 and what an owned one becomes: 火龙·炎魂 looked almost like the 原色, so those dragons turn 霜鳞
+const RETIRED = { dragon: { ember: "frost" } };
+const skinOk = (id, k) => {
+  if (k === "shadow") k = "sakura";
+  k = RETIRED[id]?.[k] || k;
+  return skinsOf(id).includes(k) ? k : null;
+};
 function cleanPet(v) {
   if (!v || typeof v !== "object" || !Object.hasOwn(PETS, v.id)) return null;
   const uid = typeof v.uid === "string" && /^[a-z0-9-]{1,24}$/.test(v.uid) ? v.uid : null;
@@ -228,7 +236,7 @@ export function normalizePets(value) {
     const v = value?.slots?.[i];
     return v && EGGS[v.kind] && Number.isFinite(v.t0) ? { kind: v.kind, t0: v.t0, dur: clampInt(v.dur, 0, 36e5) } : null;
   });
-  const dexClaim = (Array.isArray(value?.dexClaim) ? value.dexClaim : []).filter((n) => DEX_REWARDS.some((r) => r.n === n));
+  const dexClaim = (Array.isArray(value?.dexClaim) ? value.dexClaim : []).map((n) => (n === 19 ? 18 : n)).filter((n) => DEX_REWARDS.some((r) => r.n === n));
   // 称号 counters: hatches, 传说-or-better pets ever got, kinds ever owned as 流彩 (seeded from the warehouse for old saves)
   const sv = value?.stats || {};
   const stats = {

@@ -3,7 +3,7 @@
 // Every title is drawn from one rarity template (frame colours + motion), so a new title is only a line in TITLES.
 import { load, save, mineState } from "./save.js";
 import { petState, dexCount } from "./petsave.js";
-import { PET_ORDER } from "./petdata.js";
+import { PET_ORDER, DEX_TOTAL } from "./petdata.js";
 
 /** the rarity templates: name, frame / text colours, and the motion the frame plays */
 export const TITLE_RARITY = {
@@ -37,8 +37,8 @@ export const TITLES = {
   pet_pal: { name: "萌宠伙伴", r: "c", tab: "pet", how: "孵化 5 次宠物蛋", prog: () => [petState().stats.hatch, 5], fx: { ult: 0.05 }, fxText: "大招充能 +5%" },
   breeder: { name: "孵化专家", r: "r", tab: "pet", how: "孵化 50 次宠物蛋", prog: () => [petState().stats.hatch, 50], fx: { ult: 0.1 }, fxText: "大招充能 +10%" },
   legend_keeper: { name: "传说驯养师", r: "e", tab: "pet", how: "获得 10 只传说及以上宠物", prog: () => [petState().stats.legend, 10], fx: { crit: 0.05 }, fxText: "暴击率 +5%" },
-  beast_master: { name: "驯兽大师", r: "l", tab: "pet", how: "宠物图鉴收集 19 种", prog: () => [dexCount(), 19], fx: { dmg: 0.08 }, fxText: "伤害 +8%" },
-  rainbow_lord: { name: "流彩之主", r: "x", tab: "pet", how: `集齐全部 ${PET_ORDER.length} 种宠物的流彩`, prog: () => [petState().stats.rbKinds.length, PET_ORDER.length], fx: { dmg: 0.1, crit: 0.08 }, fxText: "伤害 +10%，暴击率 +8%" },
+  beast_master: { name: "驯兽大师", r: "l", tab: "pet", how: `宠物图鉴收集全部 ${DEX_TOTAL} 种`, prog: () => [dexCount(), DEX_TOTAL], fx: { dmg: 0.1, crit: 0.08 }, fxText: "伤害 +10%，暴击率 +8%" },
+  rainbow_lord: { name: "流彩之主", r: "x", col: "#ff4a4a", bg: "#3a0a12", still: true, tab: "pet", how: `集齐全部 ${PET_ORDER.length} 种宠物的流彩`, prog: () => [petState().stats.rbKinds.length, PET_ORDER.length], fx: { dmg: 0.08 }, fxText: "伤害 +8%" },
 };
 export const TITLE_ORDER = Object.keys(TITLES);
 
