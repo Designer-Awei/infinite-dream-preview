@@ -17,6 +17,12 @@ view, full body, crisp dark outline, same style and size as the style image"):
              candidate 0), then redrawn natively at 256 by /generate-image-v2 with that 96px image as reference_images and a
              256 pet frame as style_image (seed 23), animated by /animate-pixminimax (first = last frame, 12 frames + the
              closing one, seed 9): the chair rocks, the eggs wobble, sack and shovel stay put.
+  slot     - 96px strip of its own (slot.png, 8 frames, k 1): /generate-image-v2 with the same style image (prompt: chunky cute
+             arcade slot machine prop, glossy red rounded cabinet with gold trim, dome marquee ringed with bulbs and a golden 7,
+             three cream reels cherry / 7 / star, golden lever with a red ball on the right, coin tray overflowing with coins;
+             seed 37, candidate 0), animated by /animate-with-text-v3 (first = last frame, 8 frames, seed 9: bulbs blink and
+             sparkle, reels flicker, coins twinkle, the machine stays put); hard alpha, the closing frame dropped, written
+             straight to web/assets/npc/slot.png with its npc.json entry (ox/oy from the bounding box, face = square crop).
 Idle actions (96px row visitors): crystal pulses / tosses and catches the die / floats and bobs / breathes, tongue wags, blinks.
 """
 import json, sys
