@@ -6,7 +6,7 @@ import { clamp, TAU, dist } from "./util.js";
 import { input } from "./input.js";
 import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
-import { drawPet, drawMountedPet, mountedHeadHeight, mountedAttackOrigin, mountedAimOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
+import { drawPet, drawMountedPet, warmMount, mountedHeadHeight, mountedAttackOrigin, mountedAimOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
@@ -115,6 +115,8 @@ export class Renderer {
     if (me && me.target && !me.target.dead && !me.target.downed) this.drawReticle(g, me.target);
     for (const e of game.enemies) this.drawTelegraph(g, e);
 
+    // 骑乘 frames are cut and recoloured ahead of the first mount (idle slices)
+    for (const p of game.players) if (p.pet && p.pet.stage === 3) warmMount(p);
     // pixelfx: back layer
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.fx.syncPetFields(game);

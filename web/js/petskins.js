@@ -134,6 +134,8 @@ function mountCell(skinId, img, mask, sx, sy, w, h) {
   mcells.set(key, c);
   return c;
 }
+/** build (and cache) one skinned mounted cell ahead of use: pets.js warms a rider's frames in idle slices */
+export function warmMountCell(skinId, img, mask, sx, sy, w, h) { mountCell(skinId, img, mask, sx, sy, w, h); }
 /** a skinned mounted frame: rider untouched, pet recoloured (流彩: rainbow over the pet only) */
 export function skinnedMountFrame(skinId, img, mask, sx, sy, w, h, t = 0) {
   const cell = mountCell(skinId, img, mask, sx, sy, w, h);

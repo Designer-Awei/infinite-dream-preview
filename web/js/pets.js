@@ -1,6 +1,6 @@
 // Host-authoritative companions; clients render plain snapshot state.
 import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS, DRAGON_FIREBALL, DRAGON_TORNADO } from './petdata.js';
-import { PET_SKINS, skinnedFrame, skinnedMountFrame, drawAura } from './petskins.js';
+import { PET_SKINS, skinnedFrame, skinnedMountFrame, drawAura, warmMountCell } from './petskins.js';
 import { A } from './assets.js';
 import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
 import { updateCompanion, PET_MOTION } from './petai.js';
@@ -333,6 +333,45 @@ export function drawPet(ctx,player,time,ride=false) {
   if(skin){const cell=skinnedFrame(q.skin,img,pos[0],pos[1],cw,ch,time);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 换皮：代码改色 + 代码光环
   else ctx.drawImage(img,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();
 }
+// 骑乘 warm-up (perf): a mounted atlas is one huge image (up to 4096×3840) holding every rider; drawing a frame from it
+// the first time decodes all of it on the main thread (~140 ms, ~270 ms with the 异色 mask too) and an 异色/流彩 frame
+// was recoloured on first sight. At run start, once a stage-3 pet is equipped, each rider's own ~39 frames are cut
+// into a small sheet from an off-thread decode (fetch + createImageBitmap), the big bitmaps are freed, and the
+// skinned cells are built a few per idle slice — so mounting draws from ready canvases.
+const msheets=new Map();
+const idle=(f)=>(window.requestIdleCallback||((g)=>setTimeout(g,16)))(f);
+async function decodeAtlas(img){
+  try{const b=await (await fetch(img.src)).blob();return await createImageBitmap(b);}
+  catch{try{return await createImageBitmap(img);}catch{return null;}}
+}
+export function warmMount(player){
+  const q=player.pet;if(!q||q.stage!==3)return;
+  const mount=A.mounts?.[q.id],actor=mount?.meta.actors[player.cid];if(!actor)return;
+  const key=q.id+'|'+player.cid;let sh=msheets.get(key);
+  if(!sh){
+    sh={ready:false,at:new Map(),skins:new Set()};msheets.set(key,sh);
+    const {cw,ch}=mount.meta,pos=[];
+    for(const v of Object.values(actor))if(Array.isArray(v)&&Array.isArray(v[0]))for(const p of v){const k=p[0]+','+p[1];if(!sh.at.has(k)){sh.at.set(k,null);pos.push(p);}}
+    (async()=>{
+      const [bi,bm]=await Promise.all([decodeAtlas(mount.image),mount.mask?decodeAtlas(mount.mask):null]);
+      if(!bi){msheets.delete(key);return;}
+      const cols=8,rows=Math.ceil(pos.length/cols),mk=()=>{const c=document.createElement('canvas');c.width=cols*cw;c.height=rows*ch;return c;};
+      const img=mk(),gi=img.getContext('2d'),mask=bm?mk():null,gm=mask?.getContext('2d');
+      pos.forEach((p,i)=>{const x=(i%cols)*cw,y=Math.floor(i/cols)*ch;gi.drawImage(bi,p[0],p[1],cw,ch,x,y,cw,ch);if(gm)gm.drawImage(bm,p[0],p[1],cw,ch,x,y,cw,ch);sh.at.set(p[0]+','+p[1],[x,y]);});
+      bi.close?.();bm?.close?.();
+      img.src='mount-sheet:'+key;if(mask)mask.src='mount-mask:'+key;
+      sh.img=img;sh.mask=mask;sh.cw=cw;sh.ch=ch;sh.ready=true;
+      if(q.skin)warmMount(player);
+    })();
+  }
+  // 异色 / 流彩: recolour the rider's frames a few per idle slice
+  const skin=q.skin;
+  if(sh.ready&&skin&&PET_SKINS[skin]&&sh.mask&&!sh.skins.has(skin)){
+    sh.skins.add(skin);const cells=[...sh.at.values()];let i=0;
+    const step=(dl)=>{for(let n=0;i<cells.length&&(n<2||(dl?.timeRemaining?.()>4));n++,i++)warmMountCell(skin,sh.img,sh.mask,cells[i][0],cells[i][1],sh.cw,sh.ch);if(i<cells.length)idle(step);};
+    idle(step);
+  }
+}
 export function drawMountedPet(ctx,player,time,shadow=true) {
   const mount=mountAsset(player),actor=mount?.meta.actors[player.cid];if(!actor)return false;
   const q=player.pet,{cw,ch,anchor,scale}=mount.meta;
@@ -340,8 +379,11 @@ export function drawMountedPet(ctx,player,time,shadow=true) {
   ctx.save();ctx.translate(player.x??q.x,player.y??q.y);if(Math.cos(player.face??q.face)<0)ctx.scale(-1,1);ctx.imageSmoothingEnabled=false;
   if(shadow){ctx.fillStyle='rgba(15,12,28,.28)';ctx.beginPath();ctx.ellipse(0,0,30,9,0,0,Math.PI*2);ctx.fill();}
   const skin=q.skin&&PET_SKINS[q.skin];
-  if(skin&&mount.mask){const cell=skinnedMountFrame(q.skin,mount.image,mount.mask,pos[0],pos[1],cw,ch,time);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 异色骑乘：只改宠物像素（蒙版区分人物与宠物）
-  else ctx.drawImage(mount.image,pos[0],pos[1],cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
+  // the rider's warmed sheet when ready (see warmMount), else straight from the atlas
+  const sh=msheets.get(q.id+'|'+player.cid),at=sh?.ready&&sh.at.get(pos[0]+','+pos[1]);
+  const img=at?sh.img:mount.image,mask=at?sh.mask:mount.mask,sx=at?at[0]:pos[0],sy=at?at[1]:pos[1];
+  if(skin&&mask){const cell=skinnedMountFrame(q.skin,img,mask,sx,sy,cw,ch,time);ctx.drawImage(cell,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);if(skin.aura)drawAura(ctx,skin.aura,cell,anchor,scale,time);} // 异色骑乘：只改宠物像素（蒙版区分人物与宠物）
+  else ctx.drawImage(img,sx,sy,cw,ch,-anchor[0]*scale,-anchor[1]*scale,cw*scale,ch*scale);ctx.restore();return true;
 }
 // Clients only interpolate the host's companion state; damage and AI never run twice.
 export function animateClientPets(game,dt) {
