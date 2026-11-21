@@ -683,7 +683,7 @@ export class Game {
     const p = this.players[0];
     if (p) {
       this.text(p.x, p.y - 74, `诅咒·${CURSES[id].name}`, "#c890ff", 1.6, 1.2);
-      this.vfx("arcane/rune-circle", p.x, p.y, { palette: ["#14061e", "#5a1a8a", "#a050e0", "#e0c0ff"] });
+      this.vfx("arcane/rune-circle", p.x, p.y, { palette: ["#14061e", "#5a1a8a", "#a050e0", "#e0c0ff"], layer: "back", follow: p, life: 1.6 }); // under the player's feet, moving with them
     }
     this.sound("hurt", 0.4);
     this.onUi("hud");
