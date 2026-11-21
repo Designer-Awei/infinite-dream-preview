@@ -206,6 +206,112 @@ export function updateEnemy(g, e, dt) {
       touch();
       break;
     }
+    // ---------------------------------------------------------- V3 新敌人
+    case "spider": {
+      // 爬网蜘蛛: scuttles in bursts at a slant, pauses; spits a web onto where you stand (it slows you while inside)
+      e.burst = (e.burst ?? 0) - dt;
+      if (e.burst <= 0) (e.run = !e.run), (e.burst = e.run ? 0.45 : 0.3), (e.side = Math.random() < 0.5 ? -1 : 1);
+      if (e.st !== "spit" && e.run) {
+        const a = angTo(e.x, e.y, p.x, p.y) + e.side * (d < 70 ? 1.6 : 0.7);
+        moveCircle(g.map, e, Math.cos(a) * sp * 1.7 * dt, Math.sin(a) * sp * 1.7 * dt, false);
+      }
+      if (e.st !== "spit" && e.cd <= 0 && d < 230 && los(g.map, e.x, e.y, p.x, p.y)) (e.st = "spit"), (e.cd = 0.4), (e.tx = p.x), (e.ty = p.y);
+      else if (e.st === "spit" && e.cd <= 0) {
+        e.st = "idle";
+        e.cd = 4 + Math.random();
+        for (let i = 0; i < (e.elite ? 2 : 1); i++) {
+          const tx = e.tx + (i ? (Math.random() - 0.5) * 80 : 0), ty = e.ty + (i ? (Math.random() - 0.5) * 50 : 0);
+          g.line(e.x, e.y - 8, tx, ty, "#dfe8d8", 1, 0.25, "web");
+          g.after(0.22, () => g.addZone({ kind: "web", x: tx, y: ty, r: 34, life: 5, side: "e", update: webSlow }));
+        }
+        g.sound("shoot_ink", 0.1);
+      }
+      touch();
+      break;
+    }
+    case "shell": {
+      // 冰壳守护进程: plods along the way it faces, turning slowly toward you (its front shell blocks — game.hit);
+      // every few seconds it hunkers down and slams, throwing a ring of slowing ice shards
+      const want = angTo(e.x, e.y, p.x, p.y), turn = (e.elite ? 2.2 : 1.5) * dt;
+      e.dir ??= want;
+      const diff = Math.atan2(Math.sin(want - e.dir), Math.cos(want - e.dir));
+      e.dir += Math.max(-turn, Math.min(turn, diff));
+      e.face = Math.cos(e.dir) >= 0 ? 1 : -1;
+      if (e.st !== "slam" && d > 40) moveCircle(g.map, e, Math.cos(e.dir) * sp * dt, Math.sin(e.dir) * sp * dt, false);
+      if (e.st !== "slam" && e.cd <= 0 && d < 170) (e.st = "slam"), (e.cd = 0.7);
+      else if (e.st === "slam" && e.cd <= 0) {
+        e.st = "idle";
+        e.cd = 4.5 + Math.random();
+        const n = e.elite ? 12 : 8, off = Math.random() * TAU;
+        for (let i = 0; i < n; i++) shoot(g, e, off + (i / n) * TAU, { spd: 105, slow: true, kind: "ghost", h: 12 });
+        g.vfx("ice/frost-nova", e.x, e.y, { layer: "back", speed2: 1.6 });
+        g.shake = Math.max(g.shake, 3);
+        g.sound("shoot_water", 0.1);
+      }
+      touch();
+      break;
+    }
+    case "mortar": {
+      // 熔岩迫击蜗牛: keeps 150~240 away; aims (its vent flares), then lobs magma: a warning circle where you'll be,
+      // a blast 1 s later that leaves burning ground
+      if (e.st !== "aim") {
+        const a = angTo(e.x, e.y, p.x, p.y);
+        if (d > 240) walk(1);
+        else if (d < 150) moveCircle(g.map, e, -Math.cos(a) * sp * dt, -Math.sin(a) * sp * dt, false);
+      }
+      if (e.st !== "aim" && e.cd <= 0 && d < 330) (e.st = "aim"), (e.cd = 0.5);
+      else if (e.st === "aim" && e.cd <= 0) {
+        e.st = "idle";
+        e.cd = 3.4 + Math.random() * 0.6;
+        const lead = 0.7, tx = p.x + (p.input.mx || 0) * CHARS_SPEED * lead, ty = p.y + (p.input.my || 0) * CHARS_SPEED * lead;
+        const spots = e.elite ? [0, 1, 2].map((i) => [tx + Math.cos(i * 2.1) * 36, ty + Math.sin(i * 2.1) * 24]) : [[tx, ty]];
+        for (const [x, y] of spots) g.addZone({ kind: "mark", x, y, r: 28, life: 1, max: 1, side: "e", fx0: e.x, fy0: e.y - 30, onEnd: mortarBlast });
+        g.sound("shoot_dragon", 0.1);
+      }
+      touch();
+      break;
+    }
+    case "healer": {
+      // 补丁无人机: never attacks. Hovers 150~210 away from you, close to the hurt monsters, and every 2.8 s
+      // patches every monster near it (bosses excepted) for a quarter of its life
+      const hurt = g.enemies.filter((o) => o !== e && !o.dead && !o.boss && o.spawnT <= 0 && o.hp < o.maxHp && o.def.ai !== "healer");
+      let tx = e.x, ty = e.y;
+      if (hurt.length) {
+        const o = hurt.reduce((b, o) => (o.hp / o.maxHp < b.hp / b.maxHp ? o : b));
+        tx = o.x; ty = o.y - 20;
+      }
+      const away = angTo(p.x, p.y, e.x, e.y), keep = d < 150 ? 1 : d > 210 ? -0.6 : 0;
+      const mx = Math.cos(away) * keep + (tx - e.x) * 0.012, my = Math.sin(away) * keep + (ty - e.y) * 0.012, ml = Math.hypot(mx, my);
+      if (ml > 0.05) moveCircle(g.map, e, (mx / Math.max(1, ml)) * sp * dt, (my / Math.max(1, ml)) * sp * dt, true);
+      if (e.cd <= 0) {
+        e.cd = 2.8;
+        const near = hurt.filter((o) => dist(o.x, o.y, e.x, e.y) < 140);
+        for (const o of near) {
+          const add = o.maxHp * (e.elite ? 0.4 : 0.25);
+          o.hp = Math.min(o.maxHp, o.hp + add);
+          g.line(e.x, e.y - 30, o.x, o.y - o.r, "#5aff8a", 2, 0.35, "heal");
+          g.text(o.x, o.y - o.r * 2 - 14, "+修复", "#7aff9a", 0.9, 0.7);
+        }
+        if (near.length) g.vfx("holy/heal", e.x, e.y - 30, { palette: ["#06200e", "#0e4a1e", "#1a8a3a", "#3ad06a", "#8affaa", "#d8ffe6", "#ffffff", "#ffffff"], speed2: 1.6 }), g.sound("heal", 0.3);
+      }
+      break;
+    }
+    case "nest": {
+      // 巢穴 (精英巢穴 rooms): stands still and hatches its map's residents, at most 2 alive (elite 3) and the room
+      // capped at 14 monsters; breaking it stops the brood
+      e.face = 1;
+      if (g.host && e.cd <= 0) {
+        e.cd = e.elite ? 4.2 : 5.5;
+        const kids = g.enemies.filter((o) => o.nestId === e.id && !o.dead).length, all = g.enemies.filter((o) => !o.dead).length;
+        if (kids < (e.elite ? 3 : 2) && all < 14) {
+          const k = e.def.brood[(Math.random() * e.def.brood.length) | 0], a = Math.random() * TAU;
+          const c = g.spawnEnemy(k, e.x + Math.cos(a) * 30, e.y + 14 + Math.sin(a) * 12, false, 0.5);
+          c.nestId = e.id;
+          g.vfx("spawn/poof", e.x, e.y - 8, { palette: ["#0a0a0a", "#2a2a2a", "#5a5a5a", "#9a9a9a", "#d0d0d0", "#ffffff"], speed2: 1.4 });
+        }
+      }
+      break;
+    }
     case "boss_eye":
       bossEye(g, e, p, d, dt);
       break;
@@ -900,6 +1006,19 @@ export const gazeAngle = (z) => (z.a0 ?? 0) + (z.dir ?? 1) * Math.min(1.8, Math.
 // in a bolt; 雷弹: a fan of volt shots. On reaching phase 2 and 3 it raises storm cores: while any stands it takes 20%
 // damage, arcs run from every core to it (crossing one hurts) and 终审 charges; break them all in 12 s or the whole
 // hall is struck for 2. Breaking the last core stuns it for 3 s (takes +50%).
+// 爬网蜘蛛's web: you are slowed while you stand in it
+function webSlow(z) {
+  for (const q of z.g.alivePlayers()) if (dist(q.x, q.y, z.x, z.y) < z.r) q.buff.slow = Math.max(q.buff.slow || 0, 0.2);
+}
+// 熔岩迫击蜗牛's shell lands: a blast on the warning circle and a burning patch left behind
+function mortarBlast(z) {
+  const g = z.g;
+  g.vfx("explosions/small-explosion", z.x, z.y, { palette: ["#1a0600", "#5a1a04", "#c83a0a", "#ff8a1a", "#ffd060", "#fff4c0", "#ffffff", "#ffffff"] });
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, z.x, z.y) < z.r + 6) if (g.hurt(q, 1, { src: z, x: z.x, y: z.y })) q.buff.burn = Math.max(q.buff.burn || 0, 1.2);
+  g.addZone({ kind: "poison", fire: true, x: z.x, y: z.y, r: 22, life: 3, side: "neutral" });
+  g.shake = Math.max(g.shake, 2);
+  g.sound("explode", 0.1);
+}
 const segDist = (px, py, x0, y0, x1, y1) => {
   const dx = x1 - x0, dy = y1 - y0, L = dx * dx + dy * dy || 1, u = Math.max(0, Math.min(1, ((px - x0) * dx + (py - y0) * dy) / L));
   return Math.hypot(px - x0 - dx * u, py - y0 - dy * u);

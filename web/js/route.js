@@ -11,12 +11,13 @@ export const NODE = {
   shop: { name: "补给", col: "#7dffb0" },
   event: { name: "事件", col: "#c8a0ff" },
   challenge: { name: "挑战", col: "#ff5a6a" },
+  nest: { name: "巢穴", col: "#9ad84a" },
   treasure: { name: "宝藏", col: "#ffd84a" },
   boss: { name: "首领", col: "#ff5a5a" },
 };
 /** each kind of room gets its own portal colour (an 8-step pixelfx ramp) */
 export const PORTAL_PAL = {
-  combat: PAL.metal, elite: PAL.fire, shop: PAL.heal, event: PAL.arcane, challenge: PAL.blood, treasure: PAL.gold, boss: PAL.shadow,
+  combat: PAL.metal, elite: PAL.fire, shop: PAL.heal, event: PAL.arcane, challenge: PAL.blood, nest: PAL.leaf, treasure: PAL.gold, boss: PAL.shadow,
 };
 export const CHALLENGES = {
   timer: { name: "限时清场", desc: "60 秒内清场；超时敌人消散，但拿不到额外选卡" },
@@ -73,7 +74,7 @@ export function makeRoute(seed) {
   return { cols, step: 0, at: 0, path: [0], choices: 0 };
 }
 function pickKind(r, s, not = null) {
-  const w = s <= 1 ? { combat: 4, event: 2, treasure: 1, challenge: 1 } : { combat: 3, event: 2, challenge: 2, treasure: 1.2, elite: s >= 3 ? 1.5 : 0, shop: s === 2 || s === 5 ? 2 : 0.3 };
+  const w = s <= 1 ? { combat: 4, event: 2, treasure: 1, challenge: 1 } : { combat: 3, event: 2, challenge: 2, treasure: 1.2, nest: s >= 2 ? 1.3 : 0, elite: s >= 3 ? 1.5 : 0, shop: s === 2 || s === 5 ? 2 : 0.3 };
   const ks = Object.keys(w).filter((k) => w[k] > 0 && !(not && not.has(k)));
   return r.weighted(ks, (k) => w[k]);
 }
@@ -88,6 +89,8 @@ export function nodeRoom(node, s, seed) {
     case "boss": return RUN.at(-1);
     case "event": return { kind: "event", event: r.pick(Object.keys(EVENTS)), items: 0 };
     case "treasure": return { kind: "combat", waves: [base.waves.at(0).slice(0, 4)], items: 4, treasure: true };
+    // 精英巢穴: a small first wave plus three of the map's nests (game.spawnWave); its chest offers SR and up
+    case "nest": return { kind: "combat", nest: true, waves: [base.waves.at(0).slice(0, 3)], items: 2 };
     case "elite": {
       // the next step's fight, every third foe an elite
       const d = fights.at(Math.min(fights.length - 1, byStep.at(s) + 1));

@@ -172,6 +172,20 @@ export const ENEMIES = {
   boss_witch: { name: "霜镜女巫", title: "镜中之冰", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
   boss_worm: { name: "熔岩巨蠕", title: "地心吞噬者", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
   boss_judge: { name: "雷霆审判者", title: "无尽的终审", hp: 3500, spd: 44, r: 18, ai: "boss_judge", sprite: "thunder_judge", coin: [30, 30], fly: true, boss: true },
+  // V3 新敌人 (pixelfx critters, tools/bossfx): each brings one mechanic
+  // 爬网蜘蛛: scuttles in bursts; spits a web that lands where you stand and slows you while inside
+  spider: { name: "爬网蜘蛛", sprScale: 1.3, hp: 28, spd: 88, r: 10, ai: "spider", sprite: "spider", coin: [1, 2], touch: 1 },
+  // 冰壳守护进程: its brow shell takes 75% less from the front and turns slowly toward you — hit it from the side or back;
+  // now and then it slams and throws a ring of slowing ice shards
+  turtle: { name: "冰壳守护进程", sprScale: 0.85, hp: 64, spd: 30, r: 14, ai: "shell", sprite: "turtle", coin: [2, 3], touch: 1, shell: true, noKnock: true },
+  // 熔岩迫击蜗牛: keeps its distance and lobs magma: a warning circle, then a blast that leaves burning ground
+  snail: { name: "熔岩迫击蜗牛", sprScale: 0.8, hp: 46, spd: 24, r: 13, ai: "mortar", sprite: "snail", coin: [2, 3], touch: 1 },
+  // 补丁无人机: never attacks; hovers away from you and every few seconds patches up hurt monsters near it
+  drone: { name: "补丁无人机", sprScale: 1.2, hp: 24, spd: 76, r: 10, ai: "healer", sprite: "drone", coin: [2, 3], fly: true },
+  // 精英巢穴: a nest per map, spawning its residents until it is broken
+  nest_grass: { name: "草原巢穴", hp: 170, spd: 0, r: 20, ai: "nest", sprite: "nest_grass", coin: [4, 6], noKnock: true, brood: ["spider", "spider", "mushroom"] },
+  nest_ice: { name: "冰原巢穴", hp: 170, spd: 0, r: 20, ai: "nest", sprite: "nest_ice", coin: [4, 6], noKnock: true, brood: ["bat_ice", "turtle", "bat_ice"] },
+  nest_lava: { name: "熔炉巢穴", hp: 170, spd: 0, r: 20, ai: "nest", sprite: "nest_lava", coin: [4, 6], noKnock: true, brood: ["imp", "snail", "imp"] },
   // 诅咒宝箱 turned monster: the event visitor's own strip (npc.png row 3), hops at you like a frog; always spawned elite
   mimic: { name: "宝箱怪", sprScale: 0.6, hp: 70, spd: 62, r: 13, ai: "leap", sprite: "mimic", coin: [8, 12], touch: 1 },
   judge_core: { name: "雷暴核心", hp: 150, spd: 0, r: 13, ai: "storm_core", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
@@ -197,11 +211,11 @@ export const ROOM_NAMES = { combat: "战斗", shop: "补给站", boss: "首领" 
 // rare: each map's rare monster (ENEMIES[*].rare) shows up in a combat room now and then
 export const MAPS = {
   grass: { name: "数据草原", theme: 0, hazard: "mud", hazardText: "泥沼会减速 · 清除所有敌人", hp: 1, reward: 1, desc: "入门地图：泥沼减速，藤蔓蛇碰到会减速，首领是幻觉之眼。", need: null,
-    swap: { snake: [["snake_vine", 0.5], ["beetle", 0.35]], bat: ["snake_vine", 0.15], slime: ["mushroom", 0.3], frog: ["beetle", 0.25] }, elites: ["frog_big"], boss: "boss_eye", bosses: ["boss_eye", "boss_root"] },
+    swap: { snake: [["snake_vine", 0.5], ["beetle", 0.35]], bat: [["snake_vine", 0.15], ["spider", 0.3]], slime: [["mushroom", 0.3], ["spider", 0.15]], frog: ["beetle", 0.25], jelly: ["drone", 0.3], skull: ["drone", 0.25] }, elites: ["frog_big"], boss: "boss_eye", bosses: ["boss_eye", "boss_root"] },
   ice: { name: "显存冰原", theme: 2, hazard: "ice", hazardText: "冰面会打滑 · 清除所有敌人", hp: 1.3, reward: 1.35, desc: "冰面会打滑；霜冻爬虫、冰晶眼球会让你减速，首领是冰封史莱姆王。", need: "grass",
-    swap: { slime: [["slime_blue", 0.6], ["hedgehog", 0.25]], slime_purple: ["hedgehog", 0.4], frog: [["hedgehog", 0.4], ["ghost", 0.3]], bat: ["bat_ice", 0.7], eyeball: [["eye_ice", 0.5], ["frostling", 0.35]], snake: [["snake_ice", 0.6], ["bat_ice", 0.3]], jelly: ["jelly_ice", 0.7], wisp: ["frostling", 0.5] }, elites: ["slime_frost"], boss: "boss_frost", bosses: ["boss_frost", "boss_witch"] },
+    swap: { slime: [["slime_blue", 0.6], ["hedgehog", 0.25]], slime_purple: [["hedgehog", 0.4], ["turtle", 0.3]], frog: [["hedgehog", 0.3], ["turtle", 0.25], ["ghost", 0.25]], skull: ["drone", 0.25], bat: ["bat_ice", 0.7], eyeball: [["eye_ice", 0.5], ["frostling", 0.35]], snake: [["snake_ice", 0.6], ["bat_ice", 0.3]], jelly: ["jelly_ice", 0.7], wisp: ["frostling", 0.5] }, elites: ["slime_frost"], boss: "boss_frost", bosses: ["boss_frost", "boss_witch"] },
   lava: { name: "算力熔炉", theme: 3, hazard: "lava", hazardText: "熔岩会灼烧 · 清除所有敌人", hp: 1.6, reward: 1.7, desc: "熔岩地块持续灼烧（敌人也会）；熔岩史莱姆死后留下火池，炎蝠碰到会着火，首领是过热核心。", need: "ice",
-    swap: { slime: ["slime_lava", 0.75], slime_purple: ["slime_lava", 0.6], eyeball: [["imp", 0.35], ["skull", 0.3]], bat: [["bat_fire", 0.6], ["imp", 0.25]], jelly: ["skull", 0.4], frog: [["salamander", 0.45], ["slime_lava", 0.3]], snake: [["salamander", 0.5], ["snake_lava", 0.5]], wisp: ["imp", 0.5] }, elites: ["skull_core"], boss: "boss_core", bosses: ["boss_core", "boss_worm"] },
+    swap: { slime: ["slime_lava", 0.75], slime_purple: [["slime_lava", 0.45], ["snail", 0.3]], eyeball: [["imp", 0.3], ["skull", 0.25], ["snail", 0.2]], ghost: ["drone", 0.3], bat: [["bat_fire", 0.6], ["imp", 0.25]], jelly: ["skull", 0.4], frog: [["salamander", 0.45], ["slime_lava", 0.3]], snake: [["salamander", 0.5], ["snake_lava", 0.5]], wisp: ["imp", 0.5] }, elites: ["skull_core"], boss: "boss_core", bosses: ["boss_core", "boss_worm"] },
 };
 export const MAP_ORDER = ["grass", "ice", "lava"];
 for (const k in MAPS) MAPS[k].id = k;
@@ -216,6 +230,10 @@ const ENDLESS_POOL = [
   ["ghost", "jelly", "wisp", "skull", "snake", "eyeball"],
   ["skull", "snake", "wisp", "jelly", "ghost", "frog", "eyeball"],
 ];
+// V3 residents join the endless pools from the second tier (spider), third (drone) and fourth (turtle, snail)
+ENDLESS_POOL[1].push("spider");
+ENDLESS_POOL[2].push("drone", "spider");
+ENDLESS_POOL[3].push("drone", "turtle", "snail");
 // 精英词缀: every elite (not a boss) rolls one. swift moves 45% faster; shield carries a barrier of 50% of its life that
 // takes damage first (breaking it stuns 1.2 s); split bursts into two small copies on death; volatile leaves a bomb
 // that goes off 0.8 s after it dies; regen heals 5%/s once it has not been hit for 2 s; frost chills players nearby.

@@ -639,6 +639,14 @@ export class Renderer {
       g.fill();
       g.globalCompositeOperation = "source-over";
     }
+    if (d.shell && e.dir != null && e.spawnT <= 0) {
+      // 冰壳守护进程: a pale arc on the ground marks the blocking front (hit it from outside the arc)
+      g.strokeStyle = "rgba(190,232,255,0.75)";
+      g.lineWidth = 3;
+      g.beginPath();
+      g.ellipse(e.x, e.y, e.r * 1.9, e.r * 1.0, 0, e.dir - 1.1, e.dir + 1.1);
+      g.stroke();
+    }
     if (e.affix && e.spawnT <= 0) {
       // 精英词缀 auras: 霜环 the chill radius, 再生 rising green pluses, 爆裂 a flickering fuse glow, 迅捷 speed streaks,
       // 坚盾 a bubble, 分裂 a wobbling double outline
@@ -765,7 +773,57 @@ export class Renderer {
   // ---------------------------------------------------------- zones, pickups, props
   drawZone(g, z, game) {
     g.save();
-    if (z.kind === "whale") {
+    if (z.kind === "web") {
+      // 爬网蜘蛛's web: radial threads and three rings on the ground, a faint pale fill; grows in, fades out
+      const k = clamp(z.t / 0.25), fade = clamp(z.life * 2), R0 = z.r * (0.4 + 0.6 * k);
+      g.globalAlpha = 0.18 * fade;
+      g.fillStyle = "#e8f0e0";
+      g.beginPath();
+      g.ellipse(z.x, z.y, R0, R0 * 0.55, 0, 0, TAU);
+      g.fill();
+      g.globalAlpha = 0.75 * fade;
+      g.strokeStyle = "#eef6e8";
+      g.lineWidth = 1;
+      g.beginPath();
+      for (let i = 0; i < 8; i++) {
+        const a = (i / 8) * TAU + (z.id % 5) * 0.2;
+        g.moveTo(z.x, z.y);
+        g.lineTo(z.x + Math.cos(a) * R0, z.y + Math.sin(a) * R0 * 0.55);
+      }
+      for (const f of [0.35, 0.65, 0.95]) {
+        for (let i = 0; i <= 8; i++) {
+          const a = (i / 8) * TAU + (z.id % 5) * 0.2, x = z.x + Math.cos(a) * R0 * f, y = z.y + Math.sin(a) * R0 * 0.55 * f;
+          i ? g.lineTo(x, y) : g.moveTo(x, y);
+        }
+      }
+      g.stroke();
+    } else if (z.kind === "mark") {
+      // 熔岩迫击蜗牛's warning: a red ring with a fill closing in, and the magma glob falling onto it
+      const k = clamp(z.t / Math.max(0.01, z.t + z.life));
+      g.globalAlpha = 0.25 + 0.2 * Math.sin(this.t * 24);
+      g.fillStyle = "#ff3a1a";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r * k, z.r * 0.55 * k, 0, 0, TAU);
+      g.fill();
+      g.globalAlpha = 0.9;
+      g.strokeStyle = "#ff6a2a";
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
+      g.stroke();
+      const gy = z.y - (1 - k) * 150;
+      g.globalAlpha = 1;
+      g.fillStyle = "#3a1408";
+      g.beginPath();
+      g.arc(z.x, gy - 4, 5, 0, TAU);
+      g.fill();
+      g.fillStyle = "#ff8a1a";
+      g.beginPath();
+      g.arc(z.x - 1, gy - 5, 3, 0, TAU);
+      g.fill();
+      g.fillStyle = "#ffe08a";
+      g.fillRect(Math.round(z.x - 2), Math.round(gy - 7), 2, 2);
+    } else if (z.kind === "whale") {
       const k = clamp(z.t / 0.55);
       g.globalAlpha = 0.25 + 0.35 * k;
       g.fillStyle = "#0a2040";

@@ -122,6 +122,7 @@ export function showHelp() {
         ["shop", "绿门。没有敌人：用局内金币买扭蛋机、血包 +3、护盾上限 +1、算力方块，另有一个免费补给箱；第 2 或第 5 层至少出现一次。"],
         ["event", "紫门。没有敌人，房间里站着一位访客，走近按攻击键交谈（每层的门里最多一扇事件）。"],
         ["challenge", "深红门。普通战斗加一条随机规则，清场成功额外再选一次卡（可出 SR 及以上）。"],
+        ["nest", "草绿门（第 3 层起）。一小波怪加三座本图巢穴（其中一座精英），巢穴不停孵出本图怪物，全部打碎才清场；开箱三选一必有 SR 及以上。"],
         ["treasure", "金门。只有一小波怪，但必出本图稀有怪物（必掉梦境藏品），地上道具更多。"],
         ["boss", "暗紫门。第 7 层首领战（数据草原：幻觉之眼 / 根须之心；显存冰原：冰封史莱姆王 / 霜镜女巫；算力熔炉：过热核心 / 熔岩巨蠕；无尽回廊每 10 层轮换全部首领，另有无尽专属的雷霆审判者），击败后掉铲子和宠物蛋，偶尔撕开梦境裂隙；10% 概率是双首领，奖励翻倍。"],
       ].map(([k, t]) => `<div class="hp-cur"><span class="chip" style="background:${NODE[k].col};color:#1a1020">${NODE[k].name}</span><span>${t}</span></div>`).join("")}
@@ -327,7 +328,7 @@ export function showHud(game, me) {
   if (!game.pvp) RUN.forEach((r, i) => pips.appendChild(el("div", "pip o1", pipIcon(game.route ? (i === RUN.length - 1 ? "boss" : "?") : r.kind))));
   hudCache = {};
 }
-const PIP = { combat: "⚔", elite: "🔥", shop: "🛒", event: "💬", challenge: "⚡", treasure: "💎", boss: "👑", "?": "?" };
+const PIP = { combat: "⚔", elite: "🔥", shop: "🛒", event: "💬", challenge: "⚡", nest: "🕸", treasure: "💎", boss: "👑", "?": "?" };
 const pipIcon = (kind) => PIP[kind] || "⚔";
 export function updateHud(game, me) {
   if (!hud || !me) return;

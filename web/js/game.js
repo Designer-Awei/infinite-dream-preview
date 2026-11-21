@@ -363,6 +363,13 @@ export class Game {
       const s = spots[i % spots.length];
       this.spawnEnemy(k.replace("*", ""), s.x, s.y, elite, 0.6 + i * 0.12);
     });
+    // 精英巢穴: three nests of this map join the first wave, spread out away from the players (one is elite)
+    if (this.room.nest && this.wave === 0 && this.host) {
+      const md = this.roomMap(this.roomIdx), type = "nest_" + (ENEMIES["nest_" + md.id] ? md.id : "grass"), picks = [];
+      for (const s of spots) if (picks.length < 3 && picks.every((q) => dist(q.x, q.y, s.x, s.y) > 140)) picks.push(s);
+      picks.forEach((s, i) => this.spawnEnemy(type, s.x, s.y, i === 0, 0.9 + i * 0.2));
+      this.banner = { text: "精英巢穴", sub: "摧毁全部巢穴 · 清场开箱必有 SR 以上", t: 2.4 };
+    }
     // now and then the map's rare monster joins the first wave of a combat room (twice per chapter / ten endless floors)
     const rare = !this.pvp && this.host && this.wave === 0 && this.room.kind === "combat" && this.raresSeen < 2 && rareOf(this.roomMap(this.roomIdx).id);
     if (rare && (this.room.treasure || rr() < (this.endless ? 0.05 : 0.08))) {
@@ -437,6 +444,7 @@ export class Game {
   }
   addZone(z) {
     z.id = nid();
+    if (z.update || z.onEnd) Object.defineProperty(z, "g", { value: this, enumerable: false }); // enemy zones' callbacks reach the game
     z.t = 0;
     z.tick = 0;
     this.zones.push(z);
@@ -518,6 +526,14 @@ export class Game {
       this.vfx("explosions/cartoon-pow", e.x, e.y - 12, { life: 0.45, text: "" });
       const half = amount * 0.5;
       this.after(0, () => { for (const o of this.enemiesNear(e.x, e.y, 34)) if (o !== e) this.hit(o, half, { p, noCrit: true, noReact: true, evoBoom: true }); });
+    }
+    // 冰壳守护进程: the front shell takes a quarter of a hit coming from within ~63° of where it faces
+    if (e.def.shell && p && e.dir != null && !src.noReact) {
+      const a = angTo(e.x, e.y, p.x, p.y), off = Math.abs(Math.atan2(Math.sin(a - e.dir), Math.cos(a - e.dir)));
+      if (off < 1.1) {
+        dmg *= 0.25;
+        if ((e.blockT || 0) < this.time) (e.blockT = this.time + 0.6), this.text(e.x, e.y - e.r * 2 - 18, "格挡", "#bfe8ff", 0.95, 0.6);
+      }
     }
     if (e.vulnT > 0) dmg *= 1.25;
     if (e.guardT > 0) dmg *= 0.2; // 根须之心 shut in bark / 过热核心 behind its coolant pylons
@@ -1567,7 +1583,7 @@ export class Game {
     this.chest.opened = true;
     this.vfx("pickups/chest-open", this.chest.x, this.chest.y + 10, {});
     this.sound("pickup");
-    for (const q of this.players) this.offerCards(q);
+    for (const q of this.players) this.offerCards(q, 3, this.room?.nest ? "SR" : null); // 精英巢穴: SR and up
     if (this.phase === "clear") this.phase = "cards";
     if (this.phase === "cards" && !Object.keys(this.cardOffers).length) this.openPortal();
   }

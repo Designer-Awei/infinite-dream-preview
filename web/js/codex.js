@@ -29,10 +29,10 @@ export function curioIcon(id) { return `assets/curios/${id}.png`; }
 
 /** codex pages: which monsters live where (an entry may only appear once) */
 export const CODEX = [
-  { id: "grass", name: "数据草原", list: ["slime", "bat", "eyeball", "frog", "snake", "snake_vine", "mushroom", "beetle", "frog_big", "boss_eye", "boss_root", "slime_gold"] },
-  { id: "ice", name: "显存冰原", list: ["slime_blue", "bat_ice", "eye_ice", "snake_ice", "jelly_ice", "hedgehog", "frostling", "slime_frost", "boss_frost", "boss_witch", "jelly_aurora"] },
-  { id: "lava", name: "算力熔炉", list: ["slime_lava", "bat_fire", "snake_lava", "salamander", "imp", "skull_core", "boss_core", "boss_worm", "skull_obsidian"] },
-  { id: "any", name: "各地通用", list: ["slime_purple", "ghost", "jelly", "skull", "wisp", "boss_judge"] },
+  { id: "grass", name: "数据草原", list: ["slime", "bat", "eyeball", "frog", "snake", "snake_vine", "mushroom", "beetle", "spider", "nest_grass", "frog_big", "boss_eye", "boss_root", "slime_gold"] },
+  { id: "ice", name: "显存冰原", list: ["slime_blue", "bat_ice", "eye_ice", "snake_ice", "jelly_ice", "hedgehog", "frostling", "turtle", "nest_ice", "slime_frost", "boss_frost", "boss_witch", "jelly_aurora"] },
+  { id: "lava", name: "算力熔炉", list: ["slime_lava", "bat_fire", "snake_lava", "salamander", "imp", "snail", "nest_lava", "skull_core", "boss_core", "boss_worm", "skull_obsidian"] },
+  { id: "any", name: "各地通用", list: ["slime_purple", "ghost", "jelly", "skull", "wisp", "drone", "boss_judge"] },
   { id: "mine", name: "梦境矿场", list: ["mine:mole", "mine:golem"] },
 ];
 const MINE_NAMES = { mole: "宝藏地鼠", golem: "遗迹守护者" };
@@ -47,6 +47,9 @@ const DESC = {
   boss_frost: "显存冰原的首领：跳砸冰环、冰刺；血量过半分裂成两只。", boss_witch: "显存冰原的另一位首领：闪身并留下冰镜分身（有影子的才是真身，分身一碰就碎），冰枪沿预警线齐射，霜环扩散要闪避穿过，三阶段落下冰锥。", slime_lava: "死后留下火池，持续灼烧。", bat_fire: "碰到会着火。",
   skull_core: "熔炉的精英，火弹圈更密。", boss_core: "算力熔炉的首领：火环、陨石；立起冷却塔护体，打掉全部冷却塔会过热宕机。", boss_judge: "无尽回廊的轮换首领：网格落雷要站进安全格；连锁闪电、雷光突进、雷弹扇射；二三阶段立起雷暴核心护体并充能，12 秒内全部打掉会让它审判中断，否则全场落雷。", boss_worm: "算力熔炉的另一位首领：从熔岩池里探身吐熔岩团、扫射火焰；钻地时打不到它，地面标记处会破土而出，三阶段连钻两次。", snake_lava: "红褐色的熔岩蛇，碰到会着火。",
   salamander: "爬得快，碰到会着火，倒下时留下熔岩池。", imp: "在你身边乱飞，碰到会着火。", mushroom: "跳着靠近，死后散出毒孢子。",
+  spider: "一阵一阵地斜着窜，吐出蛛网落在你脚下，站在网里会减速。", turtle: "正面冰壳只吃四分之一伤害，地上淡蓝弧线是它的正面；转身很慢，绕到侧面或背后打。不时砸地放出一圈减速冰片。",
+  snail: "离你远远的，往你脚下打熔岩弹：先出红圈，1 秒后爆炸并留下灼烧地面。", drone: "从不攻击，躲着你飞，每隔几秒给身边受伤的怪物修复四分之一生命。优先打掉它。",
+  nest_grass: "精英巢穴里的巢，不停孵出爬网蜘蛛和孢子节点，打碎才会停。", nest_ice: "精英巢穴里的巢，孵出霜冻爬虫和冰壳守护进程。", nest_lava: "精英巢穴里的巢，孵出余烬小鬼和熔岩迫击蜗牛。",
   beetle: "壳很硬，横冲直撞。", hedgehog: "蓄力扑向你，碰到会被冻得减速。", frostling: "飘在空中，一次射出两发减速冰弹。",
   snake_ice: "冰原的蛇，碰到会减速。", jelly_ice: "冰原的水母，放电范围不变但更耐打。",
   slime_gold: "稀有！偶尔在数据草原出现，打倒必掉草原藏品。", jelly_aurora: "稀有！偶尔在显存冰原出现，打倒必掉冰原藏品。",
