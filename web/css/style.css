@@ -685,7 +685,7 @@ body.touchmode .c-key { display: none; }
 .res-r .acts { flex: 0 0 auto; margin: 0; gap: 10px; justify-content: center; }
 .res-r .acts .btn { flex: 1; max-width: 200px; box-shadow: none; }
 .res-r .acts .btn, .rift-modal .row .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
-.rift-modal .row .btn.gray { color: #fff; }
+.rift-modal .row .btn.gray { color: #fff; -webkit-text-stroke: 2px var(--ink); }
 .toast.outline { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
 .rift-tip { margin-top: 6px; color: #ffe36a; font-size: 12px; line-height: 1.5; }
 @media (max-height: 420px) {
@@ -1427,9 +1427,10 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .mh-r .btn.small.gray > span { text-shadow: 0 1px 0 #2a2238, 0 0 3px #2a2238; }
 .mh-r .btn.small small { color: #fff; background: rgba(40,20,8,.6); }
 /* buttons: a full 8-direction outline (the old 4 diagonal shadows left gaps that read as a double image); gray buttons use dark text */
-.btn { text-shadow: 0 -2px 0 var(--ink), 0 2px 0 var(--ink), -2px 0 0 var(--ink), 2px 0 0 var(--ink), -2px -2px 0 var(--ink), 2px -2px 0 var(--ink), -2px 2px 0 var(--ink), 2px 2px 0 var(--ink), 0 3px 0 var(--ink); letter-spacing: .5px; }
-.btn.small { text-shadow: 0 -1px 0 var(--ink), 0 1px 0 var(--ink), -1px 0 0 var(--ink), 1px 0 0 var(--ink), -1px -1px 0 var(--ink), 1px -1px 0 var(--ink), -1px 1px 0 var(--ink), 1px 1px 0 var(--ink), 0 2px 0 var(--ink); }
-.btn.gray { color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); }
+/* button text: one black stroke ring sized to the text (the 8-direction shadow blurred small text) */
+.btn { text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; letter-spacing: .5px; }
+.btn.small { -webkit-text-stroke: 2px var(--ink); }
+.btn.gray { color: var(--ink); text-shadow: 0 1px 0 rgba(255,255,255,.7); -webkit-text-stroke: 0; }
 .pause-p { min-width: 300px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center; }
 .pause-p h2 { margin: 0; }
 .pause-p .row { justify-content: center; gap: 10px; flex-wrap: nowrap; }

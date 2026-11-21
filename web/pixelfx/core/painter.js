@@ -3,6 +3,8 @@
 // origin; the painter places, mirrors and rotates them, so an effect never needs to know where it is.
 
 import { clamp } from "./math.js";
+// glow falloff (1 - sqrt(d²))² sampled on d² in [0, 1)
+const FALL = new Float32Array(1024).map((_, i) => (1 - Math.sqrt(i / 1023)) ** 2);
 import { hex } from "./color.js";
 import { rasterText, textWidth, FONTS } from "./font.js";
 
@@ -272,15 +274,32 @@ export class Painter {
   /** Radial glow into the light buffer: k at the center, falling to 0 at radius r. */
   glow(x, y, r, c, k = 0.5) {
     if (r < 1 || k <= 0.004) return;
-    const cx = this.toX(x, y), cy = this.toY(x, y);
-    const x0 = Math.floor(cx - r), x1 = Math.ceil(cx + r), y0 = Math.floor(cy - r), y1 = Math.ceil(cy + r);
+    k *= this.fade * this.lightK;
+    if (k <= 0.004) return;
+    // inlined (perf: the hottest call while many effects overlap): clipped box, one dirty-box update, a falloff
+    // lookup table instead of a sqrt per pixel
+    const cx = this.toX(x, y), cy = this.toY(x, y), ox = this.ox, oy = this.oy, W = this.w, H = this.h;
+    const x0 = Math.max(Math.floor(cx - r), ox), y0 = Math.max(Math.floor(cy - r), oy), x1 = Math.min(Math.ceil(cx + r), ox + W - 1), y1 = Math.min(Math.ceil(cy + r), oy + H - 1);
+    if (x0 > x1 || y0 > y1) return;
+    const D = this.D;
+    if (x0 - ox < D[0]) D[0] = x0 - ox;
+    if (x1 - ox > D[2]) D[2] = x1 - ox;
+    if (y0 - oy < D[1]) D[1] = y0 - oy;
+    if (y1 - oy > D[3]) D[3] = y1 - oy;
+    this.frame.lit = true;
+    const L = this.L, cr = c & 255, cg = (c >>> 8) & 255, cb = (c >>> 16) & 255, ir = 1 / r;
     for (let sy = y0; sy <= y1; sy++) {
-      const dy = (sy + 0.5 - cy) / r;
+      const dy = (sy + 0.5 - cy) * ir, dy2 = dy * dy;
+      if (dy2 >= 1) continue;
+      const row = (sy - oy) * W - ox;
       for (let sx = x0; sx <= x1; sx++) {
-        const dx = (sx + 0.5 - cx) / r, d = dx * dx + dy * dy;
+        const dx = (sx + 0.5 - cx) * ir, d = dx * dx + dy2;
         if (d >= 1) continue;
-        const f = 1 - Math.sqrt(d);
-        this.add(sx, sy, c, f * f * k);
+        const kk = FALL[(d * 1023) | 0] * k;
+        if (kk <= 0.004) continue;
+        const i = row + sx, v = L[i];
+        const rr = Math.min(255, (v & 255) + cr * kk) | 0, gg = Math.min(255, ((v >>> 8) & 255) + cg * kk) | 0, bb = Math.min(255, ((v >>> 16) & 255) + cb * kk) | 0;
+        L[i] = (255 << 24) | (bb << 16) | (gg << 8) | rr;
       }
     }
   }
@@ -289,28 +308,53 @@ export class Painter {
     if (r < 1 || k <= 0.004) return;
     const ax = this.toX(x0, y0), ay = this.toY(x0, y0), bx = this.toX(x1, y1), by = this.toY(x1, y1);
     const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy || 1e-9;
-    const X0 = Math.floor(Math.min(ax, bx) - r), X1 = Math.ceil(Math.max(ax, bx) + r);
-    const Y0 = Math.floor(Math.min(ay, by) - r), Y1 = Math.ceil(Math.max(ay, by) + r);
-    for (let sy = Y0; sy <= Y1; sy++)
-      for (let sx = X0; sx <= X1; sx++) {
-        const px = sx + 0.5, py = sy + 0.5, u = clamp(((px - ax) * dx + (py - ay) * dy) / L2);
-        const ex = ax + dx * u - px, ey = ay + dy * u - py, d = Math.sqrt(ex * ex + ey * ey) / r;
-        if (d >= 1) continue;
-        const f = 1 - d;
-        this.add(sx, sy, c, f * f * k);
-      }
+    this._lit(Math.floor(Math.min(ax, bx) - r), Math.floor(Math.min(ay, by) - r), Math.ceil(Math.max(ax, bx) + r), Math.ceil(Math.max(ay, by) + r), c, k, (px, py) => {
+      const u = clamp(((px - ax) * dx + (py - ay) * dy) / L2), ex = ax + dx * u - px, ey = ay + dy * u - py, d = Math.sqrt(ex * ex + ey * ey) / r;
+      if (d >= 1) return 0;
+      const f = 1 - d;
+      return f * f;
+    });
   }
   /** Glow hugging a circle of radius R (a shockwave's light), falling off over width r. */
   glowRing(x, y, R, r, c, k = 0.5) {
     if (r < 1 || k <= 0.004) return;
-    const cx = this.toX(x, y), cy = this.toY(x, y), E = R + r;
-    for (let sy = Math.floor(cy - E); sy <= Math.ceil(cy + E); sy++)
-      for (let sx = Math.floor(cx - E); sx <= Math.ceil(cx + E); sx++) {
-        const d = Math.abs(Math.hypot(sx + 0.5 - cx, sy + 0.5 - cy) - R) / r;
-        if (d >= 1) continue;
-        const f = 1 - d;
-        this.add(sx, sy, c, f * f * k);
+    const cx = this.toX(x, y), cy = this.toY(x, y), E = R + r, Ri = Math.max(0, R - r);
+    this._lit(Math.floor(cx - E), Math.floor(cy - E), Math.ceil(cx + E), Math.ceil(cy + E), c, k, (px, py) => {
+      const ddx = px - cx, ddy = py - cy, d2 = ddx * ddx + ddy * ddy;
+      if (d2 >= E * E || d2 <= Ri * Ri) return 0; // outside the band: skip the sqrt
+      const d = Math.abs(Math.sqrt(d2) - R) / r;
+      if (d >= 1) return 0;
+      const f = 1 - d;
+      return f * f;
+    });
+  }
+  /** shared light loop (perf): clip the screen box to the buffer once, mark the dirty box once, then add straight into
+   *  the light buffer (no per-pixel bounds checks / calls to add). fn(px, py) gives the 0..1 falloff at a pixel centre. */
+  _lit(X0, Y0, X1, Y1, c, k, fn) {
+    k *= this.fade * this.lightK;
+    if (k <= 0.004) return;
+    const ox = this.ox, oy = this.oy, W = this.w, H = this.h;
+    const x0 = Math.max(X0, ox), y0 = Math.max(Y0, oy), x1 = Math.min(X1, ox + W - 1), y1 = Math.min(Y1, oy + H - 1);
+    if (x0 > x1 || y0 > y1) return;
+    const D = this.D;
+    if (x0 - ox < D[0]) D[0] = x0 - ox;
+    if (x1 - ox > D[2]) D[2] = x1 - ox;
+    if (y0 - oy < D[1]) D[1] = y0 - oy;
+    if (y1 - oy > D[3]) D[3] = y1 - oy;
+    this.frame.lit = true;
+    const L = this.L, cr = c & 255, cg = (c >>> 8) & 255, cb = (c >>> 16) & 255;
+    for (let sy = y0; sy <= y1; sy++) {
+      const row = (sy - oy) * W - ox, py = sy + 0.5;
+      for (let sx = x0; sx <= x1; sx++) {
+        const f = fn(sx + 0.5, py);
+        if (f <= 0) continue;
+        const kk = f * k;
+        if (kk <= 0.004) continue;
+        const i = row + sx, d = L[i];
+        const r = Math.min(255, (d & 255) + cr * kk) | 0, g = Math.min(255, ((d >>> 8) & 255) + cg * kk) | 0, b = Math.min(255, ((d >>> 16) & 255) + cb * kk) | 0;
+        L[i] = (255 << 24) | (b << 16) | (g << 8) | r;
       }
+    }
   }
 
   // ---- sprites, text, masks
