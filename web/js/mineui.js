@@ -80,7 +80,7 @@ export function showMineHub() {
     <button class="btn big mh-go"><span class="pt">下潜</span></button>
   </div>
   <div class="mh-r">
-    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊</button><button class="mh-tab" data-t="quest">每日委托<b class="qdot"></b></button><button class="mh-tab mh-ttl">矿场称号</button></div>
+    <div class="mh-tabs"><button class="mh-tab on" data-t="ups">矿场装备</button><button class="mh-tab" data-t="shop">梦境工坊</button><button class="mh-tab" data-t="quest">每日委托<b class="qdot"></b></button></div>
     <div class="mh-ups"></div>
   </div>`;
   uiRoot().appendChild(s);
@@ -265,8 +265,6 @@ export function showMineHub() {
   qdot();
   const draw = () => (ups.classList.toggle("fill", tab === "shop"), tab === "ups" ? drawUps() : tab === "quest" ? drawQuests() : drawShop());
   s.addEventListener("currencychange", () => { pills(); draw(); });
-  // 矿场称号: opens the 称号 panel on its 矿场 tab (not a tab of its own here)
-  q(".mh-ttl", s).onclick = () => (sfx("click"), import("./titleui.js").then((U) => U.showTitles("mine")));
   import("./titles.js").then((Tt) => { const f = Tt.checkTitles(); if (f.length) import("./titleui.js").then((U) => s.isConnected && U.announceTitles(f)); });
   s.querySelectorAll(".mh-tab[data-t]").forEach((b) => (b.onclick = () => {
     tab = b.dataset.t;

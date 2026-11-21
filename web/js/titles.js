@@ -18,6 +18,7 @@ export const TITLE_TABS = [["adv", "冒险"], ["mine", "矿场"], ["pet", "宠�
 const st = () => load().stats || {};
 const maxPact = () => Math.max(0, ...Object.values(load().pactBest || {}));
 // id: { name, r: rarity key, tab, how (unlock text), prog() -> [have, need], fx: effect keys, fxText }
+//   optional col / bg override the rarity's colours, still: true keeps the frame from colour-cycling (流彩 otherwise does)
 // effect keys (PVE only, see applyTitle): coin0 start coins, dmg, boss (vs bosses), react (reaction dmg), dash (dodge
 // cooldown cut), pd (完美闪避 window +s), shield (max shield), guard (chance a hit is shrugged off), coin, mag, speed,
 // inv (+s of invulnerability after a hit), ult (ult charge), crit
@@ -28,7 +29,7 @@ export const TITLES = {
   reactor: { name: "元素指挥家", r: "e", tab: "adv", how: "累计触发元素反应 2000 次", prog: () => [st().reactions || 0, 2000], fx: { react: 0.15 }, fxText: "元素反应伤害 +15%" },
   phantom: { name: "幻影舞者", r: "l", tab: "adv", how: "累计完美闪避 100 次", prog: () => [st().perfect || 0, 100], fx: { dash: 0.2, pd: 0.1 }, fxText: "闪避冷却 -20%，完美闪避判定 +0.1 秒" },
   walker: { name: "回廊行者", r: "l", tab: "adv", how: "无尽回廊打到第 30 层", prog: () => [st().endlessBest || 0, 30], fx: { shield: 1 }, fxText: "护盾上限 +1" },
-  nightmare: { name: "噩梦主宰", r: "x", tab: "adv", how: "以噩梦契约 19 级通关", prog: () => [maxPact(), 19], fx: { guard: 0.15 }, fxText: "最终减伤：受到攻击时 15% 概率完全抵消" },
+  nightmare: { name: "噩梦主宰", r: "x", col: "#ff4a4a", bg: "#3a0a12", still: true, tab: "adv", how: "以噩梦契约 19 级通关", prog: () => [maxPact(), 19], fx: { guard: 0.15 }, fxText: "最终减伤：受到攻击时 15% 概率完全抵消" },
   digger: { name: "见习矿工", r: "c", tab: "mine", how: "梦境矿场下潜 10 次", prog: () => [mineState().dives || 0, 10], fx: { mag: 0.15 }, fxText: "拾取范围 +15%" },
   prospector: { name: "深渊勘探者", r: "r", tab: "mine", how: "矿场最深到达 30 米", prog: () => [mineState().best || 0, 30], fx: { speed: 0.05 }, fxText: "移速 +5%" },
   contractor: { name: "委托达人", r: "e", tab: "mine", how: "完成每日委托 30 个", prog: () => [mineState().questsDone || 0, 30], fx: { coin: 0.15 }, fxText: "局内金币 +15%" },
@@ -88,7 +89,8 @@ export function grantTitle(id) {
 export function titleHTML(id, extra = "") {
   const T = TITLES[id];
   if (!T) return "";
-  return `<span class="ttl t-${T.r} ${extra}" data-r="${T.r}"><i class="tt-sh"></i><b>${T.name}</b></span>`;
+  const own = T.col ? ` style="--tc:${T.col};--tb:${T.bg || TITLE_RARITY[T.r].bg}"` : "";
+  return `<span class="ttl t-${T.r}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}><i class="tt-sh"></i><b>${T.name}</b></span>`;
 }
 
 /** apply the worn title's effect to a new player (PVE only; the plate is shown in every mode) */
@@ -116,11 +118,11 @@ export function drawTitlePlate(g, id, x, y, t) {
   g.save();
   g.font = "10px Cubic, 'PingFang SC', sans-serif";
   const w = Math.ceil(g.measureText(T.name).width) + 10, h = 13, x0 = Math.round(x - w / 2), y0 = Math.round(y - h / 2);
-  let col = R.col;
-  if (T.r === "x") col = `hsl(${(t * 120) % 360},90%,72%)`;
+  let col = T.col || R.col;
+  if (T.r === "x" && !T.still) col = `hsl(${(t * 120) % 360},90%,72%)`;
   g.fillStyle = "#0c0814";
   g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
-  g.fillStyle = R.bg;
+  g.fillStyle = T.bg || R.bg;
   g.fillRect(x0, y0, w, h);
   g.fillStyle = col;
   g.fillRect(x0, y0, w, 1);

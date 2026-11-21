@@ -2650,6 +2650,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ttl.big { height: 34px; padding: 0 18px; font-size: 20px; border-width: 3px; }
 .ttl.big b { -webkit-text-stroke: 3px #0c0814; }
 .ttl.locked { filter: grayscale(1) brightness(.62); animation: none; }
+.ttl.t-x.still { animation: none; box-shadow: 0 0 0 2px #0c0814, 0 0 12px color-mix(in srgb, var(--tc) 65%, transparent); }
 @keyframes ttlShine { 0%, 55% { left: -20%; } 100% { left: 120%; } }
 @keyframes ttlPulse { 50% { box-shadow: 0 0 0 2px #0c0814, 0 0 10px rgba(90,168,255,.7); } }
 @keyframes ttlHue { to { filter: hue-rotate(360deg); } }
@@ -2672,7 +2673,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ttl-body { flex: 1; display: flex; gap: 10px; min-height: 0; }
 .ttl-cur { flex: 0.85; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; background: radial-gradient(ellipse at 50% 40%, rgba(140,110,230,.35), rgba(10,6,24,.45) 72%); border: 2px solid var(--ink); border-radius: 12px; padding: 10px; }
 .ttl-cur .tc-h { font-size: 12px; color: #c8a0ff; }
-.ttl-cur .tc-plate { min-height: 44px; display: flex; align-items: center; }
+.ttl-cur .tc-cv { width: 100%; max-width: 300px; aspect-ratio: 300 / 236; max-height: 58%; width: auto; image-rendering: pixelated; border: 3px solid var(--ink); border-radius: 10px; }
 .ttl-cur .tc-none { color: #8a80a8; font-size: 16px; }
 .ttl-cur .tc-r { font-size: 12px; }
 .ttl-cur .tc-fx { font-size: 15px; color: #fff; line-height: 1.35; }

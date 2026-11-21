@@ -4,7 +4,9 @@
 import { el } from "./util.js";
 import { uiRoot, btn } from "./ui.js";
 import { sfx } from "./audio.js";
-import { TITLES, TITLE_ORDER, TITLE_RARITY, TITLE_TABS, titleState, equipTitle, checkTitles, titleHTML } from "./titles.js";
+import { TITLES, TITLE_ORDER, TITLE_RARITY, TITLE_TABS, titleState, equipTitle, checkTitles, titleHTML, drawTitlePlate } from "./titles.js";
+import { A } from "./assets.js";
+import { load } from "./save.js";
 
 export function showTitles(tab = "adv", onClose = null) {
   checkTitles();
@@ -22,12 +24,10 @@ export function showTitles(tab = "adv", onClose = null) {
     const t = titleState(), own = Object.keys(t.own).filter((id) => TITLES[id]);
     md.querySelector(".ttl-n").textContent = `已获得 ${own.length} / ${TITLE_ORDER.length}`;
     tabs.querySelectorAll(".ttl-tab").forEach((b) => b.classList.toggle("on", b.dataset.k === tab));
-    // the worn one
+    // the worn one, previewed the way it looks in a run: the selected girl on the floor, name and plate over her head
     const cur = md.querySelector(".ttl-cur"), T = TITLES[t.eq];
-    cur.innerHTML = T
-      ? `<div class="tc-h o1">佩戴中</div><div class="tc-plate">${titleHTML(t.eq, "big")}</div><div class="tc-r" style="color:${TITLE_RARITY[T.r].col}">${TITLE_RARITY[T.r].name}称号</div><div class="tc-fx">${T.fxText}</div><div class="tc-s">局内头顶显示，联机队友可见；效果仅在闯关中生效</div>`
-      : `<div class="tc-h o1">佩戴中</div><div class="tc-plate tc-none">未佩戴</div><div class="tc-s">获得称号后点「佩戴」，局内头顶显示并获得它的效果</div>`;
-    if (T) cur.appendChild(btn("卸下", "gray small tc-off", () => (equipTitle(null), sfx("click"), draw())));
+    cur.innerHTML = `<div class="tc-h o1">局内预览</div><canvas class="tc-cv" width="300" height="236"></canvas>${T ? `<div class="tc-r" style="color:${T.col || TITLE_RARITY[T.r].col}">${TITLE_RARITY[T.r].name}称号 · ${T.name}</div><div class="tc-fx">${T.fxText}</div>` : `<div class="tc-fx tc-none">未佩戴称号</div>`}`;
+    preview(cur.querySelector(".tc-cv"), t.eq, md);
     // the tab's titles: owned first, then by rarity
     const ro = Object.keys(TITLE_RARITY);
     const ids = TITLE_ORDER.filter((id) => TITLES[id].tab === tab).sort((a, b) => (!!t.own[b] - !!t.own[a]) || ro.indexOf(TITLES[a].r) - ro.indexOf(TITLES[b].r));
@@ -49,6 +49,42 @@ export function showTitles(tab = "adv", onClose = null) {
   draw();
   uiRoot().appendChild(md);
   return md;
+}
+
+/** the in-run look: grass floor, the selected girl breathing, her name and the worn plate (2× like the game) */
+function preview(cv, id, md) {
+  const g = cv.getContext("2d"), m = load(), set = A.girls[m.sel], t0 = performance.now();
+  if (!set) return;
+  const k = set.k || 1, W = set.w / k, H = set.foot / k, SH = set.h / k, clip = (set.clips || {}).idle_s;
+  const draw = (now) => {
+    if (!cv.isConnected) return;
+    const t = (now - t0) / 1000;
+    g.setTransform(2, 0, 0, 2, 0, 0);
+    g.imageSmoothingEnabled = false;
+    for (let y = 0; y < 118; y += 16) for (let x = 0; x < 150; x += 16) {
+      g.fillStyle = ((x + y) / 16) % 2 ? "#7cc44c" : "#86cc54";
+      g.fillRect(x, y, 16, 16);
+    }
+    const px = 75, py = 110;
+    g.fillStyle = "rgba(10,30,10,0.35)";
+    g.beginPath();
+    g.ellipse(px, py, 14, 5, 0, 0, Math.PI * 2);
+    g.fill();
+    const img = clip ? clip[Math.floor(t * 5) % clip.length] : set.views.front;
+    g.drawImage(img, Math.round(px - W / 2), Math.round(py - H + 1), W, SH);
+    const y = py - (set.foot - (set.top || 0)) / k - 8;
+    g.font = "10px Cubic, 'PingFang SC', sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.lineWidth = 3;
+    g.strokeStyle = "#0c0814";
+    g.strokeText(m.name, px, y - 9);
+    g.fillStyle = "#5dff7a";
+    g.fillText(m.name, px, y - 9);
+    if (id) drawTitlePlate(g, id, px, y - 22, t);
+    requestAnimationFrame(draw);
+  };
+  requestAnimationFrame(draw);
 }
 
 /** announce titles just earned (one pop-up listing them; 去佩戴 opens the panel on the first one's tab) */
