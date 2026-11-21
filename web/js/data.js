@@ -171,6 +171,7 @@ export const ENEMIES = {
   boss_root: { name: "根须之心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
   boss_witch: { name: "霜镜女巫", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
   boss_worm: { name: "熔岩巨蠕", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
+  core_pylon: { name: "冷却塔", hp: 140, spd: 0, r: 13, ai: "pylon", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   witch_clone: { name: "冰镜分身", hp: 1, spd: 0, r: 14, ai: "witch_clone", sprite: "frost_witch_clone", coin: [0, 0], fly: true, mirror: true },
 };
 

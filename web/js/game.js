@@ -496,7 +496,8 @@ export class Game {
       this.after(0, () => { for (const o of this.enemiesNear(e.x, e.y, 34)) if (o !== e) this.hit(o, half, { p, noCrit: true, noReact: true, evoBoom: true }); });
     }
     if (e.vulnT > 0) dmg *= 1.25;
-    if (e.guardT > 0) dmg *= 0.2; // 根须之心 shut in bark
+    if (e.guardT > 0) dmg *= 0.2; // 根须之心 shut in bark / 过热核心 behind its coolant pylons
+    if (e.overheat > 0) dmg *= 1.5; // 过热核心 stalled after its pylons fall
     if (e.freezeT > 0) dmg *= 1.15;
     dmg = Math.max(0.5, dmg);
     e.hp -= dmg;
@@ -625,7 +626,7 @@ export class Game {
     }
   }
   knock(e, fx, fy, power) {
-    if (e.boss) return;
+    if (e.boss || e.def.noKnock) return;
     const a = angTo(fx, fy, e.x, e.y);
     e.kbx += Math.cos(a) * power;
     e.kby += Math.sin(a) * power;

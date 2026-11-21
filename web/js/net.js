@@ -434,7 +434,7 @@ function snapshot(g) {
   });
   const E = g.enemies.map((e) => [e.id, e.type, r1(e.x), r1(e.y), Math.ceil(e.hp), Math.ceil(e.maxHp), (e.elite ? 1 : 0) | (e.flash > 0 ? 4 : 0) | (e.freezeT > 0 ? 8 : 0) | (e.slowT > 0 ? 16 : 0) | (e.burnT > 0 ? 32 : 0), e.st, r1(e.z || 0), e.face, Object.keys(e.marks).filter((k) => e.marks[k] > g.time).join(","), e.lx != null ? r1(e.lx) : null, e.ly != null ? r1(e.ly) : null, round2(Math.max(0, e.spawnT)), round2(e.cd), e.bubble > g.time ? 1 : 0]);
   const B = g.bullets.map((b) => [b.id, b.side === "e" ? 1 : 0, b.kind, r1(b.x), r1(b.y), r1(b.vx), r1(b.vy), b.r, b.elem || 0, b.big ? 1 : 0, b.wave ? 1 : 0, b.arcTo ? [r1(b.arcTo.x0), r1(b.arcTo.y0), r1(b.arcTo.x), r1(b.arcTo.y), b.arcTo.dur, round2(b.t)] : 0, r1(b.h || 0), b.owner || 0, b.atk ? 1 : 0]);
-  const Z = g.zones.map((z) => [z.id, z.kind, r1(z.x), r1(z.y), z.r, round2(z.life), round2(z.t)]);
+  const Z = g.zones.map((z) => (z.a0 != null ? [z.id, z.kind, r1(z.x), r1(z.y), z.r, round2(z.life), round2(z.t), round2(z.a0), z.dir] : [z.id, z.kind, r1(z.x), r1(z.y), z.r, round2(z.life), round2(z.t)])); // a0/dir: 凝视光束 sweep
   const Q = g.pickups.map((q) => [q.id, q.kind, q.item || 0, r1(q.x), r1(q.y), r1(q.z || 0), round2(q.t), round2(q.life)]);
   return {
     t: "s", tm: round2(g.time), ph: g.phase, ri: g.roomIdx, P, E, B, Z, Q, ev: g.events.slice(),
@@ -546,7 +546,7 @@ function applySnapshot(app, s) {
   }
   g.bullets = nb;
   const oldZones=new Map(g.zones.map(z=>[z.id,z]));
-  g.zones=s.Z.map(a=>{const z=oldZones.get(a[0])||{};oldZones.delete(a[0]);return Object.assign(z,{id:a[0],kind:a[1],x:a[2],y:a[3],r:a[4],life:a[5],t:a[6]});});
+  g.zones=s.Z.map(a=>{const z=oldZones.get(a[0])||{};oldZones.delete(a[0]);return Object.assign(z,{id:a[0],kind:a[1],x:a[2],y:a[3],r:a[4],life:a[5],t:a[6]},a.length>7?{a0:a[7],dir:a[8]}:{});});
   for(const z of oldZones.values())z.gone=true;
   g.petFields=(s.pf||[]).map(f=>({...f}));
   g.pickups = s.Q.map((a) => ({ id: a[0], kind: a[1], item: a[2] || undefined, x: a[3], y: a[4], z: a[5], t: a[6], life: a[7], vx: 0, vy: 0, vz: 0 }));

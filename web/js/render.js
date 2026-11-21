@@ -527,6 +527,29 @@ export class Renderer {
   drawEnemy(g, e, game) {
     const d = e.def, s = A.critters[d.sprite];
     if (!s) return;
+    if (d.ai === "pylon") {
+      // 过热核心's coolant pylon, drawn by hand: a riveted metal tower with a pulsing ice crystal on top
+      g.save();
+      const x = Math.round(e.x), y = Math.round(e.y), pul = 0.5 + 0.5 * Math.sin(this.t * 5 + e.id);
+      g.fillStyle = "rgba(10,20,40,0.45)";
+      g.beginPath(); g.ellipse(x, y, 14, 5, 0, 0, TAU); g.fill();
+      const P = (px, py, w, h, c) => ((g.fillStyle = c), g.fillRect(x + px, y + py, w, h));
+      P(-10, -6, 20, 6, "#14101c"); P(-9, -5, 18, 4, "#4a5468"); P(-9, -5, 18, 1, "#8a96aa");
+      P(-6, -30, 12, 25, "#14101c"); P(-5, -29, 10, 24, "#5a6478"); P(-5, -29, 3, 24, "#9aa6ba"); P(2, -29, 3, 24, "#3a4458");
+      for (let k = 0; k < 3; k++) P(-5, -25 + k * 7, 10, 1, "#2a3040");
+      P(-8, -34, 16, 5, "#14101c"); P(-7, -33, 14, 3, "#6a7488");
+      g.fillStyle = "#14101c";
+      g.beginPath(); g.moveTo(x, y - 52); g.lineTo(x + 7, y - 42); g.lineTo(x, y - 33); g.lineTo(x - 7, y - 42); g.closePath(); g.fill();
+      g.fillStyle = e.flash > 0 ? "#ffffff" : "#5ab8ff";
+      g.beginPath(); g.moveTo(x, y - 50); g.lineTo(x + 5, y - 42); g.lineTo(x, y - 35); g.lineTo(x - 5, y - 42); g.closePath(); g.fill();
+      g.fillStyle = "#d8f4ff";
+      g.fillRect(x - 2, y - 46, 2, 5);
+      g.globalCompositeOperation = "lighter";
+      g.fillStyle = `rgba(90,184,255,${0.18 + 0.2 * pul})`;
+      g.beginPath(); g.arc(x, y - 42, 12 + pul * 3, 0, TAU); g.fill();
+      g.restore();
+      return;
+    }
     if (e.hidden) {
       // 熔岩巨蠕 underground: a moving mound with glowing cracks and jumping grit
       g.save();
@@ -552,7 +575,7 @@ export class Renderer {
       return;
     }
     // sprScale: the PixelLab monsters are drawn a bit larger than the original critters; shrink the picture only
-    const sc = (d.scale || 1) * (d.sprScale || 1);
+    const sc = (d.scale || 1) * (d.sprScale || 1) * (e.sizeK || 1); // sizeK: 冰封史莱姆王's split halves
     const fr = Math.floor(e.anim * s.fps * (e.slowT > 0 ? 0.5 : 1)) % s.n;
     const fade = e.spawnT > 0 ? 1 - e.spawnT / 0.25 : 1;
     // shadow (fliers' strips include their own)
@@ -722,6 +745,24 @@ export class Renderer {
           const u = k / 12, px = z.x + (ex - z.x) * u, py = z.y + (ey - z.y) * u, s = k % 3 < 1.5 ? 1 : -1;
           g.fillRect(Math.round(px - Math.sin(arm) * 7 * s), Math.round(py + Math.cos(arm) * 7 * s), 2, 3);
         }
+      }
+    } else if (z.kind === "gazebeam") {
+      // 幻觉之眼's 凝视光束: a thin red aim line, then a hot beam sweeping (angle as enemies.js gazeAngle)
+      const a = (z.a0 ?? 0) + (z.dir ?? 1) * Math.min(1.8, Math.max(0, z.t - 0.7) * 0.95), ex = z.x + Math.cos(a) * z.r, ey = z.y + Math.sin(a) * z.r;
+      if (z.t < 0.7) {
+        g.globalAlpha = 0.4 + 0.4 * Math.sin(this.t * 40);
+        g.strokeStyle = "#ff4060";
+        g.lineWidth = 2;
+        g.beginPath(); g.moveTo(z.x, z.y); g.lineTo(ex, ey); g.stroke();
+      } else {
+        g.globalAlpha = clamp(z.life * 4);
+        g.globalCompositeOperation = "lighter";
+        for (const [w, col] of [[16, "rgba(255,40,80,0.35)"], [8, "#ff4a6a"], [3, "#fff0f4"]]) {
+          g.strokeStyle = col;
+          g.lineWidth = w;
+          g.beginPath(); g.moveTo(z.x, z.y); g.lineTo(ex, ey); g.stroke();
+        }
+        g.globalCompositeOperation = "source-over";
       }
     } else if (z.kind === "frostring") {
       // 霜镜女巫: a spreading ring of frost (bright rim, frosted band inside it, ice glints)

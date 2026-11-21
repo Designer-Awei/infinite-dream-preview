@@ -223,6 +223,17 @@ export function updateEnemy(g, e, dt) {
     case "boss_worm":
       bossWorm(g, e, p, d, dt);
       break;
+    case "pylon":
+      // 过热核心's coolant pylon: stands still, beams cold light to its core, pulses a slowing shot now and then
+      e.face = 1;
+      if (g.host) {
+        e.shotT = (e.shotT ?? 1.5) - dt;
+        if (e.shotT <= 0) (e.shotT = 2.6), shoot(g, e, angTo(e.x, e.y, p.x, p.y), { spd: 120, h: 20, r: 5, slow: true, kind: "ghost" });
+        const core = g.enemies.find((q) => q.id === e.coreId && !q.dead);
+        if (!core) e.hp = 0, e.dead = true;
+        else if ((e.beamT = (e.beamT || 0) - dt) <= 0) (e.beamT = 0.5), g.line(e.x, e.y - 14, core.x, core.y - 56, "#7fd0ff", 2, 0.5, "zap");
+      }
+      break;
   }
 }
 
@@ -275,9 +286,28 @@ function bossEye(g, e, p, d, dt) {
   const opts = ["burst", "aimed", "burst", "aimed"];
   if (phase >= 2) opts.push("spiral", "dash");
   if (phase >= 3) opts.push("spiral", "summon");
-  const k = opts[(Math.random() * opts.length) | 0];
+  if (phase >= 2) opts.push("gaze");
+  let k = opts[(Math.random() * opts.length) | 0];
+  if (e.forcePick) (k = e.forcePick), (e.forcePick = null); // tests
   g.sound("laser", 0.2);
   switch (k) {
+    case "gaze": {
+      // 凝视光束: a red line locks on, then a beam sweeps across the player's side of the room
+      const q = g.alivePlayers()[0] || p, a0 = angTo(e.x, e.y - H, q.x, q.y), dir = Math.random() < 0.5 ? -1 : 1;
+      g.addZone({ kind: "gazebeam", x: e.x, y: e.y - H, r: 460, life: 2.7, side: "e", a0: a0 - dir * 0.9, dir, update: (z) => {
+        z.x = e.x; z.y = e.y - H;
+        if (z.t < 0.7 || e.dead) return;
+        const a = gazeAngle(z);
+        for (const qq of g.alivePlayers()) {
+          const dd = dist(qq.x, qq.y - 16, z.x, z.y), qa = angTo(z.x, z.y, qq.x, qq.y - 16);
+          const diff = Math.abs(((qa - a + Math.PI * 3) % TAU) - Math.PI);
+          if (dd < z.r && diff * dd < 10) g.hurt(qq, 1, { src: e, x: z.x, y: z.y });
+        }
+      } });
+      g.text(e.x, e.y - 100, "凝视！", "#ff6a8a", 1.3, 0.9);
+      e.cd = 3.4 / speedK;
+      break;
+    }
     case "burst": {
       const waves = phase === 1 ? 3 : 4, n = phase === 3 ? 22 : 16;
       for (let w = 0; w < waves; w++)
@@ -329,6 +359,18 @@ export function spawnBossAdds(g, e, list) {
 // ----------------------------------------------------------------- 显存冰原 boss: 冰封史莱姆王
 // slow and heavy: leaps onto you (ice ring on landing), sprays slowing shards, calls in slimes; below 1/3 it hurries
 function bossFrost(g, e, p, d, dt) {
+  // 分裂: at half health the king bursts into two smaller kings, each with the health it had left
+  if (g.host && !e.splitDone && !e.sizeK && e.hp <= e.maxHp * 0.5) {
+    e.splitDone = true;
+    e.sizeK = 0.72;
+    e.r *= 0.72;
+    g.vfx("ice/ice-shatter", e.x, e.y - 30, {});
+    g.text(e.x, e.y - 90, "分裂！", "#a8e0ff", 1.6, 1.3);
+    g.sound("boss");
+    const twin = g.spawnEnemy("boss_frost", e.x + 50, e.y + 10, false, 0.2);
+    twin.sizeK = 0.72; twin.r = e.r; twin.splitDone = true; twin.maxHp = e.maxHp; twin.hp = e.hp; twin.phase = e.phase;
+    e.x -= 30;
+  }
   const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
   if (e.phase !== phase) {
     e.phase = phase;
@@ -394,6 +436,21 @@ function bossFrost(g, e, p, d, dt) {
 // ----------------------------------------------------------------- 算力熔炉 boss: 过热核心
 // floats around the furnace: burning rings, meteor strikes on marked spots, fire bats; below 1/3 a spinning flame spiral
 function bossCore(g, e, p, d, dt) {
+  // shielded while its coolant pylons stand; when the last one falls it overheats: stalls 3 s, takes +50%
+  const pylons = g.enemies.filter((q) => q.type === "core_pylon" && !q.dead && q.coreId === e.id).length;
+  e.guardT = pylons ? 1 : 0;
+  if (e.hadPylons && !pylons) {
+    e.overheat = 3;
+    g.text(e.x, e.y - 110, "过热宕机！", "#ffd84a", 1.6, 1.4);
+    g.vfx("explosions/plasma-explosion", e.x, e.y - 40, {});
+  }
+  e.hadPylons = pylons > 0;
+  if (e.overheat > 0) {
+    e.overheat -= dt;
+    e.vulnT = Math.max(e.vulnT || 0, 0.2);
+    e.flash = Math.max(e.flash || 0, Math.sin(e.t * 30) > 0 ? 0.05 : 0);
+    return;
+  }
   const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
   if (e.phase !== phase) {
     e.phase = phase;
@@ -424,7 +481,26 @@ function bossCore(g, e, p, d, dt) {
   const opts = ["ring", "meteor", "ring", "meteor"];
   if (phase >= 2) opts.push("summon");
   if (phase >= 3) opts.push("spiral", "spiral");
-  const pick = opts[(Math.random() * opts.length) | 0];
+  let pick = opts[(Math.random() * opts.length) | 0];
+  // 冷却塔: entering phase 2 (and again in 3) it raises coolant pylons; while any stand it shrugs off damage
+  if ((phase >= 2 && !e.pylons2) || (phase >= 3 && !e.pylons3)) {
+    if (phase >= 3) e.pylons3 = true;
+    e.pylons2 = true;
+    pick = "pylons";
+  }
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null);
+  if (pick === "pylons") {
+    const n = phase >= 3 ? 4 : 3;
+    for (let i = 0; i < n; i++) {
+      const a = (i / n) * TAU + 0.4, x = c.x + Math.cos(a) * 170, y = c.y + Math.sin(a) * 95;
+      const py = g.spawnEnemy("core_pylon", x, y, false, 0.5);
+      py.coreId = e.id;
+    }
+    g.text(e.x, e.y - 120, "冷却塔启动！打掉它们！", "#7fd0ff", 1.4, 1.6);
+    g.sound("boss", 0.5);
+    e.cd = 1.2;
+    return;
+  }
   if (pick === "ring") {
     for (let w = 0; w < 3; w++)
       g.after(w * 0.4, () => {
@@ -789,3 +865,6 @@ function erupt(g, e, phase) {
     e.forcePick = "dive";
   } else e.cd = 1.6;
 }
+
+/** 幻觉之眼's 凝视光束 angle at zone time z.t (z.a0 / z.dir travel with the zone; clients read the same) */
+export const gazeAngle = (z) => (z.a0 ?? 0) + (z.dir ?? 1) * Math.min(1.8, Math.max(0, z.t - 0.7) * 0.95);
