@@ -25,7 +25,7 @@ export class Game {
     this.petTrial = !pvp && !!opt.petTrial;
     this.petFields = [];
     // mode options: map (chapter) for PVE, endless corridor, PVP rule set
-    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", pact: cleanPact(opt.pact), ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}) }; // twinBoss: force 双首领 on/off (tests)
+    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", pact: cleanPact(opt.pact), ...(typeof opt.daily === "string" ? { daily: opt.daily } : {}), ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}) }; // twinBoss: force 双首领 on/off (tests)
     this.endless = !pvp && this.opt.endless;
     this.mapDef = MAPS[this.opt.map];
     this.pvpRule = PVP_MODES[this.opt.pvpMode];

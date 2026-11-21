@@ -21,6 +21,7 @@ import { saveRun, clearRun, restoreRun, canCheckpoint } from "./runsave.js";
 import { grantTitle } from "./titles.js";
 import { PETS, PET_EVOLVE, MINE_EGG_CHANCE, petExperience } from "./petdata.js";
 import { grantPetXP, grantEggs, petState, findPet, addPool } from "./petsave.js";
+import { dailyOf, applyBlessing, finishDaily } from "./daily.js";
 import { showEvent } from "./routeui.js";
 
 const canvas = document.getElementById("view");
@@ -167,6 +168,14 @@ export const app = {
     renderer.follow(g, this.me, 0, true);
     // equipped SSR talents of every player (host / solo simulates them)
     if (cfg.mode !== "client" && !cfg.resume) g.applyLoadouts();
+    // 每日梦境: the day's 梦境祝福
+    if (cfg.opt?.daily && cfg.mode !== "client" && !cfg.resume) applyBlessing(g, dailyOf(cfg.opt.daily).blessing);
+  },
+  /** 每日梦境: today's fixed run — its girl (locked or not), map, seed, two 噩梦契约 terms */
+  startDaily() {
+    const m = load(), dd = dailyOf();
+    this.net = null;
+    this.beginLoading({ mode: "solo", pvp: false, seed: dd.seed, players: [{ id: 1, cid: dd.cid, name: m.name, kit: makeKit(dd.cid) }], myId: 1, opt: { map: dd.map, endless: false, pact: dd.pact, daily: dd.key } });
   },
   /** 冒险续玩: rebuild the saved solo run and drop the player at the start of its room */
   resumeRun(d) {
@@ -264,14 +273,14 @@ export const app = {
     const g = this.game, m = load(), rs = g.runStats;
     const o = g.opt, endless = g.endless, md = g.mapDef;
     m.maps = m.maps || {};
-    const first = win && !endless && !m.maps[o.map];
+    const first = win && !endless && !o.daily && !m.maps[o.map]; // (每日梦境 doesn't count toward map progress)
     const mul = endless ? 1 : md.reward || 1;
     const riftBonus = (rs.riftDeclines || 0) * REWARD.riftSkip;
     // 双首领 pays its boss reward twice
     // 噩梦契约: +8% 晶石 a level on the run's own earnings
-    const plv = pactLevel(g.pact), pmul = 1 + 0.08 * plv;
+    const plv = g.opt.daily ? 0 : pactLevel(g.pact), pmul = 1 + 0.08 * plv; // (每日梦境's fixed terms pay no 契约 bonus)
     const tokens = Math.round((rs.rooms * REWARD.room + rs.kills * REWARD.kill + rs.elites * REWARD.elite + (rs.boss ? REWARD.boss : 0) + (rs.twinBosses || 0) * REWARD.boss) * mul * pmul) + (first ? REWARD.firstBoss : 0) + riftBonus;
-    if (win && !endless) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
+    if (win && !endless && !o.daily) m.maps[o.map] = (m.maps[o.map] || 0) + 1;
     const prevBest = m.stats.endlessBest || 0;
     if (endless) m.stats.endlessBest = Math.max(prevBest, rs.rooms);
     m.tokens += tokens;
@@ -302,6 +311,8 @@ export const app = {
     const eggs = grantEggs(Math.min(3 + (rs.twinBosses || 0), rs.xpBosses || 0) + (rs.riftEggs || 0));
     if (eggs) extras.push(["宠物蛋", `+${eggs}（宠物仓库孵化）`]);
     if (rs.perfect) extras.push(["完美闪避", `${rs.perfect} 次`]);
+    // 每日梦境: check-in, the streak day's reward, a first clear's bonus
+    if (o.daily) extras.push(...finishDaily(o.daily, win, rs.rooms));
     if (rs.twinBosses) extras.push(["双首领", `${rs.twinBosses} 次 · 首领奖励翻倍`]);
     if (plv) {
       // a clear (a won chapter, or ten endless floors) records the level per map and pays new milestones once
@@ -363,9 +374,9 @@ export const app = {
       this.riftLoot = null;
     }
     const title = endless ? `无尽回廊 · 第 ${rs.rooms} 层` : win ? "通关！幻觉已破除" : "倒下了…";
-    const sub = endless ? (rs.rooms > prevBest ? "刷新了最佳纪录！" : `最佳纪录 ${Math.max(prevBest, rs.rooms)} 层`) : win ? `${CHARS[this.me.cid].name} 击败了${md.name}的幻觉之眼` : "再接再厉，构筑会更强！";
+    const sub = (o.daily ? "每日梦境 · " : "") + (endless ? (rs.rooms > prevBest ? "刷新了最佳纪录！" : `最佳纪录 ${Math.max(prevBest, rs.rooms)} 层`) : win ? `${CHARS[this.me.cid].name} 击败了${md.name}的幻觉之眼` : "再接再厉，构筑会更强！");
     UI.showResult({ title, sub, rows, extras, tokens, win: win || (endless && rs.rooms > prevBest), cid: this.me.cid },
-      this.net ? null : () => this.startSolo(),
+      this.net ? null : o.daily ? () => this.startDaily() : () => this.startSolo(),
       () => this.toLobby());
   },
   endPvp() {
