@@ -170,6 +170,7 @@ export const ENEMIES = {
   boss_core: { name: "过热核心", hp: 3600, spd: 36, r: 18, ai: "boss_core", sprite: "skull_core", coin: [30, 30], fly: true, boss: true, scale: 2.4 },
   boss_root: { name: "根须之心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
   boss_witch: { name: "霜镜女巫", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
+  boss_worm: { name: "熔岩巨蠕", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
   witch_clone: { name: "冰镜分身", hp: 1, spd: 0, r: 14, ai: "witch_clone", sprite: "frost_witch_clone", coin: [0, 0], fly: true, mirror: true },
 };
 
@@ -195,7 +196,7 @@ export const MAPS = {
   ice: { name: "显存冰原", theme: 2, hazard: "ice", hazardText: "冰面会打滑 · 清除所有敌人", hp: 1.3, reward: 1.35, desc: "冰面会打滑；霜冻爬虫、冰晶眼球会让你减速，首领是冰封史莱姆王。", need: "grass",
     swap: { slime: [["slime_blue", 0.6], ["hedgehog", 0.25]], slime_purple: ["hedgehog", 0.4], frog: [["hedgehog", 0.4], ["ghost", 0.3]], bat: ["bat_ice", 0.7], eyeball: [["eye_ice", 0.5], ["frostling", 0.35]], snake: [["snake_ice", 0.6], ["bat_ice", 0.3]], jelly: ["jelly_ice", 0.7], wisp: ["frostling", 0.5] }, elites: ["slime_frost"], boss: "boss_frost", bosses: ["boss_frost", "boss_witch"] },
   lava: { name: "算力熔炉", theme: 3, hazard: "lava", hazardText: "熔岩会灼烧 · 清除所有敌人", hp: 1.6, reward: 1.7, desc: "熔岩地块持续灼烧（敌人也会）；熔岩史莱姆死后留下火池，炎蝠碰到会着火，首领是过热核心。", need: "ice",
-    swap: { slime: ["slime_lava", 0.75], slime_purple: ["slime_lava", 0.6], eyeball: [["imp", 0.35], ["skull", 0.3]], bat: [["bat_fire", 0.6], ["imp", 0.25]], jelly: ["skull", 0.4], frog: [["salamander", 0.45], ["slime_lava", 0.3]], snake: [["salamander", 0.5], ["snake_lava", 0.5]], wisp: ["imp", 0.5] }, elites: ["skull_core"], boss: "boss_core" },
+    swap: { slime: ["slime_lava", 0.75], slime_purple: ["slime_lava", 0.6], eyeball: [["imp", 0.35], ["skull", 0.3]], bat: [["bat_fire", 0.6], ["imp", 0.25]], jelly: ["skull", 0.4], frog: [["salamander", 0.45], ["slime_lava", 0.3]], snake: [["salamander", 0.5], ["snake_lava", 0.5]], wisp: ["imp", 0.5] }, elites: ["skull_core"], boss: "boss_core", bosses: ["boss_core", "boss_worm"] },
 };
 export const MAP_ORDER = ["grass", "ice", "lava"];
 for (const k in MAPS) MAPS[k].id = k;
@@ -211,7 +212,7 @@ const ENDLESS_POOL = [
   ["skull", "snake", "wisp", "jelly", "ghost", "frog", "eyeball"],
 ];
 // every boss in the game; the endless corridor's boss floors cycle through them in a seeded order
-export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_witch", "boss_core"];
+export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_witch", "boss_core", "boss_worm"];
 export function endlessRoom(i, seed) {
   if (i % 10 === 9) {
     const n = ALL_BOSSES.length, k = Math.floor(i / 10), off = (seed >>> 0) % n;

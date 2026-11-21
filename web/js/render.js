@@ -527,6 +527,30 @@ export class Renderer {
   drawEnemy(g, e, game) {
     const d = e.def, s = A.critters[d.sprite];
     if (!s) return;
+    if (e.hidden) {
+      // 熔岩巨蠕 underground: a moving mound with glowing cracks and jumping grit
+      g.save();
+      const x = Math.round(e.x), y = Math.round(e.y), j = Math.sin(this.t * 40);
+      g.fillStyle = "rgba(20,8,4,0.55)";
+      g.beginPath(); g.ellipse(x, y, 20, 8, 0, 0, TAU); g.fill();
+      g.fillStyle = "#4a2a1c";
+      g.beginPath(); g.ellipse(x, y - 2 + j, 15, 6, 0, 0, TAU); g.fill();
+      g.globalCompositeOperation = "lighter";
+      g.strokeStyle = `rgba(255,${140 + 60 * Math.sin(this.t * 12)},40,0.9)`;
+      g.lineWidth = 1;
+      for (let i = 0; i < 4; i++) {
+        const a = i * 1.7 + this.t * 2;
+        g.beginPath(); g.moveTo(x, y - 2); g.lineTo(x + Math.cos(a) * 14, y - 2 + Math.sin(a) * 5); g.stroke();
+      }
+      g.globalCompositeOperation = "source-over";
+      g.fillStyle = "#86644e";
+      for (let i = 0; i < 5; i++) {
+        const ph = (this.t * 3 + i * 0.2) % 1;
+        g.fillRect(x + Math.cos(i * 2.3) * 12, y - 4 - Math.sin(ph * Math.PI) * 10, 2, 2);
+      }
+      g.restore();
+      return;
+    }
     // sprScale: the PixelLab monsters are drawn a bit larger than the original critters; shrink the picture only
     const sc = (d.scale || 1) * (d.sprScale || 1);
     const fr = Math.floor(e.anim * s.fps * (e.slowT > 0 ? 0.5 : 1)) % s.n;

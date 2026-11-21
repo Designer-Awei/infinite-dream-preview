@@ -220,6 +220,9 @@ export function updateEnemy(g, e, dt) {
     case "witch_clone":
       witchClone(g, e, p, d, dt);
       break;
+    case "boss_worm":
+      bossWorm(g, e, p, d, dt);
+      break;
   }
 }
 
@@ -685,4 +688,104 @@ function witchClone(g, e, p, d, dt) {
     e.shotT = 2.4;
     shoot(g, e, angTo(e.x, e.y - 40, p.x, p.y - 16), { spd: 150, h: 40, r: 5, slow: true, kind: "ghost" });
   }
+}
+
+// ----------------------------------------------------------------- 算力熔炉 boss: 熔岩巨蠕
+// rears out of a lava pool and spits molten globs; then dives (can't be hit), tunnels toward a player leaving a
+// burning trail, a ring marks where it will burst out, and it erupts there. From phase 2 a fire ring as it surfaces;
+// from phase 3 it dives twice in a row.
+function bossWorm(g, e, p, d, dt) {
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  e.face = 1;
+  if (e.phase !== phase) {
+    const first = e.phase == null;
+    e.phase = phase;
+    if (!first) {
+      g.text(e.x, e.y - 130, phase === 2 ? "地心沸腾！" : "熔岩奔涌！", "#ff8a4a", 1.6, 1.5);
+      g.sound("boss");
+      spawnBossAdds(g, e, phase === 2 ? ["salamander", "bat_fire"] : ["salamander", "salamander", "bat_fire"]);
+    }
+  }
+  const k = phase === 3 ? 1.3 : phase === 2 ? 1.12 : 1;
+  if (e.st === "tunnel") {
+    // underground: no hits either way; head for the mark, leave a burning trail
+    e.dt -= dt;
+    const a = angTo(e.x, e.y, e.lx, e.ly), dd = dist(e.x, e.y, e.lx, e.ly);
+    if (dd > 4) moveCircle(g.map, e, Math.cos(a) * Math.min(dd, 260 * dt), Math.sin(a) * Math.min(dd, 260 * dt), true);
+    e.trailT = (e.trailT || 0) - dt;
+    if (g.host && e.trailT <= 0) (e.trailT = 0.18), g.addZone({ kind: "poison", fire: true, x: e.x, y: e.y, r: 16, life: phase >= 3 ? 4 : 2.6, side: "neutral" });
+    if (e.dt <= 0) erupt(g, e, phase);
+    return;
+  }
+  if (e.st === "mark") {
+    e.dt -= dt;
+    if (e.dt <= 0) (e.st = "tunnel"), (e.dt = 0.7);
+    return;
+  }
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 14) if (g.hurt(q, 1, e)) q.buff.burn = 2.1;
+  if (e.cd > 0 || !g.host) return;
+  const opts = ["spit", "dive", "spit", "dive"];
+  if (phase >= 2) opts.push("spray");
+  let pick = opts[(Math.random() * opts.length) | 0];
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null);
+  if (pick === "dive") dive(g, e, p, phase);
+  else if (pick === "spit") {
+    // molten globs lobbed at and around the players; each leaves a burning puddle
+    const n = phase === 1 ? 4 : 6;
+    for (let i = 0; i < n; i++) {
+      const q = g.alivePlayers()[i % Math.max(1, g.alivePlayers().length)] || p;
+      const tx = q.x + (i ? (Math.random() - 0.5) * 150 : 0), ty = q.y + (i ? (Math.random() - 0.5) * 100 : 0);
+      const b = g.mkBullet(null, { side: "e", x: e.x, y: e.y - 96, h: 0, a: 0, spd: 0, dmg: 1, kind: "fire", r: 7, life: 3, elem: null, big: true,
+        arcTo: { x0: e.x, y0: e.y - 96, x: tx, y: ty, dur: 0.8 + i * 0.1 }, onLand: (bb) => {
+          g.vfx("explosions/small-explosion", bb.x, bb.y, { opts: { size: 0.5 } });
+          for (const qq of g.alivePlayers()) if (dist(qq.x, qq.y, bb.x, bb.y) < 24) if (g.hurt(qq, 1, { src: e, x: bb.x, y: bb.y, groundHazard: true })) qq.buff.burn = 2.1;
+          g.addZone({ kind: "poison", fire: true, x: bb.x, y: bb.y, r: 18, life: 3, side: "neutral" });
+        } });
+      b.src = e;
+      g.bullets.push(b);
+      g.vfx("arcane/rune-circle", tx, ty, { life: 0.8 + i * 0.1, palette: ["#1a0600", "#d8481c", "#ffa030", "#fff0a0"] });
+    }
+    g.sound("shoot_dragon", 0.3);
+    e.cd = 1.8 / k;
+  } else {
+    // a sweeping spray of fire from the maw
+    const base = angTo(e.x, e.y - 90, p.x, p.y - 16);
+    for (let w = 0; w < 10; w++) g.after(w * 0.08, () => {
+      if (e.dead || e.st) return;
+      const a = base - 0.8 + (w / 9) * 1.6;
+      shoot(g, e, a, { spd: 190, h: 90, r: 6, burn: true, kind: "fire" });
+      shoot(g, e, a + 0.08, { spd: 160, h: 90, r: 5, burn: true, kind: "fire" });
+    });
+    g.sound("shoot_dragon", 0.3);
+    e.cd = 1.9 / k;
+  }
+}
+function dive(g, e, p, phase) {
+  // sink into the floor, mark a player's spot, tunnel there
+  const q = g.alivePlayers()[(Math.random() * g.alivePlayers().length) | 0] || p;
+  e.st = "mark";
+  e.hidden = true;
+  e.dt = 0.35;
+  e.lx = q.x;
+  e.ly = q.y;
+  e.dives = (e.dives || 0) + 1;
+  g.vfx("explosions/dirt-explosion", e.x, e.y, { palette: ["#1a0600", "#5a1a06", "#d8481c", "#ffa030"] });
+  g.sound("explode", 0.3);
+  g.vfx("arcane/rune-circle", q.x, q.y, { life: 1.15, palette: ["#1a0600", "#d8481c", "#ffa030", "#fff0a0"] });
+  g.text(q.x, q.y - 46, "！", "#ff8a4a", 1.4, 0.8);
+  e.cd = 99;
+}
+function erupt(g, e, phase) {
+  e.st = null;
+  e.hidden = false;
+  g.vfx("explosions/big-explosion", e.x, e.y, { opts: { size: 0.7 } });
+  g.shake = Math.max(g.shake, 10);
+  g.sound("explode", 0.6);
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < 52) if (g.hurt(q, 2, { src: e, x: e.x, y: e.y, groundHazard: true })) q.buff.burn = 2.1;
+  if (phase >= 2) for (let i = 0; i < 16; i++) shoot(g, e, (i / 16) * TAU, { spd: 130, h: 20, r: 6, burn: true, kind: "fire" });
+  // phase 3: straight back under for a second strike
+  if (phase >= 3 && e.dives % 2 === 1) {
+    e.cd = 0.5;
+    e.forcePick = "dive";
+  } else e.cd = 1.6;
 }

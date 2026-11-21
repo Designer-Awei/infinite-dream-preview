@@ -423,13 +423,13 @@ export class Game {
   }
   enemiesNear(x, y, r, filter) {
     const out = [];
-    for (const e of this.enemies) if (e.spawnT <= 0 && !e.dead && dist2(x, y, e.x, e.y) <= (r + e.r) * (r + e.r) && (!filter || filter(e))) out.push(e);
+    for (const e of this.enemies) if (e.spawnT <= 0 && !e.hidden && !e.dead && dist2(x, y, e.x, e.y) <= (r + e.r) * (r + e.r) && (!filter || filter(e))) out.push(e);
     return out;
   }
   nearestEnemy(x, y, r, exclude) {
     let best = null, bd = r * r;
     for (const e of this.enemies) {
-      if (e.spawnT > 0 || e.dead || (exclude && exclude.has(e.id))) continue;
+      if (e.spawnT > 0 || e.hidden || e.dead || (exclude && exclude.has(e.id))) continue;
       const d = dist2(x, y, e.x, e.y);
       if (d < bd) (bd = d), (best = e);
     }
@@ -444,7 +444,7 @@ export class Game {
     const range = CHARS[p.cid].atk.range * p.st.range;
     const cand = [];
     for (const e of this.enemies) {
-      if (e.spawnT > 0 || e.dead) continue;
+      if (e.spawnT > 0 || e.hidden || e.dead) continue;
       const d = dist(p.x, p.y, e.x, e.y);
       if (d > range + e.r) continue;
       const inBush = tileAt(this.map, e.x, e.y) === BUSH && d > 80;
@@ -479,7 +479,7 @@ export class Game {
   }
   /** damage an enemy (or a PVP player). src: {p, elem, crit?, noReact, kind, noCrit} */
   hit(e, amount, src = {}) {
-    if (!e || e.dead || e.spawnT > 0) return 0;
+    if (!e || e.dead || e.spawnT > 0 || e.hidden) return 0;
     if (e.kind === "player") return this.hitPlayerPvp(e, amount, src);
     const p = src.p;
     let dmg = amount * (p ? this.dmgMul(p) : 1);
@@ -1010,7 +1010,7 @@ export class Game {
       if (!gone && !this.host && b.pred) {
         // client-side predicted shots: purely visual, vanish where they meet an enemy (the host deals the damage)
         for (const e of this.enemies) {
-          if (e.spawnT > 0 || b.hits.has(e.id) || dist2(b.x, b.y, e.x, e.y - e.r) > (b.r + e.r + 2) ** 2) continue;
+          if (e.spawnT > 0 || e.hidden || b.hits.has(e.id) || dist2(b.x, b.y, e.x, e.y - e.r) > (b.r + e.r + 2) ** 2) continue;
           b.hits.add(e.id);
           this.fx.spawn("impacts/hit-spark", b.x, b.y, { angle: Math.atan2(b.vy, b.vx) + Math.PI, palette: ELEM[b.elem]?.ramp?.slice(1, 8), light: 0.6, opts: { height: 0 } });
           if (b.pierce > 0) b.pierce--;
@@ -1028,7 +1028,7 @@ export class Game {
         if (b.side === "p") {
           const owner = this.player(b.owner);
           for (const e of this.enemies) {
-            if (e.dead || e.spawnT > 0 || b.hits.has(e.id)) continue;
+            if (e.dead || e.spawnT > 0 || e.hidden || b.hits.has(e.id)) continue;
             if (dist2(b.x, b.y, e.x, e.y - e.r) > (b.r + e.r + 2) * (b.r + e.r + 2)) continue;
             b.hits.add(e.id);
             if(b.kind==='pet_dragon'&&b.big)this.dragonFireballImpact(b);
