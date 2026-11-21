@@ -14,6 +14,14 @@ const LIST = {
   frost_witch_clone: ["frost-witch", { noShadow: true }],
   lava_worm: ["lava-worm", {}],
   thunder_judge: ["thunder-judge", {}],
+  // V3 monsters and the 精英巢穴 nests (one module, three map palettes)
+  spider: ["spider", {}],
+  turtle: ["turtle", {}],
+  snail: ["snail", {}],
+  drone: ["drone", {}],
+  nest_grass: ["nest", {}],
+  nest_ice: ["nest", { palette: ["#060c18", "#122440", "#1e3e6a", "#346aa0", "#5e9ccc", "#a4d4f2"], glow: ["#1a5a8a", "#6ad8ff", "#e8ffff"], strand: "#d8f0ff" }],
+  nest_lava: ["nest", { palette: ["#0c0606", "#1e1210", "#33201c", "#4c302a", "#6a4636", "#8e6248"], glow: ["#7a1a04", "#ff8a1a", "#fff0a0"], strand: "#ffb070" }],
 };
 const want = process.argv.slice(3).length ? process.argv.slice(3) : Object.keys(LIST);
 const manifest = JSON.parse(readFileSync(OUT + "critters.json", "utf8"));
