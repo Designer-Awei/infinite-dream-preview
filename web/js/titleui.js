@@ -12,7 +12,7 @@ export function showTitles(tab = "adv", onClose = null) {
   checkTitles();
   const md = el("div", "modal ttl-md");
   md.innerHTML = `<div class="ttl-p"><div class="ttl-head"><h2 class="outline">称号</h2><span class="ttl-n o1"></span><div class="ttl-tabs"></div><span class="ttl-x"></span></div>
-    <div class="ttl-body"><div class="ttl-cur"><canvas class="tc-cv"></canvas><div class="tc-tag o1">局内预览</div><div class="tc-cap"></div></div><div class="ttl-list"></div></div></div>`;
+    <div class="ttl-body"><div class="ttl-cur"><canvas class="tc-cv"></canvas><div class="tc-cap"></div></div><div class="ttl-list"></div></div></div>`;
   const tabs = md.querySelector(".ttl-tabs");
   for (const [k, name] of TITLE_TABS) {
     const b = el("button", "ttl-tab" + (k === tab ? " on" : ""), name);

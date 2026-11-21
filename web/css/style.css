@@ -2683,7 +2683,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ttl-head .ttl-x .btn { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
 .ttl-body { flex: 1; display: flex; gap: 10px; min-height: 0; }
 .ttl-cur { flex: 0.85; position: relative; overflow: hidden; border: 3px solid var(--ink); border-radius: 12px; background: #7cc44c; }
-.ttl-cur .tc-tag { position: absolute; left: 8px; top: 6px; font-size: 11px; color: #fff; padding: 3px 8px; border-radius: 8px; background: rgba(10,6,30,.6); }
 .ttl-cur .tc-cap { position: absolute; left: 8px; right: 8px; bottom: 8px; width: fit-content; margin: 0 auto; font-size: 12px; line-height: 1.3; padding: 4px 10px; border-radius: 8px; background: rgba(10,6,30,.72); color: #ffe36a; text-align: center; }
 .ttl-cur .tc-cv { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; }
 .ttl-list { flex: 1.65; display: flex; flex-direction: column; gap: 5px; overflow-y: auto; padding: 2px 4px 2px 2px; }
