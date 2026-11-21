@@ -648,7 +648,8 @@ export class Game {
     const [c0, c1] = e.def.coin;
     const n = c0 + Math.floor(Math.random() * (c1 - c0 + 1)) + (e.elite ? 4 : 0);
     for (let i = 0; i < n; i++) this.spawnCoin(e.x, e.y);
-    if (e.elite || Math.random() < 0.06) {
+    if (e.def.mirror) this.vfx("ice/ice-shatter", e.x, e.y - 34, {}); // 霜镜女巫's copy shatters
+    if (!e.def.mirror && (e.elite || Math.random() < 0.06)) {
       const k = R.weighted(Object.keys(ITEM_WEIGHTS), (k) => ITEM_WEIGHTS[k]);
       this.spawnItem(e.elite ? R.pick(["cube", "star", "rage", "infuse"]) : k, e.x, e.y);
     }

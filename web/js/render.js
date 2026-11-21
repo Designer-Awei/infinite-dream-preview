@@ -534,9 +534,10 @@ export class Renderer {
     // shadow (fliers' strips include their own)
     g.save();
     g.globalAlpha = fade;
-    if (e.elite || e.boss) {
+    if (e.elite || e.boss || d.mirror) {
+      // (霜镜女巫's copies wear the boss ring too: only the shadow tells them apart)
       g.globalCompositeOperation = "lighter";
-      g.fillStyle = e.boss ? "rgba(255,60,90,0.25)" : "rgba(255,190,60,0.3)";
+      g.fillStyle = e.boss || d.mirror ? "rgba(255,60,90,0.25)" : "rgba(255,190,60,0.3)";
       g.beginPath();
       g.ellipse(e.x, e.y, e.r * 1.6, e.r * 0.7, 0, 0, TAU);
       g.fill();
@@ -588,7 +589,7 @@ export class Renderer {
     g.restore();
   }
   drawEnemyBar(g, e) {
-    if (e.spawnT > 0 || e.boss) return;
+    if (e.spawnT > 0 || e.boss || e.def.mirror) return;
     const s = A.critters[e.def.sprite];
     const top = e.y - Math.min(s.oy, e.r * 2.6 + 10) - 6 - (e.z || 0);
     // element marks: colored pips (what can react)
@@ -697,6 +698,29 @@ export class Renderer {
           const u = k / 12, px = z.x + (ex - z.x) * u, py = z.y + (ey - z.y) * u, s = k % 3 < 1.5 ? 1 : -1;
           g.fillRect(Math.round(px - Math.sin(arm) * 7 * s), Math.round(py + Math.cos(arm) * 7 * s), 2, 3);
         }
+      }
+    } else if (z.kind === "frostring") {
+      // 霜镜女巫: a spreading ring of frost (bright rim, frosted band inside it, ice glints)
+      const fade = clamp(z.life * 4);
+      g.globalAlpha = 0.3 * fade;
+      g.fillStyle = "#a8e0ff";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU);
+      g.ellipse(z.x, z.y, Math.max(1, z.r - 14), Math.max(1, (z.r - 14) * 0.6), 0, 0, TAU);
+      g.fill("evenodd");
+      g.globalAlpha = fade;
+      for (const [w, col] of [[5, "#2e6aa8"], [2, "#e8f8ff"]]) {
+        g.strokeStyle = col;
+        g.lineWidth = w;
+        g.beginPath();
+        g.ellipse(z.x, z.y, z.r, z.r * 0.6, 0, 0, TAU);
+        g.stroke();
+      }
+      g.fillStyle = "#ffffff";
+      for (let i = 0; i < 16; i++) {
+        const a = (i / 16) * TAU + z.id, x = z.x + Math.cos(a) * z.r, y = z.y + Math.sin(a) * z.r * 0.6;
+        g.fillRect(Math.round(x), Math.round(y - 4), 1, 4);
+        g.fillRect(Math.round(x) - 1, Math.round(y - 2), 3, 1);
       }
     } else if (z.kind === "poison") {
       // bubbling toxic pool (drawn by hand, Brawl Stars style poison)

@@ -214,6 +214,12 @@ export function updateEnemy(g, e, dt) {
     case "boss_root":
       bossRoot(g, e, p, d, dt);
       break;
+    case "boss_witch":
+      bossWitch(g, e, p, d, dt);
+      break;
+    case "witch_clone":
+      witchClone(g, e, p, d, dt);
+      break;
   }
 }
 
@@ -558,3 +564,125 @@ function bossRoot(g, e, p, d, dt) {
 }
 /** where the 藤鞭横扫 vines point at zone time z.t (same on host and clients) */
 export const vineAngle = (z) => (z.id % 7) * 0.9 + Math.max(0, z.t - 0.6) * 2.1;
+
+// ----------------------------------------------------------------- 显存冰原 boss: 霜镜女巫
+// floats about the room. Mirror trick: she blinks out and reappears among ice copies of herself (one hit shatters a
+// copy; only the real one, the one with a shadow, takes damage from the fight). Ice lances fly down marked lines;
+// a frost ring spreads out from her (dodge through it); from phase 3, icicles drop on marked spots.
+function bossWitch(g, e, p, d, dt) {
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  const c = g.map.center;
+  if (e.phase !== phase) {
+    const first = e.phase == null;
+    e.phase = phase;
+    if (!first) {
+      g.text(e.x, e.y - 110, phase === 2 ? "镜中之镜！" : "永冻之夜！", "#a8e0ff", 1.6, 1.5);
+      g.vfx("ice/frost-nova", e.x, e.y, {});
+      g.sound("boss");
+      spawnBossAdds(g, e, phase === 2 ? ["frostling", "frostling"] : ["frostling", "frostling", "eye_ice"]);
+      e.cd = 0.4;
+      e.forcePick = "mirror";
+    }
+  }
+  const k = phase === 3 ? 1.3 : phase === 2 ? 1.12 : 1;
+  // drift toward her chosen spot, swaying
+  if (e.tx == null) (e.tx = c.x), (e.ty = c.y - 40);
+  const sx = e.tx + Math.sin(e.t * 0.9) * 26, sy = e.ty + Math.cos(e.t * 1.3) * 12;
+  if (dist(e.x, e.y, sx, sy) > 4) {
+    const a = angTo(e.x, e.y, sx, sy);
+    moveCircle(g.map, e, Math.cos(a) * d.spd * dt, Math.sin(a) * d.spd * dt, true);
+  }
+  e.face = p.x < e.x ? -1 : 1;
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 10) if (g.hurt(q, 1, e)) q.buff.slow = 1.5;
+  if (e.cd > 0 || !g.host) return;
+  const opts = ["lances", "ring", "lances", "mirror"];
+  if (phase >= 2) opts.push("mirror", "ring");
+  if (phase >= 3) opts.push("icicles", "icicles");
+  let pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === e.lastPick && pick !== "lances") pick = "lances";
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null);
+  e.lastPick = pick;
+  if (pick === "mirror") {
+    // blink out; she and her copies reappear spread round the room
+    const n = phase === 1 ? 2 : 3, spots = [];
+    const a0 = Math.random() * TAU;
+    for (let i = 0; i <= n; i++) {
+      const a = a0 + (i / (n + 1)) * TAU;
+      spots.push([c.x + Math.cos(a) * 150, c.y - 20 + Math.sin(a) * 80]);
+    }
+    for (const q of g.enemies) if (q.type === "witch_clone") q.hp = 0, q.dead = true;
+    g.vfx("arcane/blink-out", e.x, e.y - 40, { palette: ["#0a1020", "#2e4c8a", "#8cc0ec", "#ffffff"] });
+    const real = (Math.random() * spots.length) | 0;
+    spots.forEach(([x, y], i) => {
+      g.vfx("arcane/blink-in", x, y - 40, { palette: ["#0a1020", "#2e4c8a", "#8cc0ec", "#ffffff"] });
+      if (i === real) {
+        e.x = e.tx = x;
+        e.y = e.ty = y;
+      } else if (g.enemies.length < 18) {
+        const cl = g.spawnEnemy("witch_clone", x, y, false, 0.05);
+        cl.tx = x; cl.ty = y; cl.life = 9; cl.face = e.face;
+      }
+    });
+    g.text(c.x, c.y - 90, "哪个是真身？", "#a8e0ff", 1.3, 1.2);
+    g.sound("portal", 0.5);
+    e.cd = 1.6 / k;
+  } else if (pick === "lances") {
+    // three marked lines toward a player, then fast ice lances down them
+    const q = g.alivePlayers()[(Math.random() * g.alivePlayers().length) | 0] || p;
+    const base = angTo(e.x, e.y - 40, q.x, q.y - 16), n = phase === 1 ? 3 : 5;
+    for (let i = 0; i < n; i++) {
+      const a = base + (i - (n - 1) / 2) * 0.22;
+      g.line(e.x, e.y - 40, e.x + Math.cos(a) * 420, e.y - 40 + Math.sin(a) * 420, "#a8e0ff", 8, 0.6, "warn");
+      g.after(0.6, () => {
+        if (e.dead) return;
+        const b = shoot(g, e, a, { spd: 380, h: 40, r: 5, slow: true, kind: "ghost" });
+        b.life = 1.4;
+      });
+    }
+    g.sound("shoot_water", 0.3);
+    e.cd = 1.7 / k;
+  } else if (pick === "ring") {
+    // a frost ring spreads from her; standing on its edge chills and hurts (dodge through it)
+    g.addZone({ kind: "frostring", x: e.x, y: e.y, r: 8, life: 1.6, side: "e", update: (z) => {
+      z.r = 8 + 230 * Math.min(1, z.t / 1.5);
+      for (const q of g.alivePlayers()) if (Math.abs(dist(q.x, q.y, z.x, z.y) - z.r) < 10) if (g.hurt(q, 1, { src: e, x: z.x, y: z.y })) q.buff.slow = 1.8;
+    } });
+    g.vfx("ice/frost-nova", e.x, e.y, { opts: { reach: 50 } });
+    g.sound("shoot_water", 0.3);
+    e.cd = 1.9 / k;
+  } else if (pick === "icicles") {
+    const spots = [];
+    for (const q of g.alivePlayers()) for (let i = 0; i < 5; i++) spots.push([q.x + (Math.random() - 0.5) * 150, q.y + (Math.random() - 0.5) * 100]);
+    spots.push(...g.alivePlayers().map((q) => [q.x, q.y]));
+    for (const [x, y] of spots) g.vfx("arcane/rune-circle", x, y, { life: 1, palette: ["#0a1a30", "#4a9ad8", "#a8e0ff", "#ffffff"] });
+    g.after(0.85, () => {
+      for (const [x, y] of spots) {
+        g.vfx("ice/icicle-fall", x, y, {});
+        g.after(0.15, () => {
+          for (const q of g.alivePlayers()) if (dist(q.x, q.y, x, y) < 24) if (g.hurt(q, 1, { src: e, x, y, groundHazard: true })) q.buff.slow = 1.5;
+        });
+      }
+      g.sound("explode", 0.3);
+    });
+    e.cd = 2.2 / k;
+  }
+}
+// a mirror copy: hangs where it appeared, flings a slow shard now and then, melts away after a while
+function witchClone(g, e, p, d, dt) {
+  e.life = (e.life ?? 9) - dt;
+  e.face = p.x < e.x ? -1 : 1;
+  if (e.tx != null) moveCircle(g.map, e, (e.tx + Math.sin(e.t * 0.9 + e.id) * 20 - e.x) * dt, (e.ty + Math.cos(e.t * 1.3) * 10 - e.y) * dt, true);
+  if (e.life <= 0) {
+    g.vfx("spawn/poof", e.x, e.y - 30, {});
+    e.hp = 0;
+    e.dead = true;
+    e.silent = true;
+    return;
+  }
+  if (!g.host) return;
+  e.shotT = (e.shotT ?? 1 + Math.random()) - dt;
+  if (e.shotT <= 0) {
+    e.shotT = 2.4;
+    shoot(g, e, angTo(e.x, e.y - 40, p.x, p.y - 16), { spd: 150, h: 40, r: 5, slow: true, kind: "ghost" });
+  }
+}

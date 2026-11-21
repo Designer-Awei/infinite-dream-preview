@@ -10,6 +10,8 @@ const { createFrame, clearFrame, createFx, composite } = core;
 // sprite name -> module file in tools/bossfx (and options)
 const LIST = {
   root_heart: ["root-heart", {}],
+  frost_witch: ["frost-witch", {}],
+  frost_witch_clone: ["frost-witch", { noShadow: true }],
 };
 const want = process.argv.slice(3).length ? process.argv.slice(3) : Object.keys(LIST);
 const manifest = JSON.parse(readFileSync(OUT + "critters.json", "utf8"));
