@@ -90,8 +90,10 @@ export function titleHTML(id, extra = "") {
   const T = TITLES[id];
   if (!T) return "";
   const own = T.col ? ` style="--tc:${T.col};--tb:${T.bg || TITLE_RARITY[T.r].bg}"` : "";
-  const wings = T.r === "l" || T.r === "x" ? `<i class="tt-w l"></i><i class="tt-w r"></i>` : "";
-  return `<span class="ttl t-${T.r}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}>${wings}<i class="tt-sh"></i><b>${T.name}</b></span>`;
+  // 传说 / 流彩: a hexagonal tag (pointed ends) built from three stacked layers — black ring, frame colour, fill — so the
+  // points share the plate's outline at every size
+  const hex = T.r === "l" || T.r === "x";
+  return `<span class="ttl t-${T.r}${hex ? " hex" : ""}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}>${hex ? `<i class="tt-hx"></i>` : ""}<i class="tt-sh"></i><b>${T.name}</b></span>`;
 }
 
 /** apply the worn title's effect to a new player (PVE only; the plate is shown in every mode) */
@@ -121,25 +123,27 @@ export function drawTitlePlate(g, id, x, y, t) {
   const w = Math.ceil(g.measureText(T.name).width) + 10, h = 13, x0 = Math.round(x - w / 2), y0 = Math.round(y - h / 2);
   let col = T.col || R.col;
   if (T.r === "x" && !T.still) col = `hsl(${(t * 120) % 360},90%,72%)`;
-  g.fillStyle = "#0c0814";
-  g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
-  g.fillStyle = T.bg || R.bg;
-  g.fillRect(x0, y0, w, h);
-  g.fillStyle = col;
-  g.fillRect(x0, y0, w, 1);
-  g.fillRect(x0, y0 + h - 1, w, 1);
-  g.fillRect(x0, y0, 1, h);
-  g.fillRect(x0 + w - 1, y0, 1, h);
-  // little wings on the sides for 传说 / 流彩
   if (T.r === "l" || T.r === "x") {
-    const cy = y0 + h / 2, wing = (sx, d) => {
-      g.fillStyle = "#0c0814";
-      g.beginPath(); g.moveTo(sx, cy - 5); g.lineTo(sx + d * 6, cy); g.lineTo(sx, cy + 5); g.closePath(); g.fill();
-      g.fillStyle = col;
-      g.beginPath(); g.moveTo(sx, cy - 3); g.lineTo(sx + d * 3.6, cy); g.lineTo(sx, cy + 3); g.closePath(); g.fill();
+    // hexagonal tag: black ring, frame colour, fill — the same three layers as the HTML plate
+    const hexp = (d, sh) => {
+      g.beginPath();
+      g.moveTo(x0 - d + sh, y0 - d); g.lineTo(x0 + w + d - sh, y0 - d); g.lineTo(x0 + w + d + sh * 0.0 + 1, y0 + h / 2);
+      g.lineTo(x0 + w + d - sh, y0 + h + d); g.lineTo(x0 - d + sh, y0 + h + d); g.lineTo(x0 - d - 1, y0 + h / 2);
+      g.closePath(); g.fill();
     };
-    wing(x0 - 1, -1);
-    wing(x0 + w + 1, 1);
+    g.fillStyle = "#0c0814"; hexp(1.5, 5);
+    g.fillStyle = col; hexp(0, 5);
+    g.fillStyle = T.bg || R.bg; hexp(-1, 5);
+  } else {
+    g.fillStyle = "#0c0814";
+    g.fillRect(x0 - 1, y0 - 1, w + 2, h + 2);
+    g.fillStyle = T.bg || R.bg;
+    g.fillRect(x0, y0, w, h);
+    g.fillStyle = col;
+    g.fillRect(x0, y0, w, 1);
+    g.fillRect(x0, y0 + h - 1, w, 1);
+    g.fillRect(x0, y0, 1, h);
+    g.fillRect(x0 + w - 1, y0, 1, h);
   }
   // a light sweep across 史诗 and up
   if (R.fx.includes("shine") || T.r === "x") {

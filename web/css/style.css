@@ -2644,21 +2644,20 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ttl.t-l { --tc: #ffcf4a; --tb: #3a2408; box-shadow: 0 0 0 2px #0c0814, 0 0 10px rgba(255,207,74,.55); }
 .ttl.t-x { --tc: #ff8ad8; --tb: #2a1030; box-shadow: 0 0 0 2px #0c0814, 0 0 12px rgba(255,138,216,.6); animation: ttlHue 3s linear infinite; }
 .ttl.t-e .tt-sh::after, .ttl.t-l .tt-sh::after, .ttl.t-x .tt-sh::after { content: ""; position: absolute; top: -4px; bottom: -4px; width: 10px; left: -20%; background: rgba(255,255,255,.45); transform: skewX(-20deg); animation: ttlShine 2.6s ease-in-out infinite; }
-/* 传说 / 流彩 side wings: a black triangle with the frame colour inside, sized in em so they scale with the plate and
-   joined to the plate's own black ring (no gap at small sizes, the same outline at large ones) */
-.ttl { --bw: 2px; }
-.ttl .tt-w { position: absolute; top: 50%; width: 0.62em; height: 1em; transform: translateY(-50%); pointer-events: none; }
-.ttl .tt-w.l { right: calc(100% + var(--bw) - 1px); }
-.ttl .tt-w.r { left: calc(100% + var(--bw) - 1px); }
-.ttl .tt-w::before, .ttl .tt-w::after { content: ""; position: absolute; inset: 0; }
-.ttl .tt-w::before { background: #0c0814; }
-.ttl .tt-w::after { background: var(--tc); }
-.ttl .tt-w.l::before { clip-path: polygon(100% 0, 0 50%, 100% 100%); }
-.ttl .tt-w.r::before { clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.ttl .tt-w.l::after { inset: calc(var(--bw) + 1px) 0 calc(var(--bw) + 1px) calc(var(--bw) * 2.2); clip-path: polygon(100% 0, 0 50%, 100% 100%); }
-.ttl .tt-w.r::after { inset: calc(var(--bw) + 1px) calc(var(--bw) * 2.2) calc(var(--bw) + 1px) 0; clip-path: polygon(0 0, 100% 50%, 0 100%); }
-.ttl.big { --bw: 3px; height: 34px; padding: 0 18px; font-size: 20px; border-width: 3px; box-shadow: 0 0 0 3px #0c0814; }
-.ttl.big.t-l, .ttl.big.t-x { box-shadow: 0 0 0 3px #0c0814, 0 0 12px color-mix(in srgb, var(--tc) 55%, transparent); }
+/* 传说 / 流彩: hexagonal tag. The plate's own border / ring are switched off and three layers draw the shape instead:
+   ::before the black ring, ::after the frame colour, .tt-hx the fill — the same hexagon at three insets, so the
+   pointed ends carry exactly the plate's outline at any size (the point depth is in em: it scales with the text) */
+.ttl { --bw: 2px; --ring: 2px; }
+.ttl.hex { --pt: 0.55em; border-color: transparent; background: none; box-shadow: none; padding: 0 calc(10px + var(--pt) * 0.6); isolation: isolate; }
+.ttl.hex::before, .ttl.hex::after, .ttl.hex .tt-hx { content: ""; position: absolute; pointer-events: none; z-index: -1; --hx: polygon(var(--pt) 0, calc(100% - var(--pt)) 0, 100% 50%, calc(100% - var(--pt)) 100%, var(--pt) 100%, 0 50%); clip-path: var(--hx); }
+.ttl.hex::before { z-index: -3; inset: calc(-1 * (var(--bw) + var(--ring))) calc(-1 * (var(--bw) + var(--ring) * 1.6)); background: #0c0814; filter: drop-shadow(0 0 6px color-mix(in srgb, var(--tc) 60%, transparent)); }
+.ttl.hex::after { z-index: -2; inset: calc(-1 * var(--bw)) calc(-1 * var(--bw) * 1.3); background: var(--tc); }
+.ttl.hex .tt-hx { inset: 0; background: linear-gradient(180deg, color-mix(in srgb, var(--tb) 70%, #fff 12%), var(--tb)); }
+.ttl.hex .tt-sh { clip-path: polygon(var(--pt) 0, calc(100% - var(--pt)) 0, 100% 50%, calc(100% - var(--pt)) 100%, var(--pt) 100%, 0 50%); }
+.ttl.hex.t-x.still, .ttl.hex.t-l { box-shadow: none; }
+.ttl.big { --bw: 3px; --ring: 3px; height: 34px; padding: 0 18px; font-size: 20px; border-width: 3px; box-shadow: 0 0 0 3px #0c0814; }
+.ttl.big.hex { padding: 0 calc(18px + var(--pt) * 0.6); }
+.ttl.big.t-l:not(.hex), .ttl.big.t-x:not(.hex) { box-shadow: 0 0 0 3px #0c0814, 0 0 12px color-mix(in srgb, var(--tc) 55%, transparent); }
 .ttl.big b { -webkit-text-stroke: 3px #0c0814; }
 .ttl.locked { filter: grayscale(1) brightness(.62); animation: none; }
 .ttl.t-x.still { animation: none; box-shadow: 0 0 0 2px #0c0814, 0 0 12px color-mix(in srgb, var(--tc) 65%, transparent); }
@@ -2667,7 +2666,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 @keyframes ttlHue { to { filter: hue-rotate(360deg); } }
 /* lobby entry beside the logo */
 .ttl-entry { position: absolute; z-index: 4; top: max(8px, env(safe-area-inset-top)); height: 40px; right: calc(100% - max(12px, env(safe-area-inset-left)) - 31%); display: flex; align-items: center; padding: 0; border: 0; background: none; cursor: pointer; }
-.ttl-entry.winged { padding-right: 0.62em; font-size: 16px; } /* the right wing stays inside, so the wing tip meets the card's edge */
+.ttl-entry.winged { padding-right: 5px; } /* the hex tag's outer ring sits just outside its box: keep it inside the card's edge */
 .ttl-entry:active { transform: translateY(2px); }
 .ttl-entry .ttl { height: 28px; padding: 0 14px; font-size: 16px; }
 .ttl-entry .te-none { --tc: #e8e4f0; --tb: #3a2e5a; }

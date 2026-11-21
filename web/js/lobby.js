@@ -128,7 +128,7 @@ export function showLobby() {
   const drawTtl = () => {
     const t = titleState(), n = Object.keys(t.own).filter((id) => TITLES[id]).length;
     te.innerHTML = t.eq ? titleHTML(t.eq) : `<span class="ttl t-c te-none"><i class="tt-sh"></i><b>称号 ${n}/${TITLE_ORDER.length}</b></span>`;
-    te.classList.toggle("winged", !!te.querySelector(".tt-w"));
+    te.classList.toggle("winged", !!te.querySelector(".hex"));
   };
   te.onclick = () => (sfx("click"), showTitles("adv", drawTtl));
   const freshTitles = checkTitles();
