@@ -70,7 +70,7 @@ function preview(cv, id, md) {
       g.fillStyle = Math.round((x - ox + y - oy) / 16) % 2 ? "#7cc44c" : "#86cc54";
       g.fillRect(Math.round(x), Math.round(y), 16, 16);
     }
-    const figH = (set.foot - (set.top || 0)) / k, capH = (cap.offsetHeight + 12) * dpr / S, need = figH + 36;
+    const figH = (set.foot - (set.top || 0)) / k, capH = (cap.offsetHeight + 12) * dpr / S, need = figH + 26;
     const px = Math.round(LW / 2), py = Math.round(Math.max(need, (LH - capH - need) / 2 + need));
     g.fillStyle = "rgba(10,30,10,0.35)";
     g.beginPath();
@@ -79,15 +79,16 @@ function preview(cv, id, md) {
     const img = clip ? clip[Math.floor(t * 5) % clip.length] : set.views.front;
     g.drawImage(img, Math.round(px - W / 2), Math.round(py - H + 1), W, SH);
     const y = py - (set.foot - (set.top || 0)) / k - 8;
-    g.font = "10px Cubic, 'PingFang SC', sans-serif";
-    g.textAlign = "center";
-    g.textBaseline = "middle";
-    g.lineWidth = 3;
-    g.strokeStyle = "#0c0814";
-    g.strokeText(m.name, px, y - 9);
+    // exactly the solo run's head: full life bar (green) with the shield line, the plate just above it (no name —
+    // names only show when there are several players)
+    const bw = 34, bx = px - bw / 2;
+    g.fillStyle = "#14101c";
+    g.fillRect(bx - 1, y - 1, bw + 2, 6);
     g.fillStyle = "#5dff7a";
-    g.fillText(m.name, px, y - 9);
-    if (id) drawTitlePlate(g, id, px, y - 22, t);
+    g.fillRect(bx, y, bw, 4);
+    g.fillStyle = "#c8dcff";
+    g.fillRect(bx, y + 4, bw, 1);
+    if (id) drawTitlePlate(g, id, px, y - 10, t);
     requestAnimationFrame(draw);
   };
   requestAnimationFrame(draw);
