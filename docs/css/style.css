@@ -1363,7 +1363,7 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 .mup .mu-t { flex: 1; min-width: 0; }
 .mup .mu-t span { white-space: nowrap; overflow: hidden; }
 .mu-b, .ws-b, .mq-b { flex: none; width: 112px; justify-content: center; }
-.mh-r .btn.small { text-shadow: 0 1px 0 rgba(0,0,0,.55), 0 0 2px rgba(0,0,0,.6); letter-spacing: 0; }
+.mh-r .btn.small { text-shadow: none; letter-spacing: 0; }
 .mh-r .btn.small small { font-size: 11px; display: flex; align-items: center; gap: 2px; }
 .mh-r .btn.small small .cur { width: 13px; height: 13px; }
 .mup.ws.ws-core { box-shadow: 0 0 0 1px #ffd84a inset; } /* same padding as the other rows so its button lines up */
@@ -1421,10 +1421,10 @@ body.mining .hud .keys.gone { opacity: 0; pointer-events: none; }
 @media (max-width: 700px) { .rcp-g { grid-template-columns: repeat(3, 1fr); } }
 /* mine hub buttons: readable price line (dark text on the yellow face, light on gray), labels never wrap */
 .mh-r .btn.small { white-space: nowrap; }
-.mh-r .btn.small > span { color: #fff; text-shadow: 0 0 3px #3a2410, 0 1px 0 #3a2410, 1px 0 0 #3a2410, -1px 0 0 #3a2410, 0 -1px 0 #3a2410; }
-.mh-r .btn.small small { color: #3a2410; text-shadow: none; font-weight: normal; background: rgba(255,255,255,.45); border-radius: 6px; padding: 0 5px; margin-top: 1px; }
+.mh-r .btn.small > span { color: #fff; text-shadow: none; -webkit-text-stroke: 2px #3a2410; paint-order: stroke fill; }
+.mh-r .btn.small small { color: #3a2410; text-shadow: none; -webkit-text-stroke: 0; font-weight: normal; background: rgba(255,255,255,.45); border-radius: 6px; padding: 0 5px; margin-top: 1px; }
 .mh-r .btn.small.gray small { color: #fff; background: rgba(0,0,0,.25); }
-.mh-r .btn.small.gray > span { text-shadow: 0 1px 0 #2a2238, 0 0 3px #2a2238; }
+.mh-r .btn.small.gray > span { text-shadow: none; -webkit-text-stroke: 2px #2a2238; }
 .mh-r .btn.small small { color: #fff; background: rgba(40,20,8,.6); }
 /* buttons: a full 8-direction outline (the old 4 diagonal shadows left gaps that read as a double image); gray buttons use dark text */
 /* button text: one black stroke ring sized to the text (the 8-direction shadow blurred small text) */
@@ -2734,3 +2734,5 @@ body.touchmode .pet-ride-btn small { display:none; }
 @keyframes pcStamp { 50% { transform: scale(1.06); } }
 .ev-pact .pc-foot { font-size: 11px; color: #e8dcff; text-align: center; }
 .ev-pact .pc-foot em { font-style: normal; color: #c890ff; }
+/* 血契：离开 = the left header block's height and top (avatar 48px = 43px button + 5px drop shadow) */
+.pact-mode .ev-top > .ev-leave { flex: none; align-self: flex-start; box-sizing: border-box; height: 43px; padding-top: 0; padding-bottom: 2px; margin-left: 6px; }
