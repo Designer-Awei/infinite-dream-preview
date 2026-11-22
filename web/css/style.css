@@ -2838,3 +2838,18 @@ body.touchmode .pet-ride-btn small { display:none; }
 .dl-rules { gap: 3px; } .dl-side { gap: 5px; } .dl-rule { padding: 3px 8px; } .dl-rule small { font-size: 10px; }
 .dl-day { padding: 2px 2px 3px; } .dl-day .dl-ic { height: 22px; } .dl-day .dl-ic img { width: 22px; height: 22px; }
 .dl-stage { min-height: 200px; }
+/* 积攒兑换: every exchange button the same width (the cost's digit count no longer changes it); tabs; title rows */
+.st-it .btn.st-go { flex: none; width: 128px; box-sizing: border-box; padding-left: 6px; padding-right: 6px; justify-content: center; }
+.stash-p .st-tabs { display: flex; gap: 6px; justify-content: center; }
+.stash-p .st-tab { font: inherit; font-size: 12px; padding: 3px 14px; border-radius: 8px; border: 2px solid var(--ink); background: rgba(20,10,40,.55); color: #c8b8e8; cursor: pointer; }
+.stash-p .st-tab.on { background: #ffd84a; color: #2a1a08; }
+.st-it.ttl-row, .st-it.晶石 { background: linear-gradient(90deg, rgba(90,70,200,.5), rgba(40,20,90,.55)); }
+.st-it.ttl-row .st-ttl { flex: none; width: 150px; display: flex; justify-content: center; }
+.st-it .st-gem { width: 26px; height: 26px; margin: 0 10px 0 8px; display: inline-block; }
+.st-it.晶石 .st-r { font-size: 14px; }
+/* 诅咒宝箱: 打开 / 收下 span the four fate cells */
+.ev-chest .ch-acts .btn { width: 100%; box-sizing: border-box; }
+.stash-p { width: min(620px, 94vw); gap: 6px; padding: 10px 14px; }
+.stash-p .st-list { gap: 5px; }
+.stash-p .st-it { padding: 4px 10px; }
+.stash-p .st-sub { font-size: 11px; text-align: center; }

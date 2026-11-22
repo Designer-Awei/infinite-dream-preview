@@ -60,8 +60,8 @@ export const RELEASE_XP = 400;
 // min = minutes in a 孵化槽 before it hatches
 export const EGGS = {
   base: { name: "宠物蛋", floor: 0, min: 3 },
-  ur: { name: "UR 宠物蛋", floor: 2, cost: 10, min: 5 },
-  hur: { name: "HUR 宠物蛋", floor: 3, cost: 20, min: 8 },
+  ur: { name: "UR 宠物蛋", floor: 2, cost: 2, min: 5 },
+  hur: { name: "HUR 宠物蛋", floor: 3, cost: 5, min: 8 },
 };
 // 孵化槽：eggs wait here in real time; 星砂 speeds one up (per minute left)
 export const SLOTS = 3, SPEED_STARS = 4;

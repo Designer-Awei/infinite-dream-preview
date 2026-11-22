@@ -13,7 +13,7 @@ import { localVersion, nativeInfo } from "./updater.js";
 import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMask, WALL, BUSH, CRATE, BARREL, LIFT } from "./map.js";
 import { T } from "./data.js";
 import { loadRun, offerResume } from "./runsave.js";
-import { checkTitles, titleState, titleHTML, TITLE_ORDER, TITLES } from "./titles.js";
+import { checkTitles, titleState, titleHTML, TITLE_ORDER, TITLES, TITLE_RARITY, grantTitle } from "./titles.js";
 import { showTitles, announceTitles } from "./titleui.js";
 import { showDaily } from "./dailyui.js";
 import { dailyOf, checkedToday, streakNow } from "./daily.js";
@@ -25,7 +25,7 @@ import { petPortrait } from "./petdata.js";
 import { petState } from './petsave.js';
 import { petPreview, setPetPreview } from './petpreview.js';
 import { EGGS, PET_ITEMS, eggCount } from './petdata.js';
-import { stashExchange, readySlots } from './petsave.js';
+import { stashExchange, readySlots, STASH_GEMS } from './petsave.js';
 
 const q = (s, r) => r.querySelector(s);
 let entered = false; // full entrance animation only the first time per session
@@ -924,11 +924,12 @@ const ICON = (it, s = 3) => `<img class="pxi" src="${iconURL(it.id, s)}" alt="">
 const CAP_COLORS = ["#ffd84a", "#5fb4ff", "#c27bff", "#5dff7a", "#ff7cc8", "#ff8a5a"];
 
 function stashFraction(n) {
-  return n<=10?n/10*.3:n<=20?.3+(n-10)/10*.25:Math.min(1,.55+(n-20)/30*.45);
+  // ticks at the exchange's prices: 2 (UR 宠物蛋), 5 (HUR 宠物蛋), 20 (积攒之王)
+  return n<=2?n/2*.3:n<=5?.3+(n-2)/3*.25:Math.min(1,.55+(n-5)/15*.45);
 }
 function stashBarContent(n, animated=false) {
   return `<div class="sb-h outline">积攒</div><div class="sb-tube"><i class="sb-fill" style="height:${stashFraction(n)*100}%"></i>
-    <b class="sb-t ur" style="bottom:30%"><em>10</em></b><b class="sb-t hur" style="bottom:55%"><em>20</em></b><b class="sb-t" style="bottom:100%"><em>50</em></b></div><div class="sb-n outline">${animated?`<span class="sp-old">${n}<small>/∞</small></span><span class="sp-next">${n+1}<small>/∞</small></span>`:`${n}<small>/∞</small>`}</div>`;
+    <b class="sb-t ur" style="bottom:30%"><em>2</em></b><b class="sb-t hur" style="bottom:55%"><em>5</em></b><b class="sb-t" style="bottom:100%"><em>20</em></b></div><div class="sb-n outline">${animated?`<span class="sp-old">${n}<small>/∞</small></span><span class="sp-next">${n+1}<small>/∞</small></span>`:`${n}<small>/∞</small>`}</div>`;
 }
 function stashPreview(n) {
   return `<div class="sc sc-stash-preview" style="--stash-before:${stashFraction(n)*100}%;--stash-after:${stashFraction(n+1)*100}%">
@@ -1005,7 +1006,7 @@ export function showGacha() {
     eb.onclick = () => (sfx("click"), showExchange(() => showGacha()));
     q(".gp-head", s).insertBefore(eb, q(".gp-poolbtn", s));
   }
-  // 积攒条: always shown; once every SSR is maxed, SSR pulls fill it (ticks at 10 / 20 / 50; past 50 only the number grows)
+  // 积攒条: always shown; once every SSR is maxed, SSR pulls fill it (ticks at 2 / 5 / 20; past 20 only the number grows)
   {
     const n = m.stash || 0;
     const sb = el("button", "stashbar", stashBarContent(n));
@@ -1453,21 +1454,38 @@ const STASH_ROWS = [
   ["item_ur", "UR", PET_ITEMS.ur.name, PET_ITEMS.ur.desc, PET_ITEMS.ur.cost, null],
   ["item_hur", "HUR", PET_ITEMS.hur.name, PET_ITEMS.hur.desc, PET_ITEMS.hur.cost, null],
 ];
-function showStash() {
-  const m = load(), n = m.stash || 0;
+// 积攒兑换 · 称号与晶石: the exchange-only titles and 晶石
+const STASH_MORE = () => [
+  ...TITLE_ORDER.filter((id) => TITLES[id].stash).map((id) => [`title_${id}`, TITLE_RARITY[TITLES[id].r].name, TITLES[id].name, TITLES[id].fxText, TITLES[id].stash, null, id]),
+  ["gem", "晶石", `${STASH_GEMS} 晶石`, "直接到账，可用于扭蛋", 1, null],
+];
+function showStash(tab = 0) {
+  const m = load(), n = m.stash || 0, own = titleState().own;
+  const rows = tab ? STASH_MORE() : STASH_ROWS;
   const md = el("div", "modal stash-md");
+  const ico = (kind, r, tid) => (kind ? `<canvas class="st-egg" data-k="${kind}"></canvas>` : tid ? `<span class="st-ttl">${titleHTML(tid)}</span>` : r === "晶石" ? `<i class="cur gem st-gem"></i>` : `<i class="st-ico ${r.toLowerCase()}"></i>`);
   md.innerHTML = `<div class="panel stash-p"><h2 class="outline">积攒兑换</h2>
-    <div class="st-sub o1">SSR 全部收齐后，每抽到 1 张 SSR 积攒 1 点（当前 <b class="st-n">${n}</b> 点）。兑换的宠物蛋与道具放进宠物仓库。${ssrDone() ? "" : `<br><b class="st-prog">SSR 收集进度 ${ssrOwned()}，收齐后开始积攒</b>`}</div>
-    <div class="st-list">${STASH_ROWS.map(([what, r, name, desc, cost, kind]) => `<div class="st-it ${r.toLowerCase()}" data-w="${what}"><div class="st-r o1">${r}</div>${kind ? `<canvas class="st-egg" data-k="${kind}"></canvas>` : `<i class="st-ico ${r.toLowerCase()}"></i>`}<div class="st-tx"><b class="outline">${name}</b><span>${desc}</span></div><button class="btn small"><span>兑换</span><small>积攒 ${cost}</small></button></div>`).join("")}</div></div>`;
+    <div class="st-sub o1">${ssrDone() ? "SSR 收齐后每抽到 1 张 SSR 积攒 1 点" : `<b class="st-prog">SSR 收集 ${ssrOwned()}，收齐后开始积攒</b>`} · 当前 <b class="st-n">${n}</b> 点 · ${tab ? "称号在称号面板佩戴" : "兑换物放进宠物仓库"}</div>
+    <div class="st-tabs"><button class="st-tab${tab ? "" : " on"}">宠物养成</button><button class="st-tab${tab ? " on" : ""}">称号与晶石</button></div>
+    <div class="st-list">${rows.map(([what, r, name, desc, cost, kind, tid]) => `<div class="st-it ${tid ? "ttl-row" : r.toLowerCase()}" data-w="${what}">${tid ? "" : `<div class="st-r o1">${r}</div>`}${ico(kind, r, tid)}<div class="st-tx"><b class="outline">${tid ? "" : name}</b><span>${desc}</span></div><button class="btn small st-go"><span>${tid && own[tid] ? "已拥有" : "兑换"}</span><small>积攒 ${cost}</small></button></div>`).join("")}</div></div>`;
   md.onclick = (e) => e.target === md && md.remove();
+  md.querySelectorAll(".st-tab").forEach((b, i) => (b.onclick = () => i !== tab && (md.remove(), showStash(i))));
   md.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
-  const sync = () => md.querySelectorAll(".st-it").forEach((it) => (it.querySelector("button").disabled = (load().stash || 0) < STASH_ROWS.find((r) => r[0] === it.dataset.w)[4]));
+  const rowOf = (w) => rows.find((r) => r[0] === w);
+  const sync = () => md.querySelectorAll(".st-it").forEach((it) => {
+    const r = rowOf(it.dataset.w), b = it.querySelector("button");
+    b.disabled = (load().stash || 0) < r[4] || (r[6] && titleState().own[r[6]]);
+    if (r[6] && titleState().own[r[6]]) b.querySelector("span").textContent = "已拥有";
+  });
   md.querySelectorAll(".st-it").forEach((it) => (it.querySelector("button").onclick = () => {
-    const r = stashExchange(it.dataset.w);
-    if (!r.ok) return toast(r.reason);
+    const row = rowOf(it.dataset.w), tid = row[6];
+    const res = stashExchange(it.dataset.w, tid ? { ...TITLES[tid], owned: !!titleState().own[tid] } : null);
+    if (!res.ok) return toast(res.reason);
+    if (tid) grantTitle(tid);
     sfx("ssr");
-    toast(`获得${r.name}，在宠物仓库使用`);
+    toast(tid ? `获得${res.name}，在称号面板佩戴` : row[0] === "gem" ? `获得${res.name}` : `获得${res.name}，在宠物仓库使用`);
     md.querySelector(".st-n").textContent = load().stash || 0;
+    if (row[0] === "gem") document.querySelectorAll(".curpill .tok").forEach((t) => (t.textContent = load().tokens));
     sync();
   }));
   sync();
