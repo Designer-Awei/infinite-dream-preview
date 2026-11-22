@@ -1286,7 +1286,7 @@ function homeSprites(m, ws, out) {
   out.push({ y: m.home.quest.y + 10, draw: (g, t) => npcImg(g, "quest", m.home.quest.x, m.home.quest.y + 12, t, 1.7) });
   for (const k of ["hut", "store", "spring", "tower"]) {
     const o = P[k];
-    if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g, t) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20), t, o.x * 0.01) });
+    if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -26 : 18), draw: (g, t) => img(g, k, o.x, o.y + (k === "spring" ? 14 : 20), t, o.x * 0.01) }); // (the pool sits half a tile higher; its name stays on the row)
     else out.push({ y: o.y - 20, draw: (g) => plotSprite(g, o.x, o.y) });
   }
 }
@@ -1541,7 +1541,7 @@ function home(g, ws, m, me, dt) {
   const H = ws.home;
   if (Math.abs(me.x - m.home.pen.x0) < 1200 && Math.abs(me.y - m.home.pen.y0) < 900) updatePasture(m, dt, H);
   // 温泉: step into the pool to heal (Lv2 adds a quick step); step out to soak again
-  const sp = m.home.plots.spring, inPool = H.lv.spring > 0 && Math.abs(me.x - sp.x) < 40 && Math.abs(me.y - sp.y - 4) < 24;
+  const sp = m.home.plots.spring, inPool = H.lv.spring > 0 && Math.abs(me.x - sp.x) < 40 && Math.abs(me.y - sp.y + 12) < 24;
   if (!inPool) ws.soaked = false;
   else if (!ws.soaked && !me.downed) {
     ws.soaked = true;
