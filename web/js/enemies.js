@@ -340,7 +340,7 @@ export function updateEnemy(g, e, dt) {
       bossBaku(g, e, p, d, dt);
       break;
     case "dream_orb": {
-      // 梦泡: circles its sleeping 梦貘; gone with it
+      // 梦泡: circles its sleeping 食梦兽; gone with it
       const bk = g.enemies.find((q) => q.id === e.bakuId && !q.dead);
       if (!bk) {
         if (g.host) (e.hp = 0), (e.dead = true), (e.silent = true);
@@ -1052,7 +1052,7 @@ export function verdictCells(map, seed, mode) {
   if (mode >= 10) for (const c of out) c.hit = !c.hit;
   return out;
 }
-// 梦貘 (第 8 位首领 · 每日梦境 / 无尽回廊): floats round the hall. 梦泡弹 slow dream bubbles that burst into rings;
+// 食梦兽 (第 8 位首领 · 每日梦境 / 无尽回廊): floats round the hall. 梦泡弹 slow dream bubbles that burst into rings;
 // 吞梦吐息 (signature): it inhales and drags everyone toward it for 1.6 s, then breathes a wide cone of dream mist —
 // dash out sideways; 梦游冲撞 a marked charge that leaves slowing mist. At 66% and 33% it falls asleep inside four
 // 梦泡 (guarded, healing 2%/s): pop them all within 10 s and it wakes stunned and vulnerable, otherwise 噩梦侵袭
@@ -1199,7 +1199,7 @@ function bossBaku(g, e, p, d, dt) {
     e.cd = 2.6 / k;
   }
 }
-// 梦貘's mist: slows anyone standing in it
+// 食梦兽's mist: slows anyone standing in it
 function mistSlow(z) {
   for (const q of z.g.alivePlayers()) if (dist(q.x, q.y, z.x, z.y) < z.r) q.buff.slow = Math.max(q.buff.slow || 0, 0.25);
 }

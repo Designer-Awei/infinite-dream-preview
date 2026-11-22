@@ -172,7 +172,7 @@ export const ENEMIES = {
   boss_witch: { name: "霜镜女巫", title: "镜中之冰", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
   boss_worm: { name: "熔岩巨蠕", title: "地心吞噬者", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
   // V5 第 8 位首领 (pixelfx tools/bossfx/baku.js): the final boss of every 每日梦境, and in the 无尽 rotation
-  boss_baku: { name: "梦貘", title: "吞梦之兽", hp: 3400, spd: 40, r: 22, ai: "boss_baku", sprite: "baku", coin: [30, 30], fly: true, boss: true },
+  boss_baku: { name: "食梦兽", title: "吞梦之主", hp: 3400, spd: 40, r: 22, ai: "boss_baku", sprite: "baku", coin: [30, 30], fly: true, boss: true },
   boss_judge: { name: "雷霆审判者", title: "无尽的终审", hp: 3500, spd: 44, r: 18, ai: "boss_judge", sprite: "thunder_judge", coin: [30, 30], fly: true, boss: true },
   // V3 新敌人 (pixelfx critters, tools/bossfx): each brings one mechanic
   // 爬网蜘蛛: scuttles in bursts; spits a web that lands where you stand and slows you while inside

@@ -2876,6 +2876,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* (the last card sits flush with the track's right edge, which clips sideways: the dot rides the top edge instead) */
 .mcard.pv.daily .mc-dot { right: 3px; top: -8px; }
 .mcard.pv.daily .mc-cal { top: 7px; right: 6px; }
-.mcard.pv.daily .mc-dot { right: 10px; top: -8px; }
+.mcard.pv.daily .mc-dot { right: 0; top: -8px; } /* (inside the card border) its dark ring flush with the card's right edge */
 /* 最高品质称号统一固定红色，不再循环换色 */
 .ttl.t-x { --tc: #ff4a4a; --tb: #3a0a12; animation: none; box-shadow: 0 0 0 2px #0c0814, 0 0 12px color-mix(in srgb, #ff4a4a 65%, transparent); }

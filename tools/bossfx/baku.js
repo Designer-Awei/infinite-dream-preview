@@ -1,7 +1,7 @@
 import { fit, hex, lerp, rng, TAU } from "../../core/index.js";
 import { Grid, shift, shadow } from "./_lib.js";
 
-// 梦貘 (每日梦境 / 无尽回廊 boss): a plump night-blue tapir that floats on a little cloud — star-speckled fur, a
+// 食梦兽 (每日梦境 / 无尽回廊 boss): a plump night-blue tapir that floats on a little cloud — star-speckled fur, a
 // pale moon-cream saddle band, a curled trunk, sleepy crescent eyes, stubby legs tucked under; a nightcap with a pom
 // droops over one ear. It bobs as it floats; the trunk sways and the stars in its fur twinkle.
 export const meta = {

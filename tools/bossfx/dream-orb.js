@@ -1,7 +1,7 @@
 import { fit, hex, TAU } from "../../core/index.js";
 import { Grid, shift } from "./_lib.js";
 
-// 梦泡 (梦貘's sleep): a big translucent dream bubble with an iridescent rim and a small sleeping moon inside; it
+// 梦泡 (食梦兽's sleep): a big translucent dream bubble with an iridescent rim and a small sleeping moon inside; it
 // wobbles and the sheen slides round it.
 export const meta = {
   name: "Dream bubble",

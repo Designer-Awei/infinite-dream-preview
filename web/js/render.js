@@ -798,7 +798,7 @@ export class Renderer {
       }
       g.stroke();
     } else if (z.kind === "mist") {
-      // 梦貘's charge trail: a soft lilac patch that slows
+      // 食梦兽's charge trail: a soft lilac patch that slows
       g.globalAlpha = 0.32 * clamp(z.life * 1.5) * clamp(z.t / 0.2);
       g.fillStyle = "#b08aff";
       g.beginPath();
