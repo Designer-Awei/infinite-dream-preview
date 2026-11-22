@@ -77,6 +77,8 @@ export function bgClose(md, onClose) {
   md.classList.add("bg-close");
 }
 const H = (t) => `<b class="hp-h">${t}</b>`;
+/** the gear of the lobby's 设置 button: the in-run pause / settings button uses the same one */
+export const GEAR_SVG = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path fill="currentColor" fill-rule="evenodd" d="M19.97 10.09 L22.90 10.54 L22.90 13.46 L19.97 13.91 L18.99 16.28 L20.74 18.67 L18.67 20.74 L16.28 18.99 L13.91 19.97 L13.46 22.90 L10.54 22.90 L10.09 19.97 L7.72 18.99 L5.33 20.74 L3.26 18.67 L5.01 16.28 L4.03 13.91 L1.10 13.46 L1.10 10.54 L4.03 10.09 L5.01 7.72 L3.26 5.33 L5.33 3.26 L7.72 5.01 L10.09 4.03 L10.54 1.10 L13.46 1.10 L13.91 4.03 L16.28 5.01 L18.67 3.26 L20.74 5.33 L18.99 7.72Z M15.6 12 A3.6 3.6 0 1 0 8.4 12 A3.6 3.6 0 1 0 15.6 12Z"/></svg>`;
 /** 词条类型: one row per trait — tag, what it does (on the pet or on the character), its range by quality */
 const TRAIT_NOTE = {
   dmg: "宠物造成的伤害（跟随助战和骑乘攻击都算）",
@@ -283,7 +285,7 @@ export function showHud(game, me) {
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar sh"><i></i><span class="o1"></span></div>
      <div class="res o1"><div><div class="coin"></div><span class="coins">0</span></div><div><div class="cube"></div><span class="cubes">0</span></div><div class="pvpscore"></div></div><div class="hcurses"></div></div></div>
    <div class="tc"><div class="pips"></div><div class="bossbars" style="display:none"><div class="bossbar"><div class="nm o1">幻觉之眼</div><div class="bar"><i></i></div></div><div class="bossbar" style="display:none"><div class="nm o1"></div><div class="bar"><i></i></div></div></div></div>
-   <div class="tr"><div class="buffs"></div><button class="btn small gray pausebtn">Ⅱ</button></div>
+   <div class="tr"><div class="buffs"></div><button class="btn small gray pausebtn" title="暂停 / 设置">${GEAR_SVG}</button></div>
    <div class="banner-slot"></div>
    <div class="keys o1">WASD 移动 · J 攻击(自动锁敌) · K 技能 · L 大招 · 空格 闪避</div>
    <div class="pcskills o1">
@@ -321,6 +323,13 @@ export function showHud(game, me) {
     hud.querySelector('.keys').textContent+=' · R 骑乘';
   }
   if(game.petTrial)hud.appendChild(el('div','pet-trial-tag o1','宠物试用 · 大招10秒恢复 · 收益不保存'));
+  // 梦境大陆: a 玩法说明 button (the lobby's green book) just left of the pause button, for the world's own guide
+  if (game.world) {
+    const help = el("button", "btn small tb-ico t-help hud-help", "<span>📖</span>");
+    help.title = "大陆玩法说明";
+    help.onclick = (e) => (e.stopPropagation(), sfx("click"), import("./worldui.js").then((M) => M.showWorldHelp(app)));
+    hud.querySelector(".tr").insertBefore(help, hud.querySelector(".pausebtn"));
+  }
   hud.querySelector(".pausebtn").onclick = () => app.pause();
   document.querySelectorAll(".touch .empty, .b-skill.empty, .b-ult.empty").forEach(n => n.classList.remove("empty"));
   document.querySelectorAll(".b-skill .cnt, .b-ult .cnt").forEach(n => n.remove());

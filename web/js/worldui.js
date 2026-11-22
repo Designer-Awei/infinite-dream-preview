@@ -4,7 +4,7 @@
 // 传送门; 插旗 plants your flag where you stand. The game is paused while it is open.
 import { T } from "./data.js";
 import { el } from "./util.js";
-import { btn, toast, uiRoot } from "./ui.js";
+import { btn, toast, uiRoot, bgClose } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
 import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy, quest, claimQuest, questText, worldTrade, LOOT_NAME } from "./world.js";
@@ -607,4 +607,58 @@ export function showTrader(game, me, app) {
     }));
   };
   render();
+}
+
+// ---------------------------------------------------------------- 大陆玩法说明 (the 📖 button left of pause): the lobby's guide layout
+const HH = (t) => `<b class="hp-h">${t}</b>`;
+const chip = (bg, name, text) => `<div class="hp-cur"><span class="chip w4" style="background:${bg};color:#1a1020">${name}</span><span>${text}</span></div>`;
+const matRow = (k, text) => `<div class="hp-cur"><span class="chip w4 wh-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${MATS[k].name}</span><span>${text}</span></div>`;
+export function showWorldHelp(app) {
+  if (document.querySelector(".help-md.world-help")) return;
+  const was = app.paused;
+  app.paused = true;
+  const SECS = [
+    ["探索基础", `${HH("大陆")}一片被海峡隔开的大陆群：中南数据草原（出生营地，泥沼减速）、西北显存冰原（冰面打滑）、东北算力熔炉（熔岩灼烧），走跨海长桥过去；东南海上的幻梦群岛在渡口站稳坐船过去，其余小岛要骑冰凰飞过去。沙海、森林、云巅三块大陆尚未开放。越远怪物越强。
+      ${HH("怪物")}野怪原地沉睡，靠近或打中才会追来；每只怪有看不见的仇恨范围，离开出生点太远或你跑远约 2 秒后放弃，走回原位回满血。精英怪击败后三选一技能卡（本次游玩的构筑）。
+      ${HH("倒下与离开")}全员倒下会回营地醒来并失去三分之一金币。暂停菜单「离开大陆」结算，位置、迷雾、开过的宝箱都会保存，下次从离开的地方继续。`],
+    ["地图与传送", `${HH("小地图")}左上角小地图显示身边一片，红色定位针是你；点开看大地图（游戏暂停）。
+      ${HH("大地图")}双指捏合或滚轮缩放、拖动平移；网格 A–H × 1–8，坐标写作“C6 · 3-5”。全图只显示主要点位（营地、你、旗帜、已发现的首领、已点亮的传送门），放大后陆续显示渡口、工坊、宝箱、采集点和名字；没去过的地方盖着迷雾，只透出海岸线。
+      ${HH("传送与旗帜")}在地图上点营地、已点亮的传送门或旗帜，再按「传送」；「插旗」在当前位置插下旗帜，下次进入也能传过去。战斗中、坐船中、倒地时不能传送。每区一座传送门，走近即点亮。`],
+    ["区域首领", `${HH("四位首领")}草原·幻觉之眼、冰原·冰封史莱姆王、熔炉·过热核心、群岛·食梦兽，站在地上暗红圆环的场地里，靠近苏醒并出现血条。
+      ${HH("奖励")}200 晶石、角色经验 300、淬灵露 ×2、本区材料 ×10、UR 宠物蛋（25% 换成 HUR 蛋）、35% 流彩晶；击败瞬间就存进存档，画面上像火山喷发一样喷出来，落地后带光柱，再飞到你身上。
+      ${HH("刷新")}每位首领每天可击败一次，零点刷新；场地上方和大地图首领列表显示刷新倒计时。`],
+    ["宝箱与材料", `${HH("宝箱")}走进去自动打开：普通箱给晶石与宠物经验池 / 星砂 / 淬灵露 / 宠物蛋，金箱给更多晶石、角色经验与 UR 蛋、流彩晶、HUR 蛋等，都直接进存档；另给所在区域的材料。
+      ${HH("区域材料")}${matRow(0, "数据草原")}${matRow(1, "显存冰原")}${matRow(2, "算力熔炉")}${matRow(3, "幻梦群岛")}来源：地上的采集点（走过去采集 2–3 个，每天刷新）、宝箱、精英怪、区域首领、家园派遣。
+      ${HH("营地工坊")}营地东北的小摊，站稳打开：用材料兑换宠物经验池、淬灵露、星砂、UR 宠物蛋、流彩晶、HUR 宠物蛋和称号「大陆旅者」。`],
+    ["坐骑秘境", `${chip("#e8642a", "火龙", "骑乘的火龙火球能击碎「裂纹岩」院门（大陆里的普通岩石打不碎），碎了就永久打开。")}${chip("#d8a018", "灵狐", "只有骑灵狐能穿过「电门」，其他情况会被弹开。")}${chip("#2a9ad8", "冰凰", "骑冰凰能飞过水面去海上小岛；海面飞行消耗体力（满 14 秒，陆地上很快回满），低于 30% 会提醒，耗尽会被浪推回最后站过的岸边。")}
+      ${HH("秘境")}草原、冰原、熔炉各有两处石墙小院，院门是裂纹岩或电门，里面有金宝箱和采集点；大地图放大后用「龙 / 狐 / 凰」徽章标出需要哪只坐骑。`],
+    ["梦境家园", `${HH("家园")}营地西侧是你的家园，存档独立、永久保留。
+      ${HH("宠物牧场")}仓库里的宠物会在牧场里闲逛（出战中的跟着你）。
+      ${HH("派遣")}站在派遣告示板前打开：把宠物派去采集某种材料，按真实时间产出（离线也算），最多存到储物仓的小时数，回来「全部收获」。产出 = 3 个/小时 × 阶段（幼年 1 / 成长 1.4 / 终极 1.8）× 品质（每档 +15%）× 采集小屋（每级 +30%）。出战中的宠物不能派遣。
+      ${HH("家园建造")}站在家园管家前打开，用材料和晶石建造、升级：${BUILD_ORDER.map((id) => chip("#9ae08a", BUILD[id].name, `最高 Lv.${BUILD[id].max} · ${BUILD[id].fx(BUILD[id].max)}`)).join("")}温泉建成后走进池子即回满生命护盾；瞭望塔让大地图在迷雾下也标出对应区域未开的宝箱。`],
+    ["委托与事件", `${HH("每日委托")}家园旁的委托员每天发三件委托（击败某区怪物、精英、采集、开宝箱、首领、收获派遣、完成世界事件等），完成后回来领晶石和材料，三件都领完再领 UR 宠物蛋（30% 换成流彩晶）。零点刷新。
+      ${HH("流星坠落")}不时有流星落在你附近（横幅提示方向和距离，地图上有星形标记）：三只精英守卫着陨星宝箱，击败守卫后打开，像首领一样喷出晶石、材料，有机会出 UR 蛋或流彩晶。4 分钟后消散。
+      ${HH("迷途商人")}偶尔出现的旅行商人停留 5 分钟，用晶石卖三样随机货物（淬灵露、UR 蛋、星砂、宠物经验池、材料等），每样限购一份。`],
+    ["探索与称号", `${HH("探索度")}只按能到达的陆地计算，可以刷到 100%。
+      ${HH("里程碑")}${chip("#ffd84a", "10%", "150 晶石")}${chip("#ffd84a", "25%", "UR 宠物蛋")}${chip("#ffd84a", "50%", "流彩晶 + 称号「大陆探险家」")}${chip("#ffd84a", "75%", "HUR 宠物蛋")}${chip("#ffd84a", "100%", "流彩晶 ×3 + 称号「大陆制图师」")}
+      ${HH("称号")}大陆称号在主页称号面板的「大陆」分页里佩戴。`],
+  ];
+  const md = el("div", "modal help-md world-help");
+  md.innerHTML = `<div class="panel help-p"><div class="wh-head"><h2 class="outline">大陆玩法说明</h2><button class="btn gray small x-btn">关闭</button></div><div class="hp-body"><div class="hp-nav"></div><div class="hp-main"></div></div></div>`;
+  const nav = md.querySelector(".hp-nav"), main = md.querySelector(".hp-main");
+  const open = (i) => {
+    nav.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === i));
+    main.innerHTML = `<div class="hp-t">${SECS[i][0]}</div>` + SECS[i][1];
+    main.scrollTop = 0;
+  };
+  SECS.forEach(([t], i) => {
+    const b = el("button", "hp-tab", t);
+    b.onclick = () => (sfx("click"), open(i));
+    nav.appendChild(b);
+  });
+  open(0);
+  const close = () => ((app.paused = was), md.remove());
+  md.querySelector(".x-btn").onclick = () => (sfx("click"), close());
+  bgClose(md, () => (app.paused = was));
+  uiRoot().appendChild(md);
 }

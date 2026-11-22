@@ -2971,3 +2971,12 @@ body.touchmode .pet-ride-btn small { display:none; }
 .qt-row .st-tx b { font-size: 15px; }
 .qt-bonus { background: linear-gradient(90deg, rgba(90,70,200,.45), rgba(255,216,74,.25)); }
 .hm-trade .hm-row .hm-pic { background: transparent; border: none; }
+/* 梦境大陆: the 📖 guide button next to the pause button (the lobby's green book), the gear on the pause button */
+.hud .hud-help { pointer-events: auto; width: 46px; height: 46px; padding: 0 !important; display: flex; align-items: center; justify-content: center; position: relative; }
+.hud .hud-help span { font-size: 22px; line-height: 1; }
+.hud .hud-help::after { content: ""; position: absolute; inset: -6px; }
+.hud .pausebtn svg { width: 26px; height: 26px; display: block; margin: auto; }
+.world-help .wh-head { display: flex; align-items: center; justify-content: center; position: relative; }
+.world-help .wh-head .x-btn { position: absolute; right: 0; top: 50%; transform: translateY(-50%); }
+.wh-mat { display: inline-flex; align-items: center; gap: 3px; background: #e8dcff; }
+.wh-mat .mat-ic { width: 16px; height: 16px; }

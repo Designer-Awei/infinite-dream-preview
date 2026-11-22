@@ -5,7 +5,7 @@ import { load, save, mineState, refineOre, refreshFreeShovels, claimFreeShovels 
 import { el } from "./util.js";
 import { iconURL } from "./icons.js";
 import { sfx, playMusic } from "./audio.js";
-import { btn, toast, clear, uiRoot, resultHero } from "./ui.js";
+import { btn, toast, clear, uiRoot, resultHero, GEAR_SVG } from "./ui.js";
 import { app } from "./main.js";
 import { showMineGuide } from "./mineguide.js";
 import { todayQuests, questText, claimQuest, claimable } from "./minequests.js";
@@ -292,7 +292,7 @@ export function showMineHud(dive) {
    <div class="tl"><div class="face"><img src="assets/head_${cid}.png"></div>
      <div class="bars"><div class="bar hp"><i></i><span class="o1"></span></div><div class="bar en"><i></i><span class="o1"></span></div><div class="bar ox"><i></i><span class="o1"></span></div><div class="mrel"></div></div></div>
    <div class="tc o1"><div class="depth"></div><div class="lite"></div><div class="mboss"><b class="outline"></b><div class="bb"><i></i></div></div></div>
-   <div class="tr"><button class="bag o1" title="打开背包：丢弃不要的矿物"></button><button class="btn small gray pausebtn">Ⅱ</button></div>
+   <div class="tr"><button class="bag o1" title="打开背包：丢弃不要的矿物"></button><button class="btn small gray pausebtn" title="暂停 / 设置">${GEAR_SVG}</button></div>
    <div class="gauge"><i class="me"></i></div>
    <div class="keys o1">A/D 移动 · S 向下挖 · W 喷气上升（耗电）· 顶着墙走 = 横挖 · J 攻击 · K 炸药 · L 撤离信标</div>
    <div class="pcskills o1">
