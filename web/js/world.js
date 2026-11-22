@@ -10,6 +10,7 @@ import { THEMES, WALL, WATER, BUSH, CRATE, BARREL, F, CRATE_HP } from "./map.js"
 import { load, save, mineState, grantCharacterXP } from "./save.js";
 import { grantEggs, petState, addPool } from "./petsave.js";
 import { ENEMIES } from "./data.js";
+import { grantTitle } from "./titles.js";
 
 export const WORLD_W = 256, WORLD_H = 256, CHUNK = 16, WORLD_SEED = 20261122;
 const CPX = CHUNK * T; // 512 px a chunk
@@ -357,6 +358,23 @@ export function buildWorld(seed) {
     const c = comp.find((j) => m.t[j] === F) ?? comp[0];
     m.chests.push({ id: c, x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T / 2 + 4, gold: true, wing: true });
   }
+  // 采集点: a region's material lying about (herbs / frost crystals / ember ore / dream sand), back every day
+  m.nodes = [];
+  for (let cy = 0; cy < H / CHUNK; cy++) for (let cx = 0; cx < W / CHUNK; cx++) {
+    if (hash(cx, cy, seed + 61) > 0.42) continue;
+    for (let tries = 0; tries < 20; tries++) {
+      const x = cx * CHUNK + 2 + Math.floor(hash(cx * 13 + tries, cy, seed + 62) * (CHUNK - 4)), y = cy * CHUNK + 2 + Math.floor(hash(cx, cy * 13 + tries, seed + 63) * (CHUNK - 4));
+      if (!open(x, y) || tdist(x, y) < 9 || m.chests.some((c) => c.id === y * W + x)) continue;
+      m.nodes.push({ id: y * W + x, x: x * T + T / 2, y: y * T + T / 2 + 4, b: m.biome[y * W + x] });
+      break;
+    }
+  }
+  // the camp workshop (exchange materials) stands just north-east of the spawn
+  const [wx2, wy2] = nudge(sx + 4, sy - 3, 0);
+  m.shop = { x: wx2 * T + T / 2, y: wy2 * T + T / 2 };
+  // the exploration count: only fog cells holding land you can reach (on foot, by boat or wing), so 100% is possible
+  m.fogLand = new Uint8Array(64 * 64);
+  for (let i = 0; i < N; i++) if (m.t[i] !== WATER && !BIOMES[m.biome[i]].locked) m.fogLand[Math.floor(((i / W) | 0) / 4) * 64 + Math.floor((i % W) / 4)] = 1;
   for (const [cx, cy, r] of isles) {
     if (m.chests.some((c) => Math.hypot(c.x / T - cx, c.y / T - cy) < r)) continue;
     for (let tries = 0; tries < 80; tries++) {
@@ -594,9 +612,9 @@ const KEY = "ai-girls-dungeon-world-v1", FOG = 64; // fog: 64×64 cells of 4×4 
 export function loadWorldSave() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (d && d.v === 1) return { opened: [], fog: "", gates: [], bossDay: {}, flag: null, ...d };
+    if (d && d.v === 1) return { opened: [], fog: "", gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0], nodeDay: {}, miles: [], ...d };
   } catch (e) {}
-  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0, gates: [], bossDay: {}, flag: null };
+  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0, gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0], nodeDay: {}, miles: [] };
 }
 const fogBytes = (s) => {
   const out = new Uint8Array(FOG * FOG);
@@ -615,15 +633,15 @@ const fogString = (f) => {
   }
   return btoa(s);
 };
-export function explored(fog) {
-  let n = 0;
-  for (const v of fog) n += v;
-  return Math.round((n / fog.length) * 100);
+export function explored(fog, mask = getWorld().fogLand) {
+  let n = 0, all = 0;
+  for (let i = 0; i < fog.length; i++) if (mask[i]) (all++, (n += fog[i]));
+  return all ? Math.min(100, Math.floor((n / all) * 100)) : 0;
 }
 export function worldSaveNow(g) {
   const ws = g.ws, p = g.players.find((q) => q.local) || g.players[0];
   if (!ws) return;
-  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag };
+  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag, mats: ws.mats, nodeDay: ws.nodeDay, miles: ws.miles };
   try {
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) {}
@@ -639,7 +657,8 @@ export function worldEnter(g) {
   m.used = true;
   g.map = m;
   g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
-    gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0 };
+    gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
+    mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true };
   const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
   const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
@@ -706,9 +725,33 @@ function grant(g, kind, n) {
   } else if (kind === "stars") (mineState().stars += n), save();
   else if (kind === "pool") addPool(n);
   else if (kind === "xp" && me) grantCharacterXP(me.cid, n);
+  else if (kind.startsWith("mat")) g.ws.mats[+kind[3]] += n;
   return award(g, LOOT_NAME[kind], n);
 }
-export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验" };
+// the four regions' materials (by biome index): spent at the camp workshop
+export const MATS = [{ name: "草芯", col: "#8ad85a" }, { name: "霜晶", col: "#9ad8ff" }, { name: "熔核", col: "#ff8a3a" }, { name: "梦砂", col: "#c8a0ff" }];
+export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验", mat0: "草芯", mat1: "霜晶", mat2: "熔核", mat3: "梦砂" };
+// 营地工坊: materials into lasting rewards. cost: [草芯, 霜晶, 熔核, 梦砂]; once: a title, bought a single time
+export const WORKSHOP = [
+  { id: "pool", give: ["pool", 200], cost: [8, 0, 0, 0] },
+  { id: "ur", give: ["ur", 1], cost: [6, 4, 0, 0] },
+  { id: "stars", give: ["stars", 10], cost: [0, 0, 5, 0] },
+  { id: "egg_ur", give: ["egg_ur", 1], cost: [0, 8, 8, 0] },
+  { id: "hur", give: ["hur", 1], cost: [0, 0, 6, 10] },
+  { id: "egg_hur", give: ["egg_hur", 1], cost: [0, 10, 10, 15] },
+  { id: "title", give: ["title", 1], cost: [20, 20, 20, 20], once: "world_walker" },
+];
+export function workshopBuy(g, offer) {
+  const ws = g.ws;
+  if (offer.once && titleOwned(offer.once)) return "已兑换";
+  if (offer.cost.some((c, k) => ws.mats[k] < c)) return "材料不足";
+  offer.cost.forEach((c, k) => (ws.mats[k] -= c));
+  if (offer.once) grantTitle(offer.once), award(g, "称号「大陆旅者」", 1);
+  else grant(g, ...offer.give);
+  worldSaveNow(g);
+  return null;
+}
+const titleOwned = (id) => !!load().titles?.own?.[id];
 const roll = (table) => {
   let x = Math.random();
   for (const r of table) if ((x -= r[0]) < 0) return r.slice(1);
@@ -724,7 +767,7 @@ export function worldKilled(g, e) {
     ws.bossDay[e.worldBoss - 1] = dayKey();
     ws.bossesNow++;
     g.map.center = g.map.spawn;
-    const lines = [grant(g, "gems", 200), grant(g, "xp", 300), grant(g, "ur", 2)];
+    const lines = [grant(g, "gems", 200), grant(g, "xp", 300), grant(g, "ur", 2), grant(g, "mat" + g.map.bosses[e.worldBoss - 1].region, 10)];
     lines.push(Math.random() < 0.25 ? grant(g, "egg_hur", 1) : grant(g, "egg_ur", 1));
     if (Math.random() < 0.35) lines.push(grant(g, "hur", 1));
     showLoot(g, e.x, e.y - 30, lines);
@@ -733,7 +776,8 @@ export function worldKilled(g, e) {
   }
   // an elite: a skill card for this visit's build (the world's chests give lasting rewards instead)
   if (e.elite && g.ws) {
-    const p = e.lastBy ? g.player(e.lastBy) : null;
+    const p = e.lastBy ? g.player(e.lastBy) : null, b = g.map.biome[tileIdx(g.map, e.x, e.y)];
+    if (b <= 3) g.text(e.x, e.y - 40, grant(g, "mat" + b, 2), MATS[b].col, 1.1, 1.6);
     g.after(0.4, () => g.offerCards(p || g.players[0], 3));
   }
   const st = g.ws?.chunks.get(e.chunk);
@@ -749,6 +793,21 @@ export function worldUpdate(g, dt) {
   ws.tick = (ws.tick || 0) - dt;
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
+  // 采集点: walk into one to gather it (back tomorrow)
+  const today = dayKey();
+  for (const n of m.nodes) {
+    if (ws.nodeDay[n.id] === today || Math.abs(me.x - n.x) > 26 || Math.abs(me.y - n.y) > 26) continue;
+    ws.nodeDay[n.id] = today;
+    const k = 2 + ((n.id * 7) % 2);
+    g.text(n.x, n.y - 40, grant(g, "mat" + n.b, k), MATS[n.b].col, 1.1, 1.6);
+    g.vfx("pickups/collect-burst", n.x, n.y - 8, { palette: ["#140e22", "#3a2a5a", MATS[n.b].col, "#ffffff"] });
+    g.sound("pickup", 0.1);
+  }
+  // 营地工坊: stand by it a moment to open the exchange (step away to arm it again)
+  const ds = Math.hypot(me.x - m.shop.x, me.y - (m.shop.y + 20));
+  if (ds > 80) ws.shopArmed = true;
+  ws.shopT = ds < 40 && ws.shopArmed && !me.moving ? (ws.shopT || 0) + dt : 0;
+  if (ws.shopT > 0.5) (ws.shopT = 0), (ws.shopArmed = false), g.onUi("worldShop");
   // 传送门: walk up to one to light it
   for (const w of m.waypoints) if (!ws.gates.has(w.id) && Math.hypot(me.x - w.x, me.y - w.y) < 34) {
     ws.gates.add(w.id);
@@ -771,8 +830,19 @@ export function worldUpdate(g, dt) {
     if (ws.safe) (me.x = ws.safe.x), (me.y = ws.safe.y);
     if ((ws.lockT || 0) < g.time) (ws.lockT = g.time + 1.5), g.text(me.x, me.y - 70, `「${BIOMES[bHere].name}」尚未开放`, "#ffb0bc", 1.2, 1.4);
   } else ws.safe = { x: me.x, y: me.y };
-  // fog, region banner, autosave
+  // fog, region banner, exploration milestones, autosave
   revealAround(g);
+  if (ws.fogDirty || ws.mileT === undefined) {
+    const pct = explored(ws.fog, m.fogLand);
+    for (const [at, kind, n, title] of MILES) if (pct >= at && !ws.miles.includes(at)) {
+      ws.miles.push(at);
+      const lines = [`探索度 ${at}%`, grant(g, kind, n)];
+      if (title && grantTitle(title)) lines.push(`称号「${title === "world_explorer" ? "大陆探险家" : "大陆制图师"}」`);
+      showLoot(g, me.x, me.y - 20, lines);
+      worldSaveNow(g);
+    }
+    ws.mileT = 0;
+  }
   const ti = tileIdx(m, me.x, me.y), b = m.biome[ti], atSea = b === 3 && (m.t[ti] === WATER || m.road[ti] >= 2); // (a bridge or the open sea is no region)
   if (b !== ws.region && !atSea) {
     if (ws.region >= 0 || !g.banner) g.banner = { text: BIOMES[b].name, sub: BIOMES[b].lv, t: 2.4 };
@@ -901,11 +971,46 @@ export function drawWorldFloor(g, game, me, t) {
     g.stroke();
   }
 }
-/** the world's standing things (传送门, your flag), y-sorted with the characters by the renderer */
+// 采集点 by region: a herb clump, a frost crystal, an ember ore, a dream-sand mound
+function nodeSprite(g, x, y, b, t) {
+  const r = (a, c, w, h, col) => ((g.fillStyle = col), g.fillRect(Math.round(x + a), Math.round(y + c), w, h));
+  g.fillStyle = "rgba(10,8,20,0.3)";
+  g.beginPath();
+  g.ellipse(x, y + 2, 11, 4, 0, 0, Math.PI * 2);
+  g.fill();
+  const tw = Math.sin(t * 4 + x) > 0.85; // a glint now and then
+  if (b === 0) {
+    r(-8, -10, 16, 12, "#1a1020"); r(-7, -9, 6, 10, "#5aa83a"); r(-1, -12, 6, 13, "#6fbf48"); r(4, -8, 4, 9, "#4a8a2a");
+    r(-5, -7, 2, 2, "#ffe066"); r(2, -10, 2, 2, "#ffffff"); r(5, -6, 2, 2, "#ff8ac0");
+  } else if (b === 1) {
+    r(-7, -18, 14, 20, "#1a1020"); r(-5, -16, 5, 17, "#9ad8ff"); r(0, -14, 5, 15, "#c8ecff"); r(-6, -6, 4, 7, "#6ab4e0"); r(-4, -15, 1, 8, "#ffffff");
+  } else if (b === 2) {
+    r(-9, -9, 18, 11, "#1a1020"); r(-8, -8, 16, 9, "#4a3a38"); r(-6, -6, 3, 3, "#ff8a3a"); r(1, -7, 4, 3, "#ffc23a"); r(3, -3, 3, 2, "#ff6a2a");
+  } else {
+    r(-9, -6, 18, 8, "#1a1020"); r(-8, -5, 16, 6, "#c8a0ff"); r(-5, -8, 10, 4, "#1a1020"); r(-4, -7, 8, 3, "#e8d0ff"); r(-2, -6, 2, 2, "#ffffff");
+  }
+  if (tw) r(-1, -20, 2, 5, "#ffffff"), r(-3, -18, 6, 1, "#ffffff");
+}
+function shopSprite(g, x, y, t) {
+  const r = (a, c, w, h, col) => ((g.fillStyle = col), g.fillRect(Math.round(x + a), Math.round(y + c), w, h));
+  g.fillStyle = "rgba(10,8,20,0.35)";
+  g.beginPath();
+  g.ellipse(x, y + 22, 36, 10, 0, 0, Math.PI * 2);
+  g.fill();
+  r(-34, -2, 68, 26, "#1a1020"); r(-32, 0, 64, 22, "#9a5e2c"); r(-32, 0, 64, 3, "#c88a4a"); // counter
+  r(-26, 6, 10, 8, "#5aa83a"); r(-12, 5, 9, 9, "#9ad8ff"); r(2, 7, 9, 7, "#ff8a3a"); r(16, 6, 9, 8, "#c8a0ff"); // the four materials on display
+  r(-32, -40, 4, 40, "#1a1020"); r(28, -40, 4, 40, "#1a1020"); r(-31, -40, 2, 40, "#c88a4a"); r(29, -40, 2, 40, "#c88a4a"); // posts
+  for (let k = 0; k < 8; k++) r(-36 + k * 9, -48 + (k % 2), 9, 12, k % 2 ? "#ffe8c0" : "#ff6a8a"); // awning
+  r(-36, -49, 72, 2, "#1a1020"); r(-36, -36, 72, 2, "#1a1020");
+  r(-8, -30, 16, 14, "#1a1020"); r(-7, -29, 14, 12, "#ffd84a"); r(-3, -26, 6, 6, "#9a5e2c"); // a hammer sign
+}
+/** the world's standing things (传送门, your flag, 采集点, the workshop), y-sorted with the characters by the renderer */
 export function worldSprites(game, me) {
   const m = game.map, ws = game.ws, out = [];
   if (!ws || !me) return out;
-  const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340;
+  const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340, today = dayKey();
+  for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
+  if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
   if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
   return out;
@@ -915,6 +1020,7 @@ export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
   for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
+  if (Math.abs(me.x - m.shop.x) < 420 && Math.abs(me.y - m.shop.y) < 260) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
     const near = ws.hint && ws.hint.at === at;
@@ -961,7 +1067,7 @@ function residents(g, ws, m, alive) {
   }
   // region bosses: one a region in its arena, back every day (local date) after it falls
   const today = dayKey();
-  for (const B of m.bosses) {
+  for (const B of m.bosses) { // (region bosses)
     if (ws.bossDay[B.id] === today || g.enemies.some((e) => e.worldBoss === B.id + 1)) continue;
     let d = 1e9;
     for (const p of alive) d = Math.min(d, Math.hypot(p.x - B.x, p.y - B.y));
@@ -989,9 +1095,13 @@ function openWorldChest(g, c, p) {
   const lines = c.gold
     ? [grant(g, "gems", 60), grant(g, "xp", 120), grant(g, ...roll([[0.35, "ur", 2], [0.3, "egg_ur", 1], [0.2, "hur", 1], [0.1, "stars", 10], [0.05, "egg_hur", 1]]))]
     : [grant(g, "gems", 20), grant(g, ...roll([[0.45, "pool", 60], [0.25, "stars", 3], [0.15, "ur", 1], [0.1, "egg_base", 1], [0.05, "egg_ur", 1]]))];
+  const b = g.map.biome[tileIdx(g.map, c.x, c.y)];
+  if (b <= 3) lines.push(grant(g, "mat" + b, c.gold ? 5 : 2));
   showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
 }
+// exploration milestones: [%, reward, amount, title]
+const MILES = [[10, "gems", 150], [25, "egg_ur", 1], [50, "hur", 1, "world_explorer"], [75, "egg_hur", 1], [100, "hur", 3, "world_cartographer"]];
 // ---------------------------------------------------------------- travel: 回营地 / 旗帜 / 传送门
 export const inCombat = (g) => g.enemies.some((e) => e.aggro && !e.dead);
 /** jump to a point (the map panel's buttons); refused while something is chasing you or on the boat */

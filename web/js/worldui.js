@@ -7,7 +7,10 @@ import { el } from "./util.js";
 import { btn, toast, uiRoot } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
-import { baseMap, fogMap, FOG, dayKey, explored, worldTeleport, placeFlag, inCombat, BIOMES } from "./world.js";
+import { baseMap, fogMap, FOG, dayKey, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, WORKSHOP, workshopBuy } from "./world.js";
+import { drawEgg } from "./petwh.js";
+import { load } from "./save.js";
+import { titleHTML } from "./titles.js";
 
 let outline = null;
 function coast(m) {
@@ -33,7 +36,7 @@ export function showWorldMap(game, me, app) {
   const md = el("div", "modal wmap-modal");
   md.innerHTML = `<div class="panel wmap-p"><div class="wm-left"><canvas class="wm-cv" width="512" height="512"></canvas></div>
     <div class="wm-side"><div class="wm-head"><h2 class="outline">梦境大陆</h2><button class="btn gray small x-btn">关闭</button></div>
-    <div class="wm-stats o1"></div><div class="wm-boss"></div><div class="wm-pick o1"></div><div class="wm-tp"></div></div></div>`;
+    <div class="wm-stats o1"></div><div class="wm-mats o1"></div><div class="wm-boss"></div><div class="wm-pick o1"></div><div class="wm-tp"></div></div></div>`;
   const close = () => {
     md.remove();
     app.paused = false;
@@ -107,6 +110,7 @@ export function showWorldMap(game, me, app) {
   // side: progress, bosses, travel
   const opened = m.chests.filter((c) => ws.opened.has(c.id)).length;
   md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened} / ${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size} / ${m.waypoints.length}</b></div>`;
+  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span><i style="background:${t.col}"></i>${t.name} <b>${ws.mats[k]}</b></span>`).join("");
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;
     return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? "今日已击败" : "可挑战"}</b></div>`;
@@ -155,5 +159,55 @@ export function showWorldMap(game, me, app) {
   });
   tp.append(go);
   choose(null);
+  uiRoot().appendChild(md);
+}
+
+// ---------------------------------------------------------------- 营地工坊: the four materials into lasting rewards
+const GIVE = {
+  pool: ["宠物经验池 +200", "进宠物仓库的经验池", null],
+  ur: ["淬灵露 ×1", "宠物养成道具", "ur"],
+  stars: ["星砂 ×10", "梦境矿场升级用", null],
+  egg_ur: ["UR 宠物蛋 ×1", "孵化必出稀有或更高", "egg:ur"],
+  hur: ["流彩晶 ×1", "宠物养成道具", "hur"],
+  egg_hur: ["HUR 宠物蛋 ×1", "孵化必出史诗或更高", "egg:hur"],
+  title: ["称号", "伤害 +5%（只能兑换一次）", "title"],
+};
+export function showWorkshop(game, me, app) {
+  const ws = game.ws;
+  if (!ws || document.querySelector(".wshop-md")) return;
+  app.paused = true;
+  sfx("click");
+  const md = el("div", "modal stash-md wshop-md");
+  const chips = () => MATS.map((t, k) => `<span class="ws-mat"><i style="background:${t.col}"></i>${t.name}<b>${ws.mats[k]}</b></span>`).join("");
+  const cost = (o) => o.cost.map((c, k) => (c ? `<span class="ws-c${ws.mats[k] < c ? " short" : ""}"><i style="background:${MATS[k].col}"></i>${c}</span>` : "")).join("");
+  const ico = (o) => {
+    const k = GIVE[o.id][2];
+    return k?.startsWith("egg:") ? `<canvas class="st-egg" data-k="${k.slice(4)}"></canvas>` : k === "title" ? `<span class="st-ttl">${titleHTML(o.once)}</span>` : k ? `<i class="st-ico ${k}"></i>` : `<i class="ws-ico ${o.id}"></i>`;
+  };
+  md.innerHTML = `<div class="panel stash-p wshop-p"><div class="ws-head"><h2 class="outline">营地工坊</h2><div class="ws-mats o1"></div><button class="btn gray small x-btn">关闭</button></div>
+    <div class="st-sub o1">在大陆上采集、开宝箱、打精英与区域首领得到材料 · 兑换的奖励直接进存档</div>
+    <div class="st-list">${WORKSHOP.map((o) => `<div class="st-it ws-it" data-id="${o.id}">${ico(o)}<div class="st-tx"><b class="outline">${o.id === "title" ? "" : GIVE[o.id][0]}</b><span>${GIVE[o.id][1]}</span></div><div class="ws-cost o1"></div><button class="btn small st-go"><span>兑换</span></button></div>`).join("")}</div></div>`;
+  md.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
+  const close = () => (md.remove(), (app.paused = false));
+  md.querySelector(".x-btn").onclick = () => (sfx("click"), close());
+  md.onclick = (e) => e.target === md && close();
+  const owned = (o) => o.once && !!load().titles?.own?.[o.once];
+  const sync = () => {
+    md.querySelector(".ws-mats").innerHTML = chips();
+    md.querySelectorAll(".ws-it").forEach((it) => {
+      const o = WORKSHOP.find((q) => q.id === it.dataset.id), b = it.querySelector("button");
+      it.querySelector(".ws-cost").innerHTML = cost(o);
+      b.disabled = owned(o) || o.cost.some((c, k) => ws.mats[k] < c);
+      b.querySelector("span").textContent = owned(o) ? "已拥有" : "兑换";
+    });
+  };
+  md.querySelectorAll(".ws-it").forEach((it) => (it.querySelector("button").onclick = () => {
+    const o = WORKSHOP.find((q) => q.id === it.dataset.id), err = workshopBuy(game, o);
+    if (err) return toast(err);
+    sfx("pickup");
+    toast(`兑换成功：${o.id === "title" ? "称号「大陆旅者」" : GIVE[o.id][0]}`);
+    sync();
+  }));
+  sync();
   uiRoot().appendChild(md);
 }

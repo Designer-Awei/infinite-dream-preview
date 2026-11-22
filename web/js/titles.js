@@ -14,7 +14,7 @@ export const TITLE_RARITY = {
   // the top tier is a fixed red (no colour cycling anywhere): 噩梦主宰, 流彩之主, 积攒之王
   x: { name: "流彩", col: "#ff4a4a", bg: "#3a0a12", fx: "spark" },
 };
-export const TITLE_TABS = [["adv", "冒险"], ["mine", "矿场"], ["pet", "宠物"], ["shop", "兑换"]];
+export const TITLE_TABS = [["adv", "冒险"], ["mine", "矿场"], ["pet", "宠物"], ["world", "大陆"], ["shop", "兑换"]];
 
 const st = () => load().stats || {};
 const maxPact = () => Math.max(0, ...Object.values(load().pactBest || {}));
@@ -42,6 +42,10 @@ export const TITLES = {
   rainbow_lord: { name: "流彩之主", r: "x", col: "#ff4a4a", bg: "#3a0a12", still: true, tab: "pet", how: `集齐全部 ${PET_ORDER.length} 种宠物的流彩`, prog: () => [petState().stats.rbKinds.length, PET_ORDER.length], fx: { dmg: 0.08 }, fxText: "伤害 +8%" },
   // 积攒兑换 titles: bought with 积攒点 in the 扭蛋机's exchange (stash: its price), never earned otherwise
   stash_star: { name: "梦境收藏家", r: "l", tab: "shop", stash: 20, how: "扭蛋机「积攒」兑换 20 点", prog: () => [0, 1], fx: { mag: 0.2, coin: 0.15 }, fxText: "拾取范围 +20%，局内金币 +15%" },
+  // 梦境大陆 titles: granted by world.js (exploration milestones, the camp workshop)
+  world_explorer: { name: "大陆探险家", r: "e", tab: "world", how: "梦境大陆探索度达到 50%", prog: () => [0, 1], fx: { speed: 0.04 }, fxText: "移速 +4%" },
+  world_cartographer: { name: "大陆制图师", r: "l", tab: "world", how: "梦境大陆探索度达到 100%", prog: () => [0, 1], fx: { speed: 0.05, mag: 0.2 }, fxText: "移速 +5%，拾取范围 +20%" },
+  world_walker: { name: "大陆旅者", r: "l", tab: "world", how: "梦境大陆营地工坊兑换（四种材料各 20）", prog: () => [0, 1], fx: { dmg: 0.05 }, fxText: "伤害 +5%" },
   stash_king: { name: "积攒之王", r: "x", tab: "shop", stash: 50, how: "扭蛋机「积攒」兑换 50 点", prog: () => [0, 1], fx: { dmg: 0.08, crit: 0.05 }, fxText: "伤害 +8%，暴击率 +5%" },
 };
 export const TITLE_ORDER = Object.keys(TITLES);

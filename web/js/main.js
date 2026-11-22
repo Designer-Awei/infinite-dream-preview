@@ -255,6 +255,7 @@ export const app = {
       UI.closeCards();
       this.cardOpen = false;
     }
+    else if (kind === "worldShop") import("./worldui.js").then((M) => M.showWorkshop(g, this.me, this));
     else if (kind === "world") {
       renderer.follow(g, this.me, 0, true);
       playMusic("battle");

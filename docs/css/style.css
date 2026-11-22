@@ -2906,3 +2906,21 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wmap-p .wm-pick b { color: #fff6c0; margin-left: 4px; }
 .wmap-p .wm-cv { cursor: pointer; }
 @media (max-height: 420px) { .hud .tl .wmini { width: 48px; height: 48px; } }
+.hud.world .tl .face { display: none; } /* 梦境大陆: minimap + status, no portrait */
+/* 梦境大陆 · 营地工坊 (the 积攒兑换 rows) and the map panel's material row */
+.wshop-p .ws-head { display: flex; align-items: center; gap: 10px; }
+.wshop-p .ws-head h2 { margin: 0; }
+.wshop-p .ws-head .x-btn { margin-left: auto; }
+.wshop-p .ws-mats { display: flex; gap: 6px; }
+.ws-mat { display: inline-flex; align-items: center; gap: 4px; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 1px 7px; font-size: 11px; color: #e8dcff; }
+.ws-mat b { color: #fff6c0; margin-left: 2px; }
+.ws-mat i, .ws-c i, .wm-mats i { width: 9px; height: 9px; border-radius: 2px; box-shadow: 0 0 0 2px var(--ink); display: inline-block; }
+.wshop-p .ws-cost { display: flex; gap: 5px; flex: none; width: 150px; justify-content: flex-end; }
+.ws-c { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #fff6c0; }
+.ws-c.short { color: #ff8a9a; }
+.ws-ico { flex: none; width: 26px; height: 26px; border: 2px solid var(--ink); border-radius: 8px; }
+.ws-ico.pool { background: radial-gradient(circle at 40% 35%, #fff 0 12%, #8affc8 13% 45%, #2aa86a 75%); }
+.ws-ico.stars { background: radial-gradient(circle at 50% 50%, #fff 0 15%, #ffe066 16% 45%, #c8901a 75%); }
+.wmap-p .wm-mats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
+.wmap-p .wm-mats span { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; color: #e8dcff; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 1px 2px; white-space: nowrap; }
+.wmap-p .wm-mats b { color: #fff6c0; }
