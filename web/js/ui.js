@@ -381,9 +381,10 @@ export function updateHud(game, me) {
   // left to right as they stood when they appeared
   if (hudCache.bossRoom !== game.roomIdx) (hudCache.bossRoom = game.roomIdx), (hudCache.bossSeen = []);
   const living = game.enemies.filter((e) => e.boss && !e.dead && e.hp > 0 && (!game.world || e.aggro)), seen = hudCache.bossSeen; // (梦境大陆: a sleeping boss shows no bar)
+  if (game.world) for (let k = seen.length - 1; k >= 0; k--) if (!living.some((e) => e.id === seen[k].id)) seen.splice(k, 1); // (梦境大陆: a fallen or calmed boss drops its bar)
   for (const e of living) if (!seen.some((b) => b.id === e.id)) seen.push({ id: e.id, name: e.def.name, x: e.x }), seen.sort((a, b) => a.x - b.x);
   const bossVals = seen.slice(0, 2).map((b) => { const e = living.find((q) => q.id === b.id); return e ? Math.ceil((e.hp / e.maxHp) * 200) : 0; });
-  set("boss", living.length ? bossVals.join(",") : -1, () => {
+  set("boss", living.length ? bossVals.join(",") + "|" + seen.map((b) => b.id).join(",") : -1, () => {
     const box = hud.querySelector(".bossbars"), bars = box.querySelectorAll(".bossbar");
     box.style.display = living.length ? "" : "none";
     bars.forEach((bb, k) => {

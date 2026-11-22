@@ -735,8 +735,16 @@ export function worldAwake(g, e, dt) {
   if (!e.home) return true;
   let d = 1e9;
   for (const p of g.alivePlayers()) d = Math.min(d, Math.hypot(p.x - e.x, p.y - e.y));
-  if (!e.aggro && d < (e.worldBoss ? 280 : e.elite ? 240 : 200)) e.aggro = 1;
-  if (e.aggro && d > (e.worldBoss ? 780 : 560)) (e.aggro = 0), (e.returning = true);
+  if (!e.aggro && !e.returning && d < (e.worldBoss ? 280 : e.elite ? 240 : 200)) e.aggro = 1;
+  // 仇恨范围 (not drawn): a resident chases only so far from its home; out of it (or with every player out of it) for
+  // 2 s it gives up, walks straight home and heals — no chasing across the map or out to sea
+  if (e.aggro) {
+    const L = e.worldBoss ? 560 : e.elite ? 440 : 380, eh = Math.hypot(e.x - e.home.x, e.y - e.home.y);
+    let ph = 1e9;
+    for (const p of g.alivePlayers()) ph = Math.min(ph, Math.hypot(p.x - e.home.x, p.y - e.home.y));
+    e.outT = eh > L || ph > L + 120 || d > (e.worldBoss ? 780 : 560) ? (e.outT || 0) + dt : 0;
+    if (e.outT > 2) (e.aggro = 0), (e.outT = 0), (e.returning = true), (e.announced = false);
+  }
   if (e.worldBoss && e.aggro) {
     g.map.center = e.arena; // (boss attacks that work round "the room's centre" use its arena)
     if (!e.announced) (e.announced = true), (g.banner = { text: e.def.name, sub: "区域首领 · " + (e.def.title || ""), t: 3, boss: true }), g.sound("boss");
@@ -746,7 +754,7 @@ export function worldAwake(g, e, dt) {
   e.t += dt;
   if (e.returning) {
     const hx = e.home.x - e.x, hy = e.home.y - e.y, l = Math.hypot(hx, hy);
-    if (l < 8) e.returning = false;
+    if (l < 8) (e.returning = false), (e.hp = e.maxHp);
     else {
       const s = Math.min(l, ((e.def.spd || 50) + 30) * dt);
       e.x += (hx / l) * s;
@@ -756,6 +764,11 @@ export function worldAwake(g, e, dt) {
     e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.2 * dt);
   }
   return false;
+}
+/** time left until the region bosses come back (local midnight), as 05:12:33 */
+export function bossRespawnIn() {
+  const n = new Date(), next = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1), s = Math.max(0, Math.floor((next - n) / 1000));
+  return [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60].map((v) => String(v).padStart(2, "0")).join(":");
 }
 const dayKey = () => {
   const d = new Date();
@@ -820,10 +833,12 @@ export function worldKilled(g, e) {
     ws.bossDay[e.worldBoss - 1] = dayKey();
     ws.bossesNow++;
     g.map.center = g.map.spawn;
-    const lines = [grant(g, "gems", 200), grant(g, "xp", 300), grant(g, "ur", 2), grant(g, "mat" + g.map.bosses[e.worldBoss - 1].region, 10)];
-    lines.push(Math.random() < 0.25 ? grant(g, "egg_hur", 1) : grant(g, "egg_ur", 1));
-    if (Math.random() < 0.35) lines.push(grant(g, "hur", 1));
-    showLoot(g, e.x, e.y - 30, lines);
+    // the loot is saved at once; on screen it bursts out of the boss like an eruption, lands round the arena and then
+    // flies to you, each kind announcing itself as it arrives
+    const mat = "mat" + g.map.bosses[e.worldBoss - 1].region, egg = Math.random() < 0.25 ? "egg_hur" : "egg_ur";
+    const groups = [["gems", grant(g, "gems", 200), 8], ["xp", grant(g, "xp", 300), 3], ["ur", grant(g, "ur", 2), 2], [mat, grant(g, mat, 10), 5], [egg, grant(g, egg, 1), 1]];
+    if (Math.random() < 0.35) groups.push(["hur", grant(g, "hur", 1), 1]);
+    erupt(g, e.x, e.y, groups);
     worldSaveNow(g);
     return;
   }
@@ -838,6 +853,61 @@ export function worldKilled(g, e) {
   st.alive[e.slot] = false;
   if (st.alive.every((v) => !v)) st.clearedAt = g.time;
 }
+// ---------------------------------------------------------------- loot eruption (region bosses)
+function erupt(g, x, y, groups) {
+  const ws = g.ws, list = [];
+  for (const [kind, label, n] of groups) for (let k = 0; k < n; k++) list.push({ kind, txt: k ? null : label });
+  for (let k = list.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [list[k], list[j]] = [list[j], list[k]]; }
+  g.vfx("explosions/cartoon-pow", x, y - 30);
+  g.sound("explode", 0.3), g.after(0.5, () => g.sound("ssr", 0.2));
+  ws.drops = ws.drops || [];
+  list.forEach((d, k) => g.after(0.15 + k * 0.06, () => {
+    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 120, big = d.kind.startsWith("egg") || d.kind === "hur";
+    ws.drops.push({ ...d, x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 4, z: 34, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7, vz: (big ? 560 : 400) + Math.random() * 160, t: 0, bounced: false, big });
+    if (k % 3 === 0) g.sound("coin", 0.06);
+  }));
+}
+function updateDrops(g, ws, me, dt) {
+  const D = ws.drops;
+  if (!D?.length) return;
+  for (let k = D.length - 1; k >= 0; k--) {
+    const d = D[k];
+    d.t += dt;
+    if (d.z > 0 || d.vz > 0) {
+      d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt; d.vz -= 1100 * dt;
+      if (d.z <= 0) (d.z = 0), d.bounced ? (d.vz = 0) : ((d.vz = -d.vz * 0.32), (d.bounced = true), (d.vx *= 0.5), (d.vy *= 0.5));
+      continue;
+    }
+    if (d.t < 1.5 || me.dead) continue; // lie there a moment, then home in on you
+    const dx = me.x - d.x, dy = me.y - 10 - d.y, l = Math.hypot(dx, dy), sp = Math.min(900, 220 + (d.t - 1.5) * 700);
+    if (l < 16) {
+      D.splice(k, 1);
+      if (d.txt) { // (one line after another, not stacked)
+        const wait = Math.max(0, (ws.txtNext || 0) - g.time);
+        ws.txtNext = g.time + wait + 0.35;
+        g.after(wait, () => g.text(me.x, me.y - 50, d.txt, d.big ? "#ff9af0" : "#ffe36a", d.big ? 1.3 : 1.1, 2));
+      }
+      g.sound("pickup", 0.05);
+      continue;
+    }
+    d.x += (dx / l) * sp * dt; d.y += (dy / l) * sp * dt;
+  }
+}
+// the loot's look: 晶石 gems, 角色经验 stars, 淬灵露 drops, 流彩晶 a rainbow crystal, materials in their colour, eggs
+function dropSprite(g, d, t) {
+  const S = d.big ? 2.4 : 2, x = Math.round(d.x), y = Math.round(d.y - d.z - 6 * S), r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(x + a * S, y + b * S, w * S, h * S));
+  g.fillStyle = "rgba(10,8,20,0.3)";
+  g.beginPath(); g.ellipse(d.x, d.y + 2, d.big ? 16 : 11, 5, 0, 0, Math.PI * 2); g.fill();
+  const k = d.kind;
+  if (k === "gems") { r(-5, -4, 10, 8, "#1a1020"); r(-4, -3, 8, 6, "#3ad87a"); r(-2, -3, 3, 2, "#c8ffd8"); }
+  else if (k === "xp") { r(-1, -6, 2, 12, "#1a1020"); r(-6, -1, 12, 2, "#1a1020"); r(-4, -4, 8, 8, "#1a1020"); r(-3, -3, 6, 6, "#ffd84a"); r(0, -5, 1, 10, "#ffd84a"); r(-5, 0, 10, 1, "#ffd84a"); r(-1, -2, 2, 2, "#fff6c0"); }
+  else if (k === "ur") { r(-4, -3, 8, 9, "#1a1020"); r(-2, -6, 4, 4, "#1a1020"); r(-3, -2, 6, 7, "#5ac8ff"); r(-1, -5, 2, 3, "#5ac8ff"); r(-2, -1, 2, 2, "#ffffff"); }
+  else if (k === "hur") { const c = ["#ff6a6a", "#ffd84a", "#6ee08a", "#5aa8ff", "#c27bff"]; r(-6, -8, 12, 16, "#1a1020"); for (let i = 0; i < 5; i++) r(-5 + i * 2, -7 + Math.abs(2 - i), 2, 14 - Math.abs(2 - i) * 2, c[(i + Math.floor(t * 8)) % 5]); r(-1, -6, 2, 3, "#ffffff"); }
+  else if (k.startsWith("mat")) { const c = MATS[+k[3]].col; r(-5, -4, 10, 8, "#1a1020"); r(-4, -3, 8, 6, c); r(-3, -3, 3, 2, "#ffffff"); }
+  else { const hur = k === "egg_hur"; r(-6, -7, 12, 15, "#1a1020"); r(-4, -9, 8, 3, "#1a1020"); r(-5, -6, 10, 13, hur ? "#ffe8f8" : "#e8f6ff"); r(-3, -8, 6, 3, hur ? "#ffe8f8" : "#e8f6ff");
+    for (const [a, b, c] of [[-3, -3, hur ? "#ff6ab8" : "#5aa8ff"], [1, 0, hur ? "#c27bff" : "#3a78e0"], [-2, 3, hur ? "#ffd84a" : "#5aa8ff"]]) r(a, b, 3, 2, c); r(-3, -5, 2, 2, "#ffffff"); }
+  if (d.big && Math.sin(t * 6 + d.x) > 0.6) r(-1, -14, 2, 4, "#ffffff"), r(-3, -12, 6, 1, "#ffffff");
+}
 const RESPAWN = 150; // s until a cleared chunk refills (this visit)
 export function worldUpdate(g, dt) {
   const m = g.map, ws = g.ws, me = g.players.find((q) => q.local) || g.players[0];
@@ -847,6 +917,7 @@ export function worldUpdate(g, dt) {
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
   mounts(g, ws, m, dt);
+  updateDrops(g, ws, me, dt);
   // 采集点: walk into one to gather it (back tomorrow)
   const today = dayKey();
   for (const n of m.nodes) {
@@ -1100,6 +1171,7 @@ export function worldSprites(game, me) {
   const m = game.map, ws = game.ws, out = [];
   if (!ws || !me) return out;
   const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340, today = dayKey();
+  for (const d of ws.drops || []) out.push({ y: d.y + 2, draw: (g, t) => dropSprite(g, d, t) });
   for (const q of m.pockets) {
     if (!near(q)) continue;
     for (const j of q.door) {
@@ -1119,6 +1191,10 @@ export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
   for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
+  for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && Math.abs(me.x - B.x) < 420 && Math.abs(me.y - B.y) < 260) {
+    R.text(g, `${ENEMIES[B.type].name} · 已击败`, B.x, B.y - 40, "#c8c0e0", 11);
+    R.text(g, `${bossRespawnIn()} 后刷新`, B.x, B.y - 24, "#ffe36a", 12);
+  }
   for (const q of m.pockets) {
     const j = q.door[1], dx = (j % m.W) * T + T / 2, dy = Math.floor(j / m.W) * T - (q.dy ? 26 : 50); // (over the doorway)
     if (Math.abs(me.x - dx) > 300 || Math.abs(me.y - dy) > 200 || (q.kind === "dragon" && m.t[j] !== WALL)) continue;
@@ -1372,7 +1448,13 @@ export function drawMiniHud(game, me, now) {
   if (ws.flag) dot(ws.flag.x, ws.flag.y, "#ff6ab8", 2.5);
   dot(m.spawn.x, m.spawn.y, "#7fe0ff", 3);
   for (const e of game.enemies) if (e.aggro) dot(e.x, e.y, "#ff4a5a", 1);
-  dot(me.x, me.y, "#ffffff", 2.5);
+  // you: the same pin as on the world map
+  const X = Math.round((me.x / T - tx) * k), Y = Math.round((me.y / T - ty) * k);
+  g.fillStyle = "#0c0814";
+  g.beginPath(); g.moveTo(X, Y + 1); g.lineTo(X - 7, Y - 11); g.arc(X, Y - 14, 8.5, Math.PI * 0.8, Math.PI * 2.2); g.closePath(); g.fill();
+  g.fillStyle = "#ff4a6a";
+  g.beginPath(); g.moveTo(X, Y - 2); g.lineTo(X - 5, Y - 11); g.arc(X, Y - 14, 6, Math.PI * 0.8, Math.PI * 2.2); g.closePath(); g.fill();
+  g.fillStyle = "#ffffff"; g.beginPath(); g.arc(X, Y - 14, 2.6, 0, Math.PI * 2); g.fill();
 }
 export { baseMap, fogMap, FOG, dayKey };
 /** the lobby card: the whole world, unexplored parts dark */

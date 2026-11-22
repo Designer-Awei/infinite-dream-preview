@@ -7,7 +7,7 @@ import { el } from "./util.js";
 import { btn, toast, uiRoot } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
-import { baseMap, fogMap, FOG, dayKey, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, WORKSHOP, workshopBuy } from "./world.js";
+import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, WORKSHOP, workshopBuy } from "./world.js";
 import { drawEgg } from "./petwh.js";
 import { worldAtlas } from "./worldatlas.js";
 import { load } from "./save.js";
@@ -50,7 +50,7 @@ export function showWorldMap(game, me, app) {
   sfx("click");
   app.paused = true;
   const md = el("div", "modal wmap-modal");
-  md.innerHTML = `<div class="panel wmap-p"><div class="wm-left"><canvas class="wm-cv"></canvas><div class="wm-zoom"><button class="btn gray small wm-zin" aria-label="放大"><i></i></button><button class="btn gray small wm-zout" aria-label="缩小"><i></i></button></div></div>
+  md.innerHTML = `<div class="panel wmap-p"><div class="wm-left"><canvas class="wm-cv"></canvas></div>
     <div class="wm-side"><div class="wm-head"><h2 class="outline">梦境大陆</h2><button class="btn gray small x-btn">关闭</button></div>
     <div class="wm-stats o1"></div><div class="wm-mats o1"></div><div class="wm-boss"></div><div class="wm-pick o1"></div><div class="wm-tp"></div></div></div>`;
   const close = () => {
@@ -144,7 +144,11 @@ export function showWorldMap(game, me, app) {
     if (lod < 2) for (const L of m.labels) {
       const B = BIOMES[L.b], p = toScr(L.x, L.y);
       if (!inView(p, 0)) continue;
-      label(B.locked ? `${B.name}·未开放` : visited.has(L.b) ? B.name : "未知区域", p[0], p[1] - 22 * sc, lod ? 12 : 11, B.locked ? "#b8b0d0" : visited.has(L.b) ? "#fff6c0" : "#c8c0e0");
+      const name = B.locked || visited.has(L.b) ? B.name : "未知区域";
+      g.font = `${Math.round((lod ? 12 : 11) * dpr)}px Cubic, sans-serif`;
+      const hw = g.measureText(name).width / 2 + 3 * dpr, X = Math.max(hw + 16 * dpr, Math.min(Wc - hw - 2 * dpr, p[0])); // (kept clear of the row numbers and the edge)
+      label(name, X, p[1] - 22 * sc, lod ? 12 : 11, B.locked ? "#b8b0d0" : visited.has(L.b) ? "#fff6c0" : "#c8c0e0");
+      if (B.locked) label("未开放", X, p[1] - 22 * sc + 14 * dpr, 9, "#9890b8");
     }
     // markers, by zoom
     if (lod >= 2) for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && seen(n)) mark(n, (g2) => {
@@ -234,8 +238,9 @@ export function showWorldMap(game, me, app) {
   md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span><i style="background:${t.col}"></i>${t.name} <b>${ws.mats[k]}</b></span>`).join("");
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;
-    return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? "今日已击败" : "可挑战"}</b></div>`;
+    return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? `<em>${bossRespawnIn()}</em> 刷新` : "可挑战"}</b></div>`;
   }).join("");
+  const tick = setInterval(() => (md.isConnected ? md.querySelectorAll(".wm-b.down em").forEach((x) => (x.textContent = bossRespawnIn())) : clearInterval(tick)), 1000);
   // travel: tap a destination (营地, a lit 传送门, your flag) — it is ringed and named — then 传送; tapping anywhere else
   // shows that spot's grid position. 插旗 plants your flag where you stand
   const dests = [{ o: m.spawn, name: "营地" }, ...m.waypoints.filter((w) => ws.gates.has(w.id)).map((w) => ({ o: w, name: w.name })), ...(ws.flag ? [{ o: ws.flag, name: "旗帜" }] : [])];
@@ -329,20 +334,6 @@ export function showWorldMap(game, me, app) {
     const [X, Y] = local(e);
     zoomAt(X, Y, view.z * (e.deltaY < 0 ? 1.25 : 0.8));
   }, { passive: false });
-  // +/−: step through 1 / 2 / 4 / 6×; from the whole map, + zooms in on you
-  const stepZoom = (dir) => {
-    sfx("click");
-    const z = dir > 0 ? ZOOMS.find((q) => q > view.z + 0.01) || 6 : [...ZOOMS].reverse().find((q) => q < view.z - 0.01) || 1;
-    if (dir > 0 && view.z < 1.01) {
-      view.z = z;
-      view.cx = me.x / T;
-      view.cy = me.y / T;
-      clamp();
-      redraw();
-    } else zoomAt(Wc / 2, Wc / 2, z);
-  };
-  md.querySelector(".wm-zin").onclick = () => stepZoom(1);
-  md.querySelector(".wm-zout").onclick = () => stepZoom(-1);
   const tp = md.querySelector(".wm-tp");
   tp.append(btn("插旗", "pink", () => {
     const err = placeFlag(game);
@@ -357,9 +348,13 @@ export function showWorldMap(game, me, app) {
   });
   tp.append(go);
   uiRoot().appendChild(md);
-  // size the canvas to its box at the screen's pixel ratio (icons and text keep their size at any zoom)
+  // the map is a square exactly as tall as the side column (its bottom lines up with 插旗 / 传送), at the screen's
+  // pixel ratio (icons and text keep their size at any zoom)
+  cv.style.height = cv.style.width = "0px"; // (let the side column take its own height first)
+  const side = md.querySelector(".wm-side"), css = Math.round(Math.min(side.getBoundingClientRect().height, window.innerWidth * 0.5));
+  cv.style.height = cv.style.width = css + "px";
   dpr = Math.min(2, window.devicePixelRatio || 1);
-  Wc = cv.width = cv.height = Math.round(cv.getBoundingClientRect().width * dpr) || 512;
+  Wc = cv.width = cv.height = Math.round((css - 6) * dpr) || 512;
   sc = (Wc / 512) * 1.0;
   choose(null);
   draw();

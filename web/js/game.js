@@ -1190,6 +1190,7 @@ export class Game {
     this.after(0.5, () => this.vfx("ui/confetti", e.x, e.y - 40));
     this.sound("win");
     for (const q of this.enemies) if (!q.dead && !(this.world && q.home)) q.hp = 0, this.kill(q, null); // (梦境大陆: only its summons, not the residents around)
+    if (this.world) for (const b of this.bullets) if (b.side === "e" && Math.hypot(b.x - e.x, b.y - e.y) < 900) b.life = 0; // (its shots vanish with it)
   }
 
   // ------------------------------------------------------------ bullets
