@@ -336,6 +336,22 @@ export function updateEnemy(g, e, dt) {
     case "boss_judge":
       bossJudge(g, e, p, d, dt);
       break;
+    case "boss_baku":
+      bossBaku(g, e, p, d, dt);
+      break;
+    case "dream_orb": {
+      // 梦泡: circles its sleeping 梦貘; gone with it
+      const bk = g.enemies.find((q) => q.id === e.bakuId && !q.dead);
+      if (!bk) {
+        if (g.host) (e.hp = 0), (e.dead = true), (e.silent = true);
+        break;
+      }
+      e.orbA = (e.orbA ?? 0) + dt * 0.9;
+      e.x = bk.x + Math.cos(e.orbA) * 120;
+      e.y = bk.y + Math.sin(e.orbA) * 66;
+      e.face = 1;
+      break;
+    }
     case "storm_core":
       // 雷霆审判者's storm core: hangs still, arcs to its judge (the arc hurts), fires a slow volt shot now and then
       e.face = 1;
@@ -1035,6 +1051,157 @@ export function verdictCells(map, seed, mode) {
   if (m === 0) for (let k = 0; out.filter((c) => !c.hit).length < 3 && k < 40; k++) out[(seed * 7 + k * 5) % out.length].hit = false;
   if (mode >= 10) for (const c of out) c.hit = !c.hit;
   return out;
+}
+// 梦貘 (第 8 位首领 · 每日梦境 / 无尽回廊): floats round the hall. 梦泡弹 slow dream bubbles that burst into rings;
+// 吞梦吐息 (signature): it inhales and drags everyone toward it for 1.6 s, then breathes a wide cone of dream mist —
+// dash out sideways; 梦游冲撞 a marked charge that leaves slowing mist. At 66% and 33% it falls asleep inside four
+// 梦泡 (guarded, healing 2%/s): pop them all within 10 s and it wakes stunned and vulnerable, otherwise 噩梦侵袭
+// hits everyone and it wakes refreshed.
+function bossBaku(g, e, p, d, dt) {
+  const c = g.map.center, orbs = g.enemies.filter((q) => q.type === "dream_orb" && !q.dead && q.bakuId === e.id).length;
+  if (e.sleepT > 0) {
+    e.sleepT -= dt;
+    e.guardT = orbs ? 1 : 0;
+    e.st = "sleep";
+    if (orbs && g.host) e.hp = Math.min(e.maxHp, e.hp + e.maxHp * 0.02 * dt);
+    if ((e.zzT = (e.zzT || 0) - dt) <= 0) (e.zzT = 1.1), g.text(e.x + 30, e.y - 110, "Zzz", "#c8d4ff", 1.1, 1);
+    if (!g.host) return;
+    if (!orbs) {
+      // woken by the popping: stunned, takes more damage
+      e.sleepT = 0;
+      e.st = "idle";
+      e.dazeT = 3;
+      g.text(e.x, e.y - 120, "惊醒！", "#ffe060", 1.6, 1.4);
+      g.vfx("holy/sunburst", e.x, e.y - 40, { palette: ["#0a0820", "#2a2a72", "#5a66c4", "#8a9ae8", "#c8d4ff", "#ffffff", "#ffffff", "#ffffff"] });
+      g.sound("boss", 0.4);
+    } else if (e.sleepT <= 0) {
+      // 噩梦侵袭: the dream breaks over everyone; the bubbles vanish into it
+      e.st = "idle";
+      g.text(c.x, c.y - 120, "噩梦侵袭！", "#ff8ad8", 2, 1.6);
+      for (const q of g.alivePlayers()) {
+        g.vfx("shadow/dark-explosion", q.x, q.y - 10, {});
+        g.hurt(q, 2, { src: e, x: q.x, y: q.y, groundHazard: true });
+      }
+      for (const q of g.enemies) if (q.type === "dream_orb" && q.bakuId === e.id) (q.hp = 0), (q.dead = true), (q.silent = true);
+      g.sound("explode", 0.6);
+      e.cd = 1.2;
+    }
+    return;
+  }
+  e.guardT = 0;
+  if (e.dazeT > 0) {
+    e.dazeT -= dt;
+    e.vulnT = Math.max(e.vulnT || 0, 0.2);
+    return;
+  }
+  const frac = e.hp / e.maxHp, phase = frac > 0.66 ? 1 : frac > 0.33 ? 2 : 3;
+  if (e.phase !== phase) {
+    const first = e.phase == null;
+    e.phase = phase;
+    if (!first && g.host) {
+      // falls asleep inside its dream bubbles
+      e.sleepT = 10;
+      const n = phase >= 3 ? 5 : 4;
+      for (let i = 0; i < n; i++) {
+        const q = g.spawnEnemy("dream_orb", e.x, e.y, false, 0.4);
+        q.bakuId = e.id;
+        q.orbA = (i / n) * TAU;
+      }
+      g.text(e.x, e.y - 120, "睡着了！快戳破梦泡", "#e0e8ff", 1.5, 2);
+      g.sound("boss", 0.5);
+      return;
+    }
+  }
+  const k = phase === 3 ? 1.3 : phase === 2 ? 1.12 : 1, H = 46;
+  // float a slow loop round the hall (not while inhaling or charging)
+  if (e.st !== "inhale" && e.st !== "dash") {
+    const tx = c.x + Math.sin(e.t * 0.35) * 160, ty = c.y - 30 + Math.cos(e.t * 0.5) * 50, a0 = angTo(e.x, e.y, tx, ty);
+    if (dist(e.x, e.y, tx, ty) > 6) moveCircle(g.map, e, Math.cos(a0) * d.spd * dt, Math.sin(a0) * d.spd * dt, true);
+    e.face = p.x < e.x ? -1 : 1;
+  }
+  // 吞梦: the pull, while inhaling
+  if (e.st === "inhale") {
+    e.face = p.x < e.x ? -1 : 1;
+    for (const q of g.alivePlayers()) {
+      const a = angTo(q.x, q.y, e.x, e.y), dd = dist(q.x, q.y, e.x, e.y);
+      if (dd > e.r + 30) moveCircle(g.map, q, Math.cos(a) * 78 * k * dt, Math.sin(a) * 78 * k * dt, false);
+    }
+  }
+  // 梦游冲撞: the dash itself
+  if (e.st === "dash") {
+    moveCircle(g.map, e, e.cvx * dt, e.cvy * dt, true);
+    if ((e.trailT = (e.trailT || 0) - dt) <= 0) (e.trailT = 0.12), g.addZone({ kind: "mist", x: e.x, y: e.y, r: 26, life: 3.5, side: "e", update: mistSlow });
+    for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 12) if (g.hurt(q, 1, { src: e, x: e.x, y: e.y })) q.buff.slow = 1;
+  }
+  for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 8) g.hurt(q, 1, e);
+  if (e.cd > 0 || !g.host) return;
+  const opts = ["bubbles", "breath", "bubbles", "charge"];
+  if (phase >= 2) opts.push("breath", "charge");
+  if (phase >= 3) opts.push("breath");
+  let pick = opts[(Math.random() * opts.length) | 0];
+  if (pick === e.lastPick && pick !== "bubbles") pick = "bubbles";
+  if (e.forcePick) (pick = e.forcePick), (e.forcePick = null); // tests
+  e.lastPick = pick;
+  if (pick === "bubbles") {
+    // slow dream bubbles at each player; each bursts into a ring of 6 small shots after 2 s
+    const n = phase === 1 ? 3 : 5;
+    for (const q of g.alivePlayers()) {
+      const base = angTo(e.x, e.y - H, q.x, q.y - 12);
+      for (let i = 0; i < n; i++) {
+        const b = shoot(g, e, base + (i - (n - 1) / 2) * 0.32, { spd: 62 * k, h: H, r: 10, kind: "dream", life: 2.1 });
+        g.after(2.0, () => {
+          if (!g.bullets.includes(b)) return;
+          b.life = 0;
+          for (let j = 0; j < 6; j++) {
+            const nb = g.mkBullet(null, { side: "e", x: b.x, y: b.y, h: b.h, a: (j / 6) * TAU + i, spd: 105 * k, dmg: 1, kind: "dream", r: 4, life: 2.2, elem: null });
+            nb.src = e;
+            g.bullets.push(nb);
+          }
+        });
+      }
+    }
+    g.sound("shoot_water", 0.3);
+    e.cd = 2.1 / k;
+  } else if (pick === "breath") {
+    // 吞梦吐息: 1.6 s inhale (everyone is dragged in), a 0.5 s marked cone, then the breath
+    e.st = "inhale";
+    g.text(e.x, e.y - 120, "深呼吸……", "#c8d4ff", 1.3, 1.4);
+    g.vfx("arcane/portal", e.x, e.y - 30, { life: 1.6, palette: ["#0a0820", "#2a2a72", "#5a66c4", "#8a9ae8", "#c8d4ff", "#ffffff"] });
+    g.sound("portal", 0.4);
+    g.after(1.6, () => {
+      if (e.dead || e.sleepT > 0) return void (e.st = "idle");
+      const q = g.alivePlayers()[0] || p, a = angTo(e.x, e.y, q.x, q.y), half = phase >= 3 ? 0.62 : 0.5, R = 300;
+      g.addZone({ kind: "cone", x: e.x, y: e.y, r: R, life: 0.55, side: "e", a0: a, half, onEnd: (z) => {
+        if (e.dead) return;
+        g.vfx("shadow/dark-explosion", e.x + Math.cos(a) * 90, e.y + Math.sin(a) * 60, { palette: ["#0a0820", "#2a1a5a", "#6a3ab0", "#b07aff", "#e8c8ff", "#ffffff", "#ffffff", "#ffffff"] });
+        for (const o of g.alivePlayers()) {
+          const da = Math.abs(Math.atan2(Math.sin(angTo(z.x, z.y, o.x, o.y) - a), Math.cos(angTo(z.x, z.y, o.x, o.y) - a)));
+          if (da < half && dist(o.x, o.y, z.x, z.y) < R) if (g.hurt(o, 2, { src: e, x: o.x, y: o.y })) o.buff.slow = 1.5;
+        }
+        g.sound("explode", 0.5);
+        e.st = "idle";
+      } });
+    });
+    e.cd = 3.6 / k;
+  } else if (pick === "charge") {
+    // 梦游冲撞: a marked line through a player, a 0.7 s wind-up, then the dash leaving mist behind
+    const q = g.alivePlayers()[(Math.random() * g.alivePlayers().length) | 0] || p, a = angTo(e.x, e.y, q.x, q.y), L = Math.min(420, dist(e.x, e.y, q.x, q.y) + 140);
+    g.line(e.x, e.y, e.x + Math.cos(a) * L, e.y + Math.sin(a) * L, "#c8a8ff", 12, 0.7, "warn");
+    e.st = "dash-wind";
+    g.after(0.7, () => {
+      if (e.dead || e.sleepT > 0) return void (e.st = "idle");
+      e.st = "dash";
+      e.cvx = Math.cos(a) * 420 * k;
+      e.cvy = Math.sin(a) * 420 * k;
+      g.after(L / (420 * k), () => (e.st === "dash" ? (e.st = "idle") : 0));
+      g.sound("shoot_dragon", 0.3);
+    });
+    e.cd = 2.6 / k;
+  }
+}
+// 梦貘's mist: slows anyone standing in it
+function mistSlow(z) {
+  for (const q of z.g.alivePlayers()) if (dist(q.x, q.y, z.x, z.y) < z.r) q.buff.slow = Math.max(q.buff.slow || 0, 0.25);
 }
 function bossJudge(g, e, p, d, dt) {
   const c = g.map.center, cores = g.enemies.filter((q) => q.type === "judge_core" && !q.dead && q.coreId === e.id).length;

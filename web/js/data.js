@@ -171,6 +171,8 @@ export const ENEMIES = {
   boss_root: { name: "根须之心", title: "腐化的林心", hp: 3400, spd: 0, r: 24, ai: "boss_root", sprite: "root_heart", coin: [30, 30], boss: true, rooted: true },
   boss_witch: { name: "霜镜女巫", title: "镜中之冰", hp: 3100, spd: 46, r: 16, ai: "boss_witch", sprite: "frost_witch", coin: [30, 30], fly: true, boss: true },
   boss_worm: { name: "熔岩巨蠕", title: "地心吞噬者", hp: 3600, spd: 0, r: 22, ai: "boss_worm", sprite: "lava_worm", coin: [30, 30], boss: true, rooted: true },
+  // V5 第 8 位首领 (pixelfx tools/bossfx/baku.js): the final boss of every 每日梦境, and in the 无尽 rotation
+  boss_baku: { name: "梦貘", title: "吞梦之兽", hp: 3400, spd: 40, r: 22, ai: "boss_baku", sprite: "baku", coin: [30, 30], fly: true, boss: true },
   boss_judge: { name: "雷霆审判者", title: "无尽的终审", hp: 3500, spd: 44, r: 18, ai: "boss_judge", sprite: "thunder_judge", coin: [30, 30], fly: true, boss: true },
   // V3 新敌人 (pixelfx critters, tools/bossfx): each brings one mechanic
   // 爬网蜘蛛: scuttles in bursts; spits a web that lands where you stand and slows you while inside
@@ -188,6 +190,7 @@ export const ENEMIES = {
   nest_lava: { name: "熔炉巢穴", hp: 170, spd: 0, r: 20, ai: "nest", sprite: "nest_lava", coin: [4, 6], noKnock: true, brood: ["imp", "snail", "imp"] },
   // 诅咒宝箱 turned monster: the event visitor's own strip (npc.png row 3), hops at you like a frog; always spawned elite
   mimic: { name: "宝箱怪", sprScale: 0.6, hp: 70, spd: 62, r: 13, ai: "leap", sprite: "mimic", coin: [8, 12], touch: 1 },
+  dream_orb: { name: "梦泡", hp: 90, spd: 0, r: 14, ai: "dream_orb", sprite: "dream_orb", sprScale: 1.3, coin: [1, 2], fly: true, noKnock: true },
   judge_core: { name: "雷暴核心", hp: 150, spd: 0, r: 13, ai: "storm_core", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   core_pylon: { name: "冷却塔", hp: 140, spd: 0, r: 13, ai: "pylon", sprite: "wisp", coin: [2, 3], fly: true, noKnock: true },
   witch_clone: { name: "冰镜分身", hp: 1, spd: 0, r: 14, ai: "witch_clone", sprite: "frost_witch_clone", coin: [0, 0], fly: true, mirror: true },
@@ -268,7 +271,7 @@ export const PACT_MILESTONES = [
   { lv: PACT_MAX, name: "称号「噩梦主宰」· 5000 晶石", title: "噩梦主宰", gems: 5000 },
 ];
 // every boss in the game; the endless corridor's boss floors cycle through them in a seeded order
-export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_witch", "boss_core", "boss_worm", "boss_judge"];
+export const ALL_BOSSES = ["boss_eye", "boss_root", "boss_frost", "boss_witch", "boss_core", "boss_worm", "boss_judge", "boss_baku"];
 export function endlessRoom(i, seed) {
   if (i % 10 === 9) {
     const n = ALL_BOSSES.length, k = Math.floor(i / 10), off = (seed >>> 0) % n;

@@ -797,6 +797,30 @@ export class Renderer {
         }
       }
       g.stroke();
+    } else if (z.kind === "mist") {
+      // 梦貘's charge trail: a soft lilac patch that slows
+      g.globalAlpha = 0.32 * clamp(z.life * 1.5) * clamp(z.t / 0.2);
+      g.fillStyle = "#b08aff";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
+      g.fill();
+    } else if (z.kind === "cone") {
+      // 吞梦吐息 warning: the breath's sector, filling in as it comes
+      const k = clamp(z.t / Math.max(0.01, z.t + z.life));
+      g.globalAlpha = 0.28 + 0.3 * k;
+      g.fillStyle = "#7a30e0";
+      g.beginPath();
+      g.moveTo(z.x, z.y);
+      for (let i = 0; i <= 16; i++) {
+        const a = z.a0 - z.half + (i / 16) * z.half * 2;
+        g.lineTo(z.x + Math.cos(a) * z.r, z.y + Math.sin(a) * z.r * 0.6);
+      }
+      g.closePath();
+      g.fill();
+      g.globalAlpha = 0.95;
+      g.strokeStyle = "#d8b0ff";
+      g.lineWidth = 2;
+      g.stroke();
     } else if (z.kind === "mark") {
       // 熔岩迫击蜗牛's warning: a red ring with a fill closing in, and the magma glob falling onto it
       const k = clamp(z.t / Math.max(0.01, z.t + z.life));
@@ -1214,7 +1238,7 @@ export class Renderer {
       const x = b.x - 0, y = b.y - (b.z || 0);
       if (b.side === "e") {
         const r = b.r + (b.big ? 1 : 0);
-        const col = b.kind === "fire" ? 0xff8a2a : b.kind === "ghost" ? 0x9ab8ff : b.kind === "volt" ? 0x78d0ff : 0xff3a6a;
+        const col = b.kind === "fire" ? 0xff8a2a : b.kind === "ghost" ? 0x9ab8ff : b.kind === "volt" ? 0x78d0ff : b.kind === "dream" ? 0xc890ff : 0xff3a6a;
         const hex = "#" + col.toString(16).padStart(6, "0");
         P.circle(x, y, r + 1, H("#2a0a14"), 1);
         P.circle(x, y, r, H(hex), 1);

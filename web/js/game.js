@@ -214,6 +214,8 @@ export class Game {
   mapRoom(def) {
     const md = this.mapDef;
     // a map with several bosses picks one per run from the seed
+    // 每日梦境: its final boss is always 梦貘
+    if (def && def.kind === "boss" && this.opt.daily && !this.endless) return { ...def, boss: "boss_baku" };
     if (def && def.kind === "boss" && md.boss) return { ...def, boss: md.bosses ? md.bosses[Math.floor(rng(this.seed + 9157)() * md.bosses.length)] : md.boss };
     if (!def || !def.waves || !md.swap) return def;
     const rr = rng(this.seed + 4242 + (def.waves.length || 0));
