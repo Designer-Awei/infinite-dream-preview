@@ -3000,9 +3000,12 @@ body.touchmode .pet-ride-btn small { display:none; }
 .lm-dots.lm-tabs { grid-template-columns: 1fr 1fr 1fr; }
 /* lobby right column: the mode card gives up height so 噩梦/说明 + the play button end level with the roster cards; the
    card sits 2px closer to the notice bar */
-.lb .lb-right .lb-modes { flex: 0 1 auto; min-height: 0; margin-top: -2px; }
-.lb .lb-right .lb-play { flex: none; }
-.lb .lb-right .lm-track { min-height: 60px; }
+.lb .lb-right .lb-modes { flex: none; margin-top: -2px; }
+/* the play row takes whatever height is left (the buttons shrink rather than crowd the tabs) */
+.lb .lb-right .lb-play { flex: 1 1 0; min-height: 0; margin-top: 0; }
+.lb .lb-right .lb-play { justify-content: flex-end; }
+.lb .lb-right .lb-playrow { flex: 1 1 auto; min-height: 0; max-height: 79px; } /* (on roomy screens it stays its old height, the slack above it) */
+.lb .lb-right .play-btn { padding-top: 0 !important; padding-bottom: 0 !important; min-height: 0; }
 /* 噩梦 / 说明 chip text: a single black stroke ring, not the 8-way shadow */
 .pact-chip .outline { text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
 .pact-chip .pc-n.outline { -webkit-text-stroke-width: 4px; }
