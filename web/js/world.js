@@ -60,7 +60,7 @@ const STONE = [
 BIOMES.forEach((b, k) => ((b.rock = THEMES.length), THEMES.push({ ...THEMES[b.theme], ...STONE[k], name: b.name + "·岩" })));
 // 家园: its own warm meadow ground (in game, on the minimap and the world map) so the homestead reads apart from the wild
 export const HOME_TH = THEMES.length;
-THEMES.push({ ...THEMES[0], name: "家园", g1: "#b4d862", g2: "#acd05a", gHi: "#d6ee8a", gLo: "#8cb444", dirt: "#d8b47a", dirtLo: "#b8925a" });
+THEMES.push({ ...THEMES[0], name: "家园", g1: "#b4d862", g2: "#acd05a", gHi: "#d6ee8a", gLo: "#8cb444" }); // (the roads keep the grassland's dirt colour)
 export const inHome = (m, i) => {
   const r = m.home && m.home.rect;
   if (!r) return false;

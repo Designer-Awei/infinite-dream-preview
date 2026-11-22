@@ -3053,3 +3053,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wshop-p .ws-head { gap: 6px; }
 .wshop-p .ws-mats { gap: 3px; }
 .wshop-p .ws-mats .ws-mat { padding: 1px 4px; gap: 2px; }
+/* 大地图 panel: 关闭 / 插旗 / 传送 without the drop shadow under them (flat on the panel) */
+.wmap-p .btn, .wmap-p .btn:active, .wmap-p .btn.press { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 rgba(0,0,0,.15); }
+.wmap-p .btn:active, .wmap-p .btn.press { transform: translateY(1px); }
+.wmap-p .btn:not(.gray), .wmap-p .btn:not(.gray) span { text-shadow: none; -webkit-text-stroke: 2px var(--ink); paint-order: stroke fill; }
