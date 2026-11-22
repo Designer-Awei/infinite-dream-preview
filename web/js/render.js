@@ -11,7 +11,7 @@ import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { petTint } from "./petskins.js";
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
-import { drawWorldGround, drawMinimap, tileTheme, tileHazard, wallTheme, refreshWorldTiles } from "./world.js";
+import { drawWorldGround, drawMinimap, tileTheme, tileHazard, wallTheme, refreshWorldTiles, drawWorldFloor, worldLabels } from "./world.js";
 import { verdictCells } from "./enemies.js";
 import { drawTitlePlate } from "./titles.js";
 
@@ -124,6 +124,7 @@ export class Renderer {
     }
     if (me && me.target && !me.target.dead && !me.target.downed) this.drawReticle(g, me.target);
     for (const e of game.enemies) this.drawTelegraph(g, e);
+    if (m.world) drawWorldFloor(g, game, me, this.t); // (梦境大陆: boats at the piers, the boarding ring)
 
     // 骑乘 frames are cut and recoloured ahead of the first mount (idle slices)
     for (const p of game.players) if (p.pet && p.pet.stage === 3) warmMount(p);
@@ -213,6 +214,7 @@ export class Renderer {
     for (const e of game.enemies) if (e.x > vx0 && e.x < vx1 && e.y > vy0 && e.y < vy1) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
     for (const p of game.players) this.drawHeroBar(g, p, me, game);
+    if (m.world && me) worldLabels(this, g, game, me);
     // fork portals: the kind of room each one leads to, above it
     if (game.portals) for (const q of game.portals) this.text(g, q.name, q.x, q.y - 66 + Math.round(Math.sin(this.t * 3 + q.x) * 1.5), q.col, 14);
     if (game.npc && !game.npc.done && me) {

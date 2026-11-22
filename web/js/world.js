@@ -18,12 +18,16 @@ export const BIOMES = [
     pool: ["slime_blue", "slime_blue", "hedgehog", "turtle", "bat_ice", "eye_ice", "ghost", "frostling", "snake_ice", "jelly_ice"], elite: ["slime_frost", "turtle", "hedgehog"] },
   { id: "lava", name: "算力熔炉", theme: 3, hazard: "lava", lv: "Lv 20–30 · 熔岩灼烧", hp: 1.6, mm: [96, 78, 74],
     pool: ["slime_lava", "slime_lava", "snail", "imp", "bat_fire", "salamander", "skull", "snake_lava"], elite: ["skull_core", "snail", "salamander"] },
+  // the south-east sea and its islands: by ferry (the big one) or on a flying mount (the rest)
+  { id: "isle", name: "幻梦群岛", theme: 1, hazard: "mud", lv: "Lv 25–35 · 渡船或飞行坐骑", hp: 1.5, mm: [138, 122, 200],
+    pool: ["slime_purple", "slime_purple", "ghost", "jelly", "wisp", "eyeball", "bat", "frog"], elite: ["skull", "frog_big", "jelly"] },
 ];
 // the world's rock: each region's look with stone instead of plank tops (big rock masses read as cliffs, not decks)
 const STONE = [
   { top: "#a8aaa0", topHi: "#cfd0c4", front: "#6e7068", frontLo: "#52544c" },
   { top: "#c4d4e6", topHi: "#eef6ff", front: "#7d93b0", frontLo: "#5f7594" },
   { top: "#5e4c48", topHi: "#7c6660", front: "#3a2c2c", frontLo: "#261c1e" },
+  { top: "#b8a8d8", topHi: "#e4dcf6", front: "#7a6aa8", frontLo: "#5a4a88" },
 ];
 BIOMES.forEach((b, k) => ((b.rock = THEMES.length), THEMES.push({ ...THEMES[b.theme], ...STONE[k], name: b.name + "·岩" })));
 export const tileTheme = (m, i) => (m.biome ? BIOMES[m.biome[i]].theme : m.theme);
@@ -68,13 +72,27 @@ export function buildWorld(seed) {
     });
     m.biome[y * W + x] = best;
   }
+  // the sea fills the south-east corner behind a wavy coast; four islands stand in it
+  const isles = [[198, 214, 15], [234, 174, 10], [168, 240, 9], [238, 236, 9]];
+  const sea = (x, y) => x + y + fbm(x / 30, y / 30, seed + 25) * 26 > 362;
+  const isleAt = (x, y) => {
+    for (let k = 0; k < isles.length; k++) {
+      const [cx, cy, r] = isles[k];
+      if (Math.hypot(x - cx, y - cy) + fbm(x / 9, y / 9, seed + 26 + k) * 5 < r) return k;
+    }
+    return -1;
+  };
+  m.isles = isles;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
     if (!x || !y || x === W - 1 || y === H - 1) { m.t[i] = WALL; continue; }
+    const onSea = sea(x, y), il = onSea ? isleAt(x, y) : -1;
+    if (onSea) m.biome[i] = 3;
+    if (onSea && il < 0) { m.t[i] = WATER; continue; }
     const e = fbm(x / 24, y / 24, seed + 1), mo = fbm(x / 15, y / 15, seed + 2), hz = fbm(x / 8, y / 8, seed + 3), r = hash(x, y, seed + 4);
     let t = F;
-    if (e < -0.33) t = WATER;
-    else if (e > 0.33 && r > 0.06) t = WALL;
+    if (e < -0.33 && il < 0) t = WATER; // (no ponds on the islands)
+    else if (e > (il >= 0 ? 0.45 : 0.33) && r > 0.06) t = WALL;
     else if (mo > (m.biome[i] === 2 ? 0.36 : 0.26) && r < 0.62) t = BUSH;
     else if (r < 0.008) t = CRATE;
     else if (r < 0.0105) t = BARREL;
@@ -82,12 +100,13 @@ export function buildWorld(seed) {
     if (t !== WATER && t !== WALL && hz > (m.biome[i] === 2 ? 0.34 : 0.4)) m.mud[i] = 1;
   }
   // roads: wobbly dirt paths from the spawn to every region and its corners, carved 3 tiles wide
-  const sx = 128, sy = 220;
+  const sx = 118, sy = 212;
   const carve = (x, y, rad) => {
     for (let dy = -rad; dy <= rad; dy++) for (let dx = -rad; dx <= rad; dx++) {
       const X = Math.round(x + dx), Y = Math.round(y + dy);
       if (X < 2 || Y < 2 || X > W - 3 || Y > H - 3 || dx * dx + dy * dy > rad * rad + 0.5) continue;
       const j = Y * W + X;
+      if ((m.biome[j] === 3 && m.t[j] === WATER) || m.road[j] === 2) continue; // (roads stop at the sea and the pier)
       m.t[j] = F; m.mud[j] = 0; m.road[j] = 1;
     }
   };
@@ -99,18 +118,46 @@ export function buildWorld(seed) {
       carve(px, py, 1.3);
     }
   };
-  const hubs = [[128, 176], [62, 70], [196, 68], [40, 200], [216, 200], [128, 120], [96, 32], [170, 28]];
+  // the ferry: from the big island's centre walk toward the camp; where the island ends and the mainland begins, a
+  // 3-tile wooden pier runs out over the water on each side and a boat shuttles between their ends
+  const [ix, iy] = isles[0], fl = Math.hypot(sx - ix, sy - iy), ux = (sx - ix) / fl, uy = (sy - iy) / fl;
+  const at = (k) => [Math.round(ix + ux * k), Math.round(iy + uy * k)], land = (k) => m.t[at(k)[1] * W + at(k)[0]] !== WATER;
+  let kB = 0;
+  while (land(kB + 1)) kB++; // last island tile
+  let kA = kB + 1;
+  while (!land(kA)) kA++; // first mainland tile
+  const pier = (k0, dir) => {
+    for (let s2 = 1; s2 <= 3; s2++) {
+      const [x, y] = at(k0 + dir * s2);
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1]]) {
+        const j = (y + dy) * W + x + dx;
+        if (m.t[j] === WATER) (m.t[j] = F), (m.road[j] = 2), (m.biome[j] = 3);
+      }
+    }
+    const [x, y] = at(k0 + dir * 3);
+    return { x: x * T + T, y: y * T + T };
+  };
+  const pa = pier(kA, -1), pb = pier(kB, 1);
+  m.ferries = [{ a: pa, b: pb, name: "幻梦渡口" }];
+  const hubs = [[128, 176], [62, 70], [196, 68], [40, 200], at(kA), [128, 120], [96, 32], [170, 28]];
   path(sx, sy, ...hubs[0], 1); path(...hubs[0], ...hubs[5], 2); path(...hubs[5], ...hubs[1], 3); path(...hubs[5], ...hubs[2], 4);
-  path(...hubs[0], ...hubs[3], 5); path(...hubs[0], ...hubs[4], 6); path(...hubs[1], ...hubs[6], 7); path(...hubs[2], ...hubs[7], 8);
+  path(...hubs[0], ...hubs[3], 5); path(sx, sy, ...hubs[4], 6); path(...hubs[1], ...hubs[6], 7); path(...hubs[2], ...hubs[7], 8);
+  path(...at(kB), ix, iy, 9); // the island's own track from its pier
   // the camp clearing round the spawn
   for (let dy = -6; dy <= 6; dy++) for (let dx = -7; dx <= 7; dx++) if (dx * dx / 49 + dy * dy / 36 <= 1) {
     const j = (sy + dy) * W + sx + dx;
     m.t[j] = F; m.mud[j] = 0;
   }
   // everything you can't walk to from the camp becomes rock (crates and barrels count as walkable: they break)
+  // (islands are seeds of their own: reached by boat or wing, not on foot)
   const reach = new Uint8Array(N), q = [sy * W + sx];
   const pass = (t) => t !== WALL && t !== WATER;
-  reach[q[0]] = 1;
+  for (const [cx, cy] of isles) {
+    let j = cy * W + cx;
+    for (let r2 = 0; r2 < 6 && !pass(m.t[j]); r2++) j = cy * W + cx + r2; // (a centre that landed on rock)
+    if (pass(m.t[j])) q.push(j);
+  }
+  for (const j of q) reach[j] = 1;
   for (let h = 0; h < q.length; h++) {
     const i = q[h], x = i % W;
     for (const j of [i + 1, i - 1, i + W, i - W]) {
@@ -121,6 +168,20 @@ export function buildWorld(seed) {
   }
   for (let i = 0; i < N; i++) if (!reach[i] && pass(m.t[i])) (m.t[i] = WALL), (m.mud[i] = 0);
   for (let i = 0; i < N; i++) if (m.t[i] === CRATE || m.t[i] === BARREL) m.crates[i] = { hp: m.t[i] === CRATE ? CRATE_HP : 12 };
+  // a lake that straddles a border takes the region most of it lies in (no half-blue, half-lava pond)
+  const seen = new Uint8Array(N);
+  for (let i0 = 0; i0 < N; i0++) {
+    if (seen[i0] || m.t[i0] !== WATER || m.biome[i0] === 3) continue;
+    const comp = [i0], votes = [0, 0, 0, 0];
+    seen[i0] = 1;
+    for (let h = 0; h < comp.length; h++) {
+      const i = comp[h];
+      votes[m.biome[i]]++;
+      for (const j of [i + 1, i - 1, i + W, i - W]) if (j >= 0 && j < N && !seen[j] && m.t[j] === WATER && m.biome[j] !== 3) (seen[j] = 1), comp.push(j);
+    }
+    const best = votes.indexOf(Math.max(...votes));
+    for (const i of comp) m.biome[i] = best;
+  }
   m.reach = reach;
   m.spawnT = { x: sx, y: sy };
   m.spawn = { x: sx * T + T / 2, y: sy * T + T / 2 };
@@ -131,17 +192,17 @@ export function buildWorld(seed) {
   // enemies: each 16×16 chunk outside the camp keeps 2–4 residents of its region (more and tougher further out)
   m.spawners = [];
   for (let cy = 0; cy < H / CHUNK; cy++) for (let cx = 0; cx < W / CHUNK; cx++) {
-    const mx = cx * CHUNK + 8, my = cy * CHUNK + 8, dd = tdist(mx, my), b = BIOMES[m.biome[my * W + mx]];
+    const mx = cx * CHUNK + 8, my = cy * CHUNK + 8, dd = tdist(mx, my);
     if (dd < 18) continue;
     const n = 2 + Math.floor(hash(cx, cy, seed + 41) * 3) + (dd > 110 ? 1 : 0), list = [];
     for (let k = 0, tries = 0; list.length < n && tries < 40; tries++) {
       const x = cx * CHUNK + 1 + Math.floor(hash(cx * 31 + tries, cy, seed + 42) * (CHUNK - 2)), y = cy * CHUNK + 1 + Math.floor(hash(cx, cy * 31 + tries, seed + 43) * (CHUNK - 2));
       if (!open(x, y) || tdist(x, y) < 16) continue;
-      const elite = hash(x, y, seed + 44) < 0.05 + dd / 3000;
+      const elite = hash(x, y, seed + 44) < 0.05 + dd / 3000, b = BIOMES[m.biome[y * W + x]]; // (each resident from the region it stands in)
       const pool = elite ? b.elite : b.pool, type = pool[Math.floor(hash(x, y, seed + 45) * pool.length)];
-      list.push({ type, x: x * T + T / 2, y: y * T + T / 2, elite, k: k++ });
+      list.push({ type, x: x * T + T / 2, y: y * T + T / 2, elite, k: k++, mul: (1 + dd / 100) * b.hp });
     }
-    if (list.length) m.spawners.push({ key: cx + "," + cy, cx, cy, list, mul: (1 + dd / 100) * b.hp });
+    if (list.length) m.spawners.push({ key: cx + "," + cy, cx, cy, list });
   }
   // chests: one in most 32×32 blocks, tucked next to rock or bushes; the far and hidden ones are golden
   m.chests = [];
@@ -157,7 +218,18 @@ export function buildWorld(seed) {
     }
     if (!pick) continue;
     const [x, y, cover] = pick, dd = tdist(x, y);
-    m.chests.push({ id: m.chests.length, x: x * T + T / 2, y: y * T + T / 2 + 4, gold: dd > 150 || (cover >= 3 && hash(x, y, seed + 54) < 0.45) });
+    m.chests.push({ id: y * W + x, x: x * T + T / 2, y: y * T + T / 2 + 4, gold: dd > 150 || (cover >= 3 && hash(x, y, seed + 54) < 0.45) });
+  }
+  // every island keeps a golden chest of its own (a chest's id is its tile, so a generator tweak keeps saves valid)
+  for (const [cx, cy, r] of isles) {
+    if (m.chests.some((c) => Math.hypot(c.x / T - cx, c.y / T - cy) < r)) continue;
+    for (let tries = 0; tries < 80; tries++) {
+      const x = cx + Math.round((hash(cx, tries, seed + 55) - 0.5) * r), y = cy + Math.round((hash(tries, cy, seed + 56) - 0.5) * r);
+      if (open(x, y)) {
+        m.chests.push({ id: y * W + x, x: x * T + T / 2, y: y * T + T / 2 + 4, gold: true });
+        break;
+      }
+    }
   }
   return m;
 }
@@ -198,9 +270,48 @@ function renderTile(m, cx, cy) {
     }
   }
   px.flush(g);
+  // where two regions meet, each side is dithered with the other's ground in 2×2 blocks, thinning out over 16 px
+  // (edges and corners, from the global pixel position so it lines up across tiles): no hard seam between regions
+  const land = (x, y) => x >= 0 && y >= 0 && x < W && y < m.H && m.t[y * W + x] !== WATER && m.road[y * W + x] !== 2;
   for (let y = 0; y < CHUNK; y++) for (let x = 0; x < CHUNK; x++) {
     const gx = x0 + x, gy = y0 + y, i = gy * W + gx;
-    if (!m.road[i]) continue;
+    if (m.t[i] === WATER || m.road[i] === 2) continue;
+    const b = m.biome[i];
+    for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const nx = gx + dx, ny = gy + dy;
+      if (!land(nx, ny)) continue;
+      const nb = m.biome[ny * W + nx];
+      if (nb === b || (dx && dy && (m.biome[gy * W + nx] === nb || m.biome[ny * W + gx] === nb))) continue; // (a corner only when neither side already blends)
+      const th = THEMES[BIOMES[nb].theme], X = x * T, Y = y * T;
+      for (let cy2 = 0; cy2 < T; cy2 += 2) for (let cx2 = 0; cx2 < T; cx2 += 2) {
+        const ex = dx > 0 ? T - 2 - cx2 : dx < 0 ? cx2 : 99, ey = dy > 0 ? T - 2 - cy2 : dy < 0 ? cy2 : 99;
+        const d = dx && dy ? Math.hypot(ex, ey) : Math.min(ex, ey);
+        if (d >= 16) continue;
+        const ppx = gx * T + cx2, ppy = gy * T + cy2;
+        if (hash(ppx, ppy, S + 81) < 0.8 * (1 - d / 16) ** 1.6) px(X + cx2, Y + cy2, 2, 2, ((ppx + ppy) >> 1) % 3 ? th.g1 : th.gHi);
+      }
+    }
+  }
+  px.flush(g);
+  // the ferry piers: planks over the sea
+  for (let y = 0; y < CHUNK; y++) for (let x = 0; x < CHUNK; x++) {
+    const gx = x0 + x, gy = y0 + y, i = gy * W + gx;
+    if (m.road[i] !== 2) continue;
+    const th = thOf(i), X = x * T, Y = y * T;
+    px(X, Y, T, T, th.water);
+    for (let k = 0; k < 4; k++) {
+      px(X, Y + k * 8, T, 7, "#b07a48");
+      px(X, Y + k * 8, T, 1, "#e8c08a");
+      px(X, Y + k * 8 + 6, T, 1, "#6a4428");
+      px(X + ((gx * 7 + k * 11) % 20) + 4, Y + k * 8 + 3, 2, 1, "#8a5a34");
+    }
+    if (m.road[i - 1] !== 2) px(X, Y, 2, T, "#4a2e1c");
+    if (m.road[i + 1] !== 2) px(X + T - 2, Y, 2, T, "#4a2e1c");
+  }
+  px.flush(g);
+  for (let y = 0; y < CHUNK; y++) for (let x = 0; x < CHUNK; x++) {
+    const gx = x0 + x, gy = y0 + y, i = gy * W + gx;
+    if (m.road[i] !== 1) continue;
     const th = thOf(i), X = x * T, Y = y * T, h = hash(gx, gy, S + 63);
     px(X, Y, T, T, th.dirt);
     for (let k = 0; k < 3; k++) px(X + 3 + ((h * (k * 7 + 5) * 911) % 24 | 0), Y + 3 + ((h * (k * 3 + 7) * 733) % 24 | 0), 3, 2, th.dirtLo);
@@ -441,6 +552,7 @@ export function worldUpdate(g, dt) {
   const alive = g.alivePlayers();
   ws.tick = (ws.tick || 0) - dt;
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
+  ferry(g, ws, m, me, dt);
   // chests: walk into one to open it
   for (const c of m.chests) {
     if (ws.opened.has(c.id) || Math.abs(me.x - c.x) > 40 || Math.abs(me.y - c.y) > 40) continue;
@@ -459,6 +571,99 @@ export function worldUpdate(g, dt) {
   ws.saveT -= dt;
   if (ws.saveT <= 0) (ws.saveT = 5), worldSaveNow(g);
 }
+// ---------------------------------------------------------------- the ferry
+const BOAT_SPEED = 130; // px/s
+/** stand still at a pier's end for a moment to board; the boat then carries you (and your pet) to the other pier */
+function ferry(g, ws, m, me, dt) {
+  const R = ws.ride;
+  if (R) {
+    R.t += dt;
+    const k = Math.min(1, R.t / R.dur), u = k < 0.5 ? 2 * k * k : 1 - 2 * (1 - k) ** 2;
+    me.x = R.from.x + (R.to.x - R.from.x) * u;
+    me.y = R.from.y + (R.to.y - R.from.y) * u + Math.sin(R.t * 3) * 1.5;
+    me.invuln = Math.max(me.invuln || 0, 0.3);
+    me.moving = false;
+    me.face = R.to.x < R.from.x ? Math.PI : 0;
+    if (me.pet) Object.assign(me.pet, { x: me.x - 14, y: me.y + 2, moving: false });
+    if (k >= 1) {
+      ws.ride = null;
+      me.boat = false;
+      ws.cool = 1.5;
+      g.text(me.x, me.y - 70, "靠岸", "#fff6c0", 1.1, 1.2);
+    }
+    return;
+  }
+  ws.cool = Math.max(0, (ws.cool || 0) - dt);
+  ws.hint = null;
+  for (const f of m.ferries) for (const [from, to] of [[f.a, f.b], [f.b, f.a]]) {
+    if (Math.hypot(me.x - from.x, me.y - from.y) > 30 || me.downed || flyingNow(me)) continue;
+    ws.hint = { at: from, k: ws.board || 0 };
+    if (ws.cool > 0 || me.moving) return void (ws.board = 0);
+    ws.board = (ws.board || 0) + dt;
+    if (ws.board >= 0.9) {
+      ws.board = 0;
+      ws.ride = { from: { x: me.x, y: me.y }, to, t: 0, dur: Math.hypot(to.x - me.x, to.y - me.y) / BOAT_SPEED };
+      me.boat = true;
+      g.sound("portal", 0.3);
+      g.text(me.x, me.y - 70, f.name, "#9ef0ff", 1.2, 1.4);
+    }
+    return;
+  }
+  ws.board = 0;
+}
+const flyingNow = (p) => !!(p.mounted && p.pet?.id === "phoenix" && p.pet.stage === 3); // (a flier just flies over)
+function boatSprite(g, x, y, sway) {
+  const X = Math.round(x), Y = Math.round(y + sway), K = 1.35; // (drawn 1.35× so the hull shows round the rider)
+  const r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(X + Math.round(a * K), Y + Math.round(b * K), Math.round(w * K), Math.round(h * K)));
+  r(-30, 9, 60, 3, "rgba(255,255,255,0.4)"); // wake
+  r(-28, -10, 56, 20, "#1a1020"); // outline
+  r(-26, -9, 52, 6, "#c88a4a"); // gunwale
+  r(-26, -9, 52, 1, "#f0c080");
+  r(-22, -4, 44, 4, "#5a3418"); // the floor you stand on
+  r(-26, 0, 52, 8, "#9a5e2c"); // hull side
+  r(-26, 0, 52, 1, "#c88a4a");
+  r(-20, 4, 40, 1, "#6a3c1c");
+  r(-32, -14, 7, 14, "#1a1020"); r(25, -14, 7, 14, "#1a1020"); // bow and stern
+  r(-31, -13, 5, 11, "#c88a4a"); r(26, -13, 5, 11, "#c88a4a");
+  r(-31, -13, 5, 1, "#f0c080"); r(26, -13, 5, 1, "#f0c080");
+}
+/** in the world, under the sprites: the boats (docked at the far side, or carrying you) and the boarding ring */
+export function drawWorldFloor(g, game, me, t) {
+  const m = game.map, ws = game.ws;
+  if (!ws || !m.ferries) return;
+  for (const f of m.ferries) {
+    if (ws.ride) boatSprite(g, me.x, me.y + 6, Math.sin(t * 3) * 1);
+    else {
+      // the boat waits at whichever pier you are nearer
+      const near = Math.hypot(me.x - f.a.x, me.y - f.a.y) < Math.hypot(me.x - f.b.x, me.y - f.b.y) ? f.a : f.b;
+      boatSprite(g, near.x + 38, near.y + 30, Math.sin(t * 2) * 1.5);
+    }
+  }
+  const h = ws.hint;
+  if (h && !ws.ride) {
+    g.strokeStyle = "rgba(10,8,20,0.55)";
+    g.lineWidth = 4;
+    g.beginPath();
+    g.ellipse(h.at.x, h.at.y, 20, 9, 0, 0, Math.PI * 2);
+    g.stroke();
+    g.strokeStyle = "#9ef0ff";
+    g.lineWidth = 2;
+    g.beginPath();
+    g.ellipse(h.at.x, h.at.y, 20, 9, 0, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * Math.min(1, h.k / 0.9));
+    g.stroke();
+  }
+}
+/** labels over the piers (screen text drawn by the renderer's outlined text) */
+export function worldLabels(R, g, game, me) {
+  const m = game.map, ws = game.ws;
+  if (!ws || !m.ferries || ws.ride) return;
+  for (const f of m.ferries) for (const at of [f.a, f.b]) {
+    if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
+    const near = ws.hint && ws.hint.at === at;
+    R.text(g, near ? "站稳登船" : "渡口", at.x, at.y - 30 + Math.round(Math.sin(R.t * 3) * 1.5), near ? "#9ef0ff" : "#fff6c0", near ? 12 : 11);
+  }
+}
+
 /** four times a second: residents of chunks coming into range wake into the world, far-away sleepers go back */
 function residents(g, ws, m, alive) {
   // spawn the residents of chunks coming into range; put far-away sleepers back into their chunk
@@ -478,7 +683,7 @@ function residents(g, ws, m, alive) {
     for (const r of s.list) {
       if (!st.alive[r.k]) continue;
       const e = g.spawnEnemy(r.type, r.x, r.y, r.elite, 0);
-      e.hp = e.maxHp = e.hp * s.mul;
+      e.hp = e.maxHp = e.hp * r.mul;
       if (e.shieldMax) e.shieldHp = e.shieldMax = e.hp * 0.5;
       e.home = { x: r.x, y: r.y };
       e.chunk = s.key;
@@ -549,7 +754,8 @@ function baseMap(m) {
   for (let i = 0; i < m.W * m.H; i++) {
     const t = m.t[i], [r, gg, b] = BIOMES[m.biome[i]].mm;
     let c = [r, gg, b];
-    if (t === WATER) c = m.biome[i] === 2 ? [150, 40, 20] : [63, 150, 220];
+    if (t === WATER) c = m.biome[i] === 2 ? [150, 40, 20] : m.biome[i] === 3 ? [64, 196, 214] : [63, 150, 220];
+    else if (m.road[i] === 2) c = [176, 122, 72];
     else if (t === WALL) c = [r * 0.55, gg * 0.55, b * 0.55];
     else if (m.road[i]) c = [200, 162, 106];
     else if (t === BUSH) c = [r * 0.8, gg * 0.85, b * 0.8];
@@ -589,6 +795,10 @@ export function drawMinimap(g, game, me) {
     if (cx < 0 || cy < 0 || cx >= span || cy >= span || !ws.fog[Math.floor(c.y / T / 4) * FOG + Math.floor(c.x / T / 4)]) continue;
     g.fillStyle = c.gold ? "#ffd84a" : "#e0a050";
     g.fillRect(X + Math.round(cx * k) - 1, Y + Math.round(cy * k) - 1, 3, 3);
+  }
+  for (const f of m.ferries || []) for (const at of [f.a, f.b]) {
+    const fx = at.x / T - tx, fy = at.y / T - ty;
+    if (fx >= 0 && fy >= 0 && fx < span && fy < span) (g.fillStyle = "#9ef0ff"), g.fillRect(X + Math.round(fx * k) - 1, Y + Math.round(fy * k) - 1, 3, 3);
   }
   const sx = m.spawn.x / T - tx, sy = m.spawn.y / T - ty;
   if (sx >= 0 && sy >= 0 && sx < span && sy < span) (g.fillStyle = "#7fe0ff"), g.fillRect(X + Math.round(sx * k) - 2, Y + Math.round(sy * k) - 2, 4, 4);

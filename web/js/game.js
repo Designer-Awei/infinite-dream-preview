@@ -143,7 +143,7 @@ export class Game {
       resetPet(this, p);
       this.fx.spawn("arcane/magic-circle-cast", p.x, p.y + 4, { palette: ELEM[CHARS[p.cid].elem].ramp, speed2: 1.8 });
     }
-    this.banner = { text: "梦境大陆", sub: "自由探索 · 野怪、宝箱与三大区域", t: 2.6 };
+    this.banner = { text: "梦境大陆", sub: "自由探索 · 四大区域、宝箱与渡口", t: 2.6 };
     this.onUi("world");
   }
   /** after a room: a fork was chosen by walking into one of its portals; otherwise the route goes on by itself */
