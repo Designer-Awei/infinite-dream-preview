@@ -2998,3 +2998,12 @@ body.touchmode .pet-ride-btn small { display:none; }
 .lm-dots.lm-tabs { padding-left: 0; padding-right: 0; } /* (the tabs span the column, as the single cards do) */
 .lm-track.single { margin: 0; }
 .lm-dots.lm-tabs { grid-template-columns: 1fr 1fr 1fr; }
+/* lobby right column: the mode card gives up height so 噩梦/说明 + the play button end level with the roster cards; the
+   card sits 2px closer to the notice bar */
+.lb .lb-right .lb-modes { flex: 0 1 auto; min-height: 0; margin-top: -2px; }
+.lb .lb-right .lb-play { flex: none; }
+.lb .lb-right .lm-track { min-height: 60px; }
+/* 噩梦 / 说明 chip text: a single black stroke ring, not the 8-way shadow */
+.pact-chip .outline { text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
+.pact-chip .pc-n.outline { -webkit-text-stroke-width: 4px; }
+.lb .lb-right .lb-play { gap: 4px; } /* (with the stats line shown, the button still ends level with the roster) */
