@@ -706,6 +706,7 @@ export function worldEnter(g) {
   if (WORLD?.used) (WORLD = null), invalidateWorldTiles();
   const m = getWorld(), sv = loadWorldSave();
   m.used = true;
+  if (!eggPainter) import("./petwh.js").then((M) => (eggPainter = M.drawEgg)); // (the loot's egg icons)
   for (const i of sv.cracked || []) if (m.cracked.has(i)) m.t[i] = F; // (裂纹岩 you have broken stays broken)
   g.map = m;
   g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
@@ -856,7 +857,10 @@ export function worldKilled(g, e) {
 // ---------------------------------------------------------------- loot eruption (region bosses)
 function erupt(g, x, y, groups) {
   const ws = g.ws, list = [];
-  for (const [kind, label, n] of groups) for (let k = 0; k < n; k++) list.push({ kind, txt: k ? null : label });
+  for (const [kind, label, n] of groups) {
+    if (kind === "xp") { ws.dropTail = [...(ws.dropTail || []), label]; continue; } // (no item icon: said once the loot is in)
+    for (let k = 0; k < n; k++) list.push({ kind, txt: k ? null : label });
+  }
   for (let k = list.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); [list[k], list[j]] = [list[j], list[k]]; }
   g.vfx("explosions/cartoon-pow", x, y - 30);
   g.sound("explode", 0.3), g.after(0.5, () => g.sound("ssr", 0.2));
@@ -887,11 +891,13 @@ function updateDrops(g, ws, me, dt) {
     const dx = me.x - d.x, dy = me.y - 10 - d.y, l = Math.hypot(dx, dy), sp = Math.min(900, 220 + (d.t - 2.4) * 700);
     if (l < 16) {
       D.splice(k, 1);
-      if (d.txt) { // (one line after another, not stacked)
+      const say = (txt, big) => { // (one line after another, not stacked)
         const wait = Math.max(0, (ws.txtNext || 0) - g.time);
         ws.txtNext = g.time + wait + 0.6;
-        g.after(wait, () => g.text(me.x, me.y - 50, d.txt, d.big ? "#ff9af0" : "#ffe36a", d.big ? 1.3 : 1.1, 2));
-      }
+        g.after(wait, () => g.text(me.x, me.y - 50, txt, big ? "#ff9af0" : "#ffe36a", big ? 1.3 : 1.1, 2));
+      };
+      if (d.txt) say(d.txt, d.big);
+      if (!D.length && ws.dropTail) ws.dropTail.forEach((t) => say(t)), (ws.dropTail = null);
       g.sound("pickup", 0.05);
       continue;
     }
@@ -899,7 +905,7 @@ function updateDrops(g, ws, me, dt) {
   }
 }
 // the loot's look: 晶石 gems, 角色经验 stars, 淬灵露 drops, 流彩晶 a rainbow crystal, materials in their colour, eggs
-const dropCol = (k) => (k === "gems" ? "#5affa0" : k === "xp" ? "#ffe36a" : k === "ur" ? "#7fd8ff" : k === "hur" || k === "egg_hur" ? "#ff9af0" : k === "egg_ur" ? "#8ab8ff" : MATS[+k[3]]?.col || "#ffffff");
+const dropCol = (k) => (k === "gems" ? "#6ad0ff" : k === "xp" ? "#ffe36a" : k === "ur" ? "#7fd8ff" : k === "hur" || k === "egg_hur" ? "#ff9af0" : k === "egg_ur" ? "#8ab8ff" : MATS[+k[3]]?.col || "#ffffff");
 // the flight's glowing trail, and once landed a light pillar over it (taller and brighter for eggs and 流彩晶)
 function dropGlow(g, d, t) {
   g.save();
@@ -912,8 +918,8 @@ function dropGlow(g, d, t) {
     g.lineWidth = (d.big ? 6 : 4) * f;
     g.lineCap = "round";
     g.beginPath();
-    g.moveTo(tr[i - 1][0], tr[i - 1][1] - 6);
-    g.lineTo(tr[i][0], tr[i][1] - 6);
+    g.moveTo(tr[i - 1][0], tr[i - 1][1] - 12);
+    g.lineTo(tr[i][0], tr[i][1] - 12);
     g.stroke();
   }
   if (d.landT !== undefined && !d.homing) {
@@ -935,20 +941,52 @@ function dropGlow(g, d, t) {
   }
   g.restore();
 }
+// the loot drawn with the icons the rest of the game uses: 晶石 as the HUD gem, 淬灵露 / 流彩晶 as in 积攒兑换 (.st-ico),
+// pet eggs from the warehouse's egg painter, materials as the workshop's colour chips; cached canvases
+const ICONS = {};
+let eggPainter = null;
+function dropIcon(k) {
+  if (ICONS[k]) return ICONS[k];
+  const c = document.createElement("canvas"), g = c.getContext("2d"), INKC = "#1a1020";
+  if (k.startsWith("egg")) {
+    if (!eggPainter) return null;
+    eggPainter(c, 0, k.slice(4));
+  } else if (k === "gems") {
+    c.width = c.height = 20;
+    const gr = g.createLinearGradient(0, 0, 20, 20);
+    gr.addColorStop(0, "#9affff"); gr.addColorStop(0.5, "#3ab0ff"); gr.addColorStop(1, "#2a5ad0");
+    g.fillStyle = gr;
+    g.beginPath(); g.moveTo(10, 0); g.lineTo(20, 7); g.lineTo(16, 20); g.lineTo(4, 20); g.lineTo(0, 7); g.closePath(); g.fill();
+  } else if (k === "ur") {
+    c.width = 26; c.height = 30;
+    const gr = g.createRadialGradient(10.4, 10.5, 0, 10.4, 10.5, 22);
+    gr.addColorStop(0, "#ffffff"); gr.addColorStop(0.12, "#ffffff"); gr.addColorStop(0.13, "#9ef0ff"); gr.addColorStop(0.4, "#9ef0ff"); gr.addColorStop(0.7, "#3aa0e0"); gr.addColorStop(1, "#3aa0e0");
+    g.fillStyle = INKC; g.beginPath(); g.roundRect(0, 0, 26, 30, [8, 8, 12, 12]); g.fill();
+    g.fillStyle = gr; g.beginPath(); g.roundRect(2, 2, 22, 26, [6, 6, 10, 10]); g.fill();
+  } else if (k === "hur") {
+    c.width = c.height = 36;
+    g.translate(18, 18); g.rotate(Math.PI / 4); g.scale(0.82, 0.82); g.translate(-13, -15);
+    const gr = g.createConicGradient(0, 13, 15);
+    ["#ff6a6a", "#ffd84a", "#6ee08a", "#5aa8ff", "#c27bff", "#ff6a6a"].forEach((col, i) => gr.addColorStop(i / 5, col));
+    g.fillStyle = INKC; g.beginPath(); g.roundRect(0, 0, 26, 30, [{ x: 13, y: 18 }, { x: 13, y: 18 }, 8, 8]); g.fill();
+    g.fillStyle = gr; g.beginPath(); g.roundRect(2, 2, 22, 26, [{ x: 11, y: 16 }, { x: 11, y: 16 }, 6, 6]); g.fill();
+  } else {
+    c.width = c.height = 16;
+    g.fillStyle = INKC; g.beginPath(); g.roundRect(0, 0, 16, 16, 4); g.fill();
+    g.fillStyle = MATS[+k[3]].col; g.beginPath(); g.roundRect(3, 3, 10, 10, 2); g.fill();
+  }
+  return (ICONS[k] = c);
+}
 function dropSprite(g, d, t) {
   dropGlow(g, d, t);
-  const S = d.big ? 2.4 : 2, x = Math.round(d.x), y = Math.round(d.y - d.z - 6 * S), r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(x + a * S, y + b * S, w * S, h * S));
-  g.fillStyle = "rgba(10,8,20,0.3)";
-  g.beginPath(); g.ellipse(d.x, d.y + 2, d.big ? 16 : 11, 5, 0, 0, Math.PI * 2); g.fill();
-  const k = d.kind;
-  if (k === "gems") { r(-5, -4, 10, 8, "#1a1020"); r(-4, -3, 8, 6, "#3ad87a"); r(-2, -3, 3, 2, "#c8ffd8"); }
-  else if (k === "xp") { r(-1, -6, 2, 12, "#1a1020"); r(-6, -1, 12, 2, "#1a1020"); r(-4, -4, 8, 8, "#1a1020"); r(-3, -3, 6, 6, "#ffd84a"); r(0, -5, 1, 10, "#ffd84a"); r(-5, 0, 10, 1, "#ffd84a"); r(-1, -2, 2, 2, "#fff6c0"); }
-  else if (k === "ur") { r(-4, -3, 8, 9, "#1a1020"); r(-2, -6, 4, 4, "#1a1020"); r(-3, -2, 6, 7, "#5ac8ff"); r(-1, -5, 2, 3, "#5ac8ff"); r(-2, -1, 2, 2, "#ffffff"); }
-  else if (k === "hur") { const c = ["#ff6a6a", "#ffd84a", "#6ee08a", "#5aa8ff", "#c27bff"]; r(-6, -8, 12, 16, "#1a1020"); for (let i = 0; i < 5; i++) r(-5 + i * 2, -7 + Math.abs(2 - i), 2, 14 - Math.abs(2 - i) * 2, c[(i + Math.floor(t * 8)) % 5]); r(-1, -6, 2, 3, "#ffffff"); }
-  else if (k.startsWith("mat")) { const c = MATS[+k[3]].col; r(-5, -4, 10, 8, "#1a1020"); r(-4, -3, 8, 6, c); r(-3, -3, 3, 2, "#ffffff"); }
-  else { const hur = k === "egg_hur"; r(-6, -7, 12, 15, "#1a1020"); r(-4, -9, 8, 3, "#1a1020"); r(-5, -6, 10, 13, hur ? "#ffe8f8" : "#e8f6ff"); r(-3, -8, 6, 3, hur ? "#ffe8f8" : "#e8f6ff");
-    for (const [a, b, c] of [[-3, -3, hur ? "#ff6ab8" : "#5aa8ff"], [1, 0, hur ? "#c27bff" : "#3a78e0"], [-2, 3, hur ? "#ffd84a" : "#5aa8ff"]]) r(a, b, 3, 2, c); r(-3, -5, 2, 2, "#ffffff"); }
-  if (d.big && Math.sin(t * 6 + d.x) > 0.6) r(-1, -14, 2, 4, "#ffffff"), r(-3, -12, 6, 1, "#ffffff");
+  const ic = dropIcon(d.kind);
+  if (!ic) return;
+  const w = ic.width, h = ic.height, foot = d.kind === "hur" ? 6 : 1; // (流彩晶's canvas has a margin round the tilted gem)
+  g.fillStyle = "rgba(10,8,20,0.32)"; // its shadow under it: shrinks while it is up in the air
+  const sh = Math.max(0.35, 1 - d.z / 160);
+  g.beginPath(); g.ellipse(d.x, d.y, w * 0.42 * sh, 4 * sh, 0, 0, Math.PI * 2); g.fill();
+  g.drawImage(ic, Math.round(d.x - w / 2), Math.round(d.y - d.z - h + foot));
+  if (d.big && Math.sin(t * 6 + d.x) > 0.6) (g.fillStyle = "#ffffff"), g.fillRect(Math.round(d.x - 1), Math.round(d.y - d.z - h - 6), 2, 5), g.fillRect(Math.round(d.x - 3), Math.round(d.y - d.z - h - 4), 6, 1);
 }
 const RESPAWN = 150; // s until a cleared chunk refills (this visit)
 export function worldUpdate(g, dt) {
