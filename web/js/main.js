@@ -148,7 +148,7 @@ export const app = {
     } finally {
       uiRoot.appendChild(d); // keep the doors on top of the freshly built HUD
       bar.style.width = "100%";
-      setTimeout(() => (d.classList.remove("info"), d.classList.remove("shut"), d.classList.add("open"), sfx("portal")), 520);
+      setTimeout(() => (d.classList.remove("info"), d.classList.remove("shut"), d.classList.add("open"), sfx("portal"), (this.qualityHold = performance.now() + 5000), (this.slowT = 0)), 520);
       setTimeout(() => d.remove(), 1200);
     }
   },
@@ -165,6 +165,8 @@ export const app = {
     }
     this.game = g;
     this.me = g.player(cfg.myId);
+    this.qualityHold = performance.now() + 6000; // (no resolution drop while the run warms up, see frame())
+    this.slowT = 0;
     if (this.petTrial) this.me.ult = 1;
     this.paused = false;
     this.cardOpen = false;
@@ -681,10 +683,14 @@ function frame(now) {
   // adaptive quality: slow devices drop to 1x canvas resolution
   app.ft = (app.ft ?? 16) * 0.97 + (now - (app.lastNow ?? now)) * 0.03;
   app.lastNow = now;
-  app.slowT = app.ft > 24 && !app.fixedQ ? (app.slowT || 0) + dt : 0;
+  // (not while a run is warming up: the first seconds after the doors open are always heavier — sprites decode, tiles
+  // paint — and dropping the resolution then cleared the canvas for a frame: the black flash on entering 梦境大陆)
+  app.slowT = app.ft > 24 && !app.fixedQ && now > (app.qualityHold || 0) ? (app.slowT || 0) + dt : 0;
   if (RS > 1 && app.slowT > 3) {
     setRS(1);
     resize();
+    renderer.follow(g, me, 0);
+    renderer.draw(g, me, 0); // (repaint at once: a resized canvas is blank until it is drawn again)
     app.slowT = 0;
   } else if (RS <= 1 && !fx.lite && app.slowT > 2) {
     fx.setLite(true); // still slow at 1x: lighter effects for the rest of the session

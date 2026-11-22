@@ -3020,3 +3020,36 @@ body.touchmode .pet-ride-btn small { display:none; }
 
 /* 迷途商人: one icon box for every kind of goods (a 星砂 tile is narrower than a material picture) */
 .hm-row .hm-icw { flex: none; width: 40px; height: 40px; display: grid; place-items: center; }
+
+/* 梦境大陆 panels with seven materials: the header row never scrolls sideways; 派遣 names stay on one line; 家园建造's cost
+   column is one fixed width for every row so costs and buttons line up */
+.wshop-p .ws-mats { flex: 0 1 auto; min-width: 0; flex-wrap: nowrap; overflow: hidden; }
+.wshop-p .ws-mats .ws-mat { padding: 1px 5px; }
+.wshop-p .ws-mats .ws-mat b { margin-left: 0; }
+.hm-disp .st-tx { flex: 1 1 auto; min-width: 0; }
+.hm-disp .st-tx b, .hm-disp .st-tx span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.hm-disp .hm-mat { gap: 2px; }
+.hm-disp .hm-m { width: 26px; height: 26px; }
+.hm-disp .hm-m .mat-ic { width: 18px; height: 18px; }
+.hm-disp .hm-acc { width: 52px; }
+.hm-build .ws-cost { width: 250px; }
+.hm-build .st-tx span { white-space: nowrap; }
+
+/* 大地图 side column with seven materials and seven bosses: materials in one row (icon over count), tighter boss rows,
+   so the whole column fits beside the map without scrolling */
+.wmap-p .wm-mats { grid-template-columns: repeat(7, 1fr); gap: 3px; }
+.wmap-p .wm-mats span { flex-direction: column; gap: 0; padding: 1px 0; font-size: 10px; line-height: 1.05; }
+.wmap-p .wm-mats .mat-ic { width: 14px; height: 14px; }
+.wmap-p .wm-boss { gap: 2px; }
+.wmap-p .wm-b { padding-top: 0; padding-bottom: 0; line-height: 1.12; }
+.wmap-p .wm-b span { font-size: 10.5px; }
+.wmap-p .wm-b small { font-size: 9px; }
+.wmap-p .wm-side { gap: 4px; }
+.wmap-p .wm-stats div { flex-direction: row; justify-content: center; align-items: baseline; gap: 4px; padding: 1px 4px; }
+.wmap-p .wm-stats span { font-size: 9.5px; }
+.wmap-p .wm-stats b { font-size: 12px; }
+.wmap-p .wm-b { line-height: 1.05; border-width: 2px; }
+.wmap-p .wm-pick { min-height: 22px; padding: 1px 6px; }
+.wshop-p .ws-head { gap: 6px; }
+.wshop-p .ws-mats { gap: 3px; }
+.wshop-p .ws-mats .ws-mat { padding: 1px 4px; gap: 2px; }

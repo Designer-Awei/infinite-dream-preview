@@ -1420,7 +1420,8 @@ function shopSprite(g, x, y, t) {
   g.fill();
   r(-34, -2, 68, 26, "#1a1020"); r(-32, 0, 64, 22, "#9a5e2c"); r(-32, 0, 64, 3, "#c88a4a"); // counter
   g.imageSmoothingEnabled = false;
-  MAT_IMG.forEach((im, k) => im?.complete && im.naturalWidth && g.drawImage(im, Math.round(x - 30 + k * 15), Math.round(y - 4), 14, 14)); // the four materials on display
+  // the materials on display: all seven across the counter, every other one set back a little (drawn first)
+  for (const back of [1, 0]) MAT_IMG.forEach((im, k) => k % 2 === back && im?.complete && im.naturalWidth && g.drawImage(im, Math.round(x - 31 + k * 8.5), Math.round(y - 4 - back * 3), 12, 12));
   r(-32, -40, 4, 40, "#1a1020"); r(28, -40, 4, 40, "#1a1020"); r(-31, -40, 2, 40, "#c88a4a"); r(29, -40, 2, 40, "#c88a4a"); // posts
   for (let k = 0; k < 8; k++) r(-36 + k * 9, -48 + (k % 2), 9, 12, k % 2 ? "#ffe8c0" : "#ff6a8a"); // awning
   r(-36, -49, 72, 2, "#1a1020"); r(-36, -36, 72, 2, "#1a1020");
@@ -1475,8 +1476,8 @@ export function worldLabels(R, g, game, me) {
     lab(ws.standAt === "board" ? talkHint() : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
     lab(ws.standAt === "steward" ? talkHint() : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
     // building names on one line: the same height over every plot (built or not), the tower's over its roof
-    for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], k === "tower" ? -118 : -96, H.lv[k] ? "#fff6c0" : "#c8c0e0", 11);
-    lab(`宠物牧场 Lv.${H.lv.farm}`, { x: (m.home.pen.x0 + m.home.pen.x1) / 2, y: m.home.pen.y0 }, -30, "#fff6c0", 11);
+    for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], k === "tower" ? -118 : -96, H.lv[k] ? "#fff6c0" : "#c8c0e0", 12);
+    lab(`宠物牧场 Lv.${H.lv.farm}`, { x: (m.home.pen.x0 + m.home.pen.x1) / 2, y: m.home.pen.y0 }, -30, "#fff6c0", 12);
     const Q = ws.quests, ready = Q && (Q.list.some((q) => q.prog >= q.n && !q.claimed) || (!Q.bonus && Q.list.every((q) => q.claimed)));
     lab(ws.standAt === "quest" ? talkHint() : ready ? "每日委托 · 可领取" : "每日委托", m.home.quest, -84, ws.standAt === "quest" ? "#9ef0ff" : ready ? "#7fff9a" : "#ffe36a");
   }

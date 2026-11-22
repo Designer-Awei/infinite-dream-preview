@@ -212,7 +212,7 @@ export const ENEMIES = {
   // their region bosses (pixelfx-style code art in tools/bossfx)
   boss_colossus: { name: "遗迹巨像", title: "沉睡的守望者", hp: 3600, spd: 30, r: 26, ai: "boss_colossus", sprite: "sand_colossus", poses: { walk: "sand_colossus_walk", cast: "sand_colossus_slam" }, coin: [30, 30], boss: true, noKnock: true },
   boss_myco: { name: "菌母", title: "孢子之心", hp: 3500, spd: 26, r: 26, ai: "boss_myco", sprite: "myco_mother", poses: { walk: "myco_mother_walk", cast: "myco_mother_cast" }, coin: [30, 30], boss: true, noKnock: true },
-  boss_tempest: { name: "风暴之灵", title: "云巅的怒号", hp: 3400, spd: 56, r: 20, ai: "boss_tempest", sprite: "tempest", coin: [30, 30], fly: true, boss: true },
+  boss_tempest: { name: "风暴之灵", title: "云巅的怒号", hp: 3400, spd: 56, r: 20, ai: "boss_tempest", sprite: "tempest", poses: { walk: "tempest_move", cast: "tempest_cast" }, coin: [30, 30], fly: true, boss: true },
   // 诅咒宝箱 turned monster: the event visitor's own strip (npc.png row 3), hops at you like a frog; always spawned elite
   mimic: { name: "宝箱怪", sprScale: 0.6, hp: 70, spd: 62, r: 13, ai: "leap", sprite: "mimic", coin: [8, 12], touch: 1 },
   dream_orb: { name: "梦泡", hp: 90, spd: 0, r: 14, ai: "dream_orb", sprite: "dream_orb", sprScale: 1.3, coin: [1, 2], fly: true, noKnock: true },

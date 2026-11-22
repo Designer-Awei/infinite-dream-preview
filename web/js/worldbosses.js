@@ -225,6 +225,7 @@ export function bossTempest(g, e, p, d, dt) {
   if (ph >= 2) opts.push("volt", "tornado");
   if (ph >= 3) opts.push("volt", "volt");
   const pick = opts[(Math.random() * opts.length) | 0];
+  pose(g, e);
   if (pick === "gust") {
     const a = angTo(e.x, e.y, p.x, p.y);
     g.addZone({ kind: "cone", x: e.x, y: e.y, r: 300, life: 0.7, side: "e", a0: a, half: 0.6, col: "#bfe8ff", onEnd: () => {

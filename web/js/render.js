@@ -378,7 +378,7 @@ export class Renderer {
     g.font = `${size}px ${FONT}`;
     g.textAlign = align;
     g.textBaseline = "middle";
-    g.lineWidth = Math.max(2, size / 4);
+    g.lineWidth = Math.max(2, Math.round(size / 4)); // (a whole-pixel ring: a fractional stroke smeared small labels)
     g.strokeStyle = "#1a1020";
     g.lineJoin = "round";
     g.strokeText(s, Math.round(x), Math.round(y));

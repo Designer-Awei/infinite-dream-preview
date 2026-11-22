@@ -265,7 +265,7 @@ export function showWorldMap(game, me, app) {
   // side: progress, materials, bosses
   const opened = m.chests.filter((c) => ws.opened.has(c.id)).length;
   md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened} / ${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size} / ${m.waypoints.length}</b></div>`;
-  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span title="${t.name}"><img class="mat-ic" src="${matSrc(k)}" alt=""><b>${ws.mats[k]}</b></span>`).join(""); // (icon + count: fits any count)
+  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span title="${t.name}"><img class="mat-ic" src="${matSrc(k)}" alt=""><b>${ws.mats[k] || 0}</b></span>`).join(""); // (icon + count: fits any count)
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;
     return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? `<em>${bossRespawnIn()}</em> 刷新` : "可挑战"}</b></div>`;
@@ -412,7 +412,7 @@ export function showWorkshop(game, me, app) {
   app.paused = true;
   sfx("click");
   const md = el("div", "modal stash-md wshop-md");
-  const chips = () => MATS.map((t, k) => `<span class="ws-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${t.name}<b>${ws.mats[k]}</b></span>`).join("");
+  const chips = () => matChips(ws, true); // (icon + count: seven materials fit the header)
   const cost = (o) => o.cost.map((c, k) => (c ? `<span class="ws-c${ws.mats[k] < c ? " short" : ""}"><img class="mat-ic" src="${matSrc(k)}" alt="">${c}</span>` : "")).join("");
   const ico = (o) => {
     const k = GIVE[o.id][2];
@@ -458,17 +458,17 @@ const panel = (app, cls, title, chips) => {
   uiRoot().appendChild(md);
   return { md, close, list: md.querySelector(".st-list"), sub: md.querySelector(".st-sub"), foot: md.querySelector(".hm-foot"), chips: md.querySelector(".ws-mats") };
 };
-const matChips = (ws, short) => MATS.map((t, k) => `<span class="ws-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${short ? "" : t.name}<b>${ws.mats[k]}</b></span>`).join("");
+const matChips = (ws, short) => MATS.map((t, k) => `<span class="ws-mat" title="${t.name}"><img class="mat-ic" src="${matSrc(k)}" alt="">${short ? "" : t.name}<b>${ws.mats[k] || 0}</b></span>`).join("");
 export function showDispatch(game, me, app) {
   const ws = game.ws, H = ws.home;
   if (!ws || document.querySelector(".hm-disp")) return;
-  const P = panel(app, "hm-disp", "派遣", matChips(ws));
+  const P = panel(app, "hm-disp", "派遣", matChips(ws, true));
   const render = () => {
     homeTick(H);
     const st = petState(), n = slotCount(H), cap = capHours(H);
     let total = 0;
     for (const sl of H.slots) total += petRate(findPet(sl.uid, st), H);
-    P.chips.innerHTML = matChips(ws);
+    P.chips.innerHTML = matChips(ws, true); // (icon + count only: seven materials fit the header without scrolling)
     P.sub.innerHTML = `派遣的宠物住进家园牧场，按小时采集所选材料（离线也算）· 合计 <b>${total.toFixed(1)}</b> 个/小时 · 最多存 <b>${cap}</b> 小时`;
     const rows = [];
     for (let k = 0; k < 5; k++) {
@@ -476,7 +476,7 @@ export function showDispatch(game, me, app) {
       if (k >= n) { rows.push(`<div class="st-it hm-row lock"><i class="hm-pic"></i><div class="st-tx"><b class="outline">未解锁</b><span>宠物牧场 Lv.${k} 解锁这个栏位</span></div></div>`); continue; }
       if (!sl) { rows.push(`<div class="st-it hm-row" data-k="${k}"><i class="hm-pic empty"></i><div class="st-tx"><b class="outline">空栏位</b><span>挑一只宠物住进牧场</span></div><button class="btn blue small st-go hm-add"><span>派遣</span></button></div>`); continue; }
       const p = findPet(sl.uid, st), q = qualityOf(p), rate = petRate(p, H), stored = Math.floor(sl.acc || 0), full = sl.acc >= rate * cap - 0.01;
-      rows.push(`<div class="st-it hm-row" data-k="${k}"><img class="hm-pic" src="${petPortrait(p.id, p.stage)}" alt=""><div class="st-tx"><b class="outline" style="color:${q.col}">${petLabel(p)}</b><span>${q.name} · ${PET_STAGES[p.stage - 1]} · ${rate.toFixed(1)} 个/小时</span></div>
+      rows.push(`<div class="st-it hm-row" data-k="${k}"><img class="hm-pic" src="${petPortrait(p.id, p.stage)}" alt=""><div class="st-tx"><b class="outline" style="color:${q.col}">${petLabel(p)}</b><span>${q.name} · ${PET_STAGES[p.stage - 1]} · ${rate.toFixed(1)}/时</span></div>
         <div class="hm-mat">${MATS.map((t, j) => `<button class="hm-m${sl.mat === j ? " on" : ""}" data-j="${j}" title="${t.name}"><img class="mat-ic" src="${matSrc(j)}" alt=""></button>`).join("")}</div>
         <div class="hm-acc o1${full ? " full" : ""}"><img class="mat-ic" src="${matSrc(sl.mat)}" alt="">${stored}${full ? "<small>已满</small>" : ""}</div><button class="btn gray small st-go hm-back"><span>召回</span></button></div>`);
     }
