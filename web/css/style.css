@@ -3033,7 +3033,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .hm-disp .hm-m .mat-ic { width: 18px; height: 18px; }
 .hm-disp .hm-acc { width: 52px; }
 .hm-build .ws-cost { width: 250px; }
-.hm-build .st-tx span { white-space: nowrap; }
+.hm-build .st-tx { min-width: 0; } .hm-build .st-tx span { white-space: normal; line-height: 1.2; } /* (a long upgrade line wraps instead of pushing the button out) */
 
 /* 大地图 side column with seven materials and seven bosses: materials in one row (icon over count), tighter boss rows,
    so the whole column fits beside the map without scrolling */
@@ -3056,3 +3056,4 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* 大地图 panel: 关闭 / 插旗 / 传送 without the drop shadow under them (flat on the panel) */
 .wmap-p .btn, .wmap-p .btn:active, .wmap-p .btn.press { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 rgba(0,0,0,.15); }
 .wmap-p .btn:active, .wmap-p .btn.press { transform: translateY(1px); }
+.hm-build .ws-cost:empty { width: 0; margin-left: -10px; } /* (a maxed row gives its cost column to the text) */
