@@ -235,3 +235,50 @@ export function warmSkin(skinId, cells, perSlice = 3) {
   };
   step();
 }
+
+// ---------------------------------------------------------------- 异色 attack colours
+// A 异色 pet's attacks follow its skin: every saturated colour of its effects (follow shots, skills, ultimates,
+// mounted shots and ride ultimates: bullets, fire, lightning, ice storms, tornadoes, explosions) is rotated from the
+// kind's own effect hue onto the skin's hue, keeping the effect's light-to-dark ramp; whites and greys stay.
+// 流彩 cycles the hue with time.
+const FX_HUE = { frost: { to: 200, sat: 0.95 }, ember: { to: 10, sat: 1.15 }, sakura: { to: 335, sat: 1.1, light: 0.95 }, gold: { to: 46, sat: 1.05, light: 1.04 }, jade: { to: 140, sat: 0.85 }, blaze: { to: 18, sat: 1.1 } };
+const FX_BASE = { dragon: 22, fox: 50, phoenix: 195 }; // the hue each kind's effects are drawn around
+const tints = new Map();
+function parseCol(c) {
+  if (c[0] === "#") {
+    const v = c.length === 4 ? c.slice(1).split("").map((x) => x + x).join("") : c.slice(1, 7);
+    return [parseInt(v.slice(0, 2), 16), parseInt(v.slice(2, 4), 16), parseInt(v.slice(4, 6), 16), null];
+  }
+  const m = c.match(/rgba?\(([^)]+)\)/);
+  if (!m) return null;
+  const p = m[1].split(",").map(Number);
+  return [p[0], p[1], p[2], p.length > 3 ? p[3] : null];
+}
+/** the skin's version of one effect colour ('#rgb', '#rrggbb' or 'rgb(a)(…)'); null skin → unchanged */
+export function skinTint(skin, kind, col, t = 0) {
+  if (!skin || typeof col !== "string") return col;
+  const fx = FX_HUE[skin], flow = skin === "flow";
+  if (!fx && !flow) return col;
+  const shiftFlow = flow ? Math.round(((t * 90) % 360) / 15) * 15 : 0, key = skin + kind + col + shiftFlow;
+  let out = tints.get(key);
+  if (out) return out;
+  const c = parseCol(col);
+  if (!c) return col;
+  let [h, s, l] = rgb2hsl(c[0], c[1], c[2]);
+  if (s >= 0.12) {
+    if (flow) (h += shiftFlow), (s = Math.max(s, 0.7));
+    else (h += fx.to - (FX_BASE[kind] ?? 30)), (s = Math.min(1, s * (fx.sat ?? 1))), (l = Math.min(1, l * (fx.light ?? 1)));
+  }
+  const [R, G, B] = hsl2rgb(h, s, l).map(Math.round);
+  out = c[3] == null ? "#" + ((1 << 24) | (R << 16) | (G << 8) | B).toString(16).slice(1) : `rgba(${R},${G},${B},${c[3]})`;
+  if (tints.size > 4000) tints.clear();
+  tints.set(key, out);
+  return out;
+}
+/** a pixelfx palette in the skin's colours (undefined when unskinned, so the effect keeps its own) */
+export const skinPalette = (skin, kind, pal, t = 0) => (skin && (FX_HUE[skin] || skin === "flow") ? pal.map((c) => skinTint(skin, kind, c, t)) : undefined);
+/** tint function for a player's pet (identity when it has no 异色) */
+export function petTint(p, t = 0) {
+  const q = p?.pet, skin = q?.skin;
+  return skin && (FX_HUE[skin] || skin === "flow") ? (c) => skinTint(skin, q.id, c, t) : (c) => c;
+}

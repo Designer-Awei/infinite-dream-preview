@@ -3,7 +3,8 @@
 import { createFrame, clearFrame, createFx, painterFor, setSimHz } from "../pixelfx/core/index.js";
 import { VIEW_W, VIEW_H } from "./data.js";
 import { FX_MODS } from "./fxmods.js";
-import { mountedShield } from './pets.js';
+import { mountedShield, PET_FIRE_PAL } from './pets.js';
+import { skinPalette } from './petskins.js';
 import { flyingMount } from './petcombat.js';
 import { A } from './assets.js';
 
@@ -186,7 +187,8 @@ export class FxLayer {
       const p=game.player(f.owner);if(!p?.mounted||p.pet?.id!=='dragon'||p.dead||p.downed)continue;
       active.add(f.id);let fx=this.petFx.get(f.id);
       if(!fx||!this.list.includes(fx)){
-        fx=this.spawn('fire/fire-tornado',f.x,f.y,{height:94,radius:f.r,follow:f,layer:'front',skip:f.t%2});
+        const pal=skinPalette(p.pet.skin,'dragon',PET_FIRE_PAL,f.t+f.id*.37); // 异色 dragon: its tornadoes in the skin's colours
+        fx=this.spawn('fire/fire-tornado',f.x,f.y,{height:94,radius:f.r,follow:f,layer:'front',skip:f.t%2,...(pal?{palette:pal}:{})});
         if(fx)this.petFx.set(f.id,fx);
       }
       if(fx){fx.follow=f;fx.options.x=f.x;fx.options.y=f.y;}

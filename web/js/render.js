@@ -8,6 +8,7 @@ import { hex } from "../pixelfx/core/index.js";
 import { icon } from "./icons.js";
 import { drawPet, drawMountedPet, warmMount, mountedHeadHeight, mountedAttackOrigin, mountedAimOrigin, drawPetFields, drawPetAfterimages, petLine } from "./pets.js";
 import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
+import { petTint } from "./petskins.js";
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
 import { verdictCells } from "./enemies.js";
@@ -1246,7 +1247,9 @@ export class Renderer {
         P.glow(x, y, r + 5, H(hex), 0.35);
         continue;
       }
-      const el = ELEM[b.elem] || ELEM.water, ang = Math.atan2(b.vy, b.vx);
+      let el = ELEM[b.elem] || ELEM.water;
+      const ang = Math.atan2(b.vy, b.vx), tk = b.kind && b.kind.startsWith("pet_") ? petTint(game.player(b.owner), this.t) : null; // 异色 pet shots
+      if (tk && game.player(b.owner)?.pet?.skin) el = b.kind === "pet_dragon" ? { ...el, color: tk("#ff7433"), glow: tk("#ffb448") } : { ...el, color: tk(el.color), glow: tk(el.glow) }; // (a 异色 dragon's trail follows its fireball, not the purple 焰)
       const r = b.r;
       if (b.wave) {
         const nx = -Math.sin(ang), ny = Math.cos(ang);
@@ -1271,11 +1274,11 @@ export class Renderer {
       P.glowLine(x - Math.cos(ang) * tl, y - Math.sin(ang) * tl, x, y, r * 0.8, H(el.color), 0.45);
       switch (b.kind) {
         case "pet_dragon":
-          for(let j=8;j>=1;j--){const d=j*3.4,w=Math.max(1,r*(1-j/10));P.circle(x-Math.cos(ang)*d,y-Math.sin(ang)*d+Math.sin(this.t*20+j)*j*.22,w,H(j>4?'#e3442d':'#ffb448'),1-j*.08);}
-          P.circle(x,y,r+1,H('#7b2032'),1);P.circle(x,y,r,H('#ff7433'),1);P.circle(x-1,y-1,Math.max(1,r-2),H('#ffe79b'),1);break;
+          for(let j=8;j>=1;j--){const d=j*3.4,w=Math.max(1,r*(1-j/10));P.circle(x-Math.cos(ang)*d,y-Math.sin(ang)*d+Math.sin(this.t*20+j)*j*.22,w,H(tk(j>4?'#e3442d':'#ffb448')),1-j*.08);}
+          P.circle(x,y,r+1,H(tk('#7b2032')),1);P.circle(x,y,r,H(tk('#ff7433')),1);P.circle(x-1,y-1,Math.max(1,r-2),H(tk('#ffe79b')),1);break;
         case "pet_fox":
         case "pet_phoenix": {
-          const cs=Math.cos(ang),sn=Math.sin(ang),col=b.kind==='pet_fox'?'#ffe699':'#baf4ff';
+          const cs=Math.cos(ang),sn=Math.sin(ang),col=tk(b.kind==='pet_fox'?'#ffe699':'#baf4ff');
           for(let i=-6;i<=6;i++)for(let j=-2;j<=2;j++)if(Math.abs(j)<=2-Math.abs(i)/4)P.dot(x+cs*i-sn*j,y+sn*i+cs*j,H(j===0?'#fff':col));
           break;
         }

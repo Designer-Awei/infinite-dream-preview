@@ -12,6 +12,7 @@ import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink, mountedUltBlocked } from "./pets.js";
 import { flyingMount, visualTilesIn } from './petcombat.js';
 import { FOX_RIDE_RANGE, DRAGON_FIREBALL, PETS } from './petdata.js';
+import { skinPalette, petTint } from "./petskins.js";
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
 
@@ -1171,7 +1172,8 @@ export class Game {
   dragonFireballImpact(b) {
     if(!this.host)return;
     const p=this.player(b.owner),r=DRAGON_FIREBALL.splash,m=this.map;
-    this.vfx('explosions/small-explosion',b.x,b.y+8,{opts:{size:.8},speed2:1.3});
+    const pal=skinPalette(p?.pet?.skin,'dragon',["#4a1712","#c9281f","#f2561d","#ff8a2a","#ffc23d","#ffe26b","#fff3a6","#ffffff"],this.time); // 异色 dragon
+    this.vfx('explosions/small-explosion',b.x,b.y+8,{opts:{size:.8},speed2:1.3,...(pal?{palette:pal}:{})});
     this.sound('explode',.15);this.shake=Math.max(this.shake,3);
     for(const e of this.enemies){
       if(e.dead||e.spawnT>0||Math.hypot(e.x-b.x,e.y-e.r-b.y)>r+e.r)continue;

@@ -1,6 +1,8 @@
 // Host-authoritative companions; clients render plain snapshot state.
 import { PETS, validPet, FOX_RIDE_RANGE, PHOENIX_STORM_RADIUS, DRAGON_FIREBALL, DRAGON_TORNADO } from './petdata.js';
-import { PET_SKINS, skinnedFrame, skinnedMountFrame, drawAura, warmMountCell } from './petskins.js';
+import { PET_SKINS, skinnedFrame, skinnedMountFrame, drawAura, warmMountCell, petTint, skinPalette } from './petskins.js';
+// pixelfx fire-breath / fire-tornado's own palette, recoloured for a 异色 dragon
+export const PET_FIRE_PAL=["#4a1712","#8a1f17","#c9281f","#f2561d","#ff8a2a","#ffc23d","#ffe26b","#fff3a6","#ffffff"];
 import { A } from './assets.js';
 import { los, tileAt, BLOCKS_SHOT, WALL, BUSH } from './map.js';
 import { updateCompanion, PET_MOTION } from './petai.js';
@@ -118,7 +120,7 @@ function pulse(game,p,kind,x,y,r,life=.35){
   game.petFields.push({id:nid(),owner:p.id,kind,x,y,r,t:0,life,max:life,delay:0});
 }
 function strike(game,p,x,y,r,damage,ultimate=false,bounds=null){
-  game.line(x+8,y-128,x,y-10,'#ffe36a',4,.3,'bolt',null,.05);game.line(x,y-10,x,y-10,'#ffe36a',r*.55,.28,'spark');
+  const tc=petTint(p,game.time);game.line(x+8,y-128,x,y-10,tc('#ffe36a'),4,.3,'bolt',null,.05);game.line(x,y-10,x,y-10,tc('#ffe36a'),r*.55,.28,'spark');
   for(const e of game.enemies){if(e.dead||e.spawnT>0||Math.hypot(e.x-x,e.y-y)>r+e.r||(bounds&&Math.hypot(e.x-bounds.x,e.y-bounds.y)>bounds.r))continue;game.hit(e,damage,{p,elem:'thunder',noUltGain:ultimate,noReact:true});if(!e.boss)e.stunT=Math.max(e.stunT||0,.18);}
   props(game,p,damage,(cx,cy)=>Math.hypot(cx-x,cy-y)<=r+12&&(!bounds||Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r),ultimate);
   game.sound('shoot_thunder',.1);
@@ -150,7 +152,7 @@ export function mountedAttack(game,p,angle,target){
   const m=petMuzzle(p),aim=target?Math.atan2(target.y-target.r-m.y,target.x-m.x):angle;shot(game,p,aim,true);return true;
 }
 function foxArc(game,p,angle){
-  const bounds={x:p.x,y:p.y,r:FOX_RIDE_RANGE},used=new Set(),damage=CHARS[p.cid].atk.dmg*1.25,m=petMuzzle(p);
+  const bounds={x:p.x,y:p.y,r:FOX_RIDE_RANGE},used=new Set(),damage=CHARS[p.cid].atk.dmg*1.25,m=petMuzzle(p),zc=petTint(p,game.time)('#fff2a0');
   const candidates=()=>[
     ...game.enemies.filter(e=>!e.dead&&e.spawnT<=0).map(e=>({key:'e'+e.id,x:e.x,y:e.y,r:e.r,e})),
     ...Object.entries(game.map.crates).filter(([,c])=>!c.dead).map(([i])=>({key:'p'+i,x:(i%game.map.W)*T+T/2,y:Math.floor(i/game.map.W)*T+T/2,r:14,i:Number(i)}))
@@ -170,9 +172,9 @@ function foxArc(game,p,angle){
       for(let d=2;d<=FOX_RIDE_RANGE;d+=2)if(tileAt(game.map,x+Math.cos(angle)*d,y+Math.sin(angle)*d)===WALL){wall=d;break;}
       distance=wall;
       for(const v of candidates()){const dx=v.x-x,dy=v.y-y,along=dx*Math.cos(angle)+dy*Math.sin(angle),across=Math.abs(-dx*Math.sin(angle)+dy*Math.cos(angle));if(along>=0&&across<=v.r+4){const entry=Math.max(0,along-Math.sqrt(Math.max(0,(v.r+4)**2-across**2)));if(entry<distance){hit=v;distance=entry;}}}
-      if(!hit){game.line(vx,vy,vx+Math.cos(angle)*distance,vy+Math.sin(angle)*distance,'#fff2a0',3,.22,'zap',p.id);break;}
+      if(!hit){game.line(vx,vy,vx+Math.cos(angle)*distance,vy+Math.sin(angle)*distance,zc,3,.22,'zap',p.id);break;}
     }
-    const endY=hit.y-(hit.e?.r||p.y-m.y);game.line(vx,vy,hit.x,endY,'#fff2a0',3,.24,'zap',bounce===0?p.id:null);used.add(hit.key);
+    const endY=hit.y-(hit.e?.r||p.y-m.y);game.line(vx,vy,hit.x,endY,zc,3,.24,'zap',bounce===0?p.id:null);used.add(hit.key);
     if(hit.e){game.hit(hit.e,damage,{p,elem:'thunder',noReact:true});if(!hit.e.boss)hit.e.stunT=Math.max(hit.e.stunT||0,.12);}
     else game.damageTile(hit.i,damage,p);
     x=hit.x;y=hit.y;vx=x;vy=endY;
@@ -186,13 +188,13 @@ function channel(game,p,kind,options,duration,ultimate=false){
 }
 // 连锁雷击: a bolt drops from the sky onto the first foe, then arcs on from foe to foe, one hop every 0.09 s
 function lightning(game,p,targets,damage,from){
-  const used=new Set(),bounds={x:p.pet.x,y:p.pet.y,r:FOX_RIDE_RANGE};let x=from.x,y=from.y,groundY=p.pet.y;const q=p.pet;
+  const used=new Set(),bounds={x:p.pet.x,y:p.pet.y,r:FOX_RIDE_RANGE};let x=from.x,y=from.y,groundY=p.pet.y;const q=p.pet,lc=petTint(p,game.time)('#ffe36a');
   for(let i=0;i<targets;i++){const e=targetFor(game,x,groundY,i?145:FOX_RIDE_RANGE,used,true,bounds);if(!e)break;used.add(e.id);
     const sx=x,sy=y,first=i===0;
     game.after(i*.09,()=>{
       if(q!==p.pet||p.dead||p.downed)return;const ty=e.y-e.r;
-      if(first)game.line(e.x+10,ty-130,e.x,ty,'#ffe36a',4,.32,'bolt',null,.05);else game.line(sx,sy,e.x,ty,'#ffe36a',3,.3,'bolt',null,.05);
-      game.line(e.x,ty,e.x,ty,'#ffe36a',18,.26,'spark');
+      if(first)game.line(e.x+10,ty-130,e.x,ty,lc,4,.32,'bolt',null,.05);else game.line(sx,sy,e.x,ty,lc,3,.3,'bolt',null,.05);
+      game.line(e.x,ty,e.x,ty,lc,18,.26,'spark');
       if(!e.dead){game.hit(e,damage,{p,elem:'thunder',noUltGain:from.ultimate,noReact:from.ultimate});if(!e.boss)e.stunT=Math.max(e.stunT||0,.15);}
       props(game,p,damage,(cx,cy)=>Math.hypot(cx-e.x,cy-e.y)<38&&Math.hypot(cx-bounds.x,cy-bounds.y)<=bounds.r);
       game.sound('shoot_thunder',.05);
@@ -207,16 +209,17 @@ function skill(game,p,target,angle,ultimate=false){
     // started after the wind-up and sized to the cone
     channel(game,p,'fire',{a:aim,x:m.x,y:m.y,length,width,damage:(ultimate?22:5+q.stage*3)*(q.tr?.dmg||1),fx:true},duration,ultimate);
     game.after(.33,()=>{if(q!==p.pet||p.dead||p.downed||!(q.castT>0))return;const n=petMuzzle(p);
-      game.vfx('fire/fire-breath',n.x,n.y,{angle:aim,life:duration,opts:{speed:length*1.5,spread:Math.atan(width/length)*1.3}});});
+      const pal=skinPalette(q.skin,'dragon',PET_FIRE_PAL,game.time);
+      game.vfx('fire/fire-breath',n.x,n.y,{angle:aim,life:duration,...(pal?{palette:pal}:{}),opts:{speed:length*1.5,spread:Math.atan(width/length)*1.3}});});
   }
   else if(q.id==='phoenix')channel(game,p,'snow',{x:ultimate?p.x:target?.x??p.x+Math.cos(angle)*140,y:ultimate?p.y:target?.y??p.y+Math.sin(angle)*140,r:ultimate?PHOENIX_STORM_RADIUS:54+q.stage*10,damage:(ultimate?18:5+q.stage*3)*(q.tr?.dmg||1),follow:ultimate},ultimate?5:3.2,ultimate);
-  else{q.castT=q.castMax=1.1;game.line(m.x,m.y,m.x+4,m.y-56,'#ffe36a',2,.3,'bolt',null,.08);game.line(m.x,m.y,m.x,m.y,'#ffe36a',10,.3,'spark');game.after(.3,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,(10+q.stage*5)*(q.tr?.dmg||1),petMuzzle(p));});}
+  else{q.castT=q.castMax=1.1;const lc=petTint(p,game.time)('#ffe36a');game.line(m.x,m.y,m.x+4,m.y-56,lc,2,.3,'bolt',null,.08);game.line(m.x,m.y,m.x,m.y,lc,10,.3,'spark');game.after(.3,()=>{if(!p.dead&&!p.downed&&q===p.pet)lightning(game,p,2+q.stage,(10+q.stage*5)*(q.tr?.dmg||1),petMuzzle(p));});}
 }
 /** 雷影穿梭 only goes off with a foe inside its range: an empty press keeps the charge (no wasted ultimate) */
 export function mountedUltBlocked(game,p){return !!(p.mounted&&p.pet?.id==='fox'&&!targetFor(game,p.x,p.y,FOX_RIDE_RANGE,null,false));}
 export function mountedUlt(game,p,angle,target){
   if(!p.mounted||!p.pet)return false;if(!game.host)return true;
-  game.text(p.x,overheadY(p),PETS[p.pet.id].rideUlt,PETS[p.pet.id].color,1.5,1.2);
+  game.text(p.x,overheadY(p),PETS[p.pet.id].rideUlt,petTint(p,game.time)(PETS[p.pet.id].color),1.5,1.2);
   if(p.pet.id==='dragon'){
     game.petFields=game.petFields.filter(f=>f.owner!==p.id||f.kind!=='tornado');
     const claimed=new Set();
@@ -257,7 +260,7 @@ function blink(game,p,dt){
     const d=Math.hypot(spot.x-p.x,spot.y-p.y),dur=Math.max(BLINK.min,Math.min(BLINK.max,d/BLINK.speed));
     leg=q.blinkLeg={fx:p.x,fy:p.y,tx:spot.x,ty:spot.y,t:0,dur,eid:e.id,trail:0,hit:false,rest:0};
     p.face=q.face=Math.atan2(spot.y-p.y,spot.x-p.x);
-    game.line(p.x,p.y-24,spot.x,spot.y-24,'#ffe36a',3,dur+.16,'bolt',null,dur);
+    game.line(p.x,p.y-24,spot.x,spot.y-24,petTint(p,game.time)('#ffe36a'),3,dur+.16,'bolt',null,dur);
   }
   if(!leg.hit){
     leg.t+=dt;const k=Math.min(1,leg.t/leg.dur),u=k<.5?2*k*k:1-2*(1-k)**2; // ease in-out: no first-frame jump
@@ -404,6 +407,7 @@ export function drawPetFields(ctx,game,time,layer='back') {
     if(f.t<f.delay)continue;
     if(f.kind==='fire'&&f.fx)continue; // drawn by the pixelfx breath (skip before save: a skipped save left the fade on every later draw)
     const fade=Math.min(1,(f.t-f.delay)*8,f.life*4);ctx.save();ctx.globalAlpha=fade;
+    const tc=petTint(game.player(f.owner),time); // 异色: the field in the skin's colours
     if(f.kind==='fire') {
       const len=f.visibleLength||f.length,cs=Math.cos(f.a),sn=Math.sin(f.a),step=game.fx?.lite?8:5;
       // World-aligned blocks retain the pixel style at every aim angle; hot tongues travel outward.
@@ -412,42 +416,42 @@ export function drawPetFields(ctx,game,time,layer='back') {
         for(let v=-half;v<=half;v+=step) {
           const edge=Math.abs(v-shift)/half,noise=Math.sin(d*.63+v*1.71-time*26)*.11;
           if(edge>1+noise || (d>len-12 && Math.sin(v*2+d-time*24)<.1))continue;
-          const heat=edge+noise;ctx.fillStyle=heat<.22?'#fff3bc':heat<.48?'#ffc34f':heat<.77?'#ff732e':'#c93632';
+          const heat=edge+noise;ctx.fillStyle=heat<.22?tc('#fff3bc'):heat<.48?tc('#ffc34f'):heat<.77?tc('#ff732e'):tc('#c93632');
           const x=f.x+cs*d-sn*v,y=f.y+sn*d+cs*v;ctx.fillRect(Math.round(x/2)*2,Math.round(y/2)*2,step+1,step+1);
         }
       }
-      for(let i=0;i<16;i++){const d=((time*120+i*29)%Math.max(1,len)),v=Math.sin(i*2.4+time*5)*f.width*d/f.length*1.2;ctx.fillStyle=i%2?'#ffd967':'#ff8b3b';ctx.fillRect(Math.round((f.x+cs*d-sn*v)/2)*2,Math.round((f.y+sn*d+cs*v)/2)*2,2,2);}
+      for(let i=0;i<16;i++){const d=((time*120+i*29)%Math.max(1,len)),v=Math.sin(i*2.4+time*5)*f.width*d/f.length*1.2;ctx.fillStyle=i%2?tc('#ffd967'):tc('#ff8b3b');ctx.fillRect(Math.round((f.x+cs*d-sn*v)/2)*2,Math.round((f.y+sn*d+cs*v)/2)*2,2,2);}
     } else if(f.kind==='zap'||f.kind==='purge'){
       const u=1-f.life/f.max,r=f.kind==='purge'?Math.min(f.r,u*f.r):f.r*(.75+u*.25);
-      ctx.strokeStyle='#fff4be';ctx.lineWidth=f.kind==='purge'?3:2;ctx.beginPath();
+      ctx.strokeStyle=tc('#fff4be');ctx.lineWidth=f.kind==='purge'?3:2;ctx.beginPath();
       for(let i=0;i<=64;i++){const a=i*Math.PI/32,rr=r+(i%2?3:-2),x=f.x+Math.cos(a)*rr,y=f.y+Math.sin(a)*rr*.7;(i?ctx.lineTo(x,y):ctx.moveTo(x,y));}ctx.stroke();
-      if(f.kind==='zap'){ctx.fillStyle='rgba(255,225,143,.16)';ctx.beginPath();ctx.ellipse(f.x,f.y,f.r,f.r*.7,0,0,Math.PI*2);ctx.fill();}
+      if(f.kind==='zap'){ctx.fillStyle=tc('rgba(255,225,143,.16)');ctx.beginPath();ctx.ellipse(f.x,f.y,f.r,f.r*.7,0,0,Math.PI*2);ctx.fill();}
     } else if(f.kind==='snow'&&f.ultimate){
       // A deep frost floor and bright orbiting ice ribbons remain readable over scenery.
       if(layer==='back'){
         const frost=ctx.createRadialGradient(f.x,f.y,8,f.x,f.y,f.r);
-        frost.addColorStop(0,'rgba(24,91,174,.48)');frost.addColorStop(.68,'rgba(70,169,229,.3)');frost.addColorStop(1,'rgba(158,236,255,.06)');
+        frost.addColorStop(0,tc('rgba(24,91,174,.48)'));frost.addColorStop(.68,tc('rgba(70,169,229,.3)'));frost.addColorStop(1,tc('rgba(158,236,255,.06)'));
         ctx.fillStyle=frost;ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
-        ctx.strokeStyle='rgba(151,232,255,.45)';ctx.lineWidth=2;
+        ctx.strokeStyle=tc('rgba(151,232,255,.45)');ctx.lineWidth=2;
         for(let i=0;i<4;i++){ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.28+i*.19),time*1.8+i*1.6,time*1.8+i*1.6+2.2);ctx.stroke();}
       }else{
         ctx.lineCap='round';
         for(let i=0;i<7;i++){
           const a=time*(i%2?2.5:1.9)+i*2.4,r=f.r*(.46+(i%3)*.2),cy=f.y-12-(i%3)*9;
-          ctx.strokeStyle=i%2?'#73d8ff':'#d5f9ff';ctx.globalAlpha=fade*(i%2?.65:.85);ctx.lineWidth=i%2?3:2;
+          ctx.strokeStyle=i%2?tc('#73d8ff'):tc('#d5f9ff');ctx.globalAlpha=fade*(i%2?.65:.85);ctx.lineWidth=i%2?3:2;
           ctx.beginPath();ctx.ellipse(f.x,cy,r,r*.68,0,a,a+1.45);ctx.stroke();
         }
         ctx.globalAlpha=fade;
         for(let i=0;i<(game.fx?.lite?30:58);i++){
           const a=i*2.399+time*(1.4+(i%3)*.25),r=f.r*Math.sqrt((i*37%97)/97),x=f.x+Math.cos(a)*r,y=f.y+Math.sin(a)*r-((time*46+i*11)%46);
-          ctx.fillStyle=i%3?'#a8ecff':'#ffffff';ctx.fillRect(Math.round(x),Math.round(y),2,4);
+          ctx.fillStyle=i%3?tc('#a8ecff'):tc('#ffffff');ctx.fillRect(Math.round(x),Math.round(y),2,4);
           if(i%6===0){ctx.fillRect(Math.round(x)-3,Math.round(y)+1,8,2);ctx.fillRect(Math.round(x),Math.round(y)-2,2,8);}
         }
       }
     } else {
-      ctx.fillStyle='rgba(96,182,241,.14)';ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
-      for(let i=0;i<(game.fx?.lite?35:85);i++) {const a=i*2.4+time*(1+i%3*.3),r=Math.sqrt((i*37%97)/97)*f.r,x=Math.round(f.x+Math.cos(a)*r),y=Math.round(f.y+Math.sin(a)*r-((time*32+i*7)%23)+11);ctx.fillStyle=i%3?'#b7f1ff':'#fff';ctx.fillRect(x,y,i%4?2:3,i%4?2:3);}
-      ctx.strokeStyle='#91dbff';ctx.lineWidth=1;ctx.globalAlpha=fade*.5;
+      ctx.fillStyle=tc('rgba(96,182,241,.14)');ctx.beginPath();ctx.arc(f.x,f.y,f.r,0,Math.PI*2);ctx.fill();
+      for(let i=0;i<(game.fx?.lite?35:85);i++) {const a=i*2.4+time*(1+i%3*.3),r=Math.sqrt((i*37%97)/97)*f.r,x=Math.round(f.x+Math.cos(a)*r),y=Math.round(f.y+Math.sin(a)*r-((time*32+i*7)%23)+11);ctx.fillStyle=i%3?tc('#b7f1ff'):tc('#fff');ctx.fillRect(x,y,i%4?2:3,i%4?2:3);}
+      ctx.strokeStyle=tc('#91dbff');ctx.lineWidth=1;ctx.globalAlpha=fade*.5;
       for(let i=0;i<3;i++){ctx.beginPath();ctx.arc(f.x,f.y,f.r*(.4+i*.22),time*3+i,time*3+i+1.8);ctx.stroke();}
     }
     ctx.restore();
