@@ -1247,27 +1247,29 @@ export function drawWorldFloor(g, game, me, t) {
 // 家园 art (PixelLab, static): buildings on their plots once built, the board and the steward; an unbuilt plot is a
 // staked-out patch of earth drawn in code
 const HOME_IMG = Object.fromEntries(["steward", "quest", "hut", "store", "spring", "tower", "board", "trader", "meteor"].map((k) => [k, typeof Image === "undefined" ? null : Object.assign(new Image(), { src: `assets/home/${k}.png` })]));
-function img(g, k, x, y, shadow = 0.42) { // feet at (x, y), on a soft ground shadow
+// frames per strip (PixelLab animate-with-text-v3 idle loops), playback rate, and a still pause between plays
+const ANIM = { steward: [8, 7], quest: [8, 7], trader: [8, 7], hut: [8, 5], store: [7, 5, 2.6], spring: [8, 7], tower: [8, 8], board: [8, 5, 1.5], meteor: [1, 1] };
+function frameOf(k, t, seed = 0) {
+  const [n, fps, hold = 0] = ANIM[k] || [1, 1];
+  if (n < 2) return 0;
+  const len = n / fps + hold, u = (t + seed) % len;
+  return u >= n / fps ? 0 : Math.floor(u * fps) % n;
+}
+function img(g, k, x, y, t = 0, seed = 0) { // feet at (x, y) (the art carries its own ground)
   const im = HOME_IMG[k];
   if (!im?.complete || !im.naturalWidth) return;
-  if (shadow) (g.fillStyle = "rgba(10,8,20,0.3)"), g.beginPath(), g.ellipse(x, y - 3, im.naturalWidth * shadow, Math.max(6, im.naturalWidth * 0.1), 0, 0, Math.PI * 2), g.fill();
+  const n = (ANIM[k] || [1])[0], w = im.naturalWidth / n, h = im.naturalHeight;
   g.imageSmoothingEnabled = false;
-  g.drawImage(im, Math.round(x - im.naturalWidth / 2), Math.round(y - im.naturalHeight));
+  g.drawImage(im, frameOf(k, t, seed) * w, 0, w, h, Math.round(x - w / 2), Math.round(y - h), w, h);
 }
-// an NPC standing idle (static art, no frames): breathing — a slow stretch from the feet — and every few seconds she
-// turns to look the other way; a shadow under her
+// an NPC: her idle loop, a soft shadow at her feet
 export function npcImg(g, k, x, y, t, seed = 0) {
   const im = HOME_IMG[k];
   if (!im?.complete || !im.naturalWidth) return;
-  const w = im.naturalWidth, h = im.naturalHeight, br = Math.sin(t * 2.3 + seed), flip = Math.floor((t + seed * 2.7) / 4.5) % 3 === 2 ? -1 : 1;
-  g.fillStyle = "rgba(10,8,20,0.32)";
-  g.beginPath(); g.ellipse(x, y - 2, w * 0.3 * (1 - br * 0.03), 5, 0, 0, Math.PI * 2); g.fill();
-  g.save();
-  g.translate(Math.round(x), Math.round(y));
-  g.scale(flip * (1 - br * 0.012), 1 + br * 0.024);
-  g.imageSmoothingEnabled = false;
-  g.drawImage(im, -Math.round(w / 2), -h);
-  g.restore();
+  const w = im.naturalWidth / ANIM[k][0];
+  g.fillStyle = "rgba(10,8,20,0.28)";
+  g.beginPath(); g.ellipse(x, y - 2, w * 0.32, 4.5, 0, 0, Math.PI * 2); g.fill();
+  img(g, k, x, y, t, seed);
 }
 function plotSprite(g, x, y) {
   g.fillStyle = "#1a1020"; g.fillRect(x - 42, y - 22, 84, 36);
@@ -1279,12 +1281,12 @@ function plotSprite(g, x, y) {
 function homeSprites(m, ws, out) {
   const H = ws.home, P = m.home.plots;
   pastureSprites(m, out, MAT_IMG);
-  out.push({ y: m.home.board.y + 14, draw: (g) => img(g, "board", m.home.board.x, m.home.board.y + 16, 0.4) });
+  out.push({ y: m.home.board.y + 14, draw: (g, t) => img(g, "board", m.home.board.x, m.home.board.y + 16, t) });
   out.push({ y: m.home.steward.y + 10, draw: (g, t) => npcImg(g, "steward", m.home.steward.x, m.home.steward.y + 12, t, 0) });
   out.push({ y: m.home.quest.y + 10, draw: (g, t) => npcImg(g, "quest", m.home.quest.x, m.home.quest.y + 12, t, 1.7) });
   for (const k of ["hut", "store", "spring", "tower"]) {
     const o = P[k];
-    if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20)) });
+    if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g, t) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20), t, o.x * 0.01) });
     else out.push({ y: o.y - 20, draw: (g) => plotSprite(g, o.x, o.y) });
   }
 }

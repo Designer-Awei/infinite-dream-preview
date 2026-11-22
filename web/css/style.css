@@ -2981,3 +2981,4 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wh-mat { display: inline-flex; align-items: center; gap: 3px; background: #e8dcff; }
 .wh-mat .mat-ic { width: 16px; height: 16px; }
 .hud .hud-help, .hud .hud-help:active { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 rgba(0,0,0,.15); transform: none; } /* (no drop shadow under it, like the pause button) */
+.hm-row .hm-pic.bld { object-fit: cover; object-position: 0 50%; } /* (the art is an animation strip: show its first frame) */
