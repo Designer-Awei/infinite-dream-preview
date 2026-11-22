@@ -797,6 +797,9 @@ function grant(g, kind, n) {
 }
 // the four regions' materials (by biome index): spent at the camp workshop
 export const MATS = [{ name: "草芯", col: "#8ad85a" }, { name: "霜晶", col: "#9ad8ff" }, { name: "熔核", col: "#ff8a3a" }, { name: "梦砂", col: "#c8a0ff" }];
+// their item icons (PixelLab, one static set): the workshop, the map panel, the loot and the 采集点 all use these
+export const matSrc = (k) => `assets/ui/mat${k}.png`;
+const MAT_IMG = [0, 1, 2, 3].map((k) => (typeof Image === "undefined" ? null : Object.assign(new Image(), { src: matSrc(k) })));
 export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验", mat0: "草芯", mat1: "霜晶", mat2: "熔核", mat3: "梦砂" };
 // 营地工坊: materials into lasting rewards. cost: [草芯, 霜晶, 熔核, 梦砂]; once: a title, bought a single time
 export const WORKSHOP = [
@@ -971,9 +974,11 @@ function dropIcon(k) {
     g.fillStyle = INKC; g.beginPath(); g.roundRect(0, 0, 26, 30, [{ x: 13, y: 18 }, { x: 13, y: 18 }, 8, 8]); g.fill();
     g.fillStyle = gr; g.beginPath(); g.roundRect(2, 2, 22, 26, [{ x: 11, y: 16 }, { x: 11, y: 16 }, 6, 6]); g.fill();
   } else {
-    c.width = c.height = 16;
-    g.fillStyle = INKC; g.beginPath(); g.roundRect(0, 0, 16, 16, 4); g.fill();
-    g.fillStyle = MATS[+k[3]].col; g.beginPath(); g.roundRect(3, 3, 10, 10, 2); g.fill();
+    const im = MAT_IMG[+k[3]];
+    if (!im?.complete || !im.naturalWidth) return null;
+    c.width = c.height = 24;
+    g.imageSmoothingEnabled = false;
+    g.drawImage(im, 0, 0, 24, 24);
   }
   return (ICONS[k] = c);
 }
@@ -1176,25 +1181,17 @@ export function drawWorldFloor(g, game, me, t) {
     g.stroke();
   }
 }
-// 采集点 by region: a herb clump, a frost crystal, an ember ore, a dream-sand mound
+// 采集点: the material's own icon standing there (gently bobbing over its shadow), so what you see is what you get
 function nodeSprite(g, x, y, b, t) {
-  const r = (a, c, w, h, col) => ((g.fillStyle = col), g.fillRect(Math.round(x + a), Math.round(y + c), w, h));
-  g.fillStyle = "rgba(10,8,20,0.3)";
+  const im = MAT_IMG[b], bob = Math.round(Math.sin(t * 2.4 + x * 0.01) * 1.5);
+  g.fillStyle = "rgba(10,8,20,0.32)";
   g.beginPath();
-  g.ellipse(x, y + 2, 11, 4, 0, 0, Math.PI * 2);
+  g.ellipse(x, y + 1, 11, 4, 0, 0, Math.PI * 2);
   g.fill();
-  const tw = Math.sin(t * 4 + x) > 0.85; // a glint now and then
-  if (b === 0) {
-    r(-8, -10, 16, 12, "#1a1020"); r(-7, -9, 6, 10, "#5aa83a"); r(-1, -12, 6, 13, "#6fbf48"); r(4, -8, 4, 9, "#4a8a2a");
-    r(-5, -7, 2, 2, "#ffe066"); r(2, -10, 2, 2, "#ffffff"); r(5, -6, 2, 2, "#ff8ac0");
-  } else if (b === 1) {
-    r(-7, -18, 14, 20, "#1a1020"); r(-5, -16, 5, 17, "#9ad8ff"); r(0, -14, 5, 15, "#c8ecff"); r(-6, -6, 4, 7, "#6ab4e0"); r(-4, -15, 1, 8, "#ffffff");
-  } else if (b === 2) {
-    r(-9, -9, 18, 11, "#1a1020"); r(-8, -8, 16, 9, "#4a3a38"); r(-6, -6, 3, 3, "#ff8a3a"); r(1, -7, 4, 3, "#ffc23a"); r(3, -3, 3, 2, "#ff6a2a");
-  } else {
-    r(-9, -6, 18, 8, "#1a1020"); r(-8, -5, 16, 6, "#c8a0ff"); r(-5, -8, 10, 4, "#1a1020"); r(-4, -7, 8, 3, "#e8d0ff"); r(-2, -6, 2, 2, "#ffffff");
-  }
-  if (tw) r(-1, -20, 2, 5, "#ffffff"), r(-3, -18, 6, 1, "#ffffff");
+  if (!im?.complete || !im.naturalWidth) return;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(im, Math.round(x - 14), Math.round(y - 27 + bob), 28, 28);
+  if (Math.sin(t * 4 + x) > 0.85) (g.fillStyle = "#ffffff"), g.fillRect(Math.round(x + 7), Math.round(y - 30 + bob), 2, 5), g.fillRect(Math.round(x + 5), Math.round(y - 28 + bob), 6, 1);
 }
 // 裂纹岩: glowing cracks over a rock block (x, y = the block's top-left, lifted like walls)
 function crackSprite(g, x, y, j) {
@@ -1240,7 +1237,8 @@ function shopSprite(g, x, y, t) {
   g.ellipse(x, y + 22, 36, 10, 0, 0, Math.PI * 2);
   g.fill();
   r(-34, -2, 68, 26, "#1a1020"); r(-32, 0, 64, 22, "#9a5e2c"); r(-32, 0, 64, 3, "#c88a4a"); // counter
-  r(-26, 6, 10, 8, "#5aa83a"); r(-12, 5, 9, 9, "#9ad8ff"); r(2, 7, 9, 7, "#ff8a3a"); r(16, 6, 9, 8, "#c8a0ff"); // the four materials on display
+  g.imageSmoothingEnabled = false;
+  MAT_IMG.forEach((im, k) => im?.complete && im.naturalWidth && g.drawImage(im, Math.round(x - 30 + k * 15), Math.round(y - 4), 14, 14)); // the four materials on display
   r(-32, -40, 4, 40, "#1a1020"); r(28, -40, 4, 40, "#1a1020"); r(-31, -40, 2, 40, "#c88a4a"); r(29, -40, 2, 40, "#c88a4a"); // posts
   for (let k = 0; k < 8; k++) r(-36 + k * 9, -48 + (k % 2), 9, 12, k % 2 ? "#ffe8c0" : "#ff6a8a"); // awning
   r(-36, -49, 72, 2, "#1a1020"); r(-36, -36, 72, 2, "#1a1020");

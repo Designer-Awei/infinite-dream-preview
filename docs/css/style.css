@@ -2914,7 +2914,9 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wshop-p .ws-mats { display: flex; gap: 6px; }
 .ws-mat { display: inline-flex; align-items: center; gap: 4px; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 1px 7px; font-size: 11px; color: #e8dcff; }
 .ws-mat b { color: #fff6c0; margin-left: 2px; }
-.ws-mat i, .ws-c i, .wm-mats i { width: 9px; height: 9px; border-radius: 2px; box-shadow: 0 0 0 2px var(--ink); display: inline-block; }
+.mat-ic { width: 16px; height: 16px; image-rendering: pixelated; flex: none; display: inline-block; }
+.ws-c .mat-ic { width: 18px; height: 18px; }
+.wmap-p .wm-mats .mat-ic { width: 15px; height: 15px; }
 .wshop-p .ws-cost { display: flex; gap: 5px; flex: none; width: 150px; justify-content: flex-end; }
 .ws-c { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #fff6c0; }
 .ws-c.short { color: #ff8a9a; }

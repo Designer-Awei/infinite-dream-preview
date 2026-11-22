@@ -7,7 +7,7 @@ import { el } from "./util.js";
 import { btn, toast, uiRoot } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
-import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, WORKSHOP, workshopBuy } from "./world.js";
+import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy } from "./world.js";
 import { drawEgg } from "./petwh.js";
 import { worldAtlas } from "./worldatlas.js";
 import { load } from "./save.js";
@@ -37,6 +37,7 @@ function labelAt(m, L) {
   return at;
 }
 const NEED = { dragon: ["龙", "#e8642a"], fox: ["狐", "#d8a018"], phoenix: ["凰", "#2a9ad8"] };
+const matImgs = [0, 1, 2, 3].map((k) => Object.assign(new Image(), { src: matSrc(k) }));
 const NEED_TIP = { dragon: "骑火龙击碎裂纹岩", fox: "骑灵狐穿过电门", phoenix: "骑冰凰飞过去" };
 let comp = null, compKey = null;
 function mapArt(m, ws) {
@@ -159,8 +160,8 @@ export function showWorldMap(game, me, app) {
     }
     // markers, by zoom
     if (lod >= 2) for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && seen(n)) mark(n, (g2) => {
-      g2.fillStyle = "#0c0814"; g2.beginPath(); g2.moveTo(0, -6); g2.lineTo(5, 0); g2.lineTo(0, 6); g2.lineTo(-5, 0); g2.fill();
-      g2.fillStyle = MATS[n.b].col; g2.beginPath(); g2.moveTo(0, -4); g2.lineTo(3, 0); g2.lineTo(0, 4); g2.lineTo(-3, 0); g2.fill();
+      const im = matImgs[n.b];
+      if (im.complete && im.naturalWidth) (g2.imageSmoothingEnabled = false), g2.drawImage(im, -8, -8, 16, 16);
     });
     for (const c of m.chests) if (!c.need && !ws.opened.has(c.id) && seen(c) && (lod >= 2 || (lod === 1 && c.gold))) mark(c, ring(0, 3, c.gold ? "#ffd84a" : "#e0a050"));
     // 坐骑秘境 / islets: a badge naming the mount it needs (from 2×; greyed once its chest is open)
@@ -254,7 +255,7 @@ export function showWorldMap(game, me, app) {
   // side: progress, materials, bosses
   const opened = m.chests.filter((c) => ws.opened.has(c.id)).length;
   md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened} / ${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size} / ${m.waypoints.length}</b></div>`;
-  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span><i style="background:${t.col}"></i>${t.name} <b>${ws.mats[k]}</b></span>`).join("");
+  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span><img class="mat-ic" src="${matSrc(k)}" alt="">${t.name} <b>${ws.mats[k]}</b></span>`).join("");
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;
     return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? `<em>${bossRespawnIn()}</em> 刷新` : "可挑战"}</b></div>`;
@@ -396,8 +397,8 @@ export function showWorkshop(game, me, app) {
   app.paused = true;
   sfx("click");
   const md = el("div", "modal stash-md wshop-md");
-  const chips = () => MATS.map((t, k) => `<span class="ws-mat"><i style="background:${t.col}"></i>${t.name}<b>${ws.mats[k]}</b></span>`).join("");
-  const cost = (o) => o.cost.map((c, k) => (c ? `<span class="ws-c${ws.mats[k] < c ? " short" : ""}"><i style="background:${MATS[k].col}"></i>${c}</span>` : "")).join("");
+  const chips = () => MATS.map((t, k) => `<span class="ws-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${t.name}<b>${ws.mats[k]}</b></span>`).join("");
+  const cost = (o) => o.cost.map((c, k) => (c ? `<span class="ws-c${ws.mats[k] < c ? " short" : ""}"><img class="mat-ic" src="${matSrc(k)}" alt="">${c}</span>` : "")).join("");
   const ico = (o) => {
     const k = GIVE[o.id][2];
     return k?.startsWith("egg:") ? `<canvas class="st-egg" data-k="${k.slice(4)}"></canvas>` : k === "title" ? `<span class="st-ttl">${titleHTML(o.once)}</span>` : k ? `<i class="st-ico ${k}"></i>` : `<i class="ws-ico ${o.id}"></i>`;
