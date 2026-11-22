@@ -649,6 +649,7 @@ function frame(now) {
     inp.my = input.my;
     const auto = !!load().autoFire; // off by default; can be switched on in the pause menu
     inp.atk = (input.atk || (auto && !!me.target && !me.downed)) && !app.cardOpen;
+    inp.press = !!input.atk && !app.cardOpen; // (the attack button itself, not auto-fire: 梦境大陆's stations talk on this)
     inp.aim = input.aim;
     if (consume("skill")) (inp.skill = true), (inp.castAim = { ...inp.castAim, skill: input.castAim.skill });
     if (consume("ult")) (inp.ult = true), (inp.castAim = { ...inp.castAim, ult: input.castAim.ult });
@@ -657,7 +658,7 @@ function frame(now) {
   }
   // frozen (an event dialog, card pick or the pause menu is up): drop the held attack, or the HUD keeps the
   // attack button "firing" behind the dialog with the value it had when the dialog opened
-  if (me && frozen) me.input.atk = false;
+  if (me && frozen) (me.input.atk = false), (me.input.press = false);
   const active = me && (Math.abs(me.input.mx) > .1 || Math.abs(me.input.my) > .1 || me.input.atk || me.input.skill || me.input.ult || me.input.dash || me.castT > 0);
   if ((app.petCheckT = (app.petCheckT || 0) + wallDt) >= 1) (app.petCheckT = 0), app.petLiveXP();
   trackExperienceTime(app.progressSession, wallDt, active, !document.hidden && !frozen && !app.cardOpen && !app.ended && !g.pvp && !me?.dead && !me?.downed && ["fight", "clear", "portal"].includes(g.phase) && g.room?.kind !== "shop");

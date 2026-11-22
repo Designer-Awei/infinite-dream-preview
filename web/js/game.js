@@ -474,6 +474,8 @@ export class Game {
     this.timers.push({ t, fn });
   }
   addZone(z) {
+    // a puddle (poison / fire / web) cannot sit on water: dropped where a monster died or a glob fell over a river
+    if ((z.kind === "poison" || z.kind === "web" || z.kind === "sandpit") && this.map && tileAt(this.map, z.x, z.y) === WATER) return z;
     z.id = nid();
     if (z.update || z.onEnd) Object.defineProperty(z, "g", { value: this, enumerable: false }); // enemy zones' callbacks reach the game
     z.t = 0;
@@ -1984,7 +1986,7 @@ export class Game {
     // attack
     p.atkCd -= dt;
     // next to an event visitor the attack button talks instead of shooting
-    if (inp.atk && !(p.nearNpc && this.npc && !this.eventDone)) {
+    if (inp.atk && !(p.nearNpc && this.npc && !this.eventDone) && !(this.world && p.nearStation)) { // (梦境大陆: next to a station the attack talks)
       p.idleFire = 0;
       if (p.cid === "grok") p.rampT = Math.min(2, p.rampT + dt);
       if (p.atkCd <= 0) {

@@ -52,7 +52,7 @@ function spotNear(m, p, H) {
     if (x < 4 || y < 4 || x >= W - 4 || y >= m.H - 4) continue;
     if (x >= hx0 - 6 && x <= hx1 + 6 && y >= hy0 - 6 && y <= hy1 + 6) continue;
     let ok = true;
-    for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2 && ok; dx++) { const i = (y + dy) * W + x + dx; if (!m.reach[i] || m.t[i] !== 0 || H.BIOMES[m.biome[i]].locked) ok = false; }
+    for (let dy = -2; dy <= 2 && ok; dy++) for (let dx = -2; dx <= 2 && ok; dx++) { const i = (y + dy) * W + x + dx; if (!m.reach[i] || m.t[i] !== 0 || m.mud[i] || H.BIOMES[m.biome[i]].locked) ok = false; }
     if (ok) return { x: x * T + T / 2, y: y * T + T / 2, b: m.biome[y * W + x] };
   }
   return null;

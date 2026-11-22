@@ -431,7 +431,7 @@ export class Renderer {
       } else this.text(g, Math.ceil(p.respawnT) + "", p.x, p.y - 44, "#fff", 14);
       return;
     }
-    const blink = p.invuln > 0 && p.hurtT < 0.5 && p.invuln < 0.9 && Math.floor(this.t * 20) % 2 === 0 && p.dashT <= 0;
+    const blink = p.invuln > 0 && !p.boat && p.hurtT < 0.5 && p.invuln < 0.9 && Math.floor(this.t * 20) % 2 === 0 && p.dashT <= 0; // (no blinking on the ferry)
     g.globalAlpha = inBush ? 0.55 : blink ? 0.45 : 1;
     // procedural animation: bob, sway of hair/skirt rows, stepping legs (rows sliced from the hi-res sprite)
     const t = p.animT, mv = p.moving;

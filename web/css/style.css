@@ -3017,3 +3017,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* the mode card 2px taller, taken from the gap above it (its bottom, the tabs and the buttons stay put) */
 .lb .lb-right .lm-track { padding-top: 6px; }
 .guide.single .hp-main { flex: 1; }
+
+/* 迷途商人: one icon box for every kind of goods (a 星砂 tile is narrower than a material picture) */
+.hm-row .hm-icw { flex: none; width: 40px; height: 40px; display: grid; place-items: center; }

@@ -6,6 +6,8 @@
 // Co-op: the world is deterministic and enemies are host-simulated like room enemies, so a host would only need to
 // send the enemies near its guests and the opened-chest list — not done yet (solo offline first).
 import { T, VIEW_W, VIEW_H } from "./data.js";
+import { input } from "./input.js";
+const talkHint = () => (input.touch ? "按攻击键交谈" : "按 J 交谈");
 import { THEMES, WALL, WATER, BUSH, CRATE, BARREL, F, CRATE_HP } from "./map.js";
 import { load, save, mineState, grantCharacterXP } from "./save.js";
 import { grantEggs, petState, addPool } from "./petsave.js";
@@ -154,7 +156,7 @@ export function buildWorld(seed) {
     else if (r < 0.008) t = CRATE;
     else if (r < 0.0105) t = BARREL;
     m.t[i] = t;
-    if (t !== WATER && t !== WALL && hz > (b === 2 ? 0.34 : 0.4)) m.mud[i] = 1;
+    if (t === F && hz > (b === 2 ? 0.34 : 0.4)) m.mud[i] = 1; // (hazard floor only on open ground: no crate, barrel or bush standing in the lava)
   }
   // rivers: from inside each continent they meander out to the coast, 1–2 tiles wide, in their region's colours
   PLATES.forEach((P, k) => {
@@ -195,7 +197,8 @@ export function buildWorld(seed) {
       if (m.road[j] >= 2) continue;
       if (m.t[j] === WATER) {
         if (m.biome[j] === 3 && !force) continue;
-        m.t[j] = F; m.mud[j] = 0; m.road[j] = 3; m.bdir[j] = dirNow; // a bridge
+        if (!force) { m.t[j] = F; m.mud[j] = 0; m.road[j] = 1; continue; } // (a road over a river or pond inside a continent: a filled dirt causeway, no planks — planks are for the sea crossings)
+        m.t[j] = F; m.mud[j] = 0; m.road[j] = 3; m.bdir[j] = dirNow; // a bridge over a strait
         continue;
       }
       m.t[j] = F; m.mud[j] = 0; m.road[j] = 1;
@@ -339,7 +342,7 @@ export function buildWorld(seed) {
       for (let s2 = 0; s2 <= len; s2++) {
         const j = i + dy * s2 * W + dx * s2;
         for (const jj of [j, j + (dx ? W : 1)]) {
-          if (m.t[jj] === WATER) (m.t[jj] = F), (m.road[jj] = 3), (m.mud[jj] = 0), (m.bdir[jj] = dx ? 1 : 0); // a little bridge over the river
+          if (m.t[jj] === WATER) (m.t[jj] = F), (m.mud[jj] = 0); // a strip of land across the river (planks only at sea crossings)
           else if (m.t[jj] === WALL) (m.t[jj] = F), (m.mud[jj] = 0); // (a gap through a rock edge)
         }
       }
@@ -348,13 +351,25 @@ export function buildWorld(seed) {
     if (!built) break;
     flood();
   }
+  // scraps of water inside a continent (a pond of a few tiles, or what a causeway cut off a river): back to ground — they read as noise
+  {
+    const seen = new Uint8Array(N);
+    for (let i0 = 0; i0 < N; i0++) {
+      if (seen[i0] || m.t[i0] !== WATER || m.biome[i0] === 3) continue;
+      const comp = [i0];
+      seen[i0] = 1;
+      for (let h = 0; h < comp.length; h++) for (const j of [comp[h] + 1, comp[h] - 1, comp[h] + W, comp[h] - W]) if (!seen[j] && m.t[j] === WATER) (seen[j] = 1), comp.push(j);
+      if (comp.length <= 16 && comp.every((j) => m.biome[j] !== 3)) for (const j of comp) (m.t[j] = F), (m.mud[j] = 0);
+    }
+    flood();
+  }
   for (let i = 0; i < N; i++) if (m.t[i] === CRATE || m.t[i] === BARREL) m.crates[i] = { hp: m.t[i] === CRATE ? CRATE_HP : 12 };
   m.reach = reach;
   m.spawnT = { x: sx, y: sy };
   m.spawn = { x: sx * T + T / 2, y: sy * T + T / 2 };
   m.center = m.spawn;
   m.itemSpots = [m.spawn];
-  const open = (x, y) => x > 1 && y > 1 && x < W - 2 && y < H - 2 && reach[y * W + x] && m.t[y * W + x] === F && !m.road[y * W + x];
+  const open = (x, y) => x > 1 && y > 1 && x < W - 2 && y < H - 2 && reach[y * W + x] && m.t[y * W + x] === F && !m.road[y * W + x] && !m.mud[y * W + x]; // (nothing placed on a hazard patch)
   const tdist = (x, y) => Math.hypot(x - sx, y - sy);
   // enemies: each 16×16 chunk outside the camp keeps 2–4 residents of its region (more and tougher further out)
   m.spawners = [];
@@ -768,7 +783,7 @@ export function worldEnter(g) {
   if (!eggPainter) import("./petwh.js").then((M) => (eggPainter = M.drawEgg)); // (the loot's egg icons)
   for (const i of sv.cracked || []) if (m.cracked.has(i)) m.t[i] = F; // (裂纹岩 you have broken stays broken)
   g.map = m;
-  g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
+  g.ws = { chunks: new Map(), opened: new Set((sv.opened || []).filter((id) => m.chests.some((c) => c.id === id))) /* (chests moved by a world change drop out) */, fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
     gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
     mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
     cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {},
@@ -1090,17 +1105,23 @@ export function worldUpdate(g, dt) {
     g.vfx("pickups/collect-burst", n.x, n.y - 8, { palette: ["#140e22", "#3a2a5a", MATS[n.b].col, "#ffffff"] });
     g.sound("pickup", 0.1);
   }
-  // stations you stand at a moment to open (step away to arm them again): 营地工坊, 派遣告示板, 家园管家
+  // stations you walk up to and press attack at (the attack talks instead of shooting there, game.js): 营地工坊,
+  // 派遣告示板, 家园管家, 每日委托, 迷途商人 — open again any time with another press, no need to step away
   ws.standAt = null;
   const stations = [["shop", m.shop, "worldShop", 20], ["board", m.home.board, "worldDispatch", 18], ["steward", m.home.steward, "worldBuild", 10], ["quest", m.home.quest, "worldQuest", 10]];
   if (ws.ev?.kind === "trader") stations.push(["trader", ws.ev, "worldTrader", 10]);
+  let near = null, nd = 46;
   for (const [key, at, ui, dy] of stations) {
-    const ds = Math.hypot(me.x - at.x, me.y - (at.y + dy)), A = ws.arm;
-    if (ds > 80) A[key] = true;
-    A[key + "T"] = ds < 40 && A[key] !== false && !me.moving ? (A[key + "T"] || 0) + dt : 0;
-    if (A[key + "T"] > 0) ws.standAt = key;
-    if (A[key + "T"] > 0.5) (A[key + "T"] = 0), (A[key] = false), g.onUi(ui);
+    const ds = Math.hypot(me.x - at.x, me.y - (at.y + dy));
+    if (ds < nd) (nd = ds), (near = [key, ui]);
   }
+  const atk = !!(me.input?.press ?? me.input?.atk);
+  me.nearStation = near && !me.downed ? near[0] : null;
+  if (me.nearStation) {
+    ws.standAt = near[0];
+    if (atk && !ws.talkLock) g.onUi(near[1]);
+  }
+  ws.talkLock = atk;
   ws.shopT = ws.standAt === "shop" ? 1 : 0;
   home(g, ws, m, me, dt);
   eventsUpdate(g, ws, m, me, dt, EH);
@@ -1417,22 +1438,22 @@ export function worldLabels(R, g, game, me) {
     g.fillStyle = "#26304a"; g.fillRect(x, y, w, 4);
     g.fillStyle = f < 0.3 ? "#ff7a5a" : "#7fe8ff"; g.fillRect(x, y, Math.round(w * f), 4);
   }
-  if (onView(game, m.shop.x, m.shop.y)) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
+  if (onView(game, m.shop.x, m.shop.y)) R.text(g, ws.shopT > 0 ? talkHint() : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
   if (m.home && onView(game, m.home.board.x, m.home.board.y, 600)) { // 家园
     const H = ws.home, P = m.home.plots, lab = (txt, o, dy, col = "#ffe36a", sz = 12) => R.text(g, txt, o.x, o.y + dy, col, sz);
-    lab(ws.standAt === "board" ? "站稳打开" : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
-    lab(ws.standAt === "steward" ? "站稳打开" : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
+    lab(ws.standAt === "board" ? talkHint() : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
+    lab(ws.standAt === "steward" ? talkHint() : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
     // building names on one line: the same height over every plot (built or not), the tower's over its roof
     for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], k === "tower" ? -118 : -96, H.lv[k] ? "#fff6c0" : "#c8c0e0", 11);
     lab(`宠物牧场 Lv.${H.lv.farm}`, { x: (m.home.pen.x0 + m.home.pen.x1) / 2, y: m.home.pen.y0 }, -30, "#fff6c0", 11);
     const Q = ws.quests, ready = Q && (Q.list.some((q) => q.prog >= q.n && !q.claimed) || (!Q.bonus && Q.list.every((q) => q.claimed)));
-    lab(ws.standAt === "quest" ? "站稳打开" : ready ? "每日委托 · 可领取" : "每日委托", m.home.quest, -84, ws.standAt === "quest" ? "#9ef0ff" : ready ? "#7fff9a" : "#ffe36a");
+    lab(ws.standAt === "quest" ? talkHint() : ready ? "每日委托 · 可领取" : "每日委托", m.home.quest, -84, ws.standAt === "quest" ? "#9ef0ff" : ready ? "#7fff9a" : "#ffe36a");
   }
   const ev = ws.ev;
   if (ev && onView(game, ev.x, ev.y) && !(ev.kind === "meteor" && ev.open)) {
     const s = Math.max(0, Math.ceil(ev.until - game.time)), clock = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     if (ev.kind === "meteor") R.text(g, `陨星宝箱 · ${clock}`, ev.x, ev.y - 96, "#ffd84a", 13);
-    else R.text(g, ws.standAt === "trader" ? "站稳打开" : `迷途商人 · ${clock}`, ev.x, ev.y - 90, ws.standAt === "trader" ? "#9ef0ff" : "#7fe8d8", 13);
+    else R.text(g, ws.standAt === "trader" ? talkHint() : `迷途商人 · ${clock}`, ev.x, ev.y - 90, ws.standAt === "trader" ? "#9ef0ff" : "#7fe8d8", 13);
   }
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
