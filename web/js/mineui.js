@@ -429,8 +429,7 @@ export function showMineResult(res, again, back) {
 // ------------------------------------------------------------------ relic pick (pick 1 of 3; the dive waits)
 export function showRelicPick(dive, onPick) {
   const md = el("div", "modal cards-modal relic-modal");
-  const touch = document.body.classList.contains("touchmode");
-  md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">梦境遗物</div><div class="cm-sub o1">三选一 · 只在本次下潜生效</div><div class="cards"></div><div class="muted cm-hint">${touch ? "点击选择" : "点击或按 1 / 2 / 3 选择"}</div></div>`;
+  md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">梦境遗物</div><div class="cm-sub o1">三选一 · 只在本次下潜生效</div><div class="cards"></div><div class="muted cm-hint">点击选择</div></div>`;
   const wrap = q(".cards", md), els = [];
   dive.choice.forEach((id, i) => {
     const r = RELICS[id], lv = dive.rel[id] || 0;
@@ -438,7 +437,7 @@ export function showRelicPick(dive, onPick) {
     d.style.setProperty("--rc", r.curse ? "#ff6ab0" : "#b07dff");
     d.style.animationDelay = i * 0.09 + "s";
     const pips = r.max > 1 ? `<div class="c-pips">${Array.from({ length: r.max }, (_, k) => `<i class="${k < lv ? "on" : k === lv ? "new" : ""}"></i>`).join("")}</div>` : `<div class="c-pips one">唯一</div>`;
-    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${r.curse ? "诅咒" : "遗物"}</div><div class="c-art" style="--ac:${r.curse ? "#ff6ab0" : "#b07dff"}"><i class="c-rays"></i><img class="c-ico" src="${iconURL(r.icon, 4)}" alt=""></div><div class="c-body"><div class="c-name">${r.name}</div><div class="c-desc">${r.desc}</div>${pips}</div><div class="c-key">${i + 1}</div>`;
+    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${r.curse ? "诅咒" : "遗物"}</div><div class="c-art" style="--ac:${r.curse ? "#ff6ab0" : "#b07dff"}"><i class="c-rays"></i><img class="c-ico" src="${iconURL(r.icon, 4)}" alt=""></div><div class="c-body"><div class="c-name">${r.name}</div><div class="c-desc">${r.desc}</div>${pips}</div>`;
     d.onclick = () => pick(id, d);
     wrap.appendChild(d);
     els.push(d);

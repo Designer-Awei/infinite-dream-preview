@@ -48,8 +48,12 @@ export function initInput(root) {
     }
     keys.add(e.code);
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(e.code)) e.preventDefault();
-    input.touch = false;
-    document.body.classList.remove("touchmode");
+    // only a real game key leaves touch mode: phones send stray keydowns (volume, back, IME) that used to switch
+    // the HUD to keyboard hints and show the card number badges
+    if (/^(Key[A-Z]|Digit\d|Arrow|Space|Shift|Escape|Enter)/.test(e.code)) {
+      input.touch = false;
+      document.body.classList.remove("touchmode");
+    }
     updKeys();
   });
   addEventListener("keyup", (e) => {

@@ -464,7 +464,7 @@ export function showCards(game, me, ids, onPick) {
   if (!ids?.length) return;
   document.body.classList.add("cards-open");
   const md = el("div", "modal cards-modal");
-  md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">选择一张技能卡</div><div class="cm-sub o1">清场奖励 · 构筑你的混搭流派</div><div class="cards"></div><div class="build o1"></div><div class="muted cm-hint">${document.body.classList.contains("touchmode") ? "点击卡牌选择" : "点击或按 1 / 2 / 3 选择"}</div></div>`;
+  md.innerHTML = `<div class="cm-wrap"><div class="cm-title outline">选择一张技能卡</div><div class="cm-sub o1">清场奖励 · 构筑你的混搭流派</div><div class="cards"></div><div class="build o1"></div><div class="muted cm-hint">点击卡牌选择</div></div>`;
   const wrap = $(".cards", md);
   const els = [];
   ids.forEach((id, i) => {
@@ -488,7 +488,7 @@ export function showCards(game, me, ids, onPick) {
     const evoLine = c.r === "UR" ? `<div class="c-evo">${Object.entries(c.need).map(([k, n]) => cardName(k) + (n > 1 ? "×" + n : "")).join(" + ")}</div>` : evo ? `<div class="c-evo">可觉醒 · ${evo.name}</div>` : "";
     // 觉醒卡 skip the 唯一 line: the 觉醒 tag says it, and the recipe line already fills the face
     const pips = c.r === "UR" ? "" : c.max > 1 ? `<div class="c-pips">${Array.from({ length: c.max }, (_, k) => `<i class="${k < lv ? "on" : k === lv ? "new" : ""}"></i>`).join("")}</div>` : `<div class="c-pips one">${lv ? "已拥有" : "唯一"}</div>`;
-    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${c.r}</div>${art}<div class="c-body"><div class="c-name">${c.name}</div><span class="c-tag o1">${c.tag}</span><div class="c-desc">${c.desc}</div>${evoLine}${pips}</div><div class="c-key">${i + 1}</div>`;
+    d.innerHTML = `<i class="c-frame"></i><div class="c-rar o1">${c.r}</div>${art}<div class="c-body"><div class="c-name">${c.name}</div><span class="c-tag o1">${c.tag}</span><div class="c-desc">${c.desc}</div>${evoLine}${pips}</div>`; // (keys 1/2/3 still pick; no number badge)
     d.onclick = () => pick(id, d);
     wrap.appendChild(d);
     els.push(d);
