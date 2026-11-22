@@ -884,7 +884,7 @@ function updateDrops(g, ws, me, dt) {
       D.splice(k, 1);
       if (d.txt) { // (one line after another, not stacked)
         const wait = Math.max(0, (ws.txtNext || 0) - g.time);
-        ws.txtNext = g.time + wait + 0.35;
+        ws.txtNext = g.time + wait + 0.6;
         g.after(wait, () => g.text(me.x, me.y - 50, d.txt, d.big ? "#ff9af0" : "#ffe36a", d.big ? 1.3 : 1.1, 2));
       }
       g.sound("pickup", 0.05);
@@ -1192,8 +1192,8 @@ export function worldLabels(R, g, game, me) {
   if (!ws || !m.ferries || ws.ride) return;
   for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
   for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && Math.abs(me.x - B.x) < 420 && Math.abs(me.y - B.y) < 260) {
-    R.text(g, `${ENEMIES[B.type].name} · 已击败`, B.x, B.y - 40, "#c8c0e0", 11);
-    R.text(g, `${bossRespawnIn()} 后刷新`, B.x, B.y - 24, "#ffe36a", 12);
+    R.text(g, `${ENEMIES[B.type].name} · 已击败`, B.x, B.y - 72, "#c8c0e0", 20);
+    R.text(g, `${bossRespawnIn()} 后刷新`, B.x, B.y - 44, "#ffe36a", 22);
   }
   for (const q of m.pockets) {
     const j = q.door[1], dx = (j % m.W) * T + T / 2, dy = Math.floor(j / m.W) * T - (q.dy ? 26 : 50); // (over the doorway)

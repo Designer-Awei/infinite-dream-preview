@@ -19,6 +19,23 @@ import { titleHTML } from "./titles.js";
 // closer in come the ferries, the other 传送门, the workshop and gold chests; closest, every chest you have spotted,
 // today's 采集点 and the names.
 const ZOOMS = [1, 2, 4, 6], LOD1 = 1.8, LOD2 = 3.2;
+// a region name's spot: the centre of its continent's land (the big isle for 幻梦群岛), worked out once
+const labelSpot = new Map();
+function labelAt(m, L) {
+  const key = L.b;
+  if (labelSpot.has(key)) return labelSpot.get(key);
+  let sx = 0, sy = 0, n = 0;
+  const [ix, iy, ir] = m.isles[0];
+  for (let i = 0; i < m.W * m.H; i++) {
+    if (!m.land[i] || m.biome[i] !== L.b) continue;
+    const x = i % m.W, y = (i / m.W) | 0;
+    if (L.b === 3 && Math.hypot(x - ix, y - iy) > ir + 6) continue;
+    (sx += x), (sy += y), n++;
+  }
+  const at = n ? [sx / n + 0.5, sy / n + 0.5] : [L.x, L.y];
+  labelSpot.set(key, at);
+  return at;
+}
 const NEED = { dragon: ["龙", "#e8642a"], fox: ["狐", "#d8a018"], phoenix: ["凰", "#2a9ad8"] };
 const NEED_TIP = { dragon: "骑火龙击碎裂纹岩", fox: "骑灵狐穿过电门", phoenix: "骑冰凰飞过去" };
 let comp = null, compKey = null;
@@ -140,16 +157,6 @@ export function showWorldMap(game, me, app) {
       const y0 = Math.max(0, toScr(0, k * 32)[1]), y1 = Math.min(Wc, toScr(0, k * 32 + 32)[1]);
       if (y1 - y0 > 14 * dpr) label(String(k + 1), 8 * dpr, (y0 + y1) / 2, 10, "#d8f0ff");
     }
-    // region names on the whole map (a region you have not set foot in stays 未知区域)
-    if (lod < 2) for (const L of m.labels) {
-      const B = BIOMES[L.b], p = toScr(L.x, L.y);
-      if (!inView(p, 0)) continue;
-      const name = B.locked || visited.has(L.b) ? B.name : "未知区域";
-      g.font = `${Math.round((lod ? 12 : 11) * dpr)}px Cubic, sans-serif`;
-      const hw = g.measureText(name).width / 2 + 3 * dpr, X = Math.max(hw + 16 * dpr, Math.min(Wc - hw - 2 * dpr, p[0])); // (kept clear of the row numbers and the edge)
-      label(name, X, p[1] - 22 * sc, lod ? 12 : 11, B.locked ? "#b8b0d0" : visited.has(L.b) ? "#fff6c0" : "#c8c0e0");
-      if (B.locked) label("未开放", X, p[1] - 22 * sc + 14 * dpr, 9, "#9890b8");
-    }
     // markers, by zoom
     if (lod >= 2) for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && seen(n)) mark(n, (g2) => {
       g2.fillStyle = "#0c0814"; g2.beginPath(); g2.moveTo(0, -6); g2.lineTo(5, 0); g2.lineTo(0, 6); g2.lineTo(-5, 0); g2.fill();
@@ -208,6 +215,18 @@ export function showWorldMap(game, me, app) {
       g2.fillStyle = "#1a3a5a"; g2.fillRect(-2, 1, 4, 5);
     });
     if (lod >= 2) { const p = at(m.spawn); if (inView(p)) label("营地", p[0], p[1] + 17 * sc, 10, "#9ef0ff"); }
+    // region names on the whole map, centred on each continent's land (a region you have not set foot in stays 未知区域);
+    // drawn over the markers so they stay readable
+    if (lod < 2) for (const L of m.labels) {
+      const B = BIOMES[L.b], [cx, cy] = labelAt(m, L), p = toScr(cx, cy);
+      if (!inView(p, 0)) continue;
+      const name = B.locked || visited.has(L.b) ? B.name : "未知区域", px = lod ? 12 : 11;
+      g.font = `${Math.round(px * dpr)}px Cubic, sans-serif`;
+      const hw = g.measureText(name).width / 2 + 3 * dpr, X = Math.max(hw + 16 * dpr, Math.min(Wc - hw - 2 * dpr, p[0])); // (kept clear of the row numbers and the edge)
+      const Y = B.locked ? p[1] - 7 * dpr : p[1];
+      label(name, X, Y, px, B.locked ? "#b8b0d0" : visited.has(L.b) ? "#fff6c0" : "#c8c0e0");
+      if (B.locked) label("未开放", X, Y + 14 * dpr, 9, "#9890b8");
+    }
     mark(me, (g2) => { // you: a pin standing on your spot (so the camp under it stays readable)
       g2.fillStyle = "#0c0814";
       g2.beginPath(); g2.moveTo(0, 1); g2.lineTo(-7, -11); g2.arc(0, -14, 8.5, Math.PI * 0.8, Math.PI * 2.2); g2.closePath(); g2.fill();
