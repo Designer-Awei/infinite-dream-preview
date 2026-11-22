@@ -2921,7 +2921,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .ws-c { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; color: #fff6c0; }
 .ws-c.short { color: #ff8a9a; }
 .ws-ico { flex: none; width: 26px; height: 26px; border: 2px solid var(--ink); border-radius: 8px; }
-.ws-ico.pool { background: radial-gradient(circle at 40% 35%, #fff 0 12%, #8affc8 13% 45%, #2aa86a 75%); }
+.ws-ico.pool, .ws-ico.pool2 { background: radial-gradient(circle at 40% 35%, #fff 0 12%, #8affc8 13% 45%, #2aa86a 75%); }
 .ws-ico.stars { background: radial-gradient(circle at 50% 50%, #fff 0 15%, #ffe066 16% 45%, #c8901a 75%); }
 .wmap-p .wm-mats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .wmap-p .wm-mats span { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; color: #e8dcff; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 1px 2px; white-space: nowrap; }

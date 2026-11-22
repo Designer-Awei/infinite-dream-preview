@@ -14,7 +14,7 @@ import { BUILD, BUILD_ORDER, TOWER_REGIONS, slotCount, capHours, petRate, homeTi
 import { petState, findPet } from "./petsave.js";
 import { petPortrait, PET_STAGES } from "./petdata.js";
 import { load } from "./save.js";
-import { titleHTML } from "./titles.js";
+import { titleHTML, TITLES } from "./titles.js";
 
 // the world map: the painted atlas (worldatlas.js) under the fog, a grid for telling positions (8×8 big cells A–H × 1–8,
 // each 8×8 medium cells of 4×4 tiles), pinch / wheel / +− zoom and drag to pan. Markers keep their size and show by
@@ -40,7 +40,7 @@ function labelAt(m, L) {
   return at;
 }
 const NEED = { dragon: ["龙", "#e8642a"], fox: ["狐", "#d8a018"], phoenix: ["凰", "#2a9ad8"] };
-const matImgs = [0, 1, 2, 3].map((k) => Object.assign(new Image(), { src: matSrc(k) }));
+const matImgs = MATS.map((_, k) => Object.assign(new Image(), { src: matSrc(k) }));
 const NEED_TIP = { dragon: "骑火龙击碎裂纹岩", fox: "骑灵狐穿过电门", phoenix: "骑冰凰飞过去" };
 let comp = null, compKey = null;
 function mapArt(m, ws) {
@@ -400,6 +400,11 @@ const GIVE = {
   hur: ["流彩晶 ×1", "宠物养成道具", "hur"],
   egg_hur: ["HUR 宠物蛋 ×1", "孵化必出史诗或更高", "egg:hur"],
   title: ["称号", "伤害 +5%（只能兑换一次）", "title"],
+  pool2: ["宠物经验池 +600", "进宠物仓库的经验池", null],
+  ur3: ["淬灵露 ×3", "宠物养成道具", "ur"],
+  hur3: ["流彩晶 ×3", "宠物养成道具", "hur"],
+  egg_hur2: ["HUR 宠物蛋 ×1", "孵化必出史诗或更高", "egg:hur"],
+  title2: ["称号", "伤害、移速 +3%（只能兑换一次）", "title"],
 };
 export function showWorkshop(game, me, app) {
   const ws = game.ws;
@@ -415,7 +420,7 @@ export function showWorkshop(game, me, app) {
   };
   md.innerHTML = `<div class="panel stash-p wshop-p"><div class="ws-head"><h2 class="outline">营地工坊</h2><div class="ws-mats o1"></div><button class="btn gray small x-btn">关闭</button></div>
     <div class="st-sub o1">在大陆上采集、开宝箱、打精英与区域首领得到材料 · 兑换的奖励直接进存档</div>
-    <div class="st-list">${WORKSHOP.map((o) => `<div class="st-it ws-it" data-id="${o.id}">${ico(o)}<div class="st-tx"><b class="outline">${o.id === "title" ? "" : GIVE[o.id][0]}</b><span>${GIVE[o.id][1]}</span></div><div class="ws-cost o1"></div><button class="btn small st-go"><span>兑换</span></button></div>`).join("")}</div></div>`;
+    <div class="st-list">${WORKSHOP.map((o) => `<div class="st-it ws-it" data-id="${o.id}">${ico(o)}<div class="st-tx"><b class="outline">${o.once ? "" : GIVE[o.id][0]}</b><span>${GIVE[o.id][1]}</span></div><div class="ws-cost o1"></div><button class="btn small st-go"><span>兑换</span></button></div>`).join("")}</div></div>`;
   md.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
   const close = () => (md.remove(), (app.paused = false));
   md.querySelector(".x-btn").onclick = () => (sfx("click"), close());
@@ -434,7 +439,7 @@ export function showWorkshop(game, me, app) {
     const o = WORKSHOP.find((q) => q.id === it.dataset.id), err = workshopBuy(game, o);
     if (err) return toast(err);
     sfx("pickup");
-    toast(`兑换成功：${o.id === "title" ? "称号「大陆旅者」" : GIVE[o.id][0]}`);
+    toast(`兑换成功：${o.once ? `称号「${TITLES[o.once].name}」` : GIVE[o.id][0]}`);
     sync();
   }));
   sync();
@@ -523,7 +528,7 @@ export function showDispatch(game, me, app) {
     ov.querySelectorAll(".hm-card").forEach((c) => (c.onclick = (e) => {
       e.stopPropagation();
       sfx("pickup");
-      H.slots.splice(k, 0, { uid: c.dataset.u, mat: [0, 1, 2, 3].sort((a, b) => ws.mats[a] - ws.mats[b])[0], acc: 0, t: Date.now() }); // (starts on the material you hold least of)
+      H.slots.splice(k, 0, { uid: c.dataset.u, mat: MATS.map((_, j) => j).sort((a, b) => ws.mats[a] - ws.mats[b])[0], acc: 0, t: Date.now() }); // (starts on the material you hold least of)
       homeSave(H);
       ov.remove();
       render();
@@ -616,21 +621,22 @@ const chip = (bg, name, text) => `<div class="hp-cur"><span class="chip w4" styl
 const matRow = (k, text) => `<div class="hp-cur"><span class="chip w4 wh-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${MATS[k].name}</span><span>${text}</span></div>`;
 export function showWorldHelp(app) {
   const SECS = [
-    ["探索基础", `${HH("大陆")}一片被海峡隔开的大陆群：中南数据草原（出生营地，泥沼减速）、西北显存冰原（冰面打滑）、东北算力熔炉（熔岩灼烧），走跨海长桥过去；东南海上的幻梦群岛在渡口站稳坐船过去，其余小岛要骑冰凰飞过去。沙海、森林、云巅三块大陆尚未开放。越远怪物越强。
+    ["探索基础", `${HH("大陆")}一片被海峡隔开的大陆群：中南数据草原（出生营地，泥沼减速）、西北显存冰原（冰面打滑）、东北算力熔炉（熔岩灼烧），走跨海长桥过去；东南海上的幻梦群岛在渡口站稳坐船过去，其余小岛要骑冰凰飞过去。西南遗迹沙海走沙海长桥、东边幽影森林坐幽林渡口、北边云巅浮庭从熔炉走云梯长桥过去。越远怪物越强。
+      ${HH("外围三大陆")}${chip("#e8c060", "遗迹沙海", "流沙会减速，站着不动会下陷掉血；每 55 秒刮一阵沙暴（13 秒）：视野变暗、东风把你往西推并减速。")}${chip("#5ab890", "幽影森林", "林间幽暗，只有身边一圈看得清，萤火虫飘飞；瘴沼会减速并让你中毒掉血。")}${chip("#c8d0f0", "云巅浮庭", "地上的气流带沿箭头推着你走；每 16 秒一阵阵风（2.5 秒）把所有人往同一方向吹。")}
       ${HH("怪物")}野怪原地沉睡，靠近或打中才会追来；每只怪有看不见的仇恨范围，离开出生点太远或你跑远约 2 秒后放弃，走回原位回满血。精英怪击败后三选一技能卡（本次游玩的构筑）。
       ${HH("难度")}大陆是固定难度“噩梦全开”：除护盾停转外所有噩梦契约拉满（敌人生命 +75%、移速与弹速提升、每次受伤 +1、精英开箱只给两张卡、局内金币减半、首领生命 +50%），护盾照常回复。
       ${HH("倒下与离开")}全员倒下会回营地醒来并失去三分之一金币。暂停菜单「离开大陆」结算，迷雾、开过的宝箱、材料都会保存；每次进入都从家园出发，用旗帜或传送门回到远处。`],
     ["地图与传送", `${HH("小地图")}左上角小地图显示身边一片，红色定位针是你；点开看大地图（游戏暂停）。
       ${HH("大地图")}双指捏合或滚轮缩放、拖动平移；网格 A–H × 1–8，坐标写作“C6 · 3-5”。全图只显示主要点位（营地、你、旗帜、已发现的首领、已点亮的传送门），放大后陆续显示渡口、工坊、宝箱、采集点和名字；没去过的地方盖着迷雾，只透出海岸线。
       ${HH("传送与旗帜")}在地图上点营地、已点亮的传送门或旗帜，再按「传送」；「插旗」在当前位置插下旗帜，下次进入也能传过去。3 秒内受过伤（战斗中）、坐船中、倒地时不能传送；3 秒没受伤就算脱战。每区一座传送门，走近即点亮。`],
-    ["区域首领", `${HH("四位首领")}草原·幻觉之眼、冰原·冰封史莱姆王、熔炉·过热核心、群岛·食梦兽，站在地上暗红圆环的场地里，靠近苏醒并出现血条。
+    ["区域首领", `${HH("七位首领")}草原·幻觉之眼、冰原·冰封史莱姆王、熔炉·过热核心、群岛·食梦兽、沙海·遗迹巨像（砸地冲击环、巨石、流沙陷阱、沙暴螺旋）、森林·菌母（孢子环、瘴气毒云、根刺突袭）、云巅·风暴之灵（狂风吹退、羽弹、追人的龙卷、落雷），站在地上暗红圆环的场地里，靠近苏醒并出现血条。
       ${HH("奖励")}200 晶石、角色经验 300、淬灵露 ×2、本区材料 ×10、UR 宠物蛋（25% 换成 HUR 蛋）、35% 流彩晶；击败瞬间就存进存档，画面上像火山喷发一样喷出来，落地后带光柱，再飞到你身上。
       ${HH("刷新")}每位首领每天可击败一次，零点刷新；场地上方和大地图首领列表显示刷新倒计时。`],
     ["宝箱与材料", `${HH("宝箱")}走进去自动打开：普通箱给晶石与宠物经验池 / 星砂 / 淬灵露 / 宠物蛋，金箱给更多晶石、角色经验与 UR 蛋、流彩晶、HUR 蛋等，都直接进存档；另给所在区域的材料。
-      ${HH("区域材料")}${matRow(0, "数据草原")}${matRow(1, "显存冰原")}${matRow(2, "算力熔炉")}${matRow(3, "幻梦群岛")}来源：地上的采集点（走过去采集 2–3 个，每天刷新）、宝箱、精英怪、区域首领、家园派遣。
-      ${HH("营地工坊")}营地东北的小摊，走近后按攻击键打开：用材料兑换宠物经验池、淬灵露、星砂、UR 宠物蛋、流彩晶、HUR 宠物蛋和称号「大陆旅者」。`],
+      ${HH("区域材料")}${matRow(0, "数据草原")}${matRow(1, "显存冰原")}${matRow(2, "算力熔炉")}${matRow(3, "幻梦群岛")}${matRow(4, "遗迹沙海")}${matRow(5, "幽影森林")}${matRow(6, "云巅浮庭")}来源：地上的采集点（走过去采集 2–3 个，每天刷新）、宝箱、精英怪、区域首领、家园派遣。
+      ${HH("营地工坊")}营地东北的小摊，走近后按攻击键打开：用材料兑换宠物经验池、淬灵露、星砂、UR 宠物蛋、流彩晶、HUR 宠物蛋和称号「大陆旅者」；遗晶、影菇、云羽可换更多宠物经验池、淬灵露 ×3、流彩晶 ×3、HUR 宠物蛋和称号「秘境开拓者」。`],
     ["坐骑秘境", `${chip("#e8642a", "火龙", "骑乘的火龙火球能击碎「裂纹岩」院门（大陆里的普通岩石打不碎），碎了就永久打开。")}${chip("#d8a018", "灵狐", "只有骑灵狐能穿过「电门」，其他情况会被弹开。")}${chip("#2a9ad8", "冰凰", "骑冰凰能飞过水面去海上小岛；海面飞行消耗体力（满 14 秒，陆地上很快回满），低于 30% 会提醒，耗尽会被浪推回最后站过的岸边。")}
-      ${HH("秘境")}草原、冰原、熔炉各有两处石墙小院，院门是裂纹岩或电门，里面有金宝箱和采集点；大地图放大后用「龙 / 狐 / 凰」徽章标出需要哪只坐骑。`],
+      ${HH("秘境")}草原、冰原、熔炉各有两处石墙小院（沙海、森林各一处），院门是裂纹岩或电门，里面有金宝箱和采集点；大地图放大后用「龙 / 狐 / 凰」徽章标出需要哪只坐骑。`],
     ["梦境家园", `${HH("家园")}营地西侧是你的家园，存档独立、永久保留。
       ${HH("宠物牧场")}仓库里的宠物会在牧场里闲逛（出战中的跟着你）。
       ${HH("派遣")}走到派遣告示板前按攻击键打开：把宠物派去采集某种材料，按真实时间产出（离线也算），最多存到储物仓的小时数，回来「全部收获」。产出 = 3 个/小时 × 阶段（幼年 1 / 成长 1.4 / 终极 1.8）× 品质（每档 +15%）× 采集小屋（每级 +30%）。出战中的宠物不能派遣。

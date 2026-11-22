@@ -145,6 +145,20 @@ const VARIANTS = {
   snake_lava: ["snake", ["#1a0804", "#5a1e10", "#9a3a1e", "#d8702e", "#ffd090"]], // red-brown, not the grass green
   snake_ice: ["snake", ICE],
   jelly_ice: ["jelly", ["#0a1a30", "#2a5a9a", "#6ab8f0", "#c8f0ff", "#ffffff"]],
+  // V6 梦境大陆 · 外围三大陆
+  snake_sand: ["snake", ["#1a1004", "#5a3e14", "#a8782a", "#e0b450", "#fff0b0"]],
+  slime_sand: ["slime", ["#1e1206", "#7a5420", "#c8943e", "#f0cc78", "#fff6d8"]],
+  bat_sand: ["bat", ["#1a0e04", "#6a4418", "#b07a30", "#e8b860", "#fff0c0"]],
+  skull_sand: ["skull", ["#140c04", "#5a4220", "#a8884a", "#e8d098", "#fffbe8"]],
+  beetle_sand: ["beetle", ["#0e0a20", "#2a3a8a", "#3a8ad0", "#ffc23a", "#fff4c0"]],
+  mushroom_shadow: ["mushroom", ["#100620", "#3a1a60", "#7a3ab0", "#5ae8c8", "#e0fff8"]],
+  spider_shadow: ["spider", ["#06040e", "#1a1430", "#3a2a60", "#6a4aa0", "#5af0d0"]],
+  frog_bog: ["frog", ["#06140c", "#1e3a22", "#3a6a34", "#8ab04a", "#e0f0a0"]],
+  wisp_shadow: ["wisp", ["#04100e", "#0e4a40", "#2ab8a0", "#8af0dc", "#ffffff"]],
+  jelly_cloud: ["jelly", ["#1a1a34", "#6a7ab0", "#b0c4ec", "#eef4ff", "#ffffff"]],
+  slime_cloud: ["slime", ["#1c1c34", "#7a82b8", "#c0c8ec", "#f0f4ff", "#ffffff"]],
+  eye_cloud: ["eyeball", ["#101a3a", "#3a6ab8", "#8ac8ff", "#e8f6ff", "#ffffff"]],
+  wisp_cloud: ["wisp", ["#141a40", "#3a5aff", "#8ac8ff", "#e8f4ff", "#ffffff"]],
   // the rare ones
   slime_gold: ["slime", ["#2a1600", "#8a5a00", "#e0a820", "#ffe070", "#ffffff"]],
   jelly_aurora: ["jelly", ["#0a1030", "#3a3ab0", "#5ad8e0", "#d0a0ff", "#ffffff"]],

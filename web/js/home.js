@@ -24,7 +24,7 @@ export const BUILD = {
 export const BUILD_ORDER = ["farm", "hut", "store", "spring", "tower"];
 const CAP_H = [8, 16, 24, 48];
 // which regions' chests the 瞭望塔 marks at each level (biome indices)
-export const TOWER_REGIONS = [[], [0], [0, 1], [0, 1, 2, 3]];
+export const TOWER_REGIONS = [[], [0], [0, 1], [0, 1, 2, 3, 4, 5, 6]];
 
 export function homeState() {
   try {
@@ -58,7 +58,7 @@ export function homeTick(h, now = Date.now()) {
 /** gather everything stored: returns [草芯, 霜晶, 熔核, 梦砂] added */
 export function harvest(h, mats) {
   homeTick(h);
-  const got = [0, 0, 0, 0];
+  const got = mats.map(() => 0);
   for (const s of h.slots) {
     const n = Math.floor(s.acc || 0);
     if (!n) continue;

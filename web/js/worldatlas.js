@@ -16,6 +16,7 @@ const PAL = [
   { g: [72, 152, 62], g2: [60, 136, 54], mud: [60, 110, 60], c: [112, 86, 62], cl: [80, 60, 44], rk: [104, 106, 118], rh: [150, 152, 162], cap: [190, 196, 204], tr: [30, 98, 46], th: [64, 134, 62], tk: "round", w: [96, 156, 186], wh: [150, 200, 220] },
   { g: [152, 222, 124], g2: [136, 208, 110], mud: [120, 190, 100], c: [150, 150, 190], cl: [110, 110, 152], rk: [158, 160, 182], rh: [206, 208, 224], cap: [255, 255, 255], tr: [56, 150, 70], th: [110, 200, 100], tk: "round", w: [120, 204, 255], wh: [210, 246, 255] },
 ];
+const HOME = { ...PAL[0], g: [190, 230, 104], g2: [178, 220, 94] }; // 家园's warm meadow
 const PATH = [234, 202, 140], PATH2 = [218, 184, 120], PLANK = [172, 110, 60], PLANK2 = [136, 82, 44];
 const hash = (x, y) => {
   let h = (x * 374761393 + y * 668265263) ^ 0x5bd1e995;
@@ -124,7 +125,7 @@ function* build(m) {
       else c = (py % 6 === 0 && hash(px >> 3, py) < 0.06) ? WAVE : SEA;
       if (d <= 4) rimData.set([200, 246, 255, d <= 2 ? 255 : 140], j * 4);
     } else {
-      const b = m.biome[i], P = PAL[b], t = m.t[i];
+      const b = m.biome[i], t = m.t[i], r0 = m.home && m.home.rect, P = r0 && tx >= r0[0] && tx <= r0[2] && ty >= r0[1] && ty <= r0[3] ? HOME : PAL[b];
       if (t === WATER) {
         const rim = (lx === 0 && tileAt(tx - 1, ty) !== WATER) || (lx === 3 && tileAt(tx + 1, ty) !== WATER) || (ly === 0 && tileAt(tx, ty - 1) !== WATER) || (ly === 3 && tileAt(tx, ty + 1) !== WATER);
         c = rim ? P.wh : (hash(px >> 1, py) < 0.04 ? P.wh : P.w);

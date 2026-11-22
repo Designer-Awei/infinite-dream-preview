@@ -3,6 +3,7 @@ import { dist, angTo, TAU, R } from "./util.js";
 const CHARS_SPEED = 110;
 import { moveCircle, flowDir, los, tileAt, BUSH, WALL } from "./map.js";
 import { T } from "./data.js";
+import { bossColossus, bossMyco, bossTempest } from "./worldbosses.js";
 
 function nearestPlayer(g, e) {
   let best = null, bd = 1e9, hidden = true;
@@ -16,7 +17,7 @@ function nearestPlayer(g, e) {
   }
   return [best, bd, hidden];
 }
-function shoot(g, e, a, o = {}) {
+export function shoot(g, e, a, o = {}) {
   const hh = o.h ?? e.r + 6;
   const b = g.mkBullet(null, { side: "e", x: e.x, y: e.y - hh, h: hh, a, spd: o.spd || 120, dmg: o.dmg || 1, kind: o.kind || "orb", r: o.r || 6, life: o.life || 3.5, elem: null });
   b.src = e; // who fired it (endless damage scaling)
@@ -84,7 +85,40 @@ export function updateEnemy(g, e, dt) {
       if (e.def.burnTouch) p.buff.burn = 2.1; // 炎蝠
     }
   };
+  // 影蛾: sheds a little poison dust as it flits about
+  if (e.def.dust && g.host && (e.dustT = (e.dustT ?? 1 + Math.random() * 2) - dt) <= 0) (e.dustT = 2.6), g.addZone({ kind: "poison", x: e.x, y: e.y + 4, r: 15, life: 2.6, side: "neutral" });
   switch (e.def.ai) {
+    case "sting": {
+      // 流沙蝎: scuttles in, rears up (the spot it will strike is marked), then lunges along the line; the sting slows
+      if (e.st === "aim") {
+        if (e.cd <= 0) (e.st = "lunge"), (e.cd = 0.26), (e.stung = false);
+      } else if (e.st === "lunge") {
+        moveCircle(g.map, e, Math.cos(e.la) * sp * 4.4 * dt, Math.sin(e.la) * sp * 4.4 * dt, false);
+        if (!e.stung) for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + q.r + 6 && g.hurt(q, 1, e)) (q.buff.slow = 1.2), (e.stung = true);
+        if (e.cd <= 0) (e.st = "idle"), (e.lx = null), (e.cd = 1.1 + Math.random() * 0.6);
+      } else {
+        walk(0.9);
+        if (e.cd <= 0 && d < 120 && los(g.map, e.x, e.y, p.x, p.y)) {
+          e.st = "aim";
+          e.cd = 0.5;
+          e.la = angTo(e.x, e.y, p.x, p.y);
+          const L = Math.min(120, d + 20);
+          e.lx = e.x + Math.cos(e.la) * L;
+          e.ly = e.y + Math.sin(e.la) * L;
+        }
+        touch();
+      }
+      break;
+    }
+    case "boss_colossus":
+      bossColossus(g, e, p, d, dt);
+      break;
+    case "boss_myco":
+      bossMyco(g, e, p, d, dt);
+      break;
+    case "boss_tempest":
+      bossTempest(g, e, p, d, dt);
+      break;
     case "hop": {
       // rest, then a quick hop toward the player
       if (e.st !== "hop" && e.cd <= 0) (e.st = "hop"), (e.cd = 0.45);

@@ -46,6 +46,7 @@ export const TITLES = {
   world_explorer: { name: "大陆探险家", r: "e", tab: "world", how: "梦境大陆探索度达到 50%", prog: () => [0, 1], fx: { speed: 0.04 }, fxText: "移速 +4%" },
   world_cartographer: { name: "大陆制图师", r: "l", tab: "world", how: "梦境大陆探索度达到 100%", prog: () => [0, 1], fx: { speed: 0.05, mag: 0.2 }, fxText: "移速 +5%，拾取范围 +20%" },
   world_walker: { name: "大陆旅者", r: "l", tab: "world", how: "梦境大陆营地工坊兑换（四种材料各 20）", prog: () => [0, 1], fx: { dmg: 0.05 }, fxText: "伤害 +5%" },
+  world_frontier: { name: "秘境开拓者", r: "l", tab: "world", how: "梦境大陆营地工坊兑换（遗晶、影菇、云羽各 20）", prog: () => [0, 1], fx: { dmg: 0.03, speed: 0.03 }, fxText: "伤害 +3%，移速 +3%" },
   stash_king: { name: "积攒之王", r: "x", tab: "shop", stash: 50, how: "扭蛋机「积攒」兑换 50 点", prog: () => [0, 1], fx: { dmg: 0.08, crit: 0.05 }, fxText: "伤害 +8%，暴击率 +5%" },
 };
 export const TITLE_ORDER = Object.keys(TITLES);

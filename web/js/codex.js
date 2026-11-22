@@ -32,12 +32,22 @@ export const CODEX = [
   { id: "grass", name: "数据草原", list: ["slime", "bat", "eyeball", "frog", "snake", "snake_vine", "mushroom", "beetle", "spider", "nest_grass", "frog_big", "boss_eye", "boss_root", "slime_gold"] },
   { id: "ice", name: "显存冰原", list: ["slime_blue", "bat_ice", "eye_ice", "snake_ice", "jelly_ice", "hedgehog", "frostling", "turtle", "nest_ice", "slime_frost", "boss_frost", "boss_witch", "jelly_aurora"] },
   { id: "lava", name: "算力熔炉", list: ["slime_lava", "bat_fire", "snake_lava", "salamander", "imp", "snail", "nest_lava", "skull_core", "boss_core", "boss_worm", "skull_obsidian"] },
+  { id: "desert", name: "遗迹沙海", list: ["scorpion", "snake_sand", "slime_sand", "bat_sand", "skull_sand", "beetle_sand", "nest_sand", "scorpion_king", "boss_colossus"] },
+  { id: "forest", name: "幽影森林", list: ["moth", "mushroom_shadow", "spider_shadow", "frog_bog", "wisp_shadow", "nest_forest", "boss_myco"] },
+  { id: "cloud", name: "云巅浮庭", list: ["skylark", "jelly_cloud", "slime_cloud", "eye_cloud", "wisp_cloud", "nest_cloud", "boss_tempest"] },
   { id: "any", name: "各地通用", list: ["slime_purple", "ghost", "jelly", "skull", "wisp", "drone", "boss_judge", "boss_baku", "dream_orb"] },
   { id: "mine", name: "梦境矿场", list: ["mine:mole", "mine:golem"] },
 ];
 const MINE_NAMES = { mole: "宝藏地鼠", golem: "遗迹守护者" };
 /** one line on what each monster does (codex only) */
 const DESC = {
+  scorpion: "爬近后扬起尾巴（地上标出落点），沿直线猛扑蜇人，被蜇会减速。", scorpion_king: "沙海的精英蝎王，更耐打，扑击不会被击退打断。", snake_sand: "沙丘里游走的快蛇。",
+  slime_sand: "死后留下流沙坑，会拖慢并把你往中间拽。", bat_sand: "成群乱飞的砂蝠。", skull_sand: "停下施法，放出一圈骨弹。", beetle_sand: "披金甲的快速甲虫。",
+  nest_sand: "孵出流沙蝎与砂蝠，打碎才停。", boss_colossus: "遗迹沙海的首领：双拳砸地后放出冲击沙环，投掷巨石留下流沙，在你脚下打开流沙陷阱，召唤流沙蝎；三阶段核心喷出沙暴螺旋。",
+  moth: "飞行时不时洒下毒粉，留下小毒池。", mushroom_shadow: "跳着靠近，死后留下毒池。", spider_shadow: "吐网减速后扑过来。", frog_bog: "跳跃落地有冲击，死后留下毒池。",
+  wisp_shadow: "冲过来自爆的鬼火。", nest_forest: "孵出影织蛛与影蛾，打碎才停。", boss_myco: "幽影森林的首领，扎根不动：一圈圈减速孢子，标记处落下瘴气毒云，根刺沿直线突袭，催生幽光菇；三阶段喷出孢子螺旋并在脚下布满毒池。",
+  skylark: "绕着你飞，射出快速羽弹。", jelly_cloud: "周期性放电，靠近会被电到。", slime_cloud: "软绵绵地跳着撞人。", eye_cloud: "远远瞄准你射出光弹。", wisp_cloud: "冲过来自爆的雷絮。",
+  nest_cloud: "孵出风羽雀与雷絮，打碎才停。", boss_tempest: "云巅浮庭的首领，绕场飘飞：扇形预警后刮起狂风把你吹开，羽弹连射，放出追着人走的龙卷，二阶段起在标记处落雷。",
   slime: "跳一下停一下地靠近，撞到会掉血。", slime_blue: "冰原上的史莱姆，比普通的更耐打。", slime_purple: "死后留下毒池，别站在里面。",
   bat: "飞得快、轨迹乱，成群出现。", eyeball: "远远地瞄准你射出光弹。", frog: "蓄力后跳向你，落地有冲击。",
   ghost: "能穿墙，一次射出三发减速弹。", skull: "停下来施法，放出一圈火弹。", jelly: "周期性放电，靠近会被电到。",

@@ -11,7 +11,7 @@ import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { petTint } from "./petskins.js";
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
-import { drawWorldGround, drawMiniHud, tileTheme, tileHazard, wallTheme, refreshWorldTiles, drawWorldFloor, worldLabels, worldSprites } from "./world.js";
+import { drawWorldGround, drawMiniHud, tileTheme, tileHazard, wallTheme, refreshWorldTiles, drawWorldFloor, worldLabels, worldSprites, drawRegionFx, windAt } from "./world.js";
 import { verdictCells } from "./enemies.js";
 import { drawTitlePlate } from "./titles.js";
 
@@ -93,6 +93,41 @@ export class Renderer {
       for (let y = ty0; y <= ty1; y++) for (let x = tx0; x <= tx1; x++) if (m.mud[y * m.W + x]) {
         const hz = tileHazard(m, y * m.W + x);
         if (hz === "mud") continue;
+        if (hz === "sand" || hz === "bog" || hz === "wind") {
+          const X = x * T, Y = y * T, ph = this.t + x * 1.7 + y * 2.3;
+          if (hz === "sand") {
+            // 流沙: grains spiralling in to the middle of the tile
+            g.fillStyle = "#f4dca0";
+            for (let q = 0; q < 3; q++) {
+              const a = ph * 1.6 + q * 2.1, rr = 11 - ((ph * 4 + q * 3) % 10);
+              g.fillRect(Math.round(X + 16 + Math.cos(a) * rr), Math.round(Y + 16 + Math.sin(a) * rr * 0.6), 2, 1);
+            }
+          } else if (hz === "bog") {
+            // 瘴沼: a slow bubble rising and popping
+            const b = (ph * 0.7) % 2;
+            if (b < 1) {
+              g.strokeStyle = "#9af07a";
+              g.globalAlpha = 1 - b;
+              g.beginPath();
+              g.arc(X + 6 + ((x * 7) % 18), Y + 20 - b * 8, 1.5 + b * 2, 0, TAU);
+              g.stroke();
+              g.globalAlpha = 1;
+            }
+          } else {
+            // 气流: chevrons drifting along the lane
+            const [ax, ay] = windAt(m, X + 16, Y + 16), u = ((this.t * 1.4 + (x + y) * 0.23) % 1) - 0.5, cxp = X + 16 + ax * u * 26, cyp = Y + 16 + ay * u * 26;
+            g.strokeStyle = "#ffffff";
+            g.globalAlpha = 0.75 * Math.sin((u + 0.5) * Math.PI);
+            g.lineWidth = 2;
+            g.beginPath();
+            g.moveTo(cxp - ax * 4 - ay * 5, cyp - ay * 4 + ax * 5);
+            g.lineTo(cxp + ax * 3, cyp + ay * 3);
+            g.lineTo(cxp - ax * 4 + ay * 5, cyp - ay * 4 - ax * 5);
+            g.stroke();
+            g.globalAlpha = 1;
+          }
+          continue;
+        }
         const X = x * T, Y = y * T, ph = this.t * (hz === "lava" ? 2.2 : 1.1) + x * 1.7 + y * 2.3;
         if (hz === "lava") {
           g.globalAlpha = 0.18 + 0.14 * Math.sin(ph);
@@ -213,6 +248,7 @@ export class Renderer {
     g.setTransform(RS,0,0,RS,0,0);
     this.fx.drawAirShields(g);
     g.translate(-cx,-cy);
+    if (m.world && me) g.setTransform(RS, 0, 0, RS, 0, 0), drawRegionFx(g, game, me, cx, cy, this.t), g.translate(-cx, -cy); // (沙暴 / 幽暗 / 阵风)
     // overlays
     for (const e of game.enemies) if (e.x > vx0 && e.x < vx1 && e.y > vy0 && e.y < vy1) this.drawEmbers(g, e), this.drawEnemyBar(g, e);
     this.drawAim(g, me);
@@ -822,11 +858,64 @@ export class Renderer {
       g.beginPath();
       g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
       g.fill();
+    } else if (z.kind === "warn") {
+      // a boss's marked spot (梦境大陆 · 外围三大陆): its colour, a ring with the fill closing in
+      const k = clamp(z.t / Math.max(0.01, z.max));
+      g.globalAlpha = 0.18 + 0.16 * Math.sin(this.t * 22);
+      g.fillStyle = z.col;
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r * k, z.r * 0.55 * k, 0, 0, TAU);
+      g.fill();
+      g.globalAlpha = 0.9;
+      g.strokeStyle = z.col;
+      g.lineWidth = 2;
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
+      g.stroke();
+    } else if (z.kind === "sandpit") {
+      // 流沙陷阱: a sunken sand bowl with grains spiralling into its middle
+      const fade = clamp(z.life * 1.5) * clamp(z.t * 3);
+      g.globalAlpha = 0.75 * fade;
+      g.fillStyle = "#a87838";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r, z.r * 0.55, 0, 0, TAU);
+      g.fill();
+      g.fillStyle = "#d8a858";
+      g.beginPath();
+      g.ellipse(z.x, z.y - 1, z.r * 0.72, z.r * 0.38, 0, 0, TAU);
+      g.fill();
+      g.fillStyle = "#7a5224";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r * 0.22, z.r * 0.12, 0, 0, TAU);
+      g.fill();
+      g.fillStyle = "#fff0c0";
+      for (let i = 0; i < 10; i++) {
+        const u = (this.t * 0.6 + i * 0.1) % 1, a = i * 2.4 + u * 5, rr = z.r * (1 - u) * 0.9;
+        g.globalAlpha = fade * (0.4 + 0.6 * u);
+        g.fillRect(Math.round(z.x + Math.cos(a) * rr), Math.round(z.y + Math.sin(a) * rr * 0.55), 2, 1);
+      }
+    } else if (z.kind === "tornado") {
+      // 风暴之灵's tornado: a spinning funnel of white streaks over a dust ring
+      const fade = clamp(z.life * 2) * clamp(z.t * 3);
+      g.globalAlpha = 0.3 * fade;
+      g.fillStyle = "#24304a";
+      g.beginPath();
+      g.ellipse(z.x, z.y, z.r + 4, (z.r + 4) * 0.4, 0, 0, TAU);
+      g.fill();
+      for (let k = 0; k < 7; k++) {
+        const h = k * 9, w = 6 + k * 3.2, a = this.t * 9 + k * 0.8;
+        g.globalAlpha = fade * (0.55 + 0.06 * k);
+        g.strokeStyle = k % 2 ? "#ffffff" : "#bfe0ff";
+        g.lineWidth = 2;
+        g.beginPath();
+        g.ellipse(z.x + Math.sin(a * 0.3) * 2, z.y - h, w, w * 0.32, 0, a % TAU, (a % TAU) + 4.2);
+        g.stroke();
+      }
     } else if (z.kind === "cone") {
       // 吞梦吐息 warning: the breath's sector, filling in as it comes
       const k = clamp(z.t / Math.max(0.01, z.t + z.life));
       g.globalAlpha = 0.28 + 0.3 * k;
-      g.fillStyle = "#7a30e0";
+      g.fillStyle = z.col || "#7a30e0";
       g.beginPath();
       g.moveTo(z.x, z.y);
       for (let i = 0; i <= 16; i++) {
@@ -836,7 +925,7 @@ export class Renderer {
       g.closePath();
       g.fill();
       g.globalAlpha = 0.95;
-      g.strokeStyle = "#d8b0ff";
+      g.strokeStyle = z.col ? "#ffffff" : "#d8b0ff";
       g.lineWidth = 2;
       g.stroke();
     } else if (z.kind === "mark") {

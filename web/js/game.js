@@ -12,7 +12,8 @@ import { levelBonuses } from "./progression.js";
 import { attachPet, resetPet, updatePets, toggleMount, releaseEmptyBlink, mountedUltBlocked } from "./pets.js";
 import { flyingMount, visualTilesIn } from './petcombat.js';
 import { FOX_RIDE_RANGE, DRAGON_FIREBALL, PETS } from './petdata.js';
-import { worldEnter, worldUpdate, worldAwake, worldKilled, worldRespawn, hazardAt } from "./world.js";
+import { worldEnter, worldUpdate, worldAwake, worldKilled, worldRespawn, hazardAt, windAt } from "./world.js";
+import { sandpit } from "./worldbosses.js";
 import { skinPalette, petTint } from "./petskins.js";
 
 import { endlessEnemyHP, endlessEnemyHit, cubeDamage, cubeHealth, reactionRoom } from "./endless-balance.js";
@@ -908,6 +909,7 @@ export class Game {
     }
     if (e.def.puddle) this.addZone({ kind: "poison", x: e.x, y: e.y, r: 22, life: 5, side: "neutral" });
     if (e.def.lavaPuddle) this.addZone({ kind: "poison", fire: true, x: e.x, y: e.y, r: 24, life: 4, side: "neutral" });
+    if (e.def.sandPuddle) sandpit(this, e.x, e.y, 30, 4); // 流沙史莱姆
     if (e.def.split && !e.boss) for (const s of [-1, 1]) this.spawnEnemy(e.def.split, e.x + s * 16, e.y + 4, false, 0.15);
     if (e.type === "wisp" && e.st !== "boom") this.explodeAt(e.x, e.y, 34, 0, 12, null);
     if (e.boss) this.bossDown(e);
@@ -1900,6 +1902,9 @@ export class Game {
     const onHz = !flying && mudAt(this.map, p.x, p.y), hz = this.hazardAt(p.x, p.y);
     if (onHz && hz === "mud") spd *= 0.55;
     if (onHz && hz === "ice") spd *= 1.12;
+    if (onHz && hz === "sand") spd *= 0.55; // 流沙 (遗迹沙海)
+    if (onHz && hz === "bog") spd *= 0.72; // 瘴沼 (幽影森林)
+    if (this.world && p.regionSlow) spd *= p.regionSlow; // (沙暴 headwind)
     if (p.buff.breath > 0) spd *= 0.7;
     let mx = inp.mx || 0, my = inp.my || 0;
     const ml = Math.hypot(mx, my);
@@ -1923,6 +1928,12 @@ export class Game {
       p.ivy = (p.ivy || 0) + (my * spd - (p.ivy || 0)) * k;
       moveCircle(this.map, p, p.ivx * dt, p.ivy * dt);
     } else {if(flying)p.ivx=p.ivy=0;moveCircle(this.map, p, mx * spd * dt, my * spd * dt, flying, flying);}
+    // 气流 (云巅浮庭): a wind lane carries you along its arrow; 沙暴 / 阵风 push everyone a little (world.js sets p.push)
+    if (this.world && !remote && !(p.dashT > 0)) {
+      let wx = p.push ? p.push[0] : 0, wy = p.push ? p.push[1] : 0;
+      if (onHz && hz === "wind") { const [ax, ay] = windAt(this.map, p.x, p.y); (wx += ax * 75), (wy += ay * 75); }
+      if (wx || wy) moveCircle(this.map, p, wx * dt, wy * dt, flying, flying);
+    }
     if (remote) p.moving = ml > 0.1;
     if (p.trail) for (const q of p.trail) q.t -= dt;
     if (!this.host && !p.local) return;
@@ -1934,6 +1945,16 @@ export class Game {
       p.shieldT += (this.room && this.room.noShield) || this.pact.noshield ? 0 : dt * p.st.shieldRegen;
       if (p.shieldT >= BAL.shieldTick) (p.shieldT = 0), p.shield++;
     }
+    // 流沙: stand in it too long and it swallows you a little; 瘴沼: the bog's fumes poison
+    if (hz === "sand" && onHz && !p.moving) {
+      p.sinkT = (p.sinkT || 0) + dt;
+      if (p.sinkT > 1.6) (p.sinkT = 0.6), this.hurt(p, 1, { groundHazard: true }) && this.text(p.x, p.y - 50, "下陷", "#e0b860", 0.9);
+    } else p.sinkT = Math.max(0, (p.sinkT || 0) - dt * 2);
+    if (hz === "bog" && onHz) {
+      p.bogT = (p.bogT || 0) + dt;
+      p.buff.poison = 0.3;
+      if (p.bogT > 1.5) (p.bogT = 0), this.hurt(p, 1, { groundHazard: true }) && this.text(p.x, p.y - 50, "中毒", "#8ae06a", 0.9);
+    } else p.bogT = Math.min(p.bogT || 0, 0.8);
     // lava floor
     if (hz === "lava" && onHz) {
       p.lavaT = (p.lavaT || 0) + dt;

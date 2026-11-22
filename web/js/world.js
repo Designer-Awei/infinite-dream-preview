@@ -12,7 +12,7 @@ import { THEMES, WALL, WATER, BUSH, CRATE, BARREL, F, CRATE_HP } from "./map.js"
 import { load, save, mineState, grantCharacterXP } from "./save.js";
 import { grantEggs, petState, addPool } from "./petsave.js";
 import { ENEMIES } from "./data.js";
-import { grantTitle } from "./titles.js";
+import { grantTitle, TITLES } from "./titles.js";
 import { layoutHome, homeState, homeTick, updatePasture, pastureSprites, BUILD } from "./home.js";
 import { questsFor, questBump, questText, eventsUpdate, eventSprites, tradeBuy, dirName } from "./worldevents.js";
 
@@ -29,9 +29,13 @@ export const BIOMES = [
   { id: "isle", name: "幻梦群岛", theme: 1, hazard: "mud", lv: "Lv 25–35 · 渡船或飞行坐骑", hp: 1.5, mm: [138, 122, 200],
     pool: ["slime_purple", "slime_purple", "ghost", "jelly", "wisp", "eyeball", "bat", "frog"], elite: ["skull", "frog_big", "jelly"] },
   // three continents kept for the next maps: drawn and on the world map, but closed (a soft barrier turns you back)
-  { id: "desert", name: "遗迹沙海", theme: -1, hazard: "mud", lv: "尚未开放", hp: 1.8, mm: [226, 196, 120], locked: true, pool: [], elite: [] },
-  { id: "forest", name: "幽影森林", theme: -1, hazard: "mud", lv: "尚未开放", hp: 1.8, mm: [58, 122, 90], locked: true, pool: [], elite: [] },
-  { id: "cloud", name: "云巅浮庭", theme: -1, hazard: "ice", lv: "尚未开放", hp: 1.8, mm: [224, 220, 240], locked: true, pool: [], elite: [] },
+  // the three outer continents (V6): each with its own floor hazard and a region feature (worldfx in drawRegionFx / regionTick)
+  { id: "desert", name: "遗迹沙海", theme: -1, hazard: "sand", lv: "Lv 30–40 · 流沙下陷 · 沙暴", hp: 1.8, mm: [226, 196, 120],
+    pool: ["scorpion", "scorpion", "snake_sand", "slime_sand", "bat_sand", "skull_sand", "beetle_sand"], elite: ["scorpion_king", "nest_sand", "skull_sand"] },
+  { id: "forest", name: "幽影森林", theme: -1, hazard: "bog", lv: "Lv 35–45 · 瘴沼中毒 · 林间幽暗", hp: 2, mm: [58, 122, 90],
+    pool: ["moth", "moth", "mushroom_shadow", "spider_shadow", "frog_bog", "ghost", "wisp_shadow", "snake_vine"], elite: ["nest_forest", "spider_shadow", "mushroom_shadow"] },
+  { id: "cloud", name: "云巅浮庭", theme: -1, hazard: "wind", lv: "Lv 40–50 · 气流推送 · 阵风", hp: 2.2, mm: [224, 220, 240],
+    pool: ["skylark", "skylark", "jelly_cloud", "slime_cloud", "eye_cloud", "wisp_cloud", "drone"], elite: ["nest_cloud", "jelly_cloud", "eye_cloud"] },
 ];
 // the reserved regions' palettes (code-drawn ground, rock and bushes need only colours)
 const NEW_THEMES = [
@@ -54,7 +58,16 @@ const STONE = [
   { top: "#dcd8ec", topHi: "#ffffff", front: "#9a94b8", frontLo: "#7a7498" },
 ];
 BIOMES.forEach((b, k) => ((b.rock = THEMES.length), THEMES.push({ ...THEMES[b.theme], ...STONE[k], name: b.name + "·岩" })));
-export const tileTheme = (m, i) => (m.biome ? BIOMES[m.biome[i]].theme : m.theme);
+// 家园: its own warm meadow ground (in game, on the minimap and the world map) so the homestead reads apart from the wild
+export const HOME_TH = THEMES.length;
+THEMES.push({ ...THEMES[0], name: "家园", g1: "#b4d862", g2: "#acd05a", gHi: "#d6ee8a", gLo: "#8cb444", dirt: "#d8b47a", dirtLo: "#b8925a" });
+export const inHome = (m, i) => {
+  const r = m.home && m.home.rect;
+  if (!r) return false;
+  const x = i % m.W, y = (i / m.W) | 0;
+  return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
+};
+export const tileTheme = (m, i) => (m.biome ? (inHome(m, i) ? HOME_TH : BIOMES[m.biome[i]].theme) : m.theme);
 export const wallTheme = (m, i) => (m.biome ? BIOMES[m.biome[i]].rock : m.theme);
 export const tileHazard = (m, i) => (m.biome ? BIOMES[m.biome[i]].hazard : m.hazard);
 export const hazardAt = (m, x, y) => {
@@ -156,7 +169,7 @@ export function buildWorld(seed) {
     else if (r < 0.008) t = CRATE;
     else if (r < 0.0105) t = BARREL;
     m.t[i] = t;
-    if (t === F && hz > (b === 2 ? 0.34 : 0.4)) m.mud[i] = 1; // (hazard floor only on open ground: no crate, barrel or bush standing in the lava)
+    if (t === F && hz > (b === 2 ? 0.34 : b === 6 ? 0.24 : b === 4 ? 0.3 : 0.4)) m.mud[i] = 1; // (hazard floor only on open ground: no crate, barrel or bush standing in the lava)
   }
   // rivers: from inside each continent they meander out to the coast, 1–2 tiles wide, in their region's colours
   PLATES.forEach((P, k) => {
@@ -268,6 +281,8 @@ export function buildWorld(seed) {
   const hub = (P) => nudge(P.x, P.y, P.b);
   const G = PLATES[0], I = PLATES[1], L = PLATES[2], main = { x: isles[0][0], y: isles[0][1], b: 3 };
   const toIce = cross(G, I, "冰原长桥", 1), toLava = cross(G, L, "熔炉长桥", 2), toIsle = cross(G, main, "幻梦渡口", 3);
+  const D = PLATES[3], Fo = PLATES[4], Cl = PLATES[5];
+  const toDes = cross(G, D, "沙海长桥", 12), toFor = cross(G, Fo, "幽林渡口", 13), toCld = cross(L, Cl, "云梯长桥", 14);
   // more boat routes: the big isle to its two neighbours, and the grassland's south coast straight to the west isle
   isleFerry(main, { x: isles[1][0], y: isles[1][1] }, "东屿渡口");
   isleFerry(main, { x: isles[2][0], y: isles[2][1] }, "南屿渡口");
@@ -287,15 +302,22 @@ export function buildWorld(seed) {
   path(gx, gy, ...toIce.a, 2); path(...toIce.b, ix, iy, 3);
   path(gx, gy, ...toLava.a, 4); path(...toLava.b, lx, ly, 5);
   path(sx, sy, ...toIsle.a, 6); path(...toIsle.b, main.x, main.y, 7);
+  const [dsx, dsy] = hub(D), [fx0, fy0] = hub(Fo), [csx, csy] = hub(Cl);
+  path(gx, gy, ...toDes.a, 12); path(...toDes.b, dsx, dsy, 13);
+  path(gx, gy, ...toFor.a, 14); path(...toFor.b, fx0, fy0, 15);
+  path(lx, ly, ...toCld.a, 16); path(...toCld.b, csx, csy, 17);
   // inside each region a second road to its far side (the boss arena), and a spur on the grassland
   const far = (P, ang) => nudge(Math.round(P.x + Math.cos(ang) * P.r * 0.55), Math.round(P.y + Math.sin(ang) * P.r * 0.55), P.b);
   const bossG = far(G, Math.PI * 0.95), bossI = far(I, -Math.PI * 0.75), bossL = far(L, -Math.PI * 0.3);
   path(gx, gy, ...bossG, 8); path(ix, iy, ...bossI, 9); path(lx, ly, ...bossL, 10); path(gx, gy, ...far(G, -Math.PI * 0.2), 11);
+  const bossD = far(D, Math.PI * 0.55), bossF = far(Fo, 0.15), bossC = far(Cl, Math.PI * 0.95);
+  path(dsx, dsy, ...bossD, 18); path(fx0, fy0, ...bossF, 19); path(csx, csy, ...bossC, 20);
   // 传送门 and the region bosses' arenas
   const wpI = nudge(ix + 6, iy + 4, 1), wpL = nudge(lx - 6, ly + 4, 2), wpG = nudge(gx + 5, gy - 6, 0), wpS = nudge(...toIsle.b, 3);
-  const wp = [["草原传送门", ...wpG], ["冰原传送门", ...wpI], ["熔炉传送门", ...wpL], ["群岛传送门", ...wpS]];
+  const wpD = nudge(dsx + 5, dsy - 5, 4), wpF = nudge(fx0 - 5, fy0 - 5, 5), wpC = nudge(csx + 4, csy + 3, 6);
+  const wp = [["草原传送门", ...wpG], ["冰原传送门", ...wpI], ["熔炉传送门", ...wpL], ["群岛传送门", ...wpS], ["沙海传送门", ...wpD], ["幽林传送门", ...wpF], ["浮庭传送门", ...wpC]];
   m.waypoints = wp.map(([name, x, y], k) => ({ id: k, name, x: x * T + T / 2, y: y * T + T / 2 }));
-  const bossAt = [["boss_eye", ...bossG, 0], ["boss_frost", ...bossI, 1], ["boss_core", ...bossL, 2], ["boss_baku", main.x, main.y, 3]];
+  const bossAt = [["boss_eye", ...bossG, 0], ["boss_frost", ...bossI, 1], ["boss_core", ...bossL, 2], ["boss_baku", main.x, main.y, 3], ["boss_colossus", ...bossD, 4], ["boss_myco", ...bossF, 5], ["boss_tempest", ...bossC, 6]];
   m.bosses = bossAt.map(([type, x, y, b], k) => ({ id: k, type, x: x * T + T / 2, y: y * T + T / 2, region: b }));
   const clear = (cx, cy, rx, ry) => {
     for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) if (dx * dx / (rx * rx) + dy * dy / (ry * ry) <= 1) {
@@ -314,6 +336,7 @@ export function buildWorld(seed) {
     reach = new Uint8Array(N);
     const q = [sy * W + sx];
     for (const [cx, cy] of isles) { const [x, y] = nudge(cx, cy, 3); if (pass(m.t[y * W + x])) q.push(y * W + x); }
+    for (const f of m.ferries) for (const e of [f.a, f.b]) { const j = Math.floor(e.y / T) * W + Math.floor(e.x / T); if (pass(m.t[j])) q.push(j); } // (both shores of every boat route)
     for (const j of q) reach[j] = 1;
     for (let h = 0; h < q.length; h++) {
       const i = q[h];
@@ -435,7 +458,7 @@ export function buildWorld(seed) {
   m.cracked = new Set();
   m.zap = new Set();
   m.pockets = [];
-  for (const [b, kind] of [[0, "dragon"], [0, "fox"], [1, "dragon"], [1, "fox"], [2, "dragon"], [2, "fox"]]) {
+  for (const [b, kind] of [[0, "dragon"], [0, "fox"], [1, "dragon"], [1, "fox"], [2, "dragon"], [2, "fox"], [4, "fox"], [5, "dragon"]]) {
     const salt = b * 7 + (kind === "fox" ? 3 : 0);
     let best = null;
     for (let tries = 0; tries < 3000 && !best; tries++) {
@@ -515,7 +538,7 @@ function renderTile(m, cx, cy) {
   if (!c) (c = document.createElement("canvas")), (c.width = c.height = CPX);
   const g = c.getContext("2d"), W = m.W, x0 = cx * CHUNK, y0 = cy * CHUNK, S = m.seed, px = batcher();
   const at = (x, y) => (x < 0 || y < 0 || x >= W || y >= m.H ? WALL : m.t[y * W + x]);
-  const thOf = (i) => THEMES[BIOMES[m.biome[i]].theme];
+  const thOf = (i) => THEMES[tileTheme(m, i)], bOf = (i) => (inHome(m, i) ? 99 : m.biome[i]);
   for (let y = 0; y < CHUNK; y++) for (let x = 0; x < CHUNK; x++) {
     const gx = x0 + x, gy = y0 + y, i = gy * W + gx, th = thOf(i), X = x * T, Y = y * T, h = hash(gx, gy, S + 61);
     px(X, Y, T, T, (gx + gy) % 2 ? th.g1 : th.g2);
@@ -532,13 +555,13 @@ function renderTile(m, cx, cy) {
   for (let y = 0; y < CHUNK; y++) for (let x = 0; x < CHUNK; x++) {
     const gx = x0 + x, gy = y0 + y, i = gy * W + gx;
     if (m.t[i] === WATER || m.road[i] >= 2) continue;
-    const b = m.biome[i];
+    const b = bOf(i);
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1], [1, 1], [1, -1], [-1, 1], [-1, -1]]) {
       const nx = gx + dx, ny = gy + dy;
       if (!land(nx, ny)) continue;
-      const nb = m.biome[ny * W + nx];
-      if (nb === b || (dx && dy && (m.biome[gy * W + nx] === nb || m.biome[ny * W + gx] === nb))) continue; // (a corner only when neither side already blends)
-      const th = THEMES[BIOMES[nb].theme], X = x * T, Y = y * T;
+      const nb = bOf(ny * W + nx);
+      if (nb === b || (dx && dy && (bOf(gy * W + nx) === nb || bOf(ny * W + gx) === nb))) continue; // (a corner only when neither side already blends)
+      const th = thOf(ny * W + nx), X = x * T, Y = y * T;
       for (let cy2 = 0; cy2 < T; cy2 += 2) for (let cx2 = 0; cx2 < T; cx2 += 2) {
         const ex = dx > 0 ? T - 2 - cx2 : dx < 0 ? cx2 : 99, ey = dy > 0 ? T - 2 - cy2 : dy < 0 ? cy2 : 99;
         const d = dx && dy ? Math.hypot(ex, ey) : Math.min(ex, ey);
@@ -736,9 +759,9 @@ const KEY = "ai-girls-dungeon-world-v1", FOG = 64; // fog: 64×64 cells of 4×4 
 export function loadWorldSave() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (d && d.v === 1) return { opened: [], fog: "", gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0], nodeDay: {}, miles: [], ...d };
+    if (d && d.v === 1) return { opened: [], fog: "", gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0, 0, 0, 0], nodeDay: {}, miles: [], ...d };
   } catch (e) {}
-  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0, gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0], nodeDay: {}, miles: [] };
+  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0, gates: [], bossDay: {}, flag: null, mats: [0, 0, 0, 0, 0, 0, 0], nodeDay: {}, miles: [] };
 }
 const fogBytes = (s) => {
   const out = new Uint8Array(FOG * FOG);
@@ -785,7 +808,7 @@ export function worldEnter(g) {
   g.map = m;
   g.ws = { chunks: new Map(), opened: new Set((sv.opened || []).filter((id) => m.chests.some((c) => c.id === id))) /* (chests moved by a world change drop out) */, fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
     gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
-    mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
+    mats: MATS.map((_, k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
     cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {},
     quests: sv.quests?.day === dayKey() ? sv.quests : questsFor(dayKey()) };
   // every visit starts at home, by the 派遣告示板 (the camp if that spot were ever blocked);
@@ -873,11 +896,12 @@ function grant(g, kind, n) {
   return award(g, LOOT_NAME[kind], n);
 }
 // the four regions' materials (by biome index): spent at the camp workshop
-export const MATS = [{ name: "草芯", col: "#8ad85a" }, { name: "霜晶", col: "#9ad8ff" }, { name: "熔核", col: "#ff8a3a" }, { name: "梦砂", col: "#c8a0ff" }];
+export const MATS = [{ name: "草芯", col: "#8ad85a" }, { name: "霜晶", col: "#9ad8ff" }, { name: "熔核", col: "#ff8a3a" }, { name: "梦砂", col: "#c8a0ff" },
+  { name: "遗晶", col: "#ffc24a" }, { name: "影菇", col: "#7ae0c8" }, { name: "云羽", col: "#e8f0ff" }];
 // their item icons (PixelLab, one static set): the workshop, the map panel, the loot and the 采集点 all use these
 export const matSrc = (k) => `assets/ui/mat${k}.png`;
-const MAT_IMG = [0, 1, 2, 3].map((k) => (typeof Image === "undefined" ? null : Object.assign(new Image(), { src: matSrc(k) })));
-export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验", mat0: "草芯", mat1: "霜晶", mat2: "熔核", mat3: "梦砂" };
+const MAT_IMG = MATS.map((_, k) => (typeof Image === "undefined" ? null : Object.assign(new Image(), { src: matSrc(k) })));
+export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验", mat0: "草芯", mat1: "霜晶", mat2: "熔核", mat3: "梦砂", mat4: "遗晶", mat5: "影菇", mat6: "云羽" };
 // 营地工坊: materials into lasting rewards. cost: [草芯, 霜晶, 熔核, 梦砂]; once: a title, bought a single time
 export const WORKSHOP = [
   { id: "pool", give: ["pool", 200], cost: [8, 0, 0, 0] },
@@ -887,13 +911,19 @@ export const WORKSHOP = [
   { id: "hur", give: ["hur", 1], cost: [0, 0, 6, 10] },
   { id: "egg_hur", give: ["egg_hur", 1], cost: [0, 10, 10, 15] },
   { id: "title", give: ["title", 1], cost: [20, 20, 20, 20], once: "world_walker" },
+  // the outer continents' materials (遗晶 / 影菇 / 云羽)
+  { id: "pool2", give: ["pool", 600], cost: [0, 0, 0, 0, 8, 0, 0] },
+  { id: "ur3", give: ["ur", 3], cost: [0, 0, 0, 0, 4, 6, 0] },
+  { id: "hur3", give: ["hur", 3], cost: [0, 0, 0, 0, 0, 6, 10] },
+  { id: "egg_hur2", give: ["egg_hur", 1], cost: [0, 0, 0, 0, 8, 8, 8] },
+  { id: "title2", give: ["title", 1], cost: [0, 0, 0, 0, 20, 20, 20], once: "world_frontier" },
 ];
 export function workshopBuy(g, offer) {
   const ws = g.ws;
   if (offer.once && titleOwned(offer.once)) return "已兑换";
   if (offer.cost.some((c, k) => ws.mats[k] < c)) return "材料不足";
   offer.cost.forEach((c, k) => (ws.mats[k] -= c));
-  if (offer.once) grantTitle(offer.once), award(g, "称号「大陆旅者」", 1);
+  if (offer.once) grantTitle(offer.once), award(g, `称号「${TITLES[offer.once].name}」`, 1);
   else grant(g, ...offer.give);
   worldSaveNow(g);
   return null;
@@ -929,7 +959,7 @@ export function worldKilled(g, e) {
   if (e.elite && g.ws) {
     quest(g, "elite");
     const p = e.lastBy ? g.player(e.lastBy) : null, b = g.map.biome[tileIdx(g.map, e.x, e.y)];
-    if (b <= 3) g.text(e.x, e.y - 40, grant(g, "mat" + b, 2), MATS[b].col, 1.1, 1.6);
+    if (MATS[b]) g.text(e.x, e.y - 40, grant(g, "mat" + b, 2), MATS[b].col, 1.1, 1.6);
     g.after(0.4, () => g.offerCards(p || g.players[0], 3));
   }
   const st = g.ws?.chunks.get(e.chunk);
@@ -1082,6 +1112,7 @@ export function worldUpdate(g, dt) {
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
   mounts(g, ws, m, dt);
+  regionTick(g, ws, m, dt);
   // no monster ends a frame on the water, whatever moved it (a push from a crowd, a knockback, a blink): back to the
   // last dry spot it stood on (the movement step already stops steps and leaps at the shore)
   for (const e of g.enemies) {
@@ -1531,7 +1562,7 @@ function openWorldChest(g, c, p) {
     ? [grant(g, "gems", 60), grant(g, "xp", 120), grant(g, ...roll([[0.35, "ur", 2], [0.3, "egg_ur", 1], [0.2, "hur", 1], [0.1, "stars", 10], [0.05, "egg_hur", 1]]))]
     : [grant(g, "gems", 20), grant(g, ...roll([[0.45, "pool", 60], [0.25, "stars", 3], [0.15, "ur", 1], [0.1, "egg_base", 1], [0.05, "egg_ur", 1]]))];
   const b = g.map.biome[tileIdx(g.map, c.x, c.y)];
-  if (b <= 3) lines.push(grant(g, "mat" + b, c.gold ? 5 : 2));
+  if (MATS[b]) lines.push(grant(g, "mat" + b, c.gold ? 5 : 2));
   showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
 }
@@ -1715,7 +1746,7 @@ function baseMap(m) {
   base.height = m.H;
   const g = base.getContext("2d"), img = g.createImageData(m.W, m.H);
   for (let i = 0; i < m.W * m.H; i++) {
-    const t = m.t[i], [r, gg, b] = BIOMES[m.biome[i]].mm;
+    const t = m.t[i], [r, gg, b] = t !== WATER && inHome(m, i) ? [186, 226, 104] : BIOMES[m.biome[i]].mm;
     let c = [r, gg, b];
     if (t === WATER) c = m.biome[i] === 2 ? [150, 40, 20] : m.biome[i] === 3 ? [64, 196, 214] : [63, 150, 220];
     else if (m.road[i] >= 2) c = [176, 122, 72];
@@ -1790,4 +1821,123 @@ export function worldPreview() {
   g.fillRect(m.spawn.x / T - 2, m.spawn.y / T - 2, 5, 5);
   prevKey = sv.fog;
   return (prevUrl = c.toDataURL());
+}
+
+// ---------------------------------------------------------------- region features (V6, the outer continents)
+// 遗迹沙海: every 55 s a 13 s 沙暴 — a sand haze that hides the far screen, wind from the east that pushes you west and
+// slows you; 流沙 patches slow you and swallow you a little if you stand in them (game.js).
+// 幽影森林: 林间幽暗 — the forest is dark beyond a circle of light round you, fireflies drift; 瘴沼 patches poison.
+// 云巅浮庭: 气流 lanes carry you along their arrows (game.js), and every 16 s a 2.5 s 阵风 shoves everyone one way.
+const STORM_P = 55, STORM_ON = 42, GUST_P = 16, GUST_ON = 2.5;
+/** a wind lane's direction (unit vector, one of eight) at a world point */
+export function windAt(m, x, y) {
+  const tx = Math.floor(x / T), ty = Math.floor(y / T), a = Math.round((vnoise(tx / 16, ty / 16, (m.seed || 0) + 91) * 2.2) * 8) * (Math.PI / 4);
+  return [Math.cos(a), Math.sin(a)];
+}
+export const regionAt = (m, x, y) => m.biome[tileIdx(m, x, y)];
+function regionTick(g, ws, m, dt) {
+  const fx = (ws.rfx = ws.rfx || { storm: 0, gust: 0, gustA: 0, dark: 0, b: -1 });
+  const st = g.time % STORM_P, storm = st > STORM_ON, gp = g.time % GUST_P, gust = gp < GUST_ON;
+  if (gust && !fx.gustOn) fx.gustA = Math.random() * TAU_;
+  fx.storm += ((storm ? 1 : 0) - fx.storm) * Math.min(1, dt * 1.5);
+  fx.gust += ((gust ? 1 : 0) - fx.gust) * Math.min(1, dt * 4);
+  for (const p of g.players) {
+    if (p.dead) continue;
+    const b = regionAt(m, p.x, p.y), fly = !!(p.mounted && p.pet?.id === "phoenix" && p.pet.stage === 3);
+    p.push = null;
+    p.regionSlow = 0;
+    if (b === 4 && fx.storm > 0.05 && !fly) (p.push = [-40 * fx.storm, 8 * fx.storm]), (p.regionSlow = 1 - 0.12 * fx.storm);
+    if (b === 6 && fx.gust > 0.05) p.push = [Math.cos(fx.gustA) * 85 * fx.gust, Math.sin(fx.gustA) * 85 * fx.gust];
+    if (!p.local) continue;
+    fx.dark += ((b === 5 ? 1 : 0) - fx.dark) * Math.min(1, dt * 1.2);
+    fx.b = b;
+    if (b === 4 && storm && !fx.stormOn) g.banner = { text: "沙暴来袭", sub: "视野受阻 · 逆风前行会减速", t: 2.2 };
+    if (b === 6 && gust && !fx.gustOn) g.text(p.x, p.y - 60, "阵风！", "#e8f4ff", 1.2, 1);
+  }
+  fx.stormOn = storm;
+  fx.gustOn = gust;
+}
+const TAU_ = Math.PI * 2;
+let darkCv = null, hazeCv = null;
+/** the region features on screen (screen space, over the world, under the bars and texts) */
+export function drawRegionFx(g, game, me, cx, cy, t) {
+  const fx = game.ws?.rfx;
+  if (!fx || !me) return;
+  const px = me.x - cx, py = me.y - 30 - cy;
+  if (fx.dark > 0.02) {
+    if (!darkCv) {
+      darkCv = document.createElement("canvas");
+      darkCv.width = darkCv.height = 1024;
+      const d = darkCv.getContext("2d"), gr = d.createRadialGradient(512, 512, 90, 512, 512, 330);
+      gr.addColorStop(0, "rgba(4,10,18,0)");
+      gr.addColorStop(0.55, "rgba(4,10,18,0.42)");
+      gr.addColorStop(1, "rgba(4,10,18,0.72)");
+      d.fillStyle = gr;
+      d.fillRect(0, 0, 1024, 1024);
+    }
+    g.globalAlpha = fx.dark;
+    g.drawImage(darkCv, Math.round(px - 512), Math.round(py - 512));
+    g.fillStyle = "rgba(4,10,18,0.72)";
+    const L = px - 512, R = px + 512, U = py - 512, D = py + 512;
+    if (L > 0) g.fillRect(0, 0, L, VIEW_H);
+    if (R < VIEW_W) g.fillRect(R, 0, VIEW_W - R, VIEW_H);
+    if (U > 0) g.fillRect(Math.max(0, L), 0, Math.min(VIEW_W, R) - Math.max(0, L), U);
+    if (D < VIEW_H) g.fillRect(Math.max(0, L), D, Math.min(VIEW_W, R) - Math.max(0, L), VIEW_H - D);
+    // fireflies drifting about the screen
+    for (let i = 0; i < 16; i++) {
+      const x = ((i * 137 + t * (8 + (i % 5) * 3) + Math.sin(t * 0.7 + i) * 30) % (VIEW_W + 40)) - 20, y = ((i * 89 + Math.sin(t * 0.5 + i * 2) * 40) % VIEW_H + VIEW_H) % VIEW_H;
+      const on = 0.5 + 0.5 * Math.sin(t * 3 + i * 1.7);
+      g.globalAlpha = fx.dark * (0.35 + 0.65 * on);
+      g.fillStyle = i % 3 ? "#9affd8" : "#e8ff9a";
+      g.fillRect(Math.round(x), Math.round(y), 2, 2);
+      g.globalAlpha = fx.dark * 0.18 * on;
+      g.fillRect(Math.round(x) - 2, Math.round(y) - 2, 6, 6);
+    }
+    g.globalAlpha = 1;
+  }
+  const inDes = fx.b === 4, k = inDes ? fx.storm : 0;
+  if (k > 0.02) {
+    if (!hazeCv) {
+      hazeCv = document.createElement("canvas");
+      hazeCv.width = VIEW_W;
+      hazeCv.height = VIEW_H;
+      const d = hazeCv.getContext("2d"), gr = d.createRadialGradient(VIEW_W / 2, VIEW_H / 2 - 30, 70, VIEW_W / 2, VIEW_H / 2, VIEW_W * 0.6);
+      gr.addColorStop(0, "rgba(150,96,40,0.22)");
+      gr.addColorStop(0.5, "rgba(130,82,34,0.55)");
+      gr.addColorStop(1, "rgba(110,68,28,0.88)");
+      d.fillStyle = gr;
+      d.fillRect(0, 0, VIEW_W, VIEW_H);
+    }
+    g.globalAlpha = k;
+    g.drawImage(hazeCv, Math.round(px - VIEW_W / 2), Math.round(py + 30 - VIEW_H / 2) - 30);
+    g.fillStyle = "rgba(110,68,28,0.88)";
+    const ox = Math.round(px - VIEW_W / 2), oy = Math.round(py - VIEW_H / 2);
+    if (ox > 0) g.fillRect(0, 0, ox, VIEW_H);
+    if (ox < 0) g.fillRect(VIEW_W + ox, 0, -ox, VIEW_H);
+    if (oy > 0) g.fillRect(0, 0, VIEW_W, oy);
+    if (oy < 0) g.fillRect(0, VIEW_H + oy, VIEW_W, -oy);
+    // streaks of blowing sand, east to west
+    for (let i = 0; i < 90; i++) {
+      const sp = 380 + (i % 7) * 60, x = VIEW_W - (((t * sp + i * 173) % (VIEW_W + 120)) - 60), y = (i * 53 + Math.sin(t + i) * 8) % VIEW_H;
+      g.globalAlpha = k * (0.45 + (i % 4) * 0.13);
+      g.fillStyle = i % 3 ? "#fff0c8" : "#6a4018";
+      g.fillRect(Math.round(x), Math.round(y), 12 + (i % 5) * 5, i % 2 ? 2 : 1);
+    }
+    g.globalAlpha = 1;
+  }
+  const kg = fx.b === 6 ? fx.gust : 0;
+  if (kg > 0.02) {
+    const ax = Math.cos(fx.gustA), ay = Math.sin(fx.gustA);
+    g.strokeStyle = "#ffffff";
+    g.lineWidth = 1;
+    for (let i = 0; i < 26; i++) {
+      const u = ((t * 1.6 + i * 0.37) % 1), bx = ((i * 211) % VIEW_W), by = ((i * 97) % VIEW_H), x = bx + ax * (u - 0.5) * 300, y = by + ay * (u - 0.5) * 300;
+      g.globalAlpha = kg * Math.sin(u * Math.PI) * 0.7;
+      g.beginPath();
+      g.moveTo(Math.round(x), Math.round(y));
+      g.lineTo(Math.round(x + ax * 22), Math.round(y + ay * 22));
+      g.stroke();
+    }
+    g.globalAlpha = 1;
+  }
 }
