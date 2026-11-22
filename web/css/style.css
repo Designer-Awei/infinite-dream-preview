@@ -2863,3 +2863,17 @@ body.touchmode .pet-ride-btn small { display:none; }
 .dl-day .dl-ic .st-ico { width: 17px; height: 20px; border-width: 2px; }
 .dl-day .dl-ic .st-ico.hur { transform: rotate(45deg) scale(.78); }
 .dl-day .dl-ic .st-ico { width: 18px; height: 21px; } .dl-day .dl-ic .st-ico.hur { width: 20px; height: 22px; transform: rotate(45deg) scale(.86); }
+/* 主页通知条 · 每日梦境 */
+.lb-goal.daily-note { border-color: #c27bff; background: linear-gradient(90deg, rgba(110,40,170,.85), rgba(40,16,80,.75)); cursor: pointer; }
+.lb-goal.daily-note .g-cal { width: 30px; height: 30px; border: 0; border-radius: 0; background: none; filter: none; image-rendering: pixelated; object-fit: contain; }
+.lb-goal.daily-note .g-sub { font-size: 10px; color: #e8dcff; }
+.lb-goal.daily-note .g-go { color: #ffe36a; }
+/* 每日梦境卡的红点：卡外右上角、最上层（卡片本身不裁切，地图图片自己圆角） */
+.lm-track { padding-top: 8px; }
+.lm-track .mcard.pv.daily { overflow: visible; }
+.mcard.pv.daily .mc-map { border-radius: 11px; }
+.mcard.pv.daily .mc-dot { right: -8px; top: -8px; width: 13px; height: 13px; z-index: 20; box-shadow: 0 0 0 2.5px var(--ink); }
+/* (the last card sits flush with the track's right edge, which clips sideways: the dot rides the top edge instead) */
+.mcard.pv.daily .mc-dot { right: 3px; top: -8px; }
+.mcard.pv.daily .mc-cal { top: 7px; right: 6px; }
+.mcard.pv.daily .mc-dot { right: 10px; top: -8px; }

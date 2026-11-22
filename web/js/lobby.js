@@ -206,42 +206,53 @@ export function showLobby() {
     goal.innerHTML = `<img src="assets/portrait_${next}.png" alt=""><div class="g-tx"><b>下一个目标：解锁 ${CHARS[next].short}</b><div class="g-bar"><i style="width:${Math.round(pr * 100)}%"></i></div></div><small>${Math.min(m.stats[u.stat] || 0, u.need)}/${u.need}</small>`;
     goal.title = u.text;
   } else goal.innerHTML = `<div class="g-tx"><b>全部角色已解锁 🎉</b></div><small>通关 ${m.stats.bossKills} 次</small>`;
-  // the notice bar: eggs to hatch come first; otherwise it rotates the goal above with short tips, each a shortcut
+  // the notice bar. 每日梦境 not checked in yet: its notice comes first, stays 12 s and comes back between every other
+  // slide (tap: the carousel slides to its card). Then eggs to hatch, else the goal above, and short tips, 6 s each
   {
     const ps = petState(), ready = readySlots(ps), stock = eggCount(ps), free = ps.slots.some((x) => !x);
     const msg = ready ? `${ready} 颗蛋可以孵化了` : stock && free ? `${stock} 颗宠物蛋待孵化` : "";
-    if (msg) {
-      const egg = document.createElement("canvas");
-      const readyKind = ps.slots.find((x) => x && x.t0 + x.dur <= Date.now())?.kind;
-      drawEgg(egg, ready ? 1 : 0, readyKind || ["hur", "ur", "base"].find((k) => ps.eggs[k] > 0) || "base");
-      goal.innerHTML = `<div class="g-tx"><b>${msg}</b></div><small class="g-go">去仓库 ▶</small>`;
-      goal.prepend(egg);
-      goal.classList.add("egg-note");
-      goal.title = "宠物仓库";
-      goal.onclick = () => (sfx("click"), showPets(() => showLobby()));
-    } else {
-      const first = goal.innerHTML, firstTitle = goal.title;
-      const slides = [{ html: first, title: firstTitle }, ...TIPS.map((t) => ({ tip: t }))];
-      let k = 0;
-      const show = () => {
-        const sl = slides[k];
-        goal.classList.toggle("tip-note", !!sl.tip);
-        goal.innerHTML = sl.tip ? `<i class="g-tag o1">小知识</i><div class="g-tx"><b>${sl.tip[0]}</b></div><small class="g-go"><span class="g-gl">${sl.tip[1]} </span>▶</small>` : sl.html;
-        goal.title = sl.tip ? sl.tip[1] : sl.title;
-        goal.onclick = sl.tip ? () => (sfx("click"), sl.tip[2]()) : null;
-        goal.classList.remove("g-in");
-        void goal.offsetWidth;
-        goal.classList.add("g-in");
-      };
-      // the goal first, then one random tip after another, every 6 s while the lobby is up
-      const order = TIPS.map((_, n) => n + 1).sort(() => Math.random() - 0.5);
-      let n = 0;
-      const tick = setInterval(() => {
-        if (!goal.isConnected) return clearInterval(tick);
-        k = k === 0 ? order[n++ % order.length] : 0;
-        show();
-      }, 6000);
+    const slides = [];
+    if (!checkedToday()) {
+      const dd = dailyOf(), sk = streakNow();
+      slides.push({ daily: true, dur: 12000, cls: "daily-note", title: "每日梦境",
+        html: `<img class="g-cal" src="assets/ui/daily.png" alt=""><div class="g-tx"><b>每日梦境未打卡</b><span class="g-sub">${CHARS[dd.cid].short} · ${MAPS[dd.map].name}${sk ? ` · 已连续 ${sk} 天` : ""}</span></div><small class="g-go"><span class="g-gl">去挑战 </span>▶</small>`,
+        click: () => (sfx("click"), s._modeGo && s._modeGo("daily")) });
     }
+    if (msg) {
+      const readyKind = ps.slots.find((x) => x && x.t0 + x.dur <= Date.now())?.kind;
+      slides.push({ egg: [ready ? 1 : 0, readyKind || ["hur", "ur", "base"].find((k) => ps.eggs[k] > 0) || "base"], cls: "egg-note", title: "宠物仓库",
+        html: `<div class="g-tx"><b>${msg}</b></div><small class="g-go">去仓库 ▶</small>`, click: () => (sfx("click"), showPets(() => showLobby())) });
+    } else {
+      slides.push({ html: goal.innerHTML, title: goal.title });
+      for (const t of TIPS.slice().sort(() => Math.random() - 0.5))
+        slides.push({ cls: "tip-note", title: t[1], html: `<i class="g-tag o1">小知识</i><div class="g-tx"><b>${t[0]}</b></div><small class="g-go"><span class="g-gl">${t[1]} </span>▶</small>`, click: () => (sfx("click"), t[2]()) });
+    }
+    const show = (sl) => {
+      goal.classList.remove("tip-note", "egg-note", "daily-note");
+      if (sl.cls) goal.classList.add(sl.cls);
+      goal.innerHTML = sl.html;
+      if (sl.egg) {
+        const egg = document.createElement("canvas");
+        drawEgg(egg, sl.egg[0], sl.egg[1]);
+        goal.prepend(egg);
+      }
+      goal.title = sl.title || "";
+      goal.onclick = sl.click || null;
+      goal.classList.remove("g-in");
+      void goal.offsetWidth;
+      goal.classList.add("g-in");
+    };
+    // order: [daily] first, then the rest in turn with the daily notice slipped back in between each
+    const rest = slides.filter((x) => !x.daily), daily = slides.find((x) => x.daily);
+    const seq = daily ? rest.flatMap((x) => [daily, x]) : rest;
+    let k = 0;
+    show(seq[0]);
+    const step = () => {
+      if (!goal.isConnected) return;
+      if (seq.length > 1) (k = (k + 1) % seq.length), show(seq[k]);
+      setTimeout(step, seq[k].dur || 6000);
+    };
+    setTimeout(step, seq[0].dur || 6000);
   }
   renderModes(s);
   renderRoster(s);
@@ -634,6 +645,8 @@ function renderModes(s) {
     track.scrollTo({ left: posOf(i), behavior: smooth ? "smooth" : "auto" });
     choose(i);
   };
+  // the notice bar's 每日梦境 shortcut slides the carousel to a mode card
+  s._modeGo = (id) => go(MODE_IDS.indexOf(id));
   let t = 0;
   track.addEventListener("scroll", () => {
     clearTimeout(t);
