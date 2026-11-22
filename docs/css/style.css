@@ -2899,6 +2899,10 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wmap-p .wm-b.down small { color: #a89aa8; }
 .wmap-p .wm-sec { font-size: 11px; color: #c8bcf0; margin-top: 2px; display: flex; align-items: center; justify-content: space-between; }
 .wmap-p .wm-sec .wm-flag { width: calc((100% - 10px) / 3); font-size: 12px; padding-left: 0; padding-right: 0; }
-.wmap-p .wm-tp { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5px; }
-.wmap-p .wm-tp .btn { width: 100%; padding-left: 0; padding-right: 0; font-size: 12px; white-space: nowrap; }
+.wmap-p .wm-tp { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: auto; }
+.wmap-p .wm-tp .btn { width: 100%; padding-left: 0; padding-right: 0; white-space: nowrap; }
+.wmap-p .wm-tp .btn:disabled { filter: grayscale(.8) brightness(.8); }
+.wmap-p .wm-pick { font-size: 11px; color: #c8bcf0; min-height: 30px; display: flex; align-items: center; justify-content: center; text-align: center; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 2px 6px; }
+.wmap-p .wm-pick b { color: #fff6c0; margin-left: 4px; }
+.wmap-p .wm-cv { cursor: pointer; }
 @media (max-height: 420px) { .hud .tl .wmini { width: 48px; height: 48px; } }

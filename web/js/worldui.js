@@ -24,7 +24,6 @@ function coast(m) {
   g.putImageData(img, 0, 0);
   return outline;
 }
-const GATE_SHORT = ["草原门", "冰原门", "熔炉门", "群岛门"];
 
 export function showWorldMap(game, me, app) {
   const m = game.map, ws = game.ws;
@@ -34,7 +33,7 @@ export function showWorldMap(game, me, app) {
   const md = el("div", "modal wmap-modal");
   md.innerHTML = `<div class="panel wmap-p"><div class="wm-left"><canvas class="wm-cv" width="512" height="512"></canvas></div>
     <div class="wm-side"><div class="wm-head"><h2 class="outline">梦境大陆</h2><button class="btn gray small x-btn">关闭</button></div>
-    <div class="wm-stats o1"></div><div class="wm-boss"></div><div class="wm-sec"><span class="o1">传送</span></div><div class="wm-tp"></div></div></div>`;
+    <div class="wm-stats o1"></div><div class="wm-boss"></div><div class="wm-pick o1"></div><div class="wm-tp"></div></div></div>`;
   const close = () => {
     md.remove();
     app.paused = false;
@@ -112,21 +111,49 @@ export function showWorldMap(game, me, app) {
     const down = ws.bossDay[B.id] === today;
     return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? "今日已击败" : "可挑战"}</b></div>`;
   }).join("");
-  const tp = md.querySelector(".wm-tp");
-  const go = (to, name) => {
-    const err = worldTeleport(game, to, name);
-    if (err) return toast(err);
-    close();
+  // travel: tap a destination on the map (营地, a lit 传送门, your flag) — it is ringed and named — then 传送;
+  // 插旗 plants your flag where you stand
+  const dests = [{ o: m.spawn, name: "营地" }, ...m.waypoints.filter((w) => ws.gates.has(w.id)).map((w) => ({ o: w, name: w.name })), ...(ws.flag ? [{ o: ws.flag, name: "旗帜" }] : [])];
+  const snap = g.getImageData(0, 0, cv.width, cv.height), pick = md.querySelector(".wm-pick");
+  let sel = null;
+  const choose = (d) => {
+    sel = d;
+    g.putImageData(snap, 0, 0);
+    if (d) {
+      const [x, y] = at(d.o);
+      g.strokeStyle = "#0c0814"; g.lineWidth = 5; g.beginPath(); g.arc(x, y, 15, 0, Math.PI * 2); g.stroke();
+      g.strokeStyle = "#fff6c0"; g.lineWidth = 2.5; g.beginPath(); g.arc(x, y, 15, 0, Math.PI * 2); g.stroke();
+    }
+    pick.innerHTML = d ? `目的地：<b>${d.name}</b>` : inCombat(game) ? "战斗中不能传送" : "点地图上的营地、已点亮的传送门或旗帜";
+    go.disabled = !d;
   };
-  // 插旗 sits on the section line; the six destinations fill an even 3×2 grid
-  md.querySelector(".wm-sec").append(btn("插旗", "pink small wm-flag", () => {
+  cv.onclick = (e) => {
+    const r = cv.getBoundingClientRect(), x = ((e.clientX - r.left) / r.width) * cv.width, y = ((e.clientY - r.top) / r.height) * cv.height;
+    let best = null, bd = 30; // (a finger-sized pick radius, in map pixels)
+    for (const d of dests) {
+      const [dx, dy] = at(d.o), dd = Math.hypot(dx - x, dy - y);
+      if (dd < bd) (bd = dd), (best = d);
+    }
+    if (!best) {
+      const gate = m.waypoints.find((w) => !ws.gates.has(w.id) && Math.hypot(at(w)[0] - x, at(w)[1] - y) < 30);
+      if (gate) toast(`先走到${gate.name}点亮它`);
+    }
+    sfx("click");
+    choose(best);
+  };
+  const tp = md.querySelector(".wm-tp");
+  tp.append(btn("插旗", "pink", () => {
     const err = placeFlag(game);
     if (err) return toast(err);
     close();
   }));
-  tp.append(btn("营地", "blue small", () => go(m.spawn, "营地")));
-  tp.append(btn("旗帜", ws.flag ? "blue small" : "gray small", () => (ws.flag ? go(ws.flag, "旗帜") : toast("还没有插旗"))));
-  m.waypoints.forEach((w, i) => tp.append(btn(GATE_SHORT[i] || w.name, ws.gates.has(w.id) ? "blue small" : "gray small", () => (ws.gates.has(w.id) ? go(w, w.name) : toast(`先走到${w.name}点亮它`)))));
-  if (inCombat(game)) md.querySelector(".wm-sec span").textContent = "传送（战斗中不可用）";
+  const go = btn("传送", "blue", () => {
+    if (!sel) return;
+    const err = worldTeleport(game, sel.o, sel.name);
+    if (err) return toast(err);
+    close();
+  });
+  tp.append(go);
+  choose(null);
   uiRoot().appendChild(md);
 }
