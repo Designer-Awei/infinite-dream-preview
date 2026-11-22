@@ -2793,7 +2793,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .mcard.pv.daily .mc-face { position: absolute; right: 8px; bottom: 18px; z-index: 1; width: 46px; height: 46px; image-rendering: pixelated; filter: drop-shadow(0 2px 0 var(--ink)); pointer-events: none; }
 .mcard.pv.daily .mc-cal { position: absolute; right: 4px; top: 2px; z-index: 1; width: 30px; height: 30px; image-rendering: pixelated; pointer-events: none; }
 .mcard.pv.daily .mc-k { background: #6a2aa8; }
-.mcard.pv.daily .mc-dot { position: absolute; right: 4px; top: 2px; z-index: 2; width: 9px; height: 9px; border-radius: 50%; background: #ff3a4a; box-shadow: 0 0 0 2px var(--ink); }
 /* 每日梦境 panel */
 .daily-p { width: min(720px, 94vw); padding: 10px 14px 12px; }
 .dl-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -2872,10 +2871,9 @@ body.touchmode .pet-ride-btn small { display:none; }
 .lm-track { padding-top: 8px; }
 .lm-track .mcard.pv.daily { overflow: visible; }
 .mcard.pv.daily .mc-map { border-radius: 11px; }
-.mcard.pv.daily .mc-dot { right: -8px; top: -8px; width: 13px; height: 13px; z-index: 20; box-shadow: 0 0 0 2.5px var(--ink); }
 /* (the last card sits flush with the track's right edge, which clips sideways: the dot rides the top edge instead) */
-.mcard.pv.daily .mc-dot { right: 3px; top: -8px; }
 .mcard.pv.daily .mc-cal { top: 7px; right: 6px; }
-.mcard.pv.daily .mc-dot { right: 0; top: -8px; } /* (inside the card border) its dark ring flush with the card's right edge */
 /* 最高品质称号统一固定红色，不再循环换色 */
 .ttl.t-x { --tc: #ff4a4a; --tb: #3a0a12; animation: none; box-shadow: 0 0 0 2px #0c0814, 0 0 12px color-mix(in srgb, #ff4a4a 65%, transparent); }
+/* 每日梦境 card (overflow visible): the info strip follows the card's rounded inner corners instead of covering the frame */
+.mcard.pv.daily .mc-info { border-radius: 0 0 11px 11px; }
