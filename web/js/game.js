@@ -976,6 +976,7 @@ export class Game {
   damageWall(i, dmg, p) {
     const m=this.map,tx=i%m.W,ty=Math.floor(i/m.W);
     if(!this.host||this.pvp||!p?.mounted||p.pet?.id!=='dragon'||p.pet.stage!==3||p.dead||p.downed||!(dmg>0)||!Number.isInteger(i)||tx<=0||ty<=0||tx>=m.W-1||ty>=m.H-1||m.t[i]!==WALL)return;
+    if(this.world&&!m.cracked?.has(i))return; // (梦境大陆: only 裂纹岩 breaks)
     const hp=m.wallHp||(m.wallHp={});hp[i]=(hp[i]??DRAGON_WALL_HP)-dmg;
     if(hp[i]>0)return;
     delete hp[i];m.t[i]=0;(m.brokenWalls||(m.brokenWalls=[])).push(i);m.groundDirty=true;this.flowT=0;

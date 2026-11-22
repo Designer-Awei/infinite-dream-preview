@@ -19,6 +19,8 @@ import { titleHTML } from "./titles.js";
 // closer in come the ferries, the other 传送门, the workshop and gold chests; closest, every chest you have spotted,
 // today's 采集点 and the names.
 const ZOOMS = [1, 2, 4, 6], LOD1 = 1.8, LOD2 = 3.2;
+const NEED = { dragon: ["龙", "#e8642a"], fox: ["狐", "#d8a018"], phoenix: ["凰", "#2a9ad8"] };
+const NEED_TIP = { dragon: "骑火龙击碎裂纹岩", fox: "骑灵狐穿过电门", phoenix: "骑冰凰飞过去" };
 let comp = null, compKey = null;
 function mapArt(m, ws) {
   const key = ws.fog.join("");
@@ -97,12 +99,12 @@ export function showWorldMap(game, me, app) {
     g2.arc(0, 0, r, 0, Math.PI * 2);
     g2.fill();
   };
-  const label = (text, x, y, px, col = "#ffffff", align = "center") => {
+  const label = (text, x, y, px, col = "#ffffff", align = "center", stroke = 3) => {
     g.font = `${Math.round(px * dpr)}px Cubic, sans-serif`;
     g.textAlign = align;
     g.textBaseline = "middle";
     g.lineJoin = "round";
-    g.lineWidth = 3 * dpr;
+    g.lineWidth = stroke * dpr;
     g.strokeStyle = "#0c0814";
     g.strokeText(text, x, y);
     g.fillStyle = col;
@@ -149,7 +151,14 @@ export function showWorldMap(game, me, app) {
       g2.fillStyle = "#0c0814"; g2.beginPath(); g2.moveTo(0, -6); g2.lineTo(5, 0); g2.lineTo(0, 6); g2.lineTo(-5, 0); g2.fill();
       g2.fillStyle = MATS[n.b].col; g2.beginPath(); g2.moveTo(0, -4); g2.lineTo(3, 0); g2.lineTo(0, 4); g2.lineTo(-3, 0); g2.fill();
     });
-    for (const c of m.chests) if (!ws.opened.has(c.id) && seen(c) && (lod >= 2 || (lod === 1 && c.gold))) mark(c, ring(0, 3, c.gold ? "#ffd84a" : "#e0a050"));
+    for (const c of m.chests) if (!c.need && !ws.opened.has(c.id) && seen(c) && (lod >= 2 || (lod === 1 && c.gold))) mark(c, ring(0, 3, c.gold ? "#ffd84a" : "#e0a050"));
+    // 坐骑秘境 / islets: a badge naming the mount it needs (from 2×; greyed once its chest is open)
+    if (lod >= 1) for (const c of m.chests) if (c.need && seen(c)) {
+      const p = at(c), done = ws.opened.has(c.id), [ch, col] = NEED[c.need];
+      if (!inView(p)) continue;
+      mark(c, ring(0, 11, done ? "#5a5470" : col));
+      label(ch, p[0], p[1] + dpr * 0.5, 9, done ? "#a8a0c0" : "#ffffff", "center", 2);
+    }
     if (lod >= 1) for (const f of m.ferries || []) for (const p of [f.a, f.b]) if (seen(p)) mark(p, (g2) => {
       g2.fillStyle = "#0c0814"; g2.fillRect(-6, -4, 12, 8);
       g2.fillStyle = "#c88a4a"; g2.fillRect(-5, -3, 10, 6);
@@ -255,6 +264,8 @@ export function showWorldMap(game, me, app) {
     }
     sfx("click");
     choose(best, best ? null : toTile(X, Y));
+    const need = !best && view.z >= LOD1 && m.chests.find((c) => c.need && seen(c) && Math.hypot(at(c)[0] - X, at(c)[1] - Y) < 18 * sc);
+    if (need) pick.innerHTML = `${ws.opened.has(need.id) ? "已开启" : "金宝箱"} · <b>${NEED_TIP[need.need]}</b>`;
   };
   // gestures: drag pans, two fingers pinch, the wheel zooms at the pointer, a still short touch is a tap
   const local = (e) => {

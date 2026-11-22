@@ -351,14 +351,17 @@ export function buildWorld(seed) {
     const [x, y, cover] = pick, dd = tdist(x, y);
     m.chests.push({ id: y * W + x, x: x * T + T / 2, y: y * T + T / 2 + 4, gold: dd > 150 || (cover >= 3 && hash(x, y, seed + 54) < 0.45) });
   }
-  const seen2 = new Uint8Array(N);
+  const seen2 = new Uint8Array(N), wingReach = new Uint8Array(N), wq = [];
+  // (what a flier reaches: over water but not through rock — an islet walled in by rock gets no chest)
+  for (let i = 0; i < N; i++) if (reach[i]) (wingReach[i] = 1), wq.push(i);
+  for (let h = 0; h < wq.length; h++) for (const j of [wq[h] + 1, wq[h] - 1, wq[h] + W, wq[h] - W]) if (j >= 0 && j < N && !wingReach[j] && m.t[j] !== WALL && !BIOMES[m.biome[j]].locked) (wingReach[j] = 1), wq.push(j);
   for (let i0 = 0; i0 < N; i0++) {
-    if (seen2[i0] || reach[i0] || m.t[i0] !== F || BIOMES[m.biome[i0]].locked) continue;
+    if (seen2[i0] || reach[i0] || m.t[i0] !== F || BIOMES[m.biome[i0]].locked || !wingReach[i0]) continue;
     const comp = [i0];
     seen2[i0] = 1;
     for (let h = 0; h < comp.length; h++) for (const j of [comp[h] + 1, comp[h] - 1, comp[h] + W, comp[h] - W]) if (!seen2[j] && m.t[j] !== WATER && !reach[j]) (seen2[j] = 1), comp.push(j);
     if (comp.length < 24 || m.chests.filter((q) => q.wing).length >= 6) continue;
-    const c = comp.find((j) => m.t[j] === F) ?? comp[0];
+    const c = comp.find((j) => m.t[j] === F && wingReach[j]) ?? comp[0];
     m.chests.push({ id: c, x: (c % W) * T + T / 2, y: Math.floor(c / W) * T + T / 2 + 4, gold: true, wing: true });
   }
   // 采集点: a region's material lying about (herbs / frost crystals / ember ore / dream sand), back every day
@@ -372,6 +375,50 @@ export function buildWorld(seed) {
       break;
     }
   }
+  // 坐骑秘境 (W4): small walled pockets whose door only one mount opens — 裂纹岩 (fire from a mounted 火龙 breaks it)
+  // or 电门 (only a rider on 灵狐 passes the charge); each hides a golden chest and a 采集点. The islets only a flier
+  // reaches (the wing chests above) are 冰凰's.
+  m.cracked = new Set();
+  m.zap = new Set();
+  m.pockets = [];
+  for (const [b, kind] of [[0, "dragon"], [0, "fox"], [1, "dragon"], [1, "fox"], [2, "dragon"], [2, "fox"]]) {
+    const salt = b * 7 + (kind === "fox" ? 3 : 0);
+    let best = null;
+    for (let tries = 0; tries < 3000 && !best; tries++) {
+      const x = 6 + Math.floor(hash(tries, salt, seed + 71) * (W - 12)), y = 6 + Math.floor(hash(salt, tries, seed + 72) * (H - 12));
+      if (m.biome[y * W + x] !== b || tdist(x, y) < 30) continue;
+      let ok = true;
+      for (let dy = -5; dy <= 5 && ok; dy++) for (let dx = -5; dx <= 5 && ok; dx++) {
+        const j = (y + dy) * W + x + dx;
+        if (!reach[j] || m.road[j] || m.t[j] === WATER || m.biome[j] !== b) ok = false;
+      }
+      if (!ok || [...m.waypoints, ...m.bosses, ...m.pockets].some((o) => Math.hypot(o.x / T - x, o.y / T - y) < 16)) continue;
+      if ([...m.chests, ...m.nodes].some((o) => Math.abs(o.x / T - x) < 7 && Math.abs(o.y / T - y) < 7)) continue;
+      const side = [[0, 1], [1, 0], [-1, 0], [0, -1]].find(([dx, dy]) => open(x + dx * 7, y + dy * 7) && open(x + dx * 6, y + dy * 6));
+      if (side) best = [x, y, side];
+    }
+    if (!best) continue;
+    const [x, y, [ox, oy]] = best, door = [];
+    for (let dy = -4; dy <= 4; dy++) for (let dx = -4; dx <= 4; dx++) {
+      const j = (y + dy) * W + x + dx;
+      m.mud[j] = 0;
+      delete m.crates[j];
+      if (Math.max(Math.abs(dx), Math.abs(dy)) < 4) { m.t[j] = F; continue; }
+      const isDoor = ox ? dx === 4 * ox && Math.abs(dy) <= 1 : dy === 4 * oy && Math.abs(dx) <= 1;
+      if (!isDoor) m.t[j] = WALL;
+      else if (kind === "dragon") (m.t[j] = WALL), m.cracked.add(j), door.push(j);
+      else (m.t[j] = F), m.zap.add(j), door.push(j);
+    }
+    for (let s2 = 5; s2 <= 6; s2++) for (let k = -1; k <= 1; k++) { // the way up to the door kept clear
+      const j = (y + oy * s2 + (ox ? k : 0)) * W + x + ox * s2 + (oy ? k : 0);
+      if (m.t[j] !== WATER) (m.t[j] = F), delete m.crates[j];
+    }
+    for (const sp of m.spawners) sp.list = sp.list.filter((e) => Math.abs(e.x / T - x) > 5.5 || Math.abs(e.y / T - y) > 5.5);
+    m.chests.push({ id: (y - 1) * W + x, x: x * T + T / 2, y: (y - 1) * T + T / 2 + 4, gold: true, need: kind });
+    m.nodes.push({ id: (y + 2) * W + x + 1, x: (x + 1) * T + T / 2, y: (y + 2) * T + T / 2 + 4, b });
+    m.pockets.push({ tx: x, ty: y, x: x * T + T / 2, y: y * T + T / 2, kind, b, door, dx: ox, dy: oy });
+  }
+  for (const c of m.chests) if (c.wing) c.need = "phoenix";
   // the camp workshop (exchange materials) stands just north-east of the spawn
   const [wx2, wy2] = nudge(sx + 4, sy - 3, 0);
   m.shop = { x: wx2 * T + T / 2, y: wy2 * T + T / 2 };
@@ -644,7 +691,8 @@ export function explored(fog, mask = getWorld().fogLand) {
 export function worldSaveNow(g) {
   const ws = g.ws, p = g.players.find((q) => q.local) || g.players[0];
   if (!ws) return;
-  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag, mats: ws.mats, nodeDay: ws.nodeDay, miles: ws.miles };
+  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag, mats: ws.mats, nodeDay: ws.nodeDay, miles: ws.miles,
+    cracked: [...new Set([...ws.cracked, ...(g.map.brokenWalls || []).filter((i) => g.map.cracked.has(i))])] };
   try {
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) {}
@@ -658,10 +706,12 @@ export function worldEnter(g) {
   if (WORLD?.used) (WORLD = null), invalidateWorldTiles();
   const m = getWorld(), sv = loadWorldSave();
   m.used = true;
+  for (const i of sv.cracked || []) if (m.cracked.has(i)) m.t[i] = F; // (裂纹岩 you have broken stays broken)
   g.map = m;
   g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
     gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
-    mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true };
+    mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
+    cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)) };
   const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
   const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
@@ -796,6 +846,7 @@ export function worldUpdate(g, dt) {
   ws.tick = (ws.tick || 0) - dt;
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
+  mounts(g, ws, m, dt);
   // 采集点: walk into one to gather it (back tomorrow)
   const today = dayKey();
   for (const n of m.nodes) {
@@ -994,6 +1045,43 @@ function nodeSprite(g, x, y, b, t) {
   }
   if (tw) r(-1, -20, 2, 5, "#ffffff"), r(-3, -18, 6, 1, "#ffffff");
 }
+// 裂纹岩: glowing cracks over a rock block (x, y = the block's top-left, lifted like walls)
+function crackSprite(g, x, y, j) {
+  g.fillStyle = "rgba(255,110,40,0.22)"; // (a warm, scorched tint over the block)
+  g.fillRect(x, y, T, T + 14);
+  const k = j % 3, seg = [[[6, 4], [12, 12], [9, 19], [15, 27], [13, 36]], [[24, 3], [19, 13], [23, 22], [17, 31], [20, 40]], [[16, 6], [11, 15], [18, 24], [10, 34]]][k];
+  for (const [w, col] of [[4, "#1a1020"], [2, "#ff8a3a"], [1, "#ffe36a"]]) {
+    g.strokeStyle = col;
+    g.lineWidth = w;
+    g.beginPath();
+    seg.forEach(([a, b], n) => (n ? g.lineTo(x + a, y + b) : g.moveTo(x + a, y + b)));
+    g.stroke();
+  }
+}
+// 电门: a crackling field filling the doorway tile, posts on the end tiles
+function zapSprite(g, x, y, t, j, q) {
+  const ends = q.door.indexOf(j), across = q.dx !== 0; // (a door in an east/west wall runs north–south)
+  const r = (a, c, w, h, col) => ((g.fillStyle = col), g.fillRect(Math.round(x + a), Math.round(y + c), w, h));
+  const fl = 0.5 + Math.sin(t * 17 + j) * 0.2;
+  g.globalAlpha = 0.28 * fl + 0.12;
+  r(across ? 6 : 0, across ? 0 : 4, across ? 20 : T, across ? T : 22, "#6ab8ff"); // the field
+  g.globalAlpha = 1;
+  for (let k = 0; k < 3; k++) {
+    g.strokeStyle = ["#1a2a6a", "#9ad8ff", "#fff36a"][k];
+    g.lineWidth = [4, 2, 1][k];
+    g.beginPath();
+    for (let s = 0; s <= 8; s++) {
+      const u = (s / 8) * T, v = 15 + Math.sin(t * 34 + s * 2.3 + j * 1.7) * 7 * (s % 2 ? 1 : -1) * fl;
+      const [px, py] = across ? [x + v, y + u] : [x + u, y + v - 2];
+      s ? g.lineTo(px, py) : g.moveTo(px, py);
+    }
+    g.stroke();
+  }
+  if (ends === 0 || ends === q.door.length - 1) {
+    const px = across ? 12 : ends === 0 ? -2 : 26, py = across ? (ends === 0 ? -14 : 18) : -14;
+    r(px, py, 8, 30, "#1a1020"); r(px + 1, py + 1, 6, 28, "#5a6a8a"); r(px + 1, py + 1, 6, 5, Math.sin(t * 9) > 0 ? "#fff36a" : "#9ad8ff");
+  }
+}
 function shopSprite(g, x, y, t) {
   const r = (a, c, w, h, col) => ((g.fillStyle = col), g.fillRect(Math.round(x + a), Math.round(y + c), w, h));
   g.fillStyle = "rgba(10,8,20,0.35)";
@@ -1012,6 +1100,14 @@ export function worldSprites(game, me) {
   const m = game.map, ws = game.ws, out = [];
   if (!ws || !me) return out;
   const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340, today = dayKey();
+  for (const q of m.pockets) {
+    if (!near(q)) continue;
+    for (const j of q.door) {
+      const x = (j % m.W) * T, y = Math.floor(j / m.W) * T;
+      if (q.kind === "dragon" && m.t[j] === WALL) out.push({ y: y + T + 0.01, draw: (g) => crackSprite(g, x, y - 14, j) });
+      else if (q.kind === "fox") out.push({ y: y + T - 1, draw: (g, t) => zapSprite(g, x, y, t, j, q) });
+    }
+  }
   for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
   if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
@@ -1023,6 +1119,18 @@ export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
   for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
+  for (const q of m.pockets) {
+    const j = q.door[1], dx = (j % m.W) * T + T / 2, dy = Math.floor(j / m.W) * T - (q.dy ? 26 : 50); // (over the doorway)
+    if (Math.abs(me.x - dx) > 300 || Math.abs(me.y - dy) > 200 || (q.kind === "dragon" && m.t[j] !== WALL)) continue;
+    if (q.kind === "fox" && foxRider(me)) continue;
+    R.text(g, q.kind === "dragon" ? "裂纹岩 · 骑火龙击碎" : "电门 · 骑灵狐通过", dx, dy, q.kind === "dragon" ? "#ffb070" : "#ffe36a", 11);
+  }
+  if (flyingNow(me) && me.stam < STAMINA - 0.05) { // 冰凰's stamina, under the rider
+    const w = 44, f = Math.max(0, me.stam / STAMINA), x = Math.round(me.x - w / 2), y = Math.round(me.y + 18);
+    g.fillStyle = "#0c0814"; g.fillRect(x - 2, y - 2, w + 4, 8);
+    g.fillStyle = "#26304a"; g.fillRect(x, y, w, 4);
+    g.fillStyle = f < 0.3 ? "#ff7a5a" : "#7fe8ff"; g.fillRect(x, y, Math.round(w * f), 4);
+  }
   if (Math.abs(me.x - m.shop.x) < 420 && Math.abs(me.y - m.shop.y) < 260) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
@@ -1102,6 +1210,49 @@ function openWorldChest(g, c, p) {
   if (b <= 3) lines.push(grant(g, "mat" + b, c.gold ? 5 : 2));
   showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
+}
+// ---------------------------------------------------------------- W4: what each mount opens
+// 冰凰's flight over water spends stamina (land refills it fast); at 30% a warning, at nothing the rider is washed
+// back to the last shore. 电门 lets only a 灵狐 rider through; anyone else is thrown back. 裂纹岩 only cracks under a
+// mounted 火龙's fire (game.damageWall; in the world plain rock no longer breaks).
+export const STAMINA = 14; // seconds of flight over water: the islets need ~2 s; the narrowest strait to the isles (52 tiles) ~12 s
+const foxRider = (p) => !!(p.mounted && p.pet?.id === "fox" && p.pet.stage === 3);
+function zapTouch(m, p) {
+  const r = p.r || 10;
+  for (let ty = Math.floor((p.y - r) / T); ty <= Math.floor((p.y + r) / T); ty++) for (let tx = Math.floor((p.x - r) / T); tx <= Math.floor((p.x + r) / T); tx++) if (m.zap.has(ty * m.W + tx)) return true;
+  return false;
+}
+function mounts(g, ws, m, dt) {
+  for (const p of g.players) {
+    if (p.dead) continue;
+    const i = tileIdx(m, p.x, p.y), wet = m.t[i] === WATER;
+    if (p.stam === undefined) p.stam = STAMINA;
+    if (flyingNow(p) && wet) {
+      p.stam -= dt;
+      if (p.stam < STAMINA * 0.3 && (p.stamWarn || 0) < g.time) (p.stamWarn = g.time + 1.4), g.text(p.x, p.y - 46, p.stam > 0 ? "体力不足 · 快回陆地" : "", "#ff9a6a", 1, 1.2);
+      if (p.stam <= 0 && p.lastLand) {
+        Object.assign(p, { x: p.lastLand.x, y: p.lastLand.y, stam: STAMINA * 0.4, ivx: 0, ivy: 0 });
+        Object.assign(p.pet, { x: p.x, y: p.y });
+        g.vfx("spawn/poof", p.x, p.y, { palette: ["#0c1430", "#1e54ac", "#4fb4f0", "#9ef0ff", "#ffffff"] });
+        g.text(p.x, p.y - 50, "体力耗尽 · 回到岸边", "#9ef0ff", 1.1, 1.8);
+        g.sound("hurt", 0.2);
+      }
+    } else {
+      p.stam = Math.min(STAMINA, p.stam + dt * (wet ? 0 : 3));
+      if (!wet && !zapTouch(m, p)) p.lastLand = { x: p.x, y: p.y };
+    }
+    if (!m.zap.size) continue;
+    if (zapTouch(m, p) && !foxRider(p) && !p.downed) {
+      const back = p.zapSafe || p.lastLand;
+      if (back) (p.x = back.x), (p.y = back.y);
+      if ((p.zapT || 0) < g.time) {
+        p.zapT = g.time + 0.8;
+        g.text(p.x, p.y - 18, "被电门弹开", "#9ad8ff", 0.9, 1.1);
+        g.vfx("lightning/zap-hit", p.x, p.y - 10);
+        g.sound("shoot_thunder", 0.08);
+      }
+    } else if (!zapTouch(m, p)) p.zapSafe = { x: p.x, y: p.y };
+  }
 }
 // exploration milestones: [%, reward, amount, title]
 const MILES = [[10, "gems", 150], [25, "egg_ur", 1], [50, "hur", 1, "world_explorer"], [75, "egg_hur", 1], [100, "hur", 3, "world_cartographer"]];
