@@ -2865,7 +2865,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 /* 主页通知条 · 每日梦境 */
 .lb-goal.daily-note { border-color: #c27bff; background: linear-gradient(90deg, rgba(110,40,170,.85), rgba(40,16,80,.75)); cursor: pointer; }
 .lb-goal.daily-note .g-cal { width: 30px; height: 30px; border: 0; border-radius: 0; background: none; filter: none; image-rendering: pixelated; object-fit: contain; }
-.lb-goal.daily-note .g-sub { font-size: 10px; color: #e8dcff; }
+.lb-goal.daily-note .g-sub { display: none; } /* one line on every screen: 每日梦境未打卡 · 去挑战 ▶ */
 .lb-goal.daily-note .g-go { color: #ffe36a; }
 /* 每日梦境卡的红点：卡外右上角、最上层（卡片本身不裁切，地图图片自己圆角） */
 .lm-track { padding-top: 8px; }
