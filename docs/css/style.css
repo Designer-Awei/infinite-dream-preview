@@ -2924,3 +2924,12 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wmap-p .wm-mats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; }
 .wmap-p .wm-mats span { display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 10.5px; color: #e8dcff; background: rgba(20,12,50,.6); border: 2px solid var(--ink); border-radius: 8px; padding: 1px 2px; white-space: nowrap; }
 .wmap-p .wm-mats b { color: #fff6c0; }
+/* 梦境大陆 world map: zoom buttons in the map's top-right corner (code-drawn + / −) */
+.wmap-p .wm-left { position: relative; }
+.wmap-p .wm-cv { touch-action: none; background: #1e54ac; }
+.wmap-p .wm-zoom { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
+.wmap-p .wm-zoom .btn { width: 32px; height: 32px; padding: 0; border-radius: 9px; }
+.wmap-p .wm-zoom i { position: relative; width: 14px; height: 4px; background: #fff; box-shadow: 0 0 0 2px var(--ink); border-radius: 1px; }
+.wmap-p .wm-zin i::after { content: ""; position: absolute; left: 5px; top: -5px; width: 4px; height: 14px; background: #fff; border-radius: 1px; }
+.wmap-p .wm-zin i::after { box-shadow: 0 0 0 2px var(--ink); }
+.wmap-p .wm-zin i::before { content: ""; position: absolute; inset: 0; background: #fff; z-index: 1; border-radius: 1px; }

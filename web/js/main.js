@@ -259,6 +259,7 @@ export const app = {
     else if (kind === "world") {
       renderer.follow(g, this.me, 0, true);
       playMusic("battle");
+      import("./worldatlas.js").then((A) => A.prebuildAtlas(g.map)); // (the world map's art, painted in idle slices)
     } else if (kind === "room") {
       renderer.follow(g, this.me, 0, true);
       saveRun(this); // 冒险续玩 checkpoint

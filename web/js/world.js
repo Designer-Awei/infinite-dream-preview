@@ -137,6 +137,9 @@ export function buildWorld(seed) {
       if (comp.length < 160) for (const j of comp) (m.t[j] = WATER), (m.biome[j] = 3);
     }
   }
+  // the coast as generated (before lakes and rivers): the world map draws these plates raised over the sea, with cliffs
+  m.land = Uint8Array.from(m.t, (v) => (v === WATER ? 0 : 1));
+  m.labels = [...PLATES.map((P) => ({ b: P.b, x: P.x, y: P.y })), { b: 3, x: isles[0][0], y: isles[0][1] }];
   // terrain on the land: ponds, rock, bushes, a few crates, the regions' floor hazard
   for (let i = 0; i < N; i++) {
     if (m.t[i] !== F) continue;
