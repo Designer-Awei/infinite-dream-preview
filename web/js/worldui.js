@@ -10,6 +10,9 @@ import { ENEMIES } from "./data.js";
 import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy } from "./world.js";
 import { drawEgg } from "./petwh.js";
 import { worldAtlas } from "./worldatlas.js";
+import { BUILD, BUILD_ORDER, TOWER_REGIONS, slotCount, capHours, petRate, homeTick, homeSave, harvest, build, canBuild, petLabel, qualityOf } from "./home.js";
+import { petState, findPet } from "./petsave.js";
+import { petPortrait, PET_STAGES } from "./petdata.js";
 import { load } from "./save.js";
 import { titleHTML } from "./titles.js";
 
@@ -79,6 +82,7 @@ export function showWorldMap(game, me, app) {
   md.onclick = (e) => e.target === md && close();
   const cv = md.querySelector(".wm-cv"), g = cv.getContext("2d"), today = dayKey(), art = mapArt(m, ws), AS = art.width / m.W;
   const seen = (o) => ws.fog[Math.floor(o.y / T / 4) * FOG + Math.floor(o.x / T / 4)];
+  const towerR = TOWER_REGIONS[ws.home?.lv.tower || 0], towerSees = (o) => towerR.includes(m.biome[Math.floor(o.y / T) * m.W + Math.floor(o.x / T)]); // (家园 瞭望塔)
   const visited = new Set();
   for (let i = 0; i < FOG * FOG; i++) {
     const j = (i / FOG | 0) * 4 * m.W + 2 * m.W + (i % FOG) * 4 + 2;
@@ -163,9 +167,9 @@ export function showWorldMap(game, me, app) {
       const im = matImgs[n.b];
       if (im.complete && im.naturalWidth) (g2.imageSmoothingEnabled = false), g2.drawImage(im, -8, -8, 16, 16);
     });
-    for (const c of m.chests) if (!c.need && !ws.opened.has(c.id) && seen(c) && (lod >= 2 || (lod === 1 && c.gold))) mark(c, ring(0, 3, c.gold ? "#ffd84a" : "#e0a050"));
+    for (const c of m.chests) if (!c.need && !ws.opened.has(c.id) && (seen(c) || towerSees(c)) && (lod >= 2 || (lod === 1 && c.gold))) mark(c, ring(0, 3, c.gold ? "#ffd84a" : "#e0a050"));
     // 坐骑秘境 / islets: a badge naming the mount it needs (from 2×; greyed once its chest is open)
-    if (lod >= 1) for (const c of m.chests) if (c.need && seen(c)) {
+    if (lod >= 1) for (const c of m.chests) if (c.need && (seen(c) || towerSees(c))) {
       const p = at(c), done = ws.opened.has(c.id), [ch, col] = NEED[c.need];
       if (!inView(p)) continue;
       mark(c, ring(0, 11, done ? "#5a5470" : col));
@@ -255,7 +259,7 @@ export function showWorldMap(game, me, app) {
   // side: progress, materials, bosses
   const opened = m.chests.filter((c) => ws.opened.has(c.id)).length;
   md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened} / ${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size} / ${m.waypoints.length}</b></div>`;
-  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span><img class="mat-ic" src="${matSrc(k)}" alt="">${t.name} <b>${ws.mats[k]}</b></span>`).join("");
+  md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span title="${t.name}"><img class="mat-ic" src="${matSrc(k)}" alt=""><b>${ws.mats[k]}</b></span>`).join(""); // (icon + count: fits any count)
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;
     return `<div class="wm-b${down ? " down" : ""}"><i></i><span class="o1">${ENEMIES[B.type].name}</span><small class="o1">${BIOMES[B.region].name}</small><b class="o1">${down ? `<em>${bossRespawnIn()}</em> 刷新` : "可挑战"}</b></div>`;
@@ -429,4 +433,121 @@ export function showWorkshop(game, me, app) {
   }));
   sync();
   uiRoot().appendChild(md);
+}
+
+// ---------------------------------------------------------------- 家园: 派遣 (the board) and 建造 (the steward)
+const panel = (app, cls, title, chips) => {
+  app.paused = true;
+  sfx("click");
+  const md = el("div", `modal stash-md ${cls}`);
+  md.innerHTML = `<div class="panel stash-p wshop-p"><div class="ws-head"><h2 class="outline">${title}</h2><div class="ws-mats o1">${chips || ""}</div><button class="btn gray small x-btn">关闭</button></div><div class="st-sub o1"></div><div class="st-list"></div><div class="hm-foot"></div></div>`;
+  const close = () => (md.remove(), (app.paused = false));
+  md.querySelector(".x-btn").onclick = () => (sfx("click"), close());
+  md.onclick = (e) => e.target === md && close();
+  uiRoot().appendChild(md);
+  return { md, close, list: md.querySelector(".st-list"), sub: md.querySelector(".st-sub"), foot: md.querySelector(".hm-foot"), chips: md.querySelector(".ws-mats") };
+};
+const matChips = (ws, short) => MATS.map((t, k) => `<span class="ws-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${short ? "" : t.name}<b>${ws.mats[k]}</b></span>`).join("");
+export function showDispatch(game, me, app) {
+  const ws = game.ws, H = ws.home;
+  if (!ws || document.querySelector(".hm-disp")) return;
+  const P = panel(app, "hm-disp", "派遣", matChips(ws));
+  const render = () => {
+    homeTick(H);
+    const st = petState(), n = slotCount(H), cap = capHours(H);
+    let total = 0;
+    for (const sl of H.slots) total += petRate(findPet(sl.uid, st), H);
+    P.chips.innerHTML = matChips(ws);
+    P.sub.innerHTML = `派遣的宠物住进家园牧场，按小时采集所选材料（离线也算）· 合计 <b>${total.toFixed(1)}</b> 个/小时 · 最多存 <b>${cap}</b> 小时`;
+    const rows = [];
+    for (let k = 0; k < 5; k++) {
+      const sl = H.slots[k];
+      if (k >= n) { rows.push(`<div class="st-it hm-row lock"><i class="hm-pic"></i><div class="st-tx"><b class="outline">未解锁</b><span>宠物牧场 Lv.${k} 解锁这个栏位</span></div></div>`); continue; }
+      if (!sl) { rows.push(`<div class="st-it hm-row" data-k="${k}"><i class="hm-pic empty"></i><div class="st-tx"><b class="outline">空栏位</b><span>挑一只宠物住进牧场</span></div><button class="btn blue small st-go hm-add"><span>派遣</span></button></div>`); continue; }
+      const p = findPet(sl.uid, st), q = qualityOf(p), rate = petRate(p, H), stored = Math.floor(sl.acc || 0), full = sl.acc >= rate * cap - 0.01;
+      rows.push(`<div class="st-it hm-row" data-k="${k}"><img class="hm-pic" src="${petPortrait(p.id, p.stage)}" alt=""><div class="st-tx"><b class="outline" style="color:${q.col}">${petLabel(p)}</b><span>${q.name} · ${PET_STAGES[p.stage - 1]} · ${rate.toFixed(1)} 个/小时</span></div>
+        <div class="hm-mat">${MATS.map((t, j) => `<button class="hm-m${sl.mat === j ? " on" : ""}" data-j="${j}" title="${t.name}"><img class="mat-ic" src="${matSrc(j)}" alt=""></button>`).join("")}</div>
+        <div class="hm-acc o1${full ? " full" : ""}"><img class="mat-ic" src="${matSrc(sl.mat)}" alt="">${stored}${full ? "<small>已满</small>" : ""}</div><button class="btn gray small st-go hm-back"><span>召回</span></button></div>`);
+    }
+    P.list.innerHTML = rows.join("");
+    const ready = H.slots.reduce((a, sl) => a + Math.floor(sl.acc || 0), 0);
+    P.foot.innerHTML = "";
+    const go = btn(ready ? `全部收获 ${ready}` : "全部收获", "", () => {
+      const got = harvest(H, ws.mats);
+      if (!got.some((v) => v)) return toast("还没有可收获的材料");
+      got.forEach((v, j) => v && (ws.loot[MATS[j].name] = (ws.loot[MATS[j].name] || 0) + v));
+      toast(`收获：${got.map((v, j) => (v ? `${MATS[j].name} +${v}` : "")).filter(Boolean).join("　")}`);
+      sfx("pickup");
+      render();
+    });
+    go.disabled = !ready;
+    P.foot.append(go);
+    P.list.querySelectorAll(".hm-row[data-k]").forEach((row) => {
+      const k = +row.dataset.k, sl = H.slots[k];
+      row.querySelector(".hm-add")?.addEventListener("click", (e) => (e.stopPropagation(), pick(k)));
+      row.querySelector(".hm-back")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        sfx("click");
+        const n2 = Math.floor(sl.acc || 0);
+        if (n2) (ws.mats[sl.mat] += n2), toast(`${MATS[sl.mat].name} +${n2}`);
+        H.slots.splice(k, 1);
+        homeSave(H);
+        render();
+      });
+      row.querySelectorAll(".hm-m").forEach((b) => b.addEventListener("click", (e) => {
+        e.stopPropagation();
+        sfx("click");
+        const n2 = Math.floor(sl.acc || 0); // (switching banks what it gathered so far)
+        if (n2) ws.mats[sl.mat] += n2;
+        sl.acc = 0;
+        sl.mat = +b.dataset.j;
+        homeSave(H);
+        render();
+      }));
+    });
+  };
+  // the picker: pets from the warehouse that are not 出战 and not already posted
+  const pick = (k) => {
+    sfx("click");
+    const st = petState(), taken = new Set(H.slots.map((s) => s.uid)), list = st.list.filter((p) => p.uid !== st.equipped && !taken.has(p.uid)).sort((a, b) => petRate(b, H) - petRate(a, H));
+    const ov = el("div", "hm-pick");
+    ov.innerHTML = `<div class="hm-pick-p"><div class="ws-head"><b class="outline">选择派遣的宠物</b><button class="btn gray small x-btn">返回</button></div><div class="hm-grid">${list.length ? list.map((p) => `<button class="hm-card" data-u="${p.uid}" style="--q:${qualityOf(p).col}"><img src="${petPortrait(p.id, p.stage)}" alt=""><b class="o1">${petLabel(p)}</b><small class="o1">${qualityOf(p).name} · ${petRate(p, H).toFixed(1)}/时</small></button>`).join("") : `<div class="hm-none o1">没有可派遣的宠物（出战中的宠物不能派遣）</div>`}</div></div>`;
+    ov.querySelector(".x-btn").onclick = (e) => (e.stopPropagation(), sfx("click"), ov.remove());
+    ov.querySelectorAll(".hm-card").forEach((c) => (c.onclick = (e) => {
+      e.stopPropagation();
+      sfx("pickup");
+      H.slots.splice(k, 0, { uid: c.dataset.u, mat: [0, 1, 2, 3].sort((a, b) => ws.mats[a] - ws.mats[b])[0], acc: 0, t: Date.now() }); // (starts on the material you hold least of)
+      homeSave(H);
+      ov.remove();
+      render();
+    }));
+    P.md.querySelector(".panel").appendChild(ov);
+  };
+  render();
+}
+const BUILD_ICON = { farm: "assets/home/board.png", hut: "assets/home/hut.png", store: "assets/home/store.png", spring: "assets/home/spring.png", tower: "assets/home/tower.png" };
+export function showBuild(game, me, app) {
+  const ws = game.ws, H = ws.home;
+  if (!ws || document.querySelector(".hm-build")) return;
+  const P = panel(app, "hm-build", "家园建造", matChips(ws, true));
+  const render = () => {
+    P.chips.innerHTML = matChips(ws, true) + `<span class="ws-mat"><i class="cur gem"></i><b>${load().tokens || 0}</b></span>`; // (icons only: five chips fit the header)
+    P.sub.textContent = "用材料和晶石建造、升级家园建筑 · 效果长期有效，不随大陆重置";
+    P.list.innerHTML = BUILD_ORDER.map((id) => {
+      const B = BUILD[id], lv = H.lv[id], max = lv >= B.max, c = B.cost[lv + 1], err = canBuild(H, id, ws.mats);
+      const cost = max ? "" : c.slice(0, 4).map((v, k) => (v ? `<span class="ws-c${ws.mats[k] < v ? " short" : ""}"><img class="mat-ic" src="${matSrc(k)}" alt="">${v}</span>` : "")).join("") + (c[4] ? `<span class="ws-c${(load().tokens || 0) < c[4] ? " short" : ""}"><i class="cur gem"></i>${c[4]}</span>` : "");
+      return `<div class="st-it hm-row" data-id="${id}"><img class="hm-pic bld" src="${BUILD_ICON[id]}" alt=""><div class="st-tx"><b class="outline">${B.name} <em>Lv.${lv}/${B.max}</em></b><span>${max ? B.fx(lv) : `${lv ? B.fx(lv) + " → " : ""}${B.fx(lv + 1)}`}</span></div><div class="ws-cost o1">${cost}</div><button class="btn small st-go"${err ? " disabled" : ""}><span>${max ? "已满级" : lv ? "升级" : "建造"}</span></button></div>`;
+    }).join("");
+    P.list.querySelectorAll(".hm-row").forEach((row) => row.querySelector("button").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const id = row.dataset.id, err = build(H, id, ws.mats);
+      if (err) return toast(err);
+      sfx("pickup");
+      toast(`${BUILD[id].name} 升到 Lv.${H.lv[id]}`);
+      game.vfx("ui/confetti", (game.map.home.plots[id] || game.map.home.board).x, (game.map.home.plots[id] || game.map.home.board).y - 30);
+      import("./world.js").then((W) => W.worldSaveNow(game));
+      render();
+    }));
+  };
+  render();
 }

@@ -256,6 +256,8 @@ export const app = {
       this.cardOpen = false;
     }
     else if (kind === "worldShop") import("./worldui.js").then((M) => M.showWorkshop(g, this.me, this));
+    else if (kind === "worldDispatch") import("./worldui.js").then((M) => M.showDispatch(g, this.me, this));
+    else if (kind === "worldBuild") import("./worldui.js").then((M) => M.showBuild(g, this.me, this));
     else if (kind === "world") {
       renderer.follow(g, this.me, 0, true);
       playMusic("battle");

@@ -11,6 +11,7 @@ import { load, save, mineState, grantCharacterXP } from "./save.js";
 import { grantEggs, petState, addPool } from "./petsave.js";
 import { ENEMIES } from "./data.js";
 import { grantTitle } from "./titles.js";
+import { layoutHome, homeState, homeTick, updatePasture, pastureSprites, BUILD } from "./home.js";
 
 export const WORLD_W = 256, WORLD_H = 256, CHUNK = 16, WORLD_SEED = 20261122;
 const CPX = CHUNK * T; // 512 px a chunk
@@ -422,6 +423,7 @@ export function buildWorld(seed) {
   // the camp workshop (exchange materials) stands just north-east of the spawn
   const [wx2, wy2] = nudge(sx + 4, sy - 3, 0);
   m.shop = { x: wx2 * T + T / 2, y: wy2 * T + T / 2 };
+  layoutHome(m, sx, sy); // 家园: the rock field west of the camp becomes the homestead (home.js)
   // the exploration count: only fog cells holding land you can reach (on foot, by boat or wing), so 100% is possible
   m.fogLand = new Uint8Array(64 * 64);
   for (let i = 0; i < N; i++) if (m.t[i] !== WATER && !BIOMES[m.biome[i]].locked) m.fogLand[Math.floor(((i / W) | 0) / 4) * 64 + Math.floor((i % W) / 4)] = 1;
@@ -712,7 +714,7 @@ export function worldEnter(g) {
   g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
     gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
     mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
-    cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)) };
+    cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {} };
   const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
   const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
@@ -1013,11 +1015,17 @@ export function worldUpdate(g, dt) {
     g.vfx("pickups/collect-burst", n.x, n.y - 8, { palette: ["#140e22", "#3a2a5a", MATS[n.b].col, "#ffffff"] });
     g.sound("pickup", 0.1);
   }
-  // 营地工坊: stand by it a moment to open the exchange (step away to arm it again)
-  const ds = Math.hypot(me.x - m.shop.x, me.y - (m.shop.y + 20));
-  if (ds > 80) ws.shopArmed = true;
-  ws.shopT = ds < 40 && ws.shopArmed && !me.moving ? (ws.shopT || 0) + dt : 0;
-  if (ws.shopT > 0.5) (ws.shopT = 0), (ws.shopArmed = false), g.onUi("worldShop");
+  // stations you stand at a moment to open (step away to arm them again): 营地工坊, 派遣告示板, 家园管家
+  ws.standAt = null;
+  for (const [key, at, ui, dy] of [["shop", m.shop, "worldShop", 20], ["board", m.home.board, "worldDispatch", 18], ["steward", m.home.steward, "worldBuild", 10]]) {
+    const ds = Math.hypot(me.x - at.x, me.y - (at.y + dy)), A = ws.arm;
+    if (ds > 80) A[key] = true;
+    A[key + "T"] = ds < 40 && A[key] !== false && !me.moving ? (A[key + "T"] || 0) + dt : 0;
+    if (A[key + "T"] > 0) ws.standAt = key;
+    if (A[key + "T"] > 0.5) (A[key + "T"] = 0), (A[key] = false), g.onUi(ui);
+  }
+  ws.shopT = ws.standAt === "shop" ? 1 : 0;
+  home(g, ws, m, me, dt);
   // 传送门: walk up to one to light it
   for (const w of m.waypoints) if (!ws.gates.has(w.id) && Math.hypot(me.x - w.x, me.y - w.y) < 34) {
     ws.gates.add(w.id);
@@ -1181,6 +1189,33 @@ export function drawWorldFloor(g, game, me, t) {
     g.stroke();
   }
 }
+// 家园 art (PixelLab, static): buildings on their plots once built, the board and the steward; an unbuilt plot is a
+// staked-out patch of earth drawn in code
+const HOME_IMG = Object.fromEntries(["steward", "quest", "hut", "store", "spring", "tower", "board"].map((k) => [k, typeof Image === "undefined" ? null : Object.assign(new Image(), { src: `assets/home/${k}.png` })]));
+function img(g, k, x, y, bob = 0) { // feet at (x, y)
+  const im = HOME_IMG[k];
+  if (!im?.complete || !im.naturalWidth) return;
+  g.imageSmoothingEnabled = false;
+  g.drawImage(im, Math.round(x - im.naturalWidth / 2), Math.round(y - im.naturalHeight + bob));
+}
+function plotSprite(g, x, y) {
+  g.fillStyle = "#1a1020"; g.fillRect(x - 42, y - 22, 84, 36);
+  g.fillStyle = "#9a6a3a"; g.fillRect(x - 40, y - 20, 80, 32);
+  g.fillStyle = "#86592e"; for (let k = 0; k < 4; k++) g.fillRect(x - 36, y - 16 + k * 8, 72, 2);
+  for (const [a, b] of [[-40, -20], [38, -20], [-40, 10], [38, 10]]) { g.fillStyle = "#1a1020"; g.fillRect(x + a - 1, y + b - 12, 5, 16); g.fillStyle = "#e8c890"; g.fillRect(x + a, y + b - 11, 3, 14); }
+  g.strokeStyle = "#f4f0e0"; g.lineWidth = 1; g.setLineDash([4, 3]); g.strokeRect(x - 38.5, y - 18.5, 77, 29); g.setLineDash([]);
+}
+function homeSprites(m, ws, out) {
+  const H = ws.home, P = m.home.plots;
+  pastureSprites(m, out, MAT_IMG);
+  out.push({ y: m.home.board.y + 14, draw: (g) => img(g, "board", m.home.board.x, m.home.board.y + 16) });
+  out.push({ y: m.home.steward.y + 10, draw: (g, t) => img(g, "steward", m.home.steward.x, m.home.steward.y + 12, Math.round(Math.sin(t * 2) * 1)) });
+  for (const k of ["hut", "store", "spring", "tower"]) {
+    const o = P[k];
+    if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20)) });
+    else out.push({ y: o.y - 20, draw: (g) => plotSprite(g, o.x, o.y) });
+  }
+}
 // 采集点: the material's own icon standing there (gently bobbing over its shadow), so what you see is what you get
 function nodeSprite(g, x, y, b, t) {
   const im = MAT_IMG[b], bob = Math.round(Math.sin(t * 2.4 + x * 0.01) * 1.5);
@@ -1260,6 +1295,7 @@ export function worldSprites(game, me) {
   }
   for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
   if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
+  if (near({ x: m.home.pen.x1, y: m.home.pen.y1 })) homeSprites(m, ws, out);
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
   if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
   return out;
@@ -1286,6 +1322,13 @@ export function worldLabels(R, g, game, me) {
     g.fillStyle = f < 0.3 ? "#ff7a5a" : "#7fe8ff"; g.fillRect(x, y, Math.round(w * f), 4);
   }
   if (Math.abs(me.x - m.shop.x) < 420 && Math.abs(me.y - m.shop.y) < 260) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
+  if (m.home && Math.abs(me.x - m.home.board.x) < 520 && Math.abs(me.y - m.home.board.y) < 320) { // 家园
+    const H = ws.home, P = m.home.plots, lab = (txt, o, dy, col = "#ffe36a", sz = 12) => R.text(g, txt, o.x, o.y + dy, col, sz);
+    lab(ws.standAt === "board" ? "站稳打开" : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
+    lab(ws.standAt === "steward" ? "站稳打开" : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
+    for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], H.lv[k] ? (k === "tower" ? -112 : k === "spring" ? -70 : -88) : -40, H.lv[k] ? "#fff6c0" : "#c8c0e0", 11);
+    lab(`宠物牧场 Lv.${H.lv.farm}`, { x: (m.home.pen.x0 + m.home.pen.x1) / 2, y: m.home.pen.y0 }, -30, "#fff6c0", 11);
+  }
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
     const near = ws.hint && ws.hint.at === at;
@@ -1364,6 +1407,27 @@ function openWorldChest(g, c, p) {
   if (b <= 3) lines.push(grant(g, "mat" + b, c.gold ? 5 : 2));
   showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
+}
+// ---------------------------------------------------------------- 家园: the pasture, the hot spring, the home banner
+function home(g, ws, m, me, dt) {
+  const H = ws.home;
+  if (Math.abs(me.x - m.home.pen.x0) < 1200 && Math.abs(me.y - m.home.pen.y0) < 900) updatePasture(m, dt, H);
+  // 温泉: step into the pool to heal (Lv2 adds a quick step); step out to soak again
+  const sp = m.home.plots.spring, inPool = H.lv.spring > 0 && Math.abs(me.x - sp.x) < 40 && Math.abs(me.y - sp.y - 4) < 24;
+  if (!inPool) ws.soaked = false;
+  else if (!ws.soaked && !me.downed) {
+    ws.soaked = true;
+    me.hp = me.maxHp;
+    me.shield = me.maxShield ?? me.shield;
+    if (H.lv.spring > 1) me.buff.speed = Math.max(me.buff.speed || 0, 30);
+    g.text(me.x, me.y - 50, H.lv.spring > 1 ? "温泉 · 回满 · 疾行" : "温泉 · 回满", "#9ef0ff", 1.1, 1.6);
+    g.vfx("holy/heal-aoe", me.x, me.y);
+    g.sound("heal");
+  }
+  // the region banner says 梦境家园 inside the home
+  const [x0, y0, x1, y1] = m.home.rect, at = me.x / T >= x0 && me.x / T <= x1 + 6 && me.y / T >= y0 && me.y / T <= y1 + 1;
+  if (at && !ws.atHome) g.banner = { text: "梦境家园", sub: "宠物牧场 · 派遣 · 建造", t: 2.2 };
+  ws.atHome = at;
 }
 // ---------------------------------------------------------------- W4: what each mount opens
 // 冰凰's flight over water spends stamina (land refills it fast); at 30% a warning, at nothing the rider is washed

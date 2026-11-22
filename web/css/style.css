@@ -2930,3 +2930,38 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wmap-p .wm-left { position: relative; }
 .wmap-p .wm-cv { touch-action: none; background: #1e54ac; box-sizing: border-box; }
 .wmap-p .wm-b b em { font-style: normal; color: #fff6c0; }
+/* 梦境大陆 · 家园: 派遣 / 建造 panels (rows as in 积攒兑换) */
+.hm-row .hm-pic { flex: none; width: 40px; height: 40px; object-fit: contain; image-rendering: pixelated; border-radius: 8px; background: rgba(20,12,50,.55); border: 2px solid var(--ink); box-sizing: border-box; }
+.hm-row .hm-pic.empty { border-style: dashed; border-color: #8a7ab8; }
+.hm-row .hm-pic.bld { background: rgba(120,190,110,.35); }
+.hm-row.lock { opacity: .55; }
+.hm-row .st-tx em { font-style: normal; font-size: 11px; color: #fff6c0; margin-left: 4px; }
+.hm-mat { display: flex; gap: 3px; flex: none; }
+.hm-m { width: 28px; height: 28px; padding: 0; display: grid; place-items: center; border-radius: 7px; border: 2px solid var(--ink); background: rgba(20,12,50,.6); cursor: pointer; }
+.hm-m.on { background: #ffd84a; box-shadow: 0 0 0 2px #fff6c0 inset; }
+.hm-m .mat-ic { width: 20px; height: 20px; }
+.hm-acc { flex: none; width: 64px; display: flex; align-items: center; justify-content: center; gap: 3px; font-size: 13px; color: #fff6c0; }
+.hm-acc small { font-size: 9px; color: #ff9a6a; margin-left: 2px; }
+.hm-acc.full { color: #ff9a6a; }
+.hm-row .btn.st-go { width: 84px; }
+.hm-build .hm-row .btn.st-go { width: 96px; }
+.hm-foot { display: flex; justify-content: center; }
+.hm-foot .btn { min-width: 180px; }
+.hm-foot .btn:disabled, .hm-row .btn:disabled { filter: grayscale(.8) brightness(.8); }
+.ws-mat .cur.gem, .ws-c .cur.gem { width: 13px; height: 13px; display: inline-block; }
+.hm-pick { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(12,8,24,.7); border-radius: inherit; }
+.hm-pick-p { width: 92%; max-height: 92%; display: flex; flex-direction: column; gap: 8px; }
+.hm-pick-p .ws-head { display: flex; align-items: center; }
+.hm-pick-p .ws-head .x-btn { margin-left: auto; }
+.hm-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; overflow-y: auto; min-height: 0; }
+.hm-card { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px; border-radius: 10px; border: 3px solid var(--q); background: rgba(20,12,50,.7); cursor: pointer; font: inherit; color: #fff; }
+.hm-card img { width: 44px; height: 44px; object-fit: contain; image-rendering: pixelated; }
+.hm-card b { font-size: 11px; font-weight: normal; }
+.hm-card small { font-size: 9.5px; color: #e0d8ff; }
+.hm-none { grid-column: 1 / -1; text-align: center; color: #c8c0e0; font-size: 12px; padding: 20px 0; }
+.wshop-p { position: relative; }
+.wshop-p .ws-head h2, .wshop-p .ws-head .x-btn, .ws-mat { white-space: nowrap; flex: none; }
+.hm-pick { background: #2a2060; }
+.hm-build .ws-mat { padding: 1px 6px; }
+.wmap-p .wm-mats span { gap: 5px; font-size: 12px; }
+.wmap-p .wm-mats .mat-ic { width: 17px; height: 17px; }
