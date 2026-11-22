@@ -14,6 +14,9 @@ const LIST = {
   frost_witch_clone: ["frost-witch", { noShadow: true }],
   lava_worm: ["lava-worm", {}],
   thunder_judge: ["thunder-judge", {}],
+  // V5: 梦貘 (第 8 位首领) and its sleep bubbles
+  baku: ["baku", {}],
+  dream_orb: ["dream-orb", {}],
   // V3 monsters and the 精英巢穴 nests (one module, three map palettes)
   spider: ["spider", {}],
   turtle: ["turtle", {}],
