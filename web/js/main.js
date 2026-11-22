@@ -134,6 +134,17 @@ export const app = {
     await new Promise((r) => setTimeout(r, 120));
     try {
       this.begin(cfg);
+      // 梦境大陆: rather a longer wait behind the doors than a stutter after them — paint the ground round the start,
+      // the world map's art, wait for the home's pictures, and let the first frames run (residents wake, sprites decode)
+      if (o.world && this.game?.ws) {
+        const W = await import("./world.js"), A = await import("./worldatlas.js"), g = this.game, set = (f) => (bar.style.width = `${Math.round(45 + f * 55)}%`);
+        await W.warmWorldGround(g.map, this.me, (f) => set(f * 0.45));
+        await A.buildAtlas(g.map, (n) => set(0.45 + Math.min(0.35, n * 0.02)));
+        set(0.8);
+        await W.worldImagesReady();
+        set(0.9);
+        await new Promise((r) => setTimeout(r, 700));
+      }
     } finally {
       uiRoot.appendChild(d); // keep the doors on top of the freshly built HUD
       bar.style.width = "100%";

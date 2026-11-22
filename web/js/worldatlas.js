@@ -38,6 +38,18 @@ export function worldAtlas(m) {
   return cache;
 }
 /** paint the atlas a few milliseconds at a time while the game idles (so the first map open is instant on phones) */
+/** paint the atlas now, in slices that let the page breathe (the loading screen's progress bar); resolves when done */
+export async function buildAtlas(m, onStep) {
+  if (cache) return;
+  job = job || build(m);
+  let n = 0;
+  for (;;) {
+    const end = performance.now() + 24;
+    while (performance.now() < end) if (job.next().done) return;
+    onStep && onStep(++n);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}
 export function prebuildAtlas(m) {
   if (cache || job) return;
   job = build(m);

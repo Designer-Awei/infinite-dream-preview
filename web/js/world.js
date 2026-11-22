@@ -678,6 +678,25 @@ export function drawWorldGround(g, m, cx, cy) {
   }
 }
 export const worldTileCount = () => tiles.size; // (tests)
+/** behind the loading doors: draw the ground round where you start (the view and a chunk past every edge), so the first
+ *  seconds in the world need no tile painting; onProgress(0..1) */
+export async function warmWorldGround(m, me, onProgress) {
+  const a0 = Math.max(0, Math.floor((me.x - VIEW_W / 2) / CPX) - 1), a1 = Math.min(m.W / CHUNK - 1, Math.floor((me.x + VIEW_W / 2) / CPX) + 1);
+  const b0 = Math.max(0, Math.floor((me.y - VIEW_H / 2) / CPX) - 1), b1 = Math.min(m.H / CHUNK - 1, Math.floor((me.y + VIEW_H / 2) / CPX) + 1);
+  const all = [];
+  for (let b = b0; b <= b1; b++) for (let a = a0; a <= a1; a++) all.push([a, b]);
+  all.sort(([a, b], [c, d]) => Math.hypot(a - (a0 + a1) / 2, b - (b0 + b1) / 2) - Math.hypot(c - (a0 + a1) / 2, d - (b0 + b1) / 2));
+  const list = all.slice(0, 20); // (the cache keeps 24)
+  for (let k = 0; k < list.length; k++) {
+    tileAtCache(m, ...list[k]);
+    onProgress && onProgress((k + 1) / list.length);
+    await new Promise((r) => setTimeout(r, 0));
+  }
+}
+/** the world's own pictures (home buildings / NPCs, material icons): resolved once every one has loaded and decoded */
+export function worldImagesReady() {
+  return Promise.all([...Object.values(HOME_IMG), ...MAT_IMG].filter(Boolean).map((im) => (im.decode ? im.decode().catch(() => {}) : Promise.resolve())));
+}
 export function invalidateWorldTiles() {
   for (const c of tiles.values()) spare.push(c);
   tiles.clear();
