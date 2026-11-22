@@ -29,7 +29,7 @@ export const TOWER_REGIONS = [[], [0], [0, 1], [0, 1, 2, 3]];
 export function homeState() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (d && d.v === 1) return { lv: { farm: 1, hut: 0, store: 0, spring: 0, tower: 0, ...d.lv }, slots: d.slots || [] , v: 1 };
+    if (d && d.v === 1) return { lv: { farm: 1, hut: 0, store: 0, spring: 0, tower: 0, ...d.lv }, slots: d.slots || [], v: 1 };
   } catch (e) {}
   return { v: 1, lv: { farm: 1, hut: 0, store: 0, spring: 0, tower: 0 }, slots: [] };
 }
@@ -119,7 +119,9 @@ export function layoutHome(m, sx, sy) {
     steward: px(sx - 4, sy - 5),
     plots: { hut: px(sx - 15, sy - 3), store: px(sx - 11, sy - 3), spring: px(sx - 7, sy - 3), tower: px(sx - 3, sy - 12) },
     sign: px(sx - 1, sy - 3),
+    quest: px(sx + 1, sy - 8),
   };
+  for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]]) { const i = (sy - 8 + dy) * W + sx + 1 + dx; if (m.t[i] !== WATER) (m.t[i] = F), delete m.crates[i]; }
 }
 
 // ---------------------------------------------------------------- the pasture: your pets wander inside the fence

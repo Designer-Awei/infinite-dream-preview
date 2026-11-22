@@ -258,6 +258,8 @@ export const app = {
     else if (kind === "worldShop") import("./worldui.js").then((M) => M.showWorkshop(g, this.me, this));
     else if (kind === "worldDispatch") import("./worldui.js").then((M) => M.showDispatch(g, this.me, this));
     else if (kind === "worldBuild") import("./worldui.js").then((M) => M.showBuild(g, this.me, this));
+    else if (kind === "worldQuest") import("./worldui.js").then((M) => M.showQuests(g, this.me, this));
+    else if (kind === "worldTrader") import("./worldui.js").then((M) => M.showTrader(g, this.me, this));
     else if (kind === "world") {
       renderer.follow(g, this.me, 0, true);
       playMusic("battle");

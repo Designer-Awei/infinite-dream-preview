@@ -7,7 +7,7 @@ import { el } from "./util.js";
 import { btn, toast, uiRoot } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
-import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy } from "./world.js";
+import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy, quest, claimQuest, questText, worldTrade, LOOT_NAME } from "./world.js";
 import { drawEgg } from "./petwh.js";
 import { worldAtlas } from "./worldatlas.js";
 import { BUILD, BUILD_ORDER, TOWER_REGIONS, slotCount, capHours, petRate, homeTick, homeSave, harvest, build, canBuild, petLabel, qualityOf } from "./home.js";
@@ -209,6 +209,12 @@ export function showWorldMap(game, me, app) {
       });
       if (lod >= 2) { const p = at(B); if (inView(p)) label(ENEMIES[B.type].name, p[0], p[1] + 18 * sc, 10, down ? "#a89aa8" : "#ffb0bc"); }
     }
+    const ev = ws.ev;
+    if (ev && !(ev.kind === "meteor" && ev.open)) mark(ev, (g2) => { // 世界事件: a star (陨星) or a lantern-teal ring (商人)
+      const c = ev.kind === "meteor" ? "#ffd84a" : "#5af0d0";
+      g2.fillStyle = "#0c0814"; g2.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 5 : 12, a = -Math.PI / 2 + (k * Math.PI) / 5; g2.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g2.closePath(); g2.fill();
+      g2.fillStyle = c; g2.beginPath(); for (let k = 0; k < 10; k++) { const r = k % 2 ? 3 : 9, a = -Math.PI / 2 + (k * Math.PI) / 5; g2.lineTo(Math.cos(a) * r, Math.sin(a) * r); } g2.closePath(); g2.fill();
+    });
     if (ws.flag) mark(ws.flag, (g2) => {
       g2.fillStyle = "#0c0814"; g2.fillRect(-2, -14, 4, 16); g2.fillRect(0, -15, 12, 9);
       g2.fillStyle = "#e8d8b0"; g2.fillRect(-1, -13, 2, 14);
@@ -475,6 +481,7 @@ export function showDispatch(game, me, app) {
     const go = btn(ready ? `全部收获 ${ready}` : "全部收获", "", () => {
       const got = harvest(H, ws.mats);
       if (!got.some((v) => v)) return toast("还没有可收获的材料");
+      quest(game, "harvest");
       got.forEach((v, j) => v && (ws.loot[MATS[j].name] = (ws.loot[MATS[j].name] || 0) + v));
       toast(`收获：${got.map((v, j) => (v ? `${MATS[j].name} +${v}` : "")).filter(Boolean).join("　")}`);
       sfx("pickup");
@@ -546,6 +553,56 @@ export function showBuild(game, me, app) {
       toast(`${BUILD[id].name} 升到 Lv.${H.lv[id]}`);
       game.vfx("ui/confetti", (game.map.home.plots[id] || game.map.home.board).x, (game.map.home.plots[id] || game.map.home.board).y - 30);
       import("./world.js").then((W) => W.worldSaveNow(game));
+      render();
+    }));
+  };
+  render();
+}
+
+// ---------------------------------------------------------------- 每日委托 (the guild girl) and the 迷途商人's stall
+const rewardChips = (q) => `<span class="ws-c"><i class="cur gem"></i>${q.gems}</span><span class="ws-c"><img class="mat-ic" src="${matSrc(q.mat)}" alt="">${q.matN}</span>`;
+export function showQuests(game, me, app) {
+  const ws = game.ws;
+  if (!ws || document.querySelector(".hm-quest")) return;
+  const P = panel(app, "hm-quest", "每日委托", "");
+  const render = () => {
+    const Q = ws.quests;
+    P.sub.textContent = "每天三件委托，完成后来这里领取 · 三件都领取后还有额外奖励 · 每天零点刷新";
+    P.list.innerHTML = Q.list.map((q, k) => {
+      const done = q.prog >= q.n, pct = Math.round((q.prog / q.n) * 100);
+      return `<div class="st-it hm-row qt-row${q.claimed ? " lock" : ""}" data-k="${k}"><div class="st-tx"><b class="outline">${questText(q, BIOMES)}</b><span class="qt-bar"><i style="width:${pct}%"></i><em class="o1">${q.prog} / ${q.n}</em></span></div><div class="ws-cost o1">${rewardChips(q)}</div><button class="btn small st-go"${done && !q.claimed ? "" : " disabled"}><span>${q.claimed ? "已领取" : done ? "领取" : "进行中"}</span></button></div>`;
+    }).join("") + `<div class="st-it hm-row qt-row qt-bonus${Q.bonus ? " lock" : ""}" data-k="bonus"><canvas class="st-egg" data-k="ur"></canvas><div class="st-tx"><b class="outline">全部完成奖励</b><span>UR 宠物蛋（30% 换成流彩晶）</span></div><button class="btn small st-go"${!Q.bonus && Q.list.every((q) => q.claimed) ? "" : " disabled"}><span>${Q.bonus ? "已领取" : "领取"}</span></button></div>`;
+    P.list.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
+    P.list.querySelectorAll(".qt-row").forEach((row) => row.querySelector("button").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const k = row.dataset.k, r = claimQuest(game, k === "bonus" ? "bonus" : +k);
+      if (typeof r === "string") return toast(r);
+      sfx("pickup");
+      toast(`领取：${r.join("　")}`);
+      render();
+    }));
+  };
+  render();
+}
+export function showTrader(game, me, app) {
+  const ws = game.ws, ev = ws?.ev;
+  if (!ev || ev.kind !== "trader" || document.querySelector(".hm-trade")) return;
+  const P = panel(app, "hm-trade", "迷途商人", "");
+  const ico = (o) => {
+    const k = o.give[0];
+    return k.startsWith("egg") ? `<canvas class="st-egg" data-k="${k.slice(4)}"></canvas>` : k === "ur" ? `<i class="st-ico ur"></i>` : k.startsWith("mat") ? `<img class="hm-pic" src="${matSrc(+k[3])}" alt="">` : `<i class="ws-ico ${k}"></i>`;
+  };
+  const render = () => {
+    P.chips.innerHTML = `<span class="ws-mat"><i class="cur gem"></i>晶石<b>${load().tokens || 0}</b></span>`;
+    P.sub.textContent = "四处游荡的商人，只停留一会儿 · 每样货物每次只卖一份";
+    P.list.innerHTML = ev.offers.map((o, k) => `<div class="st-it hm-row${ev.sold[o.id] ? " lock" : ""}" data-k="${k}">${ico(o)}<div class="st-tx"><b class="outline">${o.name}</b><span>${LOOT_NAME[o.give[0]] || ""}直接进存档</span></div><div class="ws-cost o1"><span class="ws-c${(load().tokens || 0) < o.price ? " short" : ""}"><i class="cur gem"></i>${o.price}</span></div><button class="btn small st-go"${ev.sold[o.id] || (load().tokens || 0) < o.price ? " disabled" : ""}><span>${ev.sold[o.id] ? "已售罄" : "购买"}</span></button></div>`).join("");
+    P.list.querySelectorAll(".st-egg").forEach((c) => drawEgg(c, 0, c.dataset.k));
+    P.list.querySelectorAll(".hm-row").forEach((row) => row.querySelector("button").addEventListener("click", (e) => {
+      e.stopPropagation();
+      const o = ev.offers[+row.dataset.k], err = worldTrade(game, o);
+      if (err) return toast(err);
+      sfx("pickup");
+      toast(`购买：${o.name}`);
       render();
     }));
   };

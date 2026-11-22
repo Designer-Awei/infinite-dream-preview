@@ -12,6 +12,7 @@ import { grantEggs, petState, addPool } from "./petsave.js";
 import { ENEMIES } from "./data.js";
 import { grantTitle } from "./titles.js";
 import { layoutHome, homeState, homeTick, updatePasture, pastureSprites, BUILD } from "./home.js";
+import { questsFor, questBump, questText, eventsUpdate, eventSprites, tradeBuy, dirName } from "./worldevents.js";
 
 export const WORLD_W = 256, WORLD_H = 256, CHUNK = 16, WORLD_SEED = 20261122;
 const CPX = CHUNK * T; // 512 px a chunk
@@ -694,7 +695,7 @@ export function worldSaveNow(g) {
   const ws = g.ws, p = g.players.find((q) => q.local) || g.players[0];
   if (!ws) return;
   const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag, mats: ws.mats, nodeDay: ws.nodeDay, miles: ws.miles,
-    cracked: [...new Set([...ws.cracked, ...(g.map.brokenWalls || []).filter((i) => g.map.cracked.has(i))])] };
+    cracked: [...new Set([...ws.cracked, ...(g.map.brokenWalls || []).filter((i) => g.map.cracked.has(i))])], quests: ws.quests };
   try {
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) {}
@@ -714,7 +715,8 @@ export function worldEnter(g) {
   g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
     gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0,
     mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
-    cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {} };
+    cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {},
+    quests: sv.quests?.day === dayKey() ? sv.quests : questsFor(dayKey()) };
   const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
   const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
@@ -845,11 +847,14 @@ export function worldKilled(g, e) {
     const groups = [["gems", grant(g, "gems", 200), 8], ["xp", grant(g, "xp", 300), 3], ["ur", grant(g, "ur", 2), 2], [mat, grant(g, mat, 10), 5], [egg, grant(g, egg, 1), 1]];
     if (Math.random() < 0.35) groups.push(["hur", grant(g, "hur", 1), 1]);
     erupt(g, e.x, e.y, groups);
+    quest(g, "boss");
     worldSaveNow(g);
     return;
   }
   // an elite: a skill card for this visit's build (the world's chests give lasting rewards instead)
+  if (g.ws && e.chunk) quest(g, "kill", e.home ? g.map.biome[tileIdx(g.map, e.home.x, e.home.y)] : -1);
   if (e.elite && g.ws) {
+    quest(g, "elite");
     const p = e.lastBy ? g.player(e.lastBy) : null, b = g.map.biome[tileIdx(g.map, e.x, e.y)];
     if (b <= 3) g.text(e.x, e.y - 40, grant(g, "mat" + b, 2), MATS[b].col, 1.1, 1.6);
     g.after(0.4, () => g.offerCards(p || g.players[0], 3));
@@ -1010,6 +1015,7 @@ export function worldUpdate(g, dt) {
   for (const n of m.nodes) {
     if (ws.nodeDay[n.id] === today || Math.abs(me.x - n.x) > 26 || Math.abs(me.y - n.y) > 26) continue;
     ws.nodeDay[n.id] = today;
+    quest(g, "gather");
     const k = 2 + ((n.id * 7) % 2);
     g.text(n.x, n.y - 40, grant(g, "mat" + n.b, k), MATS[n.b].col, 1.1, 1.6);
     g.vfx("pickups/collect-burst", n.x, n.y - 8, { palette: ["#140e22", "#3a2a5a", MATS[n.b].col, "#ffffff"] });
@@ -1017,7 +1023,9 @@ export function worldUpdate(g, dt) {
   }
   // stations you stand at a moment to open (step away to arm them again): 营地工坊, 派遣告示板, 家园管家
   ws.standAt = null;
-  for (const [key, at, ui, dy] of [["shop", m.shop, "worldShop", 20], ["board", m.home.board, "worldDispatch", 18], ["steward", m.home.steward, "worldBuild", 10]]) {
+  const stations = [["shop", m.shop, "worldShop", 20], ["board", m.home.board, "worldDispatch", 18], ["steward", m.home.steward, "worldBuild", 10], ["quest", m.home.quest, "worldQuest", 10]];
+  if (ws.ev?.kind === "trader") stations.push(["trader", ws.ev, "worldTrader", 10]);
+  for (const [key, at, ui, dy] of stations) {
     const ds = Math.hypot(me.x - at.x, me.y - (at.y + dy)), A = ws.arm;
     if (ds > 80) A[key] = true;
     A[key + "T"] = ds < 40 && A[key] !== false && !me.moving ? (A[key + "T"] || 0) + dt : 0;
@@ -1026,6 +1034,7 @@ export function worldUpdate(g, dt) {
   }
   ws.shopT = ws.standAt === "shop" ? 1 : 0;
   home(g, ws, m, me, dt);
+  eventsUpdate(g, ws, m, me, dt, EH);
   // 传送门: walk up to one to light it
   for (const w of m.waypoints) if (!ws.gates.has(w.id) && Math.hypot(me.x - w.x, me.y - w.y) < 34) {
     ws.gates.add(w.id);
@@ -1191,7 +1200,7 @@ export function drawWorldFloor(g, game, me, t) {
 }
 // 家园 art (PixelLab, static): buildings on their plots once built, the board and the steward; an unbuilt plot is a
 // staked-out patch of earth drawn in code
-const HOME_IMG = Object.fromEntries(["steward", "quest", "hut", "store", "spring", "tower", "board"].map((k) => [k, typeof Image === "undefined" ? null : Object.assign(new Image(), { src: `assets/home/${k}.png` })]));
+const HOME_IMG = Object.fromEntries(["steward", "quest", "hut", "store", "spring", "tower", "board", "trader", "meteor"].map((k) => [k, typeof Image === "undefined" ? null : Object.assign(new Image(), { src: `assets/home/${k}.png` })]));
 function img(g, k, x, y, bob = 0) { // feet at (x, y)
   const im = HOME_IMG[k];
   if (!im?.complete || !im.naturalWidth) return;
@@ -1210,6 +1219,7 @@ function homeSprites(m, ws, out) {
   pastureSprites(m, out, MAT_IMG);
   out.push({ y: m.home.board.y + 14, draw: (g) => img(g, "board", m.home.board.x, m.home.board.y + 16) });
   out.push({ y: m.home.steward.y + 10, draw: (g, t) => img(g, "steward", m.home.steward.x, m.home.steward.y + 12, Math.round(Math.sin(t * 2) * 1)) });
+  out.push({ y: m.home.quest.y + 10, draw: (g, t) => img(g, "quest", m.home.quest.x, m.home.quest.y + 12, Math.round(Math.sin(t * 2 + 1) * 1)) });
   for (const k of ["hut", "store", "spring", "tower"]) {
     const o = P[k];
     if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20)) });
@@ -1296,6 +1306,7 @@ export function worldSprites(game, me) {
   for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
   if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
   if (near({ x: m.home.pen.x1, y: m.home.pen.y1 })) homeSprites(m, ws, out);
+  if (ws.ev && near(ws.ev)) eventSprites(ws, out, HOME_IMG);
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
   if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
   return out;
@@ -1326,8 +1337,17 @@ export function worldLabels(R, g, game, me) {
     const H = ws.home, P = m.home.plots, lab = (txt, o, dy, col = "#ffe36a", sz = 12) => R.text(g, txt, o.x, o.y + dy, col, sz);
     lab(ws.standAt === "board" ? "站稳打开" : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
     lab(ws.standAt === "steward" ? "站稳打开" : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
-    for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], H.lv[k] ? (k === "tower" ? -112 : k === "spring" ? -70 : -88) : -40, H.lv[k] ? "#fff6c0" : "#c8c0e0", 11);
+    // building names on one line: the same height over every plot (built or not), the tower's over its roof
+    for (const k of ["hut", "store", "spring", "tower"]) lab(H.lv[k] ? `${BUILD[k].name} Lv.${H.lv[k]}` : `空地 · ${BUILD[k].name}`, P[k], k === "tower" ? -118 : -96, H.lv[k] ? "#fff6c0" : "#c8c0e0", 11);
     lab(`宠物牧场 Lv.${H.lv.farm}`, { x: (m.home.pen.x0 + m.home.pen.x1) / 2, y: m.home.pen.y0 }, -30, "#fff6c0", 11);
+    const Q = ws.quests, ready = Q && (Q.list.some((q) => q.prog >= q.n && !q.claimed) || (!Q.bonus && Q.list.every((q) => q.claimed)));
+    lab(ws.standAt === "quest" ? "站稳打开" : ready ? "每日委托 · 可领取" : "每日委托", m.home.quest, -84, ws.standAt === "quest" ? "#9ef0ff" : ready ? "#7fff9a" : "#ffe36a");
+  }
+  const ev = ws.ev;
+  if (ev && Math.abs(me.x - ev.x) < 520 && Math.abs(me.y - ev.y) < 320 && !(ev.kind === "meteor" && ev.open)) {
+    const s = Math.max(0, Math.ceil(ev.until - game.time)), clock = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+    if (ev.kind === "meteor") R.text(g, `陨星宝箱 · ${clock}`, ev.x, ev.y - 96, "#ffd84a", 13);
+    else R.text(g, ws.standAt === "trader" ? "站稳打开" : `迷途商人 · ${clock}`, ev.x, ev.y - 90, ws.standAt === "trader" ? "#9ef0ff" : "#7fe8d8", 13);
   }
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
@@ -1396,6 +1416,7 @@ function openWorldChest(g, c, p) {
   const ws = g.ws;
   ws.opened.add(c.id);
   ws.chestsNow++;
+  quest(g, "chest");
   g.vfx("pickups/chest-open", c.x, c.y + 10, {});
   g.sound("pickup");
   for (let i = 0; i < (c.gold ? 10 : 5); i++) g.spawnCoin(c.x, c.y);
@@ -1408,6 +1429,49 @@ function openWorldChest(g, c, p) {
   showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
 }
+// ---------------------------------------------------------------- 每日委托 / 世界事件 (worldevents.js) hooks
+/** a step on today's 委托: a short progress line, and a louder one when a task is done */
+export function quest(g, kind, b = -1) {
+  const ws = g.ws, me = g.players.find((q) => q.local) || g.players[0];
+  if (!ws?.quests || ws.quests.day !== dayKey()) ws && (ws.quests = questsFor(dayKey()));
+  const done = questBump(ws, kind, b);
+  for (const q of ws.quests.list) if (q.fresh) {
+    q.fresh = false;
+    if (done.includes(q)) {
+      g.text(me.x, me.y - 64, `委托完成 · ${questText(q, BIOMES)}`, "#ffd84a", 1.25, 2.4);
+      g.sound("card", 0.2);
+    } else if ((ws.qSay || 0) < g.time) (ws.qSay = g.time + 0.8), g.text(me.x, me.y - 60, `委托 ${q.prog}/${q.n}`, "#c8f0a0", 0.9, 1);
+  }
+}
+const EH = {
+  BIOMES,
+  grant: (g, kind, n) => grant(g, kind, n),
+  erupt: (g, x, y, groups) => erupt(g, x, y, groups),
+  quest: (g, kind) => quest(g, kind),
+  save: (g) => worldSaveNow(g),
+  spend: (n) => { const m = load(); m.tokens -= n; save(); },
+};
+export function worldTrade(g, offer) {
+  return tradeBuy(g, g.ws, offer, EH, () => load().tokens || 0);
+}
+/** claim a finished task (or the all-three bonus): the rewards go into the save */
+export function claimQuest(g, k) {
+  const ws = g.ws, Q = ws.quests;
+  if (k === "bonus") {
+    if (Q.bonus || !Q.list.every((q) => q.claimed)) return "还有委托没完成";
+    Q.bonus = true;
+    const lines = [Math.random() < 0.3 ? grant(g, "hur", 1) : grant(g, "egg_ur", 1)];
+    worldSaveNow(g);
+    return lines;
+  }
+  const q = Q.list[k];
+  if (!q || q.claimed || q.prog < q.n) return "还没完成";
+  q.claimed = true;
+  const lines = [grant(g, "gems", q.gems), grant(g, "mat" + q.mat, q.matN)];
+  worldSaveNow(g);
+  return lines;
+}
+export { questText };
 // ---------------------------------------------------------------- 家园: the pasture, the hot spring, the home banner
 function home(g, ws, m, me, dt) {
   const H = ws.home;
@@ -1590,6 +1654,7 @@ export function drawMiniHud(game, me, now) {
   if (ws.flag) dot(ws.flag.x, ws.flag.y, "#ff6ab8", 2.5);
   dot(m.spawn.x, m.spawn.y, "#7fe0ff", 3);
   for (const e of game.enemies) if (e.aggro) dot(e.x, e.y, "#ff4a5a", 1);
+  if (ws.ev && !(ws.ev.kind === "meteor" && ws.ev.open)) dot(ws.ev.x, ws.ev.y, now % 600 < 300 ? "#ffffff" : ws.ev.kind === "meteor" ? "#ffd84a" : "#5af0d0", 4); // (世界事件, blinking)
   // you: the same pin as on the world map
   const X = Math.round((me.x / T - tx) * k), Y = Math.round((me.y / T - ty) * k);
   g.fillStyle = "#0c0814";

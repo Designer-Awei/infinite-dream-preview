@@ -600,7 +600,7 @@ function renderModes(s) {
     const ok = modeOpen(id);
     if (id === "daily") {
       const dd = dailyOf(), done = checkedToday(), sk = streakNow();
-      return `<div class="mcard pv daily" data-id="daily"><img class="mc-map" src="${mapPreview(dd.map)}" alt="" draggable="false"><img class="mc-face" src="assets/head_${dd.cid}.png" alt="" draggable="false"><img class="mc-cal" src="assets/ui/daily.png" alt="" draggable="false"><span class="mc-k">每日</span><div class="mc-info"><b class="mc-t">每日梦境</b><span class="mc-foot">${done ? `今日已打卡 · 连续 ${sk} 天` : sk ? `连续 ${sk} 天 · 今日未打卡` : "今日未打卡"}</span></div></div>`;
+      return `<div class="mcard pv daily" data-id="daily"><img class="mc-map" src="${mapPreview(dd.map)}" alt="" draggable="false"><img class="mc-face" src="assets/head_${dd.cid}.png" alt="" draggable="false"><span class="mc-k">每日</span><div class="mc-info"><b class="mc-t">每日梦境</b><span class="mc-foot">${done ? `已打卡 · 连续 ${sk} 天` : sk ? `未打卡 · 连续 ${sk} 天` : "未打卡"}</span></div></div>`;
     }
     if (id === "world")
       return `<div class="mcard pv world" data-id="world"><img class="mc-map" src="${worldPreview()}" alt="" draggable="false"><span class="mc-k">大陆</span><div class="mc-info"><b class="mc-t">梦境大陆</b><span class="mc-foot">探索 ${worldExplored()}%</span></div></div>`;
