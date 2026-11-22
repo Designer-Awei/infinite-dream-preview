@@ -862,8 +862,9 @@ function erupt(g, x, y, groups) {
   g.sound("explode", 0.3), g.after(0.5, () => g.sound("ssr", 0.2));
   ws.drops = ws.drops || [];
   list.forEach((d, k) => g.after(0.15 + k * 0.06, () => {
-    const a = Math.random() * Math.PI * 2, sp = 60 + Math.random() * 120, big = d.kind.startsWith("egg") || d.kind === "hur";
-    ws.drops.push({ ...d, x: x + Math.cos(a) * 6, y: y + Math.sin(a) * 4, z: 34, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.7, vz: (big ? 560 : 400) + Math.random() * 160, t: 0, bounced: false, big });
+    // a tight fountain round the kill spot (lands within ~30–75 px), high arcs so the trails read
+    const a = Math.random() * Math.PI * 2, sp = 28 + Math.random() * 42, big = d.kind.startsWith("egg") || d.kind === "hur";
+    ws.drops.push({ ...d, x: x + Math.cos(a) * 4, y: y + Math.sin(a) * 3, z: 34, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * 0.75, vz: (big ? 600 : 470) + Math.random() * 140, t: 0, bounced: false, big, trail: [], col: dropCol(d.kind) });
     if (k % 3 === 0) g.sound("coin", 0.06);
   }));
 }
@@ -874,12 +875,16 @@ function updateDrops(g, ws, me, dt) {
     const d = D[k];
     d.t += dt;
     if (d.z > 0 || d.vz > 0) {
+      d.trail.push([d.x, d.y - d.z]);
+      if (d.trail.length > 9) d.trail.shift();
       d.x += d.vx * dt; d.y += d.vy * dt; d.z += d.vz * dt; d.vz -= 1100 * dt;
-      if (d.z <= 0) (d.z = 0), d.bounced ? (d.vz = 0) : ((d.vz = -d.vz * 0.32), (d.bounced = true), (d.vx *= 0.5), (d.vy *= 0.5));
+      if (d.z <= 0) (d.z = 0), d.bounced ? ((d.vz = 0), (d.landT = d.t)) : ((d.vz = -d.vz * 0.32), (d.bounced = true), (d.vx *= 0.4), (d.vy *= 0.4));
       continue;
     }
-    if (d.t < 1.5 || me.dead) continue; // lie there a moment, then home in on you
-    const dx = me.x - d.x, dy = me.y - 10 - d.y, l = Math.hypot(dx, dy), sp = Math.min(900, 220 + (d.t - 1.5) * 700);
+    if (d.trail.length) d.trail.shift(); // (the trail fades out once it has landed)
+    if (d.t < 2.4 || me.dead) continue; // lie there under its light pillar a moment, then home in on you
+    d.homing = true;
+    const dx = me.x - d.x, dy = me.y - 10 - d.y, l = Math.hypot(dx, dy), sp = Math.min(900, 220 + (d.t - 2.4) * 700);
     if (l < 16) {
       D.splice(k, 1);
       if (d.txt) { // (one line after another, not stacked)
@@ -894,7 +899,44 @@ function updateDrops(g, ws, me, dt) {
   }
 }
 // the loot's look: 晶石 gems, 角色经验 stars, 淬灵露 drops, 流彩晶 a rainbow crystal, materials in their colour, eggs
+const dropCol = (k) => (k === "gems" ? "#5affa0" : k === "xp" ? "#ffe36a" : k === "ur" ? "#7fd8ff" : k === "hur" || k === "egg_hur" ? "#ff9af0" : k === "egg_ur" ? "#8ab8ff" : MATS[+k[3]]?.col || "#ffffff");
+// the flight's glowing trail, and once landed a light pillar over it (taller and brighter for eggs and 流彩晶)
+function dropGlow(g, d, t) {
+  g.save();
+  g.globalCompositeOperation = "lighter";
+  const tr = d.trail;
+  for (let i = 1; i < tr.length; i++) {
+    const f = i / tr.length;
+    g.globalAlpha = f * 0.7;
+    g.strokeStyle = d.col;
+    g.lineWidth = (d.big ? 6 : 4) * f;
+    g.lineCap = "round";
+    g.beginPath();
+    g.moveTo(tr[i - 1][0], tr[i - 1][1] - 6);
+    g.lineTo(tr[i][0], tr[i][1] - 6);
+    g.stroke();
+  }
+  if (d.landT !== undefined && !d.homing) {
+    const age = d.t - d.landT, rise = Math.min(1, age / 0.25), H = (d.big ? 110 : 64) * rise, w = d.big ? 12 : 7, pulse = 0.75 + Math.sin(t * 7 + d.x) * 0.25;
+    const gr = g.createLinearGradient(0, d.y - H, 0, d.y);
+    gr.addColorStop(0, "rgba(255,255,255,0)");
+    gr.addColorStop(0.6, d.col);
+    gr.addColorStop(1, "#ffffff");
+    g.globalAlpha = 0.55 * pulse;
+    g.fillStyle = gr;
+    g.fillRect(d.x - w / 2, d.y - H, w, H);
+    g.globalAlpha = 0.9 * pulse;
+    g.fillRect(d.x - w / 6, d.y - H * 0.85, w / 3, H * 0.85);
+    g.globalAlpha = 0.45 * pulse;
+    g.fillStyle = d.col;
+    g.beginPath();
+    g.ellipse(d.x, d.y + 2, (d.big ? 18 : 12) * rise, (d.big ? 6 : 4) * rise, 0, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.restore();
+}
 function dropSprite(g, d, t) {
+  dropGlow(g, d, t);
   const S = d.big ? 2.4 : 2, x = Math.round(d.x), y = Math.round(d.y - d.z - 6 * S), r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(x + a * S, y + b * S, w * S, h * S));
   g.fillStyle = "rgba(10,8,20,0.3)";
   g.beginPath(); g.ellipse(d.x, d.y + 2, d.big ? 16 : 11, 5, 0, 0, Math.PI * 2); g.fill();
@@ -1191,7 +1233,7 @@ export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
   for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
-  for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && Math.abs(me.x - B.x) < 420 && Math.abs(me.y - B.y) < 260) {
+  if (!ws.drops?.length) for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && Math.abs(me.x - B.x) < 420 && Math.abs(me.y - B.y) < 260) { // (after its loot is picked up)
     R.text(g, `${ENEMIES[B.type].name} · 已击败`, B.x, B.y - 72, "#c8c0e0", 20);
     R.text(g, `${bossRespawnIn()} 后刷新`, B.x, B.y - 44, "#ffe36a", 22);
   }
