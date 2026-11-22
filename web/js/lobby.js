@@ -195,7 +195,14 @@ export function showLobby() {
   const prow = el("div", "lb-playrow");
   const plv = pactLevel(m.pact || {});
   const pk = el("button", "pact-chip" + (plv ? " on" : ""), `<span class="pc-t outline">噩梦</span><span class="pc-n outline">${plv}</span>`);
-  pk.onclick = () => (sfx("click"), import("./pactui.js").then((P) => P.showPacts(() => { const v = pactLevel(load().pact || {}); pk.classList.toggle("on", !!v); pk.querySelector(".pc-n").textContent = v; })));
+  // (大陆 / 每日 have a fixed difficulty: there the chip is their 玩法说明 instead — updatePlay swaps its face)
+  pk.onclick = () => {
+    sfx("click");
+    const pm = load().playMode || {};
+    if (pm.world) return import("./worldui.js").then((M) => M.showWorldHelp(app));
+    if (pm.daily) return import("./dailyui.js").then((M) => M.showDailyHelp(app));
+    import("./pactui.js").then((P) => P.showPacts(() => updatePlay(s)));
+  };
   prow.append(pk, pb);
   play.appendChild(prow);
   play.appendChild(el("div", "lb-stats o1", `击败 ${m.stats.kills} · 反应 ${m.stats.reactions} · 通关 ${m.stats.bossKills} · 最远 ${m.stats.best}/7`));
@@ -584,6 +591,11 @@ export function showLoadout(cid, onClose) {
 
 // ------------------------------------------------------------------ mode carousel (swipe left/right on the lobby)
 const MODE_IDS = [...MAP_ORDER, "endless", "world", "daily"]; // world: 梦境大陆 (open world); daily: 每日梦境 (opens its panel from the play button)
+// the carousel shows one group at a time; the tabs under it switch groups: 冒险 (the three main maps and 无尽, swiped
+// through, with dots), 大陆, 每日
+const MODE_GROUPS = [["adv", "冒险", [...MAP_ORDER, "endless"]], ["world", "大陆", ["world"]], ["daily", "每日", ["daily"]]];
+const groupOf = (id) => (id === "world" ? "world" : id === "daily" ? "daily" : "adv");
+let lastAdv = null;
 let modesAbort = null;
 const modeOpen = (id) => (id === "daily" || id === "world" ? true : id === "endless" ? endlessUnlocked() : mapUnlocked(id));
 let modeInit = false;
@@ -595,12 +607,18 @@ function renderModes(s) {
     save();
   }
   const pm = playMode();
-  const box = q(".lb-modes", s), track = q(".lm-track", box), dots = q(".lm-dots", box);
-  track.innerHTML = MODE_IDS.map((id) => {
+  const box = q(".lb-modes", s), dots = q(".lm-dots", box);
+  const old = q(".lm-track", box), track = old.cloneNode(false); // (a fresh track: no listeners left from the last group)
+  old.replaceWith(track);
+  const curId = m.playMode?.daily ? "daily" : m.playMode?.world ? "world" : pm.endless ? "endless" : pm.map;
+  const grp = MODE_GROUPS.find((g) => g[0] === groupOf(curId)), ids = grp[2];
+  if (grp[0] === "adv") lastAdv = curId;
+  track.classList.toggle("single", ids.length === 1);
+  track.innerHTML = ids.map((id) => {
     const ok = modeOpen(id);
     if (id === "daily") {
       const dd = dailyOf(), done = checkedToday(), sk = streakNow();
-      return `<div class="mcard pv daily" data-id="daily"><img class="mc-map" src="${mapPreview(dd.map)}" alt="" draggable="false"><img class="mc-face" src="assets/head_${dd.cid}.png" alt="" draggable="false"><span class="mc-k">每日</span><div class="mc-info"><b class="mc-t">每日梦境</b><span class="mc-foot">${done ? `已打卡 · 连续 ${sk} 天` : sk ? `未打卡 · 连续 ${sk} 天` : "未打卡"}</span></div></div>`;
+      return `<div class="mcard pv daily" data-id="daily"><img class="mc-map" src="${mapPreview(dd.map)}" alt="" draggable="false"><img class="mc-face" src="assets/head_${dd.cid}.png" alt="" draggable="false"><span class="mc-k">每日</span><div class="mc-info"><b class="mc-t">每日梦境</b><span class="mc-foot">${done ? "已打卡" : "未打卡"}</span></div></div>`;
     }
     if (id === "world")
       return `<div class="mcard pv world" data-id="world"><img class="mc-map" src="${worldPreview()}" alt="" draggable="false"><span class="mc-k">大陆</span><div class="mc-info"><b class="mc-t">梦境大陆</b><span class="mc-foot">探索 ${worldExplored()}%</span></div></div>`;
@@ -609,18 +627,22 @@ function renderModes(s) {
     const d = MAPS[id], clears = (m.maps || {})[id] || 0;
     return `<div class="mcard pv${ok ? "" : " lock"}" data-id="${id}"><img class="mc-map" src="${mapPreview(id)}" alt="" draggable="false"><span class="mc-k">主线 ${MAP_ORDER.indexOf(id) + 1}/${MAP_ORDER.length}</span><div class="mc-info"><b class="mc-t">${d.name}</b><span class="mc-foot">${ok ? (id==="grass" ? "入门" + (clears ? ` · 通关${clears}` : "") : `通关${clears}`) : `🔒 先通关${MAPS[d.need].name}`}</span></div></div>`;
   }).join("");
-  dots.innerHTML = MODE_IDS.map(() => "<i></i>").join("");
+  // the group tabs (equal widths); 冒险 carries the dots of its four cards
+  dots.className = "lm-dots lm-tabs";
+  dots.innerHTML = MODE_GROUPS.map(([g, name, gi]) => `<button class="lm-tab${g === grp[0] ? " on" : ""}" data-g="${g}"><span class="o1">${name}</span>${g === "adv" && g === grp[0] ? `<em>${gi.map(() => "<i></i>").join("")}</em>` : ""}</button>`).join("");
+  const dotEls = [...dots.querySelectorAll("em i")];
   const cards = [...track.children];
-  let cur = Math.max(0, MODE_IDS.indexOf(m.playMode?.daily ? "daily" : m.playMode?.world ? "world" : pm.endless ? "endless" : pm.map));
+  let cur = Math.max(0, ids.indexOf(curId));
   const mark = (i) => {
     cards.forEach((c, k) => c.classList.toggle("on", k === i));
-    [...dots.children].forEach((d, k) => d.classList.toggle("on", k === i));
+    dotEls.forEach((d, k) => d.classList.toggle("on", k === i));
   };
   const choose = (i) => {
     if (i === cur) return;
     cur = i;
     mark(i);
-    const id = MODE_IDS[i];
+    const id = ids[i];
+    if (grp[0] === "adv") lastAdv = id;
     // remember the mode even when it is still locked (the play button says so); no lobby re-render
     const keepMap = (m.playMode && m.playMode.map) || "grass";
     m.playMode = id === "daily" ? { map: keepMap, endless: false, daily: true } : id === "world" ? { map: keepMap, endless: false, world: true } : id === "endless" ? { map: keepMap, endless: true } : { map: id, endless: false };
@@ -644,12 +666,20 @@ function renderModes(s) {
     return best;
   };
   const go = (i, smooth = true) => {
-    i = Math.max(0, Math.min(MODE_IDS.length - 1, i));
+    i = Math.max(0, Math.min(ids.length - 1, i));
     track.scrollTo({ left: posOf(i), behavior: smooth ? "smooth" : "auto" });
     choose(i);
   };
   // the notice bar's 每日梦境 shortcut slides the carousel to a mode card
-  s._modeGo = (id) => go(MODE_IDS.indexOf(id));
+  const setMode = (id) => {
+    const keepMap = (m.playMode && m.playMode.map) || "grass";
+    m.playMode = id === "daily" ? { map: keepMap, endless: false, daily: true } : id === "world" ? { map: keepMap, endless: false, world: true } : id === "endless" ? { map: keepMap, endless: true } : { map: id, endless: false };
+    save();
+  };
+  s._modeGo = (id) => {
+    if (groupOf(id) !== grp[0]) return setMode(id), renderModes(s), updatePlay(s);
+    go(ids.indexOf(id));
+  };
   let t = 0;
   track.addEventListener("scroll", () => {
     clearTimeout(t);
@@ -696,8 +726,14 @@ function renderModes(s) {
   }, { signal });
   cards.forEach((c, k) => (c.onclick = () => k !== cur && !justDragged && go(k)));
   dots.onclick = (e) => {
-    const k = [...dots.children].indexOf(e.target);
-    if (k >= 0) go(k);
+    const k = dotEls.indexOf(e.target);
+    if (k >= 0) return go(k);
+    const tab = e.target.closest(".lm-tab");
+    if (!tab || tab.dataset.g === grp[0]) return;
+    sfx("card");
+    setMode(tab.dataset.g === "adv" ? lastAdv || "grass" : tab.dataset.g);
+    renderModes(s);
+    updatePlay(s);
   };
   mark(cur);
   requestAnimationFrame(() => go(cur, false));
@@ -765,6 +801,13 @@ function updatePlay(s, cid) {
   pb.disabled = !saved && (!charOk || !mOk);
   pb.classList.toggle("resume", !!saved);
   q(".pt", pb).textContent = saved ? "继续冒险" : pm.daily ? "每日梦境" : !charOk ? "未解锁" : !mOk ? "模式未解锁" : pm.world ? "进入大陆" : "开始冒险";
+  const pk = q(".pact-chip", s);
+  if (pk) {
+    const guide = !!(pm.world || pm.daily), v = pactLevel(m.pact || {});
+    pk.classList.toggle("guide", guide);
+    pk.classList.toggle("on", !guide && !!v);
+    pk.innerHTML = guide ? `<span class="pc-ico">📖</span><span class="pc-t outline">说明</span>` : `<span class="pc-t outline">噩梦</span><span class="pc-n outline">${v}</span>`;
+  }
 
 }
 

@@ -1,5 +1,5 @@
 // The simulation: players, enemies, bullets, zones, pickups, rooms. The host (or solo) runs it; clients mirror it.
-import { T, BAL, AFFIXES, CURSES, CURSE_MAX, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS } from "./data.js";
+import { T, BAL, AFFIXES, CURSES, CURSE_MAX, CHARS, CHAR_ORDER, ELEM, ELEM_KEYS, REACTIONS, reactionKey, ENEMIES, RUN, ITEMS, ITEM_WEIGHTS, CARDS, fusionCards, EVOLUTIONS, evoReady, RARITY, REWARD, MAPS, endlessRoom, PVP_MODES, PACTS, FIXED_PACT } from "./data.js";
 import { applyTitle } from "./titles.js";
 import { makeRoute, nodeRoom, EVENTS, CHALLENGES, NODE, PORTAL_PAL, NPCS, SLOT_SYMS, slotPayout, CHEST_FATES, CHEST_BOONS, MIMIC_DEW } from "./route.js";
 import { clamp, dist, dist2, angTo, R, rng, nid, TAU } from "./util.js";
@@ -27,7 +27,7 @@ export class Game {
     this.petTrial = !pvp && !!opt.petTrial;
     this.petFields = [];
     // mode options: map (chapter) for PVE, endless corridor, PVP rule set
-    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", pact: cleanPact(opt.pact), ...(typeof opt.daily === "string" ? { daily: opt.daily } : {}), ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}), ...(opt.world && !pvp ? { world: true } : {}) }; // world: 梦境大陆; twinBoss: force 双首领 on/off (tests)
+    this.opt = { map: MAPS[opt.map] ? opt.map : "grass", endless: !!opt.endless, pvpMode: PVP_MODES[opt.pvpMode] ? opt.pvpMode : "brawl", pact: (opt.world && !pvp) || typeof opt.daily === "string" ? { ...FIXED_PACT } : cleanPact(opt.pact), ...(typeof opt.daily === "string" ? { daily: opt.daily } : {}), ...(typeof opt.twinBoss === "boolean" ? { twinBoss: opt.twinBoss } : {}), ...(opt.world && !pvp ? { world: true } : {}) }; // world: 梦境大陆; twinBoss: force 双首领 on/off (tests)
     this.endless = !pvp && this.opt.endless;
     this.world = !!this.opt.world; // 梦境大陆: the open world (world.js) instead of a run of rooms
     this.mapDef = MAPS[this.opt.map];

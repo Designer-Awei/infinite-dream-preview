@@ -1,7 +1,7 @@
 // 每日梦境: one fixed run a day for everyone — the same seed (rooms, route), girl, map, two 噩梦契约 terms and a
 // blessing, all derived from the local date. Finishing a daily run (win or lose) checks the day in: the 7-day
 // calendar pays the streak day's reward once a day, a clear adds a bonus; a missed day starts the streak over.
-import { CHAR_ORDER, CHARS, MAPS, MAP_ORDER, PACTS } from "./data.js";
+import { FIXED_PACT, CHAR_ORDER, CHARS, MAPS, MAP_ORDER, PACTS } from "./data.js";
 import { load, save } from "./save.js";
 import { petState, grantEggs } from "./petsave.js";
 
@@ -51,7 +51,9 @@ export function dailyOf(key = dayKey()) {
     if (pts <= 4) pactIds.push(id);
   }
   const bk = Object.keys(BLESSINGS), blessing = bk[Math.floor(r() * bk.length)];
-  return { key, seed: seed % 1e9, cid, map, pact: Object.fromEntries(pactIds.map((k) => [k, 1])), pactIds, blessing };
+  // (the difficulty itself is fixed: every term at its top level but 护盾停转 — FIXED_PACT, applied by the game;
+  // pactIds / pact stay for old callers)
+  return { key, seed: seed % 1e9, cid, map, pact: { ...FIXED_PACT }, pactIds: Object.keys(FIXED_PACT), blessing };
 }
 
 /** the saved calendar: { last, streak, days: { [key]: { runs, win, best } } } (old days pruned to the last 40) */

@@ -262,6 +262,8 @@ export const PACTS = [
   { id: "noshield", name: "护盾停转", desc: "护盾不会自动回复", max: 1, pts: 3 },
 ];
 export const PACT_MAX = PACTS.reduce((a, q) => a + q.max * q.pts, 0);
+// 每日梦境 and 梦境大陆 play at one fixed difficulty: every 噩梦契约 at its top level except 护盾停转
+export const FIXED_PACT = Object.fromEntries(PACTS.filter((q) => q.id !== "noshield").map((q) => [q.id, q.max]));
 export const pactLevel = (pact = {}) => PACTS.reduce((a, q) => a + Math.min(q.max, Math.max(0, pact[q.id] | 0)) * q.pts, 0);
 export const PACT_MILESTONES = [
   { lv: 4, name: "UR 宠物蛋 ×1", eggs: [["ur", 1]] },

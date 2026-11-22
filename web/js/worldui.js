@@ -4,7 +4,7 @@
 // 传送门; 插旗 plants your flag where you stand. The game is paused while it is open.
 import { T } from "./data.js";
 import { el } from "./util.js";
-import { btn, toast, uiRoot, bgClose } from "./ui.js";
+import { btn, toast, uiRoot, bgClose, showGuide } from "./ui.js";
 import { sfx } from "./audio.js";
 import { ENEMIES } from "./data.js";
 import { baseMap, fogMap, FOG, dayKey, bossRespawnIn, explored, worldTeleport, placeFlag, inCombat, BIOMES, MATS, matSrc, WORKSHOP, workshopBuy, quest, claimQuest, questText, worldTrade, LOOT_NAME } from "./world.js";
@@ -614,12 +614,10 @@ const HH = (t) => `<b class="hp-h">${t}</b>`;
 const chip = (bg, name, text) => `<div class="hp-cur"><span class="chip w4" style="background:${bg};color:#1a1020">${name}</span><span>${text}</span></div>`;
 const matRow = (k, text) => `<div class="hp-cur"><span class="chip w4 wh-mat"><img class="mat-ic" src="${matSrc(k)}" alt="">${MATS[k].name}</span><span>${text}</span></div>`;
 export function showWorldHelp(app) {
-  if (document.querySelector(".help-md.world-help")) return;
-  const was = app.paused;
-  app.paused = true;
   const SECS = [
     ["探索基础", `${HH("大陆")}一片被海峡隔开的大陆群：中南数据草原（出生营地，泥沼减速）、西北显存冰原（冰面打滑）、东北算力熔炉（熔岩灼烧），走跨海长桥过去；东南海上的幻梦群岛在渡口站稳坐船过去，其余小岛要骑冰凰飞过去。沙海、森林、云巅三块大陆尚未开放。越远怪物越强。
       ${HH("怪物")}野怪原地沉睡，靠近或打中才会追来；每只怪有看不见的仇恨范围，离开出生点太远或你跑远约 2 秒后放弃，走回原位回满血。精英怪击败后三选一技能卡（本次游玩的构筑）。
+      ${HH("难度")}大陆是固定难度“噩梦全开”：除护盾停转外所有噩梦契约拉满（敌人生命 +75%、移速与弹速提升、每次受伤 +1、精英开箱只给两张卡、局内金币减半、首领生命 +50%），护盾照常回复。
       ${HH("倒下与离开")}全员倒下会回营地醒来并失去三分之一金币。暂停菜单「离开大陆」结算，位置、迷雾、开过的宝箱都会保存，下次从离开的地方继续。`],
     ["地图与传送", `${HH("小地图")}左上角小地图显示身边一片，红色定位针是你；点开看大地图（游戏暂停）。
       ${HH("大地图")}双指捏合或滚轮缩放、拖动平移；网格 A–H × 1–8，坐标写作“C6 · 3-5”。全图只显示主要点位（营地、你、旗帜、已发现的首领、已点亮的传送门），放大后陆续显示渡口、工坊、宝箱、采集点和名字；没去过的地方盖着迷雾，只透出海岸线。
@@ -643,22 +641,5 @@ export function showWorldHelp(app) {
       ${HH("里程碑")}${chip("#ffd84a", "10%", "150 晶石")}${chip("#ffd84a", "25%", "UR 宠物蛋")}${chip("#ffd84a", "50%", "流彩晶 + 称号「大陆探险家」")}${chip("#ffd84a", "75%", "HUR 宠物蛋")}${chip("#ffd84a", "100%", "流彩晶 ×3 + 称号「大陆制图师」")}
       ${HH("称号")}大陆称号在主页称号面板的「大陆」分页里佩戴。`],
   ];
-  const md = el("div", "modal help-md world-help");
-  md.innerHTML = `<div class="panel help-p"><div class="wh-head"><h2 class="outline">大陆玩法说明</h2><button class="btn gray small x-btn">关闭</button></div><div class="hp-body"><div class="hp-nav"></div><div class="hp-main"></div></div></div>`;
-  const nav = md.querySelector(".hp-nav"), main = md.querySelector(".hp-main");
-  const open = (i) => {
-    nav.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === i));
-    main.innerHTML = `<div class="hp-t">${SECS[i][0]}</div>` + SECS[i][1];
-    main.scrollTop = 0;
-  };
-  SECS.forEach(([t], i) => {
-    const b = el("button", "hp-tab", t);
-    b.onclick = () => (sfx("click"), open(i));
-    nav.appendChild(b);
-  });
-  open(0);
-  const close = () => ((app.paused = was), md.remove());
-  md.querySelector(".x-btn").onclick = () => (sfx("click"), close());
-  bgClose(md, () => (app.paused = was));
-  uiRoot().appendChild(md);
+  showGuide("大陆玩法说明", SECS, app);
 }

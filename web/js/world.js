@@ -1215,9 +1215,9 @@ function flagSprite(g, x, y, t) {
 export function drawWorldFloor(g, game, me, t) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries) return;
-  const near = (o, k = 700) => Math.abs(o.x - me.x) < k && Math.abs(o.y - me.y) < k * 0.7;
+  const near = (o) => onView(game, o.x, o.y, 120);
   // a boss arena: a dark ring on the ground
-  for (const B of m.bosses) if (near(B, 800)) {
+  for (const B of m.bosses) if (near(B)) {
     g.strokeStyle = "rgba(80,10,40,0.35)";
     g.lineWidth = 6;
     g.beginPath();
@@ -1357,7 +1357,7 @@ function shopSprite(g, x, y, t) {
 export function worldSprites(game, me) {
   const m = game.map, ws = game.ws, out = [];
   if (!ws || !me) return out;
-  const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340, today = dayKey();
+  const near = (o) => onView(game, o.x, o.y), today = dayKey();
   for (const d of ws.drops || []) out.push({ y: d.y + 2, draw: (g, t) => dropSprite(g, d, t) });
   for (const q of m.pockets) {
     if (!near(q)) continue;
@@ -1369,7 +1369,7 @@ export function worldSprites(game, me) {
   }
   for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
   if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
-  if (near({ x: m.home.pen.x1, y: m.home.pen.y1 })) homeSprites(m, ws, out);
+  { const [x0, y0, x1, y1] = m.home.rect; if (onView(game, (x0 + x1) * T / 2, (y0 + y1) * T / 2, Math.max(x1 - x0, y1 - y0) * T / 2 + 60)) homeSprites(m, ws, out); } // (the whole home, whenever any of it is on screen)
   if (ws.ev && near(ws.ev)) eventSprites(ws, out, { ...HOME_IMG, npc: npcImg });
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
   if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
@@ -1379,8 +1379,8 @@ export function worldSprites(game, me) {
 export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
-  for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
-  if (!ws.drops?.length) for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && Math.abs(me.x - B.x) < 420 && Math.abs(me.y - B.y) < 260) { // (after its loot is picked up)
+  for (const w of m.waypoints) if (onView(game, w.x, w.y)) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
+  if (!ws.drops?.length) for (const B of m.bosses) if (ws.bossDay[B.id] === dayKey() && onView(game, B.x, B.y)) { // (after its loot is picked up)
     R.text(g, `${ENEMIES[B.type].name} · 已击败`, B.x, B.y - 72, "#c8c0e0", 20);
     R.text(g, `${bossRespawnIn()} 后刷新`, B.x, B.y - 44, "#ffe36a", 22);
   }
@@ -1396,8 +1396,8 @@ export function worldLabels(R, g, game, me) {
     g.fillStyle = "#26304a"; g.fillRect(x, y, w, 4);
     g.fillStyle = f < 0.3 ? "#ff7a5a" : "#7fe8ff"; g.fillRect(x, y, Math.round(w * f), 4);
   }
-  if (Math.abs(me.x - m.shop.x) < 420 && Math.abs(me.y - m.shop.y) < 260) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
-  if (m.home && Math.abs(me.x - m.home.board.x) < 520 && Math.abs(me.y - m.home.board.y) < 320) { // 家园
+  if (onView(game, m.shop.x, m.shop.y)) R.text(g, ws.shopT > 0 ? "站稳打开" : "营地工坊", m.shop.x, m.shop.y - 60, ws.shopT > 0 ? "#9ef0ff" : "#ffe36a", 12);
+  if (m.home && onView(game, m.home.board.x, m.home.board.y, 600)) { // 家园
     const H = ws.home, P = m.home.plots, lab = (txt, o, dy, col = "#ffe36a", sz = 12) => R.text(g, txt, o.x, o.y + dy, col, sz);
     lab(ws.standAt === "board" ? "站稳打开" : "派遣告示板", m.home.board, -78, ws.standAt === "board" ? "#9ef0ff" : "#ffe36a");
     lab(ws.standAt === "steward" ? "站稳打开" : "家园管家", m.home.steward, -72, ws.standAt === "steward" ? "#9ef0ff" : "#ffe36a");
@@ -1408,7 +1408,7 @@ export function worldLabels(R, g, game, me) {
     lab(ws.standAt === "quest" ? "站稳打开" : ready ? "每日委托 · 可领取" : "每日委托", m.home.quest, -84, ws.standAt === "quest" ? "#9ef0ff" : ready ? "#7fff9a" : "#ffe36a");
   }
   const ev = ws.ev;
-  if (ev && Math.abs(me.x - ev.x) < 520 && Math.abs(me.y - ev.y) < 320 && !(ev.kind === "meteor" && ev.open)) {
+  if (ev && onView(game, ev.x, ev.y) && !(ev.kind === "meteor" && ev.open)) {
     const s = Math.max(0, Math.ceil(ev.until - game.time)), clock = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
     if (ev.kind === "meteor") R.text(g, `陨星宝箱 · ${clock}`, ev.x, ev.y - 96, "#ffd84a", 13);
     else R.text(g, ws.standAt === "trader" ? "站稳打开" : `迷途商人 · ${clock}`, ev.x, ev.y - 90, ws.standAt === "trader" ? "#9ef0ff" : "#7fe8d8", 13);
@@ -1557,6 +1557,8 @@ function home(g, ws, m, me, dt) {
   if (at && !ws.atHome) g.banner = { text: "梦境家园", sub: "宠物牧场 · 派遣 · 建造", t: 2.2 };
   ws.atHome = at;
 }
+// on screen (the renderer's view, with margins for tall art); before the first frame, a generous box round the hero
+const onView = (g, x, y, pad = 0) => { const v = g.view; return v ? x > v.x0 - pad && x < v.x1 + pad && y > v.y0 - pad && y < v.y1 + pad : true; };
 // ---------------------------------------------------------------- W4: what each mount opens
 // 冰凰's flight over water spends stamina (land refills it fast); at 30% a warning, at nothing the rider is washed
 // back to the last shore. 电门 lets only a 灵狐 rider through; anyone else is thrown back. 裂纹岩 only cracks under a

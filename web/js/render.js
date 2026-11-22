@@ -65,6 +65,7 @@ export class Renderer {
     if (!game.map) return;
     const sh = game.shake, sx = sh ? (Math.random() - 0.5) * sh : 0, sy = sh ? (Math.random() - 0.5) * sh : 0;
     const cx = Math.round(this.cam.x + sx), cy = Math.round(this.cam.y + sy);
+    game.view = { x0: cx - 220, y0: cy - 200, x1: cx + VIEW_W + 220, y1: cy + VIEW_H + 320 }; // (what is on screen, with room for tall art whose feet are below the edge)
     const m = game.map;
     // ground (梦境大陆: 16×16-tile canvases drawn on demand instead of one canvas for the whole map)
     if (m.world) {

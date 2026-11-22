@@ -5,10 +5,13 @@
 // 皮肤定义只是数据，换皮 = 换一行配置。
 
 /** rules: [{ from:[h0,h1], to?, shift?, sat?, light?, minS? }] — 色相 0~360；from 可跨 0（如 [330, 30]）；
- *  to = 改到某个色相，shift = 色相偏移，sat / light = 饱和度、明度倍数，minS = 低于该饱和度的灰白像素不改 */
+ *  to = 改到某个色相，shift = 色相偏移，sat / light = 饱和度、明度倍数，add = 饱和度加值，minS = 低于该饱和度的灰白像素不改，
+ *  minL / maxL = 只改这个明度范围内的像素 */
 export const PET_SKINS = {
   frost: { name: "霜鳞", rules: [{ from: [330, 40], to: 200, sat: 0.85, light: 1.05, minS: 0.25 }], aura: "frost" },
-  ember: { name: "炎魂", rules: [{ from: [0, 360], shift: 0, sat: 1.15, light: 1.0 }], aura: "flame" },
+  // 炎魂: the 火龙's own colours — a deep red body, its lightest fur turned to orange-gold flames (cream → red needs
+  // saturation added, not just multiplied)
+  ember: { name: "炎魂", rules: [{ from: [0, 360], minL: 0.74, to: 26, sat: 1.25, add: 0.2, light: 0.99 }, { from: [0, 360], to: 6, sat: 1.25, add: 0.24, light: 0.92 }], aura: "flame" },
   sakura: { name: "绯樱", rules: [{ from: [0, 360], to: 342, sat: 0.72, light: 1.1, minS: 0.15 }], aura: "petal" },
   gold: { name: "灿金", rules: [{ from: [0, 360], to: 43, sat: 0.95, light: 1.08, minS: 0.15 }], aura: "spark" },
   jade: { name: "翠玉", rules: [{ from: [0, 360], to: 140, sat: 0.8, light: 0.95, minS: 0.2 }], aura: null },
@@ -45,13 +48,13 @@ export function recolorData(d, rules, memo = new Map(), mask = null) {
     if (hit !== undefined) { px[i] = hit >> 16; px[i + 1] = (hit >> 8) & 255; px[i + 2] = hit & 255; continue; }
     let [h, s, l] = rgb2hsl(px[i], px[i + 1], px[i + 2]);
     for (const r of rules) {
-      if (s < (r.minS ?? 0) || !inHue(h, r.from)) continue;
+      if (s < (r.minS ?? 0) || !inHue(h, r.from) || l < (r.minL ?? 0) || l > (r.maxL ?? 1)) continue;
       // to: move the band onto one hue, keeping a little of its original spread (circular distance from the band's
       // middle; a full-circle band has no middle, so no spread); shift: rotate the hue
       const span = ((r.from[1] - r.from[0]) + 360) % 360 || 360, mid = r.from[0] + span / 2;
       const dh = ((h - mid + 540) % 360) - 180;
       h = r.to != null ? r.to + (span >= 360 ? 0 : dh * 0.15) : h + (r.shift || 0);
-      s = Math.min(1, s * (r.sat ?? 1));
+      s = Math.min(1, s * (r.sat ?? 1) + (r.add || 0));
       l = Math.min(1, l * (r.light ?? 1));
       break;
     }
