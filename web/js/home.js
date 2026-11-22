@@ -94,7 +94,14 @@ export function build(h, id, mats) {
 // the home takes the rock field west of the camp: cleared to grass at world build, with the pasture fence, the board,
 // the steward and four building plots; chests / 采集点 / residents that fell inside are moved out of it
 export function layoutHome(m, sx, sy) {
-  const W = m.W, x0 = sx - 19, x1 = sx - 2, y0 = sy - 15, y1 = sy + 2; // (down to the little headland on the shore: the 瞭望塔's spot)
+  const W = m.W, x0 = sx - 19, x1 = sx - 2, y0 = sy - 15, y1 = sy + 5; // (down over the headland on the shore: the 瞭望塔's spot)
+  // the headland south of the 温泉 is built out into the sea (three more rows, rounded at the tip) so the tower stands well
+  // inside the land, not on the waterline
+  for (const [y, a, b] of [[sy + 2, sx - 8, sx - 2], [sy + 3, sx - 8, sx - 2], [sy + 4, sx - 7, sx - 2], [sy + 5, sx - 6, sx - 3]])
+    for (let x = a; x <= b; x++) {
+      const i = y * W + x;
+      if (m.t[i] === WATER) (m.t[i] = F), (m.biome[i] = 0), m.land && (m.land[i] = 1);
+    }
   for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
     const i = y * W + x;
     if (m.t[i] === WATER) continue;
@@ -117,7 +124,7 @@ export function layoutHome(m, sx, sy) {
     pen: { x0: (sx - 16) * T, y0: (sy - 13) * T, x1: (sx - 7) * T, y1: (sy - 8) * T }, // (px; the fence runs round it)
     board: px(sx - 5, sy - 10),
     steward: px(sx - 4, sy - 5),
-    plots: { hut: px(sx - 15, sy - 3), store: px(sx - 11, sy - 3), spring: px(sx - 7, sy - 3), tower: px(sx - 4, sy + 2) }, // (瞭望塔 on the headland south of the 温泉, over the sea)
+    plots: { hut: px(sx - 15, sy - 3), store: px(sx - 11, sy - 3), spring: px(sx - 7, sy - 3), tower: px(sx - 4, sy + 3) }, // (瞭望塔 on the headland south of the 温泉, out in the sea)
     sign: px(sx - 1, sy - 3),
     quest: px(sx + 1, sy - 8),
   };

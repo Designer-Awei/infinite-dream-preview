@@ -125,7 +125,7 @@ function* build(m) {
       else c = (py % 6 === 0 && hash(px >> 3, py) < 0.06) ? WAVE : SEA;
       if (d <= 4) rimData.set([200, 246, 255, d <= 2 ? 255 : 140], j * 4);
     } else {
-      const b = m.biome[i], t = m.t[i], r0 = m.home && m.home.rect, P = r0 && tx >= r0[0] && tx <= r0[2] && ty >= r0[1] && ty <= r0[3] ? HOME : PAL[b];
+      const b = m.biome[i], t = m.t[i], r0 = m.home && m.home.rect, P = r0 && t !== WATER && tx >= r0[0] && tx <= r0[2] && ty >= r0[1] && ty <= r0[3] ? HOME : PAL[b];
       if (t === WATER) {
         const rim = (lx === 0 && tileAt(tx - 1, ty) !== WATER) || (lx === 3 && tileAt(tx + 1, ty) !== WATER) || (ly === 0 && tileAt(tx, ty - 1) !== WATER) || (ly === 3 && tileAt(tx, ty + 1) !== WATER);
         c = rim ? P.wh : (hash(px >> 1, py) < 0.04 ? P.wh : P.w);

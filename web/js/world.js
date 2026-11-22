@@ -65,7 +65,7 @@ export const inHome = (m, i) => {
   const r = m.home && m.home.rect;
   if (!r) return false;
   const x = i % m.W, y = (i / m.W) | 0;
-  return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3];
+  return x >= r[0] && x <= r[2] && y >= r[1] && y <= r[3] && m.t[i] !== WATER; // (the sea inside the rect stays sea)
 };
 export const tileTheme = (m, i) => (m.biome ? (inHome(m, i) ? HOME_TH : BIOMES[m.biome[i]].theme) : m.theme);
 export const wallTheme = (m, i) => (m.biome ? BIOMES[m.biome[i]].rock : m.theme);
