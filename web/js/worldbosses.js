@@ -1,6 +1,6 @@
 // 梦境大陆 · 外围三大陆 (V6): the three outer continents' region bosses and the zones they leave about.
 //   遗迹巨像 (遗迹沙海)   slow stone giant: fist slams with a shock ring, hurled boulders, quicksand pits, scorpions; a sand spiral at the end
-//   菌母     (幽影森林)   rooted mushroom: spore rings, poison clouds on marked spots, root eruptions running at you, sprouts
+//   菌母     (幽影森林)   slow waddling mushroom: spore rings, poison clouds on marked spots, root eruptions running at you, sprouts
 //   风暴之灵 (云巅浮庭)   flier: wind gusts that blow you back, feather fans, wandering tornadoes, lightning on marked spots
 // Zones: "warn" (a coloured ring filling in, then onEnd does the hit), "sandpit" (slows and drags you to its middle),
 // "tornado" (wanders after the nearest player, hurts and flings on touch). render.js draws them.
@@ -8,6 +8,8 @@ import { dist, angTo, TAU } from "./util.js";
 import { moveCircle } from "./map.js";
 import { shoot, spawnBossAdds } from "./enemies.js";
 
+/** start a skill pose (render.js plays the boss's cast strip once from now) */
+const pose = (g, e, name = "cast") => ((e.pose = name), (e.poseAt = g.time));
 const phaseOf = (e) => {
   const f = e.hp / e.maxHp;
   return f > 0.66 ? 1 : f > 0.33 ? 2 : 3;
@@ -79,7 +81,7 @@ export function bossColossus(g, e, p, d, dt) {
   }
   if (e.cd > 0) {
     // trudges after you
-    if (d > e.r + 40) { const a = angTo(e.x, e.y, p.x, p.y); moveCircle(g.map, e, Math.cos(a) * e.def.spd * k * dt, Math.sin(a) * e.def.spd * k * dt, false); }
+    if (d > e.r + 40 && !(e.pose && g.time - e.poseAt < 1.1)) { const a = angTo(e.x, e.y, p.x, p.y); moveCircle(g.map, e, Math.cos(a) * e.def.spd * k * dt, Math.sin(a) * e.def.spd * k * dt, false); }
     return;
   }
   if (!g.host) return;
@@ -87,9 +89,12 @@ export function bossColossus(g, e, p, d, dt) {
   if (ph >= 2) opts.push("boulders", "summon");
   if (ph >= 3) opts.push("spiral", "spiral");
   const pick = opts[(Math.random() * opts.length) | 0];
+  if (pick !== "slam") pose(g, e);
   if (pick === "slam") {
-    // both fists come down round it: a big ring, then a shock ring of sand outward
+    // both fists come down round it: a big ring, then a shock ring of sand outward (the slam pose's impact frame,
+    // about 0.45 s in, lands when the ring fills)
     const R = 96;
+    g.after(Math.max(0, 1.0 / k - 0.45), () => !e.dead && pose(g, e));
     warn(g, e.x, e.y, R, 1.0 / k, "#ffb03a", (z) => {
       g.vfx("explosions/dirt-explosion", z.x, z.y, {});
       g.shake = Math.max(g.shake, 6);
@@ -136,11 +141,17 @@ export function bossMyco(g, e, p, d, dt) {
   const k = ph === 3 ? 1.3 : ph === 2 ? 1.12 : 1;
   e.face = p.x < e.x ? -1 : 1;
   for (const q of g.alivePlayers()) if (dist(q.x, q.y, e.x, e.y) < e.r + 12) g.hurt(q, 1, e);
-  if (e.cd > 0 || !g.host) return;
+  if (e.cd > 0) {
+    // waddles slowly after you between spells (not while a spell pose is playing)
+    if (d > e.r + 70 && !(e.pose && g.time - e.poseAt < 1.1)) { const a = angTo(e.x, e.y, p.x, p.y); moveCircle(g.map, e, Math.cos(a) * e.def.spd * k * dt, Math.sin(a) * e.def.spd * k * dt, false); }
+    return;
+  }
+  if (!g.host) return;
   const opts = ["spores", "clouds", "roots", "spores"];
   if (ph >= 2) opts.push("sprout", "roots");
   if (ph >= 3) opts.push("bloom", "bloom");
   const pick = opts[(Math.random() * opts.length) | 0];
+  pose(g, e);
   if (pick === "spores") {
     // rings of slow spores, the second turned half a step
     const n = ph === 1 ? 14 : 18;

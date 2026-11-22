@@ -210,8 +210,8 @@ export const ENEMIES = {
   nest_forest: { name: "幽林巢穴", hp: 210, spd: 0, r: 20, ai: "nest", sprite: "nest_forest", coin: [4, 6], noKnock: true, brood: ["spider_shadow", "moth", "spider_shadow"] },
   nest_cloud: { name: "浮庭巢穴", hp: 220, spd: 0, r: 20, ai: "nest", sprite: "nest_cloud", coin: [4, 6], noKnock: true, brood: ["skylark", "wisp_cloud", "skylark"] },
   // their region bosses (pixelfx-style code art in tools/bossfx)
-  boss_colossus: { name: "遗迹巨像", title: "沉睡的守望者", hp: 3600, spd: 30, r: 26, ai: "boss_colossus", sprite: "sand_colossus", coin: [30, 30], boss: true, noKnock: true },
-  boss_myco: { name: "菌母", title: "孢子之心", hp: 3500, spd: 0, r: 26, ai: "boss_myco", sprite: "myco_mother", coin: [30, 30], boss: true, rooted: true },
+  boss_colossus: { name: "遗迹巨像", title: "沉睡的守望者", hp: 3600, spd: 30, r: 26, ai: "boss_colossus", sprite: "sand_colossus", poses: { walk: "sand_colossus_walk", cast: "sand_colossus_slam" }, coin: [30, 30], boss: true, noKnock: true },
+  boss_myco: { name: "菌母", title: "孢子之心", hp: 3500, spd: 26, r: 26, ai: "boss_myco", sprite: "myco_mother", poses: { walk: "myco_mother_walk", cast: "myco_mother_cast" }, coin: [30, 30], boss: true, noKnock: true },
   boss_tempest: { name: "风暴之灵", title: "云巅的怒号", hp: 3400, spd: 56, r: 20, ai: "boss_tempest", sprite: "tempest", coin: [30, 30], fly: true, boss: true },
   // 诅咒宝箱 turned monster: the event visitor's own strip (npc.png row 3), hops at you like a frog; always spawned elite
   mimic: { name: "宝箱怪", sprScale: 0.6, hp: 70, spd: 62, r: 13, ai: "leap", sprite: "mimic", coin: [8, 12], touch: 1 },

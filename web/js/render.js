@@ -601,8 +601,24 @@ export class Renderer {
     }
   }
   drawEnemy(g, e, game) {
-    const d = e.def, s = A.critters[d.sprite];
+    const d = e.def;
+    let s = A.critters[d.sprite], poseFr = -1;
     if (!s) return;
+    if (d.poses) {
+      // bosses with more than one strip (遗迹巨像 / 菌母): a skill pose the AI started (e.pose at e.poseAt) plays once,
+      // walking shows the walk loop, otherwise the idle strip
+      if (Math.hypot(e.x - (e.rpx ?? e.x), e.y - (e.rpy ?? e.y)) > 0.15) e.walkUntil = this.t + 0.18;
+      e.rpx = e.x;
+      e.rpy = e.y;
+      const cs = e.pose && A.critters[d.poses[e.pose]];
+      const k = cs ? Math.floor((game.time - e.poseAt) * cs.fps) : -1;
+      if (cs && k >= 0 && k < cs.n) (s = cs), (poseFr = k);
+      else {
+        if (cs) e.pose = null;
+        const ws = A.critters[d.poses.walk];
+        if (ws && (e.walkUntil || 0) > this.t) (s = ws), (poseFr = Math.floor(e.anim * ws.fps) % ws.n);
+      }
+    }
     if (d.ai === "storm_core") {
       // 雷霆审判者's storm core, drawn by hand: a dark crystal held in a spinning gold cage, lightning in its heart
       g.save();
@@ -679,7 +695,7 @@ export class Renderer {
     }
     // sprScale: the PixelLab monsters are drawn a bit larger than the original critters; shrink the picture only
     const sc = (d.scale || 1) * (d.sprScale || 1) * (e.sizeK || 1); // sizeK: 冰封史莱姆王's split halves
-    const fr = Math.floor(e.anim * s.fps * (e.slowT > 0 ? 0.5 : 1)) % s.n;
+    const fr = poseFr >= 0 ? poseFr : Math.floor(e.anim * s.fps * (e.slowT > 0 ? 0.5 : 1)) % s.n;
     const fade = e.spawnT > 0 ? 1 - e.spawnT / 0.25 : 1;
     // shadow (fliers' strips include their own)
     g.save();

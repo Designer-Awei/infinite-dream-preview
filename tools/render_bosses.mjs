@@ -33,9 +33,8 @@ const LIST = {
   nest_sand: ["nest", { palette: ["#140a04", "#3a2210", "#5e3a1a", "#8a5a2a", "#b8843e", "#e0b468"], glow: ["#7a3a04", "#ffb03a", "#fff0b0"], strand: "#f0d8a0" }],
   nest_forest: ["nest", { palette: ["#040c08", "#0c2014", "#163420", "#224a2e", "#346a42", "#5a9064"], glow: ["#0a4a40", "#3af0c8", "#d8fff4"], strand: "#a8e8d0" }],
   nest_cloud: ["nest", { palette: ["#1a1830", "#3a3a62", "#5e6090", "#8a8eba", "#b8bce0", "#e8eafc"], glow: ["#2a4aa0", "#8ad0ff", "#ffffff"], strand: "#ffffff" }],
-  sand_colossus: ["sand-colossus", {}],
-  myco_mother: ["myco-mother", {}],
   tempest: ["tempest", {}],
+  // (遗迹巨像 sand_colossus and 菌母 myco_mother are PixelLab art now: pixflux still + animate-with-text-v3 idle loop)
 };
 const want = process.argv.slice(3).length ? process.argv.slice(3) : Object.keys(LIST);
 const manifest = JSON.parse(readFileSync(OUT + "critters.json", "utf8"));
