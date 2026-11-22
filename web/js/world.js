@@ -7,7 +7,9 @@
 // send the enemies near its guests and the opened-chest list — not done yet (solo offline first).
 import { T, VIEW_W, VIEW_H } from "./data.js";
 import { THEMES, WALL, WATER, BUSH, CRATE, BARREL, F, CRATE_HP } from "./map.js";
-import { load, save } from "./save.js";
+import { load, save, mineState, grantCharacterXP } from "./save.js";
+import { grantEggs, petState, addPool } from "./petsave.js";
+import { ENEMIES } from "./data.js";
 
 export const WORLD_W = 256, WORLD_H = 256, CHUNK = 16, WORLD_SEED = 20261122;
 const CPX = CHUNK * T; // 512 px a chunk
@@ -83,9 +85,11 @@ export function buildWorld(seed) {
     return -1;
   };
   m.isles = isles;
+  // the continent's outline: a wavy coast all round, open sea outside it (no square rim)
+  const rim = (x, y) => { const d = Math.min(x, y, W - 1 - x, H - 1 - y); return d < 26 && d + fbm(x / 16, y / 16, seed + 27) * 9 + fbm(x / 6, y / 6, seed + 28) * 3 < 13; };
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
     const i = y * W + x;
-    if (!x || !y || x === W - 1 || y === H - 1) { m.t[i] = WALL; continue; }
+    if (!x || !y || x === W - 1 || y === H - 1 || rim(x, y)) { m.t[i] = WATER; m.biome[i] = 3; continue; }
     const onSea = sea(x, y), il = onSea ? isleAt(x, y) : -1;
     if (onSea) m.biome[i] = 3;
     if (onSea && il < 0) { m.t[i] = WATER; continue; }
@@ -143,6 +147,20 @@ export function buildWorld(seed) {
   path(sx, sy, ...hubs[0], 1); path(...hubs[0], ...hubs[5], 2); path(...hubs[5], ...hubs[1], 3); path(...hubs[5], ...hubs[2], 4);
   path(...hubs[0], ...hubs[3], 5); path(sx, sy, ...hubs[4], 6); path(...hubs[1], ...hubs[6], 7); path(...hubs[2], ...hubs[7], 8);
   path(...at(kB), ix, iy, 9); // the island's own track from its pier
+  // 传送门 (one per region, touch to light it, then travel to it from the map) and the region bosses' arenas
+  const wp = [["草原传送门", 128, 124], ["冰原传送门", 64, 74], ["熔炉传送门", 194, 72], ["群岛传送门", ...at(kB - 2)]];
+  m.waypoints = wp.map(([name, x, y], k) => ({ id: k, name, x: x * T + T / 2, y: y * T + T / 2 }));
+  const bossAt = [["boss_eye", 40, 200, 0], ["boss_frost", 96, 34, 1], ["boss_core", 170, 30, 2], ["boss_baku", ix, iy, 3]];
+  m.bosses = bossAt.map(([type, x, y, b], k) => ({ id: k, type, x: x * T + T / 2, y: y * T + T / 2, region: b }));
+  const clear = (cx, cy, rx, ry) => {
+    for (let dy = -ry; dy <= ry; dy++) for (let dx = -rx; dx <= rx; dx++) if (dx * dx / (rx * rx) + dy * dy / (ry * ry) <= 1) {
+      const j = (cy + dy) * W + cx + dx;
+      if (m.t[j] === WATER && m.biome[j] === 3) continue; // (never into the sea)
+      m.t[j] = F; m.mud[j] = 0;
+    }
+  };
+  for (const [, x, y] of wp) clear(x, y, 3, 3);
+  for (const [, x, y] of bossAt) clear(x, y, 9, 7);
   // the camp clearing round the spawn
   for (let dy = -6; dy <= 6; dy++) for (let dx = -7; dx <= 7; dx++) if (dx * dx / 49 + dy * dy / 36 <= 1) {
     const j = (sy + dy) * W + sx + dx;
@@ -453,9 +471,9 @@ const KEY = "ai-girls-dungeon-world-v1", FOG = 64; // fog: 64×64 cells of 4×4 
 export function loadWorldSave() {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) || "null");
-    if (d && d.v === 1) return { opened: [], fog: "", ...d };
+    if (d && d.v === 1) return { opened: [], fog: "", gates: [], bossDay: {}, flag: null, ...d };
   } catch (e) {}
-  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0 };
+  return { v: 1, opened: [], fog: "", x: null, y: null, chests: 0, visits: 0, gates: [], bossDay: {}, flag: null };
 }
 const fogBytes = (s) => {
   const out = new Uint8Array(FOG * FOG);
@@ -482,7 +500,7 @@ export function explored(fog) {
 export function worldSaveNow(g) {
   const ws = g.ws, p = g.players.find((q) => q.local) || g.players[0];
   if (!ws) return;
-  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed ? Math.round(p.x) : null, y: p && !p.downed ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits };
+  const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag };
   try {
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) {}
@@ -497,7 +515,8 @@ export function worldEnter(g) {
   const m = getWorld(), sv = loadWorldSave();
   m.used = true;
   g.map = m;
-  g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0 };
+  g.ws = { chunks: new Map(), opened: new Set(sv.opened), fog: fogBytes(sv.fog), fogDirty: true, region: -1, saveT: 4, visits: (sv.visits || 0) + 1, gems: 0, chestsNow: 0,
+    gates: new Set(sv.gates), bossDay: sv.bossDay || {}, flag: sv.flag, loot: {}, bossesNow: 0 };
   const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
   const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
@@ -521,8 +540,12 @@ export function worldAwake(g, e, dt) {
   if (!e.home) return true;
   let d = 1e9;
   for (const p of g.alivePlayers()) d = Math.min(d, Math.hypot(p.x - e.x, p.y - e.y));
-  if (!e.aggro && d < (e.elite ? 240 : 200)) e.aggro = 1;
-  if (e.aggro && d > 560) (e.aggro = 0), (e.returning = true);
+  if (!e.aggro && d < (e.worldBoss ? 280 : e.elite ? 240 : 200)) e.aggro = 1;
+  if (e.aggro && d > (e.worldBoss ? 780 : 560)) (e.aggro = 0), (e.returning = true);
+  if (e.worldBoss && e.aggro) {
+    g.map.center = e.arena; // (boss attacks that work round "the room's centre" use its arena)
+    if (!e.announced) (e.announced = true), (g.banner = { text: e.def.name, sub: "区域首领 · " + (e.def.title || ""), t: 3, boss: true }), g.sound("boss");
+  }
   if (e.aggro) return true;
   e.anim += dt;
   e.t += dt;
@@ -539,7 +562,57 @@ export function worldAwake(g, e, dt) {
   }
   return false;
 }
+const dayKey = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+};
+function award(g, label, n, col = "#ffe36a") {
+  const ws = g.ws;
+  ws.loot[label] = (ws.loot[label] || 0) + n;
+  return `${label} +${n}`;
+}
+/** 局外养成: what the world hands out goes straight into the save (晶石, 宠物蛋, 淬灵露 / 流彩晶, 星砂, 宠物经验池, 角色经验) */
+function grant(g, kind, n) {
+  const m = load(), me = g.players.find((q) => q.local) || g.players[0];
+  if (kind === "gems") (m.tokens += n), save(), (g.ws.gems += n);
+  else if (kind === "egg_base" || kind === "egg_ur" || kind === "egg_hur") grantEggs(n, kind.slice(4));
+  else if (kind === "ur" || kind === "hur") {
+    const ps = petState();
+    ps.items[kind] = (ps.items[kind] || 0) + n;
+    save();
+  } else if (kind === "stars") (mineState().stars += n), save();
+  else if (kind === "pool") addPool(n);
+  else if (kind === "xp" && me) grantCharacterXP(me.cid, n);
+  return award(g, LOOT_NAME[kind], n);
+}
+export const LOOT_NAME = { gems: "晶石", egg_base: "宠物蛋", egg_ur: "UR 宠物蛋", egg_hur: "HUR 宠物蛋", ur: "淬灵露", hur: "流彩晶", stars: "星砂", pool: "宠物经验池", xp: "角色经验" };
+const roll = (table) => {
+  let x = Math.random();
+  for (const r of table) if ((x -= r[0]) < 0) return r.slice(1);
+  return table.at(-1).slice(1);
+};
+function showLoot(g, x, y, lines) {
+  lines.forEach((t, k) => g.after(k * 0.28, () => g.text(x, y - 50 - k * 4, t, k ? "#ffe36a" : "#7fe0ff", 1.15, 2)));
+}
 export function worldKilled(g, e) {
+  if (e.worldBoss && g.ws) {
+    // a region boss: today's kill (it is back tomorrow) and its loot
+    const ws = g.ws;
+    ws.bossDay[e.worldBoss - 1] = dayKey();
+    ws.bossesNow++;
+    g.map.center = g.map.spawn;
+    const lines = [grant(g, "gems", 200), grant(g, "xp", 300), grant(g, "ur", 2)];
+    lines.push(Math.random() < 0.25 ? grant(g, "egg_hur", 1) : grant(g, "egg_ur", 1));
+    if (Math.random() < 0.35) lines.push(grant(g, "hur", 1));
+    showLoot(g, e.x, e.y - 30, lines);
+    worldSaveNow(g);
+    return;
+  }
+  // an elite: a skill card for this visit's build (the world's chests give lasting rewards instead)
+  if (e.elite && g.ws) {
+    const p = e.lastBy ? g.player(e.lastBy) : null;
+    g.after(0.4, () => g.offerCards(p || g.players[0], 3));
+  }
   const st = g.ws?.chunks.get(e.chunk);
   if (!st) return;
   st.alive[e.slot] = false;
@@ -553,6 +626,14 @@ export function worldUpdate(g, dt) {
   ws.tick = (ws.tick || 0) - dt;
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
+  // 传送门: walk up to one to light it
+  for (const w of m.waypoints) if (!ws.gates.has(w.id) && Math.hypot(me.x - w.x, me.y - w.y) < 34) {
+    ws.gates.add(w.id);
+    g.text(w.x, w.y - 60, `${w.name} · 已点亮`, "#9ef0ff", 1.3, 1.8);
+    g.vfx("holy/sunburst", w.x, w.y - 20, { palette: ["#06121e", "#0a3a5a", "#1a7ab0", "#3ac0e8", "#9ef0ff", "#ffffff", "#ffffff", "#ffffff"] });
+    g.sound("portal", 0.3);
+    worldSaveNow(g);
+  }
   // chests: walk into one to open it
   for (const c of m.chests) {
     if (ws.opened.has(c.id) || Math.abs(me.x - c.x) > 40 || Math.abs(me.y - c.y) > 40) continue;
@@ -628,9 +709,47 @@ function boatSprite(g, x, y, sway) {
   r(-31, -13, 5, 1, "#f0c080"); r(26, -13, 5, 1, "#f0c080");
 }
 /** in the world, under the sprites: the boats (docked at the far side, or carrying you) and the boarding ring */
+function gateSprite(g, x, y, lit, t) {
+  const r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(Math.round(x + a), Math.round(y + b), w, h));
+  g.fillStyle = "rgba(10,8,20,0.35)";
+  g.beginPath();
+  g.ellipse(x, y + 8, 26, 9, 0, 0, Math.PI * 2);
+  g.fill();
+  r(-24, 0, 48, 10, "#1a1020"); r(-22, 1, 44, 7, "#8a8aa0"); r(-22, 1, 44, 2, "#c8c8dc"); // plinth
+  r(-20, -44, 10, 46, "#1a1020"); r(10, -44, 10, 46, "#1a1020"); // pillars
+  r(-18, -42, 6, 43, "#a8a8bc"); r(12, -42, 6, 43, "#a8a8bc"); r(-18, -42, 2, 43, "#dcdcec"); r(12, -42, 2, 43, "#dcdcec");
+  r(-22, -50, 44, 8, "#1a1020"); r(-20, -49, 40, 5, "#c8c8dc"); // lintel
+  const glow = lit ? 0.55 + 0.25 * Math.sin(t * 3) : 0.12;
+  g.fillStyle = lit ? `rgba(120,230,255,${glow})` : "rgba(140,140,170,0.25)";
+  g.fillRect(Math.round(x - 10), Math.round(y - 40), 20, 40);
+  const cy = y - 24 + Math.sin(t * 2) * 2;
+  r(-5, cy - y - 8, 10, 16, "#1a1020"); r(-3, cy - y - 6, 6, 12, lit ? "#9ef0ff" : "#7a7a90"); r(-3, cy - y - 6, 2, 5, "#ffffff");
+}
+function flagSprite(g, x, y, t) {
+  const r = (a, b, w, h, c) => ((g.fillStyle = c), g.fillRect(Math.round(x + a), Math.round(y + b), w, h));
+  g.fillStyle = "rgba(10,8,20,0.35)";
+  g.beginPath();
+  g.ellipse(x, y + 2, 10, 4, 0, 0, Math.PI * 2);
+  g.fill();
+  r(-2, -46, 4, 48, "#1a1020"); r(-1, -45, 2, 46, "#e8d8b0");
+  for (let k = 0; k < 18; k++) {
+    const w = Math.round(Math.sin(t * 6 - k * 0.5) * 2);
+    r(1 + k, -44 + w, 1, 14, k % 6 < 3 ? "#ff6ab8" : "#ff9ad0");
+  }
+  r(1, -45, 18, 1, "#1a1020");
+}
 export function drawWorldFloor(g, game, me, t) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries) return;
+  const near = (o, k = 700) => Math.abs(o.x - me.x) < k && Math.abs(o.y - me.y) < k * 0.7;
+  // a boss arena: a dark ring on the ground
+  for (const B of m.bosses) if (near(B, 800)) {
+    g.strokeStyle = "rgba(80,10,40,0.35)";
+    g.lineWidth = 6;
+    g.beginPath();
+    g.ellipse(B.x, B.y, 9 * T - 10, 7 * T - 10, 0, 0, Math.PI * 2);
+    g.stroke();
+  }
   for (const f of m.ferries) {
     if (ws.ride) boatSprite(g, me.x, me.y + 6, Math.sin(t * 3) * 1);
     else {
@@ -653,10 +772,20 @@ export function drawWorldFloor(g, game, me, t) {
     g.stroke();
   }
 }
+/** the world's standing things (传送门, your flag), y-sorted with the characters by the renderer */
+export function worldSprites(game, me) {
+  const m = game.map, ws = game.ws, out = [];
+  if (!ws || !me) return out;
+  const near = (o) => Math.abs(o.x - me.x) < 520 && Math.abs(o.y - me.y) < 340;
+  for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
+  if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
+  return out;
+}
 /** labels over the piers (screen text drawn by the renderer's outlined text) */
 export function worldLabels(R, g, game, me) {
   const m = game.map, ws = game.ws;
   if (!ws || !m.ferries || ws.ride) return;
+  for (const w of m.waypoints) if (Math.abs(me.x - w.x) < 420 && Math.abs(me.y - w.y) < 260) R.text(g, w.name, w.x, w.y - 64, ws.gates.has(w.id) ? "#9ef0ff" : "#c8c8dc", 11);
   for (const f of m.ferries) for (const at of [f.a, f.b]) {
     if (Math.abs(me.x - at.x) > 420 || Math.abs(me.y - at.y) > 260) continue;
     const near = ws.hint && ws.hint.at === at;
@@ -692,7 +821,7 @@ function residents(g, ws, m, alive) {
     }
   }
   for (const e of g.enemies) {
-    if (!e.chunk || e.aggro || e.dead) continue;
+    if (!(e.chunk || e.worldBoss) || e.aggro || e.dead) continue;
     let d = 1e9;
     for (const p of alive) d = Math.min(d, Math.hypot(p.x - e.x, p.y - e.y));
     if (d < 1400) continue;
@@ -700,6 +829,20 @@ function residents(g, ws, m, alive) {
     e.silent = true;
     const st = ws.chunks.get(e.chunk);
     if (st) st.active = false;
+  }
+  // region bosses: one a region in its arena, back every day (local date) after it falls
+  const today = dayKey();
+  for (const B of m.bosses) {
+    if (ws.bossDay[B.id] === today || g.enemies.some((e) => e.worldBoss === B.id + 1)) continue;
+    let d = 1e9;
+    for (const p of alive) d = Math.min(d, Math.hypot(p.x - B.x, p.y - B.y));
+    if (d > 900) continue;
+    const e = g.spawnEnemy(B.type, B.x, B.y, false, 0), mul = BIOMES[B.region].hp * 0.9; // (about a dungeon boss's life: the world's builds are thinner)
+    e.hp = e.maxHp = e.hp * mul;
+    e.home = { x: B.x, y: B.y };
+    e.arena = { x: B.x, y: B.y };
+    e.worldBoss = B.id + 1;
+    e.aggro = 0;
   }
   // a chunk whose residents are all gone (despawned or killed) can come back later
   const live = new Set();
@@ -713,16 +856,51 @@ function openWorldChest(g, c, p) {
   g.vfx("pickups/chest-open", c.x, c.y + 10, {});
   g.sound("pickup");
   for (let i = 0; i < (c.gold ? 10 : 5); i++) g.spawnCoin(c.x, c.y);
-  if (c.gold) {
-    const m = load(), n = 40;
-    m.tokens += n;
-    save();
-    ws.gems += n;
-    g.text(c.x, c.y - 40, `晶石 +${n}`, "#7fe0ff", 1.3, 1.8);
-  }
-  g.offerCards(p, 3, c.gold ? "SR" : null);
+  // lasting rewards (no skill cards: that is what the dungeon's chests are for)
+  const lines = c.gold
+    ? [grant(g, "gems", 60), grant(g, "xp", 120), grant(g, ...roll([[0.35, "ur", 2], [0.3, "egg_ur", 1], [0.2, "hur", 1], [0.1, "stars", 10], [0.05, "egg_hur", 1]]))]
+    : [grant(g, "gems", 20), grant(g, ...roll([[0.45, "pool", 60], [0.25, "stars", 3], [0.15, "ur", 1], [0.1, "egg_base", 1], [0.05, "egg_ur", 1]]))];
+  showLoot(g, c.x, c.y, lines);
   worldSaveNow(g);
 }
+// ---------------------------------------------------------------- travel: 回营地 / 旗帜 / 传送门
+export const inCombat = (g) => g.enemies.some((e) => e.aggro && !e.dead);
+/** jump to a point (the map panel's buttons); refused while something is chasing you or on the boat */
+export function worldTeleport(g, to, name) {
+  const me = g.players.find((q) => q.local) || g.players[0];
+  if (!me || !g.ws || g.ws.ride) return "坐船中不能传送";
+  if (me.downed) return "倒地中不能传送";
+  if (inCombat(g)) return "战斗中不能传送";
+  g.vfx("arcane/blink-out", me.x, me.y - 10, {});
+  g.players.forEach((p, i) => {
+    p.x = to.x + (i % 2) * 26;
+    p.y = to.y + 18 + (i >> 1) * 26;
+    p.invuln = Math.max(p.invuln || 0, 1);
+    if (p.mounted && p.pet?.id === "phoenix") Object.assign(p.pet, { x: p.x, y: p.y });
+  });
+  for (const p of g.players) if (p.pet && !p.mounted) Object.assign(p.pet, { x: p.x - 16, y: p.y + 10, route: [], nav: null });
+  g.bullets = g.bullets.filter((b) => b.side !== "e");
+  g.vfx("arcane/blink-in", me.x, me.y - 10, {});
+  g.sound("portal", 0.3);
+  g.banner = { text: name, sub: "传送完成", t: 1.6 };
+  revealAround(g);
+  worldSaveNow(g);
+  return null;
+}
+/** plant (or move) your flag where you stand: travel back to it later, this visit or the next */
+export function placeFlag(g) {
+  const me = g.players.find((q) => q.local) || g.players[0], m = g.map;
+  if (!me || g.ws.ride) return "坐船中不能插旗";
+  if (me.downed) return "倒地中不能插旗";
+  const i = tileIdx(m, me.x, me.y);
+  if (m.t[i] !== F && m.t[i] !== BUSH) return "这里不能插旗";
+  g.ws.flag = { x: Math.round(me.x), y: Math.round(me.y) };
+  g.text(me.x, me.y - 70, "插下旗帜", "#ff8ad8", 1.2, 1.4);
+  g.sound("pickup");
+  worldSaveNow(g);
+  return null;
+}
+
 /** everyone down: wake up at the camp a moment later, with a third of the gold gone */
 export function worldRespawn(g) {
   const m = g.map;
@@ -777,46 +955,32 @@ function fogMap(ws) {
   }
   return fogCv;
 }
-export function drawMinimap(g, game, me) {
-  const m = game.map, ws = game.ws;
-  if (!ws || !me) return;
-  const S = 64, X = 12, Y = 50, span = 96; // under the coin row, top-left (the right side holds the ult and mount buttons); 96×96 tiles round the player
+/** the HUD minimap: a small canvas in the top-left corner (drawn ~8 times a second, not every frame); tap → the world map */
+let miniT = 0;
+export function drawMiniHud(game, me, now) {
+  const cv = document.querySelector(".hud .wmini");
+  if (!cv || !game.ws || !me || now - miniT < 120) return;
+  miniT = now;
+  const m = game.map, ws = game.ws, g = cv.getContext("2d"), S = cv.width, span = 80, k = S / span;
   const tx = Math.max(0, Math.min(m.W - span, Math.floor(me.x / T) - span / 2)), ty = Math.max(0, Math.min(m.H - span, Math.floor(me.y / T) - span / 2));
-  g.save();
   g.imageSmoothingEnabled = false;
-  g.fillStyle = "#140e22";
-  g.fillRect(X - 3, Y - 3, S + 6, S + 6);
-  g.drawImage(baseMap(m), tx, ty, span, span, X, Y, S, S);
-  g.drawImage(fogMap(ws), tx / 4, ty / 4, span / 4, span / 4, X, Y, S, S);
-  const k = S / span;
-  for (const c of m.chests) {
-    if (ws.opened.has(c.id)) continue;
-    const cx = c.x / T - tx, cy = c.y / T - ty;
-    if (cx < 0 || cy < 0 || cx >= span || cy >= span || !ws.fog[Math.floor(c.y / T / 4) * FOG + Math.floor(c.x / T / 4)]) continue;
-    g.fillStyle = c.gold ? "#ffd84a" : "#e0a050";
-    g.fillRect(X + Math.round(cx * k) - 1, Y + Math.round(cy * k) - 1, 3, 3);
-  }
-  for (const f of m.ferries || []) for (const at of [f.a, f.b]) {
-    const fx = at.x / T - tx, fy = at.y / T - ty;
-    if (fx >= 0 && fy >= 0 && fx < span && fy < span) (g.fillStyle = "#9ef0ff"), g.fillRect(X + Math.round(fx * k) - 1, Y + Math.round(fy * k) - 1, 3, 3);
-  }
-  const sx = m.spawn.x / T - tx, sy = m.spawn.y / T - ty;
-  if (sx >= 0 && sy >= 0 && sx < span && sy < span) (g.fillStyle = "#7fe0ff"), g.fillRect(X + Math.round(sx * k) - 2, Y + Math.round(sy * k) - 2, 4, 4);
-  for (const e of game.enemies) {
-    if (!e.aggro) continue;
-    const ex = e.x / T - tx, ey = e.y / T - ty;
-    if (ex >= 0 && ey >= 0 && ex < span && ey < span) (g.fillStyle = "#ff4a5a"), g.fillRect(X + Math.round(ex * k), Y + Math.round(ey * k), 2, 2);
-  }
-  g.fillStyle = "#ffffff";
-  g.fillRect(X + Math.round((me.x / T - tx) * k) - 1, Y + Math.round((me.y / T - ty) * k) - 1, 3, 3);
-  g.strokeStyle = "#0c0814";
-  g.lineWidth = 2;
-  g.strokeRect(X - 2, Y - 2, S + 4, S + 4);
-  g.strokeStyle = "#fff6c0";
-  g.lineWidth = 1;
-  g.strokeRect(X - 0.5, Y - 0.5, S + 1, S + 1);
-  g.restore();
+  g.drawImage(baseMap(m), tx, ty, span, span, 0, 0, S, S);
+  g.drawImage(fogMap(ws), tx / 4, ty / 4, span / 4, span / 4, 0, 0, S, S);
+  const dot = (x, y, c, r = 2) => {
+    const X = (x / T - tx) * k, Y = (y / T - ty) * k;
+    if (X >= -r && Y >= -r && X < S + r && Y < S + r) (g.fillStyle = c), g.fillRect(Math.round(X - r), Math.round(Y - r), r * 2 + 1, r * 2 + 1);
+  };
+  const seen = (o) => ws.fog[Math.floor(o.y / T / 4) * FOG + Math.floor(o.x / T / 4)];
+  for (const c of m.chests) if (!ws.opened.has(c.id) && seen(c)) dot(c.x, c.y, c.gold ? "#ffd84a" : "#e0a050", 1.5);
+  for (const f of m.ferries || []) for (const at of [f.a, f.b]) if (seen(at)) dot(at.x, at.y, "#9ef0ff", 2);
+  for (const w of m.waypoints) dot(w.x, w.y, ws.gates.has(w.id) ? "#3ac0e8" : "#8a8aa0", 2.5);
+  for (const B of m.bosses) if (ws.bossDay[B.id] !== dayKey()) dot(B.x, B.y, "#ff3a6a", 2.5);
+  if (ws.flag) dot(ws.flag.x, ws.flag.y, "#ff6ab8", 2.5);
+  dot(m.spawn.x, m.spawn.y, "#7fe0ff", 3);
+  for (const e of game.enemies) if (e.aggro) dot(e.x, e.y, "#ff4a5a", 1);
+  dot(me.x, me.y, "#ffffff", 2.5);
 }
+export { baseMap, fogMap, FOG, dayKey };
 /** the lobby card: the whole world, unexplored parts dark */
 let prevKey = null, prevUrl = null;
 export function worldPreview() {

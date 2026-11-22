@@ -396,6 +396,8 @@ export const app = {
     m.stats.reactions += rs.reactions;
     save();
     const extras = [["本次晶石", `+${tokens + ws.gems}<i class="cur gem"></i>`]];
+    // what the chests and bosses handed out (already saved on the spot)
+    for (const [k, v] of Object.entries(ws.loot || {})) if (k !== "晶石") extras.push([k, `+${v}`]);
     if (gold) extras.push(["金币兑换", `${this.me.coins} 金币 → ${gold}<i class="cur gem"></i>`]);
     const xp = grantCharacterXP(this.me.cid, sessionExperience({ seconds: this.progressSession?.seconds, rooms: 0, bosses: 0, win: false }));
     if (xp.gained) extras.push([xp.after.level > xp.before.level ? "角色升级" : "角色经验", `+${xp.gained} · Lv.${xp.after.level}`]);
@@ -405,7 +407,7 @@ export const app = {
     const met = recordCodex(g.seen, g.killedTypes);
     if (met.length) extras.push(["📖 怪物图鉴", `新收录 ${met.length} 种`]);
     sfx("win");
-    const rows = [["击败敌人", rs.kills], ["精英", rs.elites], ["本次宝箱", ws.chestsNow], ["已开宝箱", `${ws.opened.size} / ${g.map.chests.length}`], ["造成伤害", Math.round(rs.dmg)], ["技能卡", Object.keys(this.me.cards).length]];
+    const rows = [["击败敌人", rs.kills], ["区域首领", ws.bossesNow], ["本次宝箱", ws.chestsNow], ["已开宝箱", `${ws.opened.size} / ${g.map.chests.length}`], ["造成伤害", Math.round(rs.dmg)], ["技能卡", Object.keys(this.me.cards).length]];
     UI.showResult({ title: "离开梦境大陆", sub: `探索度 ${explored(ws.fog)}% · 下次从这里继续`, rows, extras, tokens: tokens + ws.gems, win: true, cid: this.me.cid }, () => this.startSolo(), () => this.toLobby());
   },
   endPvp() {

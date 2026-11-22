@@ -11,7 +11,7 @@ import { DRAGON_FIREBALL, FOX_RIDE_RANGE } from './petdata.js';
 import { petTint } from "./petskins.js";
 import { flyingMount } from './petcombat.js';
 import { NPCS } from "./route.js";
-import { drawWorldGround, drawMinimap, tileTheme, tileHazard, wallTheme, refreshWorldTiles, drawWorldFloor, worldLabels } from "./world.js";
+import { drawWorldGround, drawMiniHud, tileTheme, tileHazard, wallTheme, refreshWorldTiles, drawWorldFloor, worldLabels, worldSprites } from "./world.js";
 import { verdictCells } from "./enemies.js";
 import { drawTitlePlate } from "./titles.js";
 
@@ -157,6 +157,7 @@ export class Renderer {
     if (m.chests && game.ws) for (const c of m.chests) if (!game.ws.opened.has(c.id) && c.x > vx0 && c.x < vx1 && c.y > vy0 && c.y < vy1) list.push({ y: c.y + 8, k: 8, o: c });
     if (game.shovelItem && !game.shovelItem.got) list.push({ y: game.shovelItem.y, k: 9, o: game.shovelItem });
     if (game.npc) list.push({ y: game.npc.y + 8, k: 11, o: game.npc });
+    if (m.world) for (const o of worldSprites(game, me)) list.push({ y: o.y, k: 12, o }); // (梦境大陆: 传送门, your flag)
     list.sort((a, b) => a.y - b.y);
     for (const d of list) {
       switch (d.k) {
@@ -197,6 +198,7 @@ export class Renderer {
         case 9: this.drawShovelDrop(g, d.o, game.time); break;
         case 10: drawPet(g, d.o, this.t); break;
         case 11: this.drawNpc(g, d.o); break;
+        case 12: d.o.draw(g, this.t); break;
       }
     }
     drawPetFields(g,game,this.t,'front');
@@ -232,7 +234,7 @@ export class Renderer {
     }
     g.setTransform(RS, 0, 0, RS, 0, 0);
     this.drawEdgeArrows(g, game, me, cx, cy);
-    if (m.world) drawMinimap(g, game, me);
+    if (m.world) drawMiniHud(game, me, performance.now());
     // 挑战 · 限时清场: the countdown under the top bar
     if (game.room && game.room.timeLimit && game.phase === "fight" && !game.room.failed) {
       const left = Math.max(0, Math.ceil(game.room.timeLimit - (game.roomT || 0)));

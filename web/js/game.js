@@ -886,7 +886,7 @@ export class Game {
     this.shake = Math.max(this.shake, e.elite ? 6 : 2);
     if (this.mode === "solo") this.hitStop = Math.max(this.hitStop || 0, e.elite || e.boss ? 0.09 : 0.025);
     // last enemy of the last wave: a beat of slow motion
-    if (e.chunk) worldKilled(this, e);
+    if (e.chunk || e.worldBoss) worldKilled(this, e);
     if (this.mode === "solo" && this.phase === "fight" && !this.world && this.enemies.every((o) => o.dead) && this.wave >= (this.room.boss ? 0 : (this.room.waves || []).length - 1)) this.slowmo = 0.7;
     // drops
     const [c0, c1] = e.def.coin;
@@ -1188,7 +1188,7 @@ export class Game {
     this.vfx("explosions/plasma-explosion", e.x, e.y - 30, { palette: ["#1a0610", "#4a1028", "#8a2040", "#d04060", "#ff8090", "#ffd0d0", "#ffffff"] });
     this.after(0.5, () => this.vfx("ui/confetti", e.x, e.y - 40));
     this.sound("win");
-    for (const q of this.enemies) if (!q.dead) q.hp = 0, this.kill(q, null);
+    for (const q of this.enemies) if (!q.dead && !(this.world && q.home)) q.hp = 0, this.kill(q, null); // (梦境大陆: only its summons, not the residents around)
   }
 
   // ------------------------------------------------------------ bullets
