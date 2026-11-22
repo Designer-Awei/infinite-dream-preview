@@ -19,6 +19,7 @@ import { showDaily } from "./dailyui.js";
 import { dailyOf, checkedToday, streakNow } from "./daily.js";
 import { btn, toast, clear, showNet, showHelp, showUnlock, uiRoot } from "./ui.js";
 import { app, playMode, mapUnlocked, endlessUnlocked } from "./main.js";
+import { worldPreview, worldExplored } from "./world.js";
 import { showPets } from "./petui.js";
 import { drawEgg } from "./petwh.js";
 import { petPortrait } from "./petdata.js";
@@ -582,9 +583,9 @@ export function showLoadout(cid, onClose) {
 }
 
 // ------------------------------------------------------------------ mode carousel (swipe left/right on the lobby)
-const MODE_IDS = [...MAP_ORDER, "endless", "daily"]; // daily: 每日梦境 (opens its panel from the play button)
+const MODE_IDS = [...MAP_ORDER, "endless", "world", "daily"]; // world: 梦境大陆 (open world); daily: 每日梦境 (opens its panel from the play button)
 let modesAbort = null;
-const modeOpen = (id) => (id === "daily" ? true : id === "endless" ? endlessUnlocked() : mapUnlocked(id));
+const modeOpen = (id) => (id === "daily" || id === "world" ? true : id === "endless" ? endlessUnlocked() : mapUnlocked(id));
 let modeInit = false;
 function renderModes(s) {
   const m = load();
@@ -601,6 +602,8 @@ function renderModes(s) {
       const dd = dailyOf(), done = checkedToday(), sk = streakNow();
       return `<div class="mcard pv daily" data-id="daily"><img class="mc-map" src="${mapPreview(dd.map)}" alt="" draggable="false"><img class="mc-face" src="assets/head_${dd.cid}.png" alt="" draggable="false"><img class="mc-cal" src="assets/ui/daily.png" alt="" draggable="false"><span class="mc-k">每日</span><div class="mc-info"><b class="mc-t">每日梦境</b><span class="mc-foot">${done ? `今日已打卡 · 连续 ${sk} 天` : sk ? `连续 ${sk} 天 · 今日未打卡` : "今日未打卡"}</span></div></div>`;
     }
+    if (id === "world")
+      return `<div class="mcard pv world" data-id="world"><img class="mc-map" src="${worldPreview()}" alt="" draggable="false"><span class="mc-k">大陆</span><div class="mc-info"><b class="mc-t">梦境大陆</b><span class="mc-foot">探索 ${worldExplored()}%</span></div></div>`;
     if (id === "endless")
       return `<div class="mcard pv${ok ? "" : " lock"}" data-id="endless"><img class="mc-map" src="${mapPreview("endless")}" alt="" draggable="false"><span class="mc-k">无尽</span><div class="mc-info"><b class="mc-t">无尽回廊</b><span class="mc-foot">${ok ? `最佳 ${m.stats.endlessBest || 0} 层` : "🔒 完成任意一局解锁"}</span></div></div>`;
     const d = MAPS[id], clears = (m.maps || {})[id] || 0;
@@ -608,7 +611,7 @@ function renderModes(s) {
   }).join("");
   dots.innerHTML = MODE_IDS.map(() => "<i></i>").join("");
   const cards = [...track.children];
-  let cur = Math.max(0, MODE_IDS.indexOf(m.playMode?.daily ? "daily" : pm.endless ? "endless" : pm.map));
+  let cur = Math.max(0, MODE_IDS.indexOf(m.playMode?.daily ? "daily" : m.playMode?.world ? "world" : pm.endless ? "endless" : pm.map));
   const mark = (i) => {
     cards.forEach((c, k) => c.classList.toggle("on", k === i));
     [...dots.children].forEach((d, k) => d.classList.toggle("on", k === i));
@@ -620,7 +623,7 @@ function renderModes(s) {
     const id = MODE_IDS[i];
     // remember the mode even when it is still locked (the play button says so); no lobby re-render
     const keepMap = (m.playMode && m.playMode.map) || "grass";
-    m.playMode = id === "daily" ? { map: keepMap, endless: false, daily: true } : id === "endless" ? { map: keepMap, endless: true } : { map: id, endless: false };
+    m.playMode = id === "daily" ? { map: keepMap, endless: false, daily: true } : id === "world" ? { map: keepMap, endless: false, world: true } : id === "endless" ? { map: keepMap, endless: true } : { map: id, endless: false };
     save();
     sfx("card");
     updatePlay(s);
@@ -756,12 +759,12 @@ function updatePlay(s, cid) {
   const m = load(), pb = q(".play-btn", s);
   if (!pb) return;
   if (cid) s.dataset.cid = cid;
-  const pm = m.playMode || {}, id = pm.daily ? "daily" : pm.endless ? "endless" : pm.map || "grass";
+  const pm = m.playMode || {}, id = pm.daily ? "daily" : pm.world ? "world" : pm.endless ? "endless" : pm.map || "grass";
   const charOk = pm.daily || m.chars.includes(s.dataset.cid || m.sel), mOk = modeOpen(id); // (the daily brings its own girl)
   const saved = loadRun(); // 冒险续玩 takes the button over whatever is selected
   pb.disabled = !saved && (!charOk || !mOk);
   pb.classList.toggle("resume", !!saved);
-  q(".pt", pb).textContent = saved ? "继续冒险" : pm.daily ? "每日梦境" : !charOk ? "未解锁" : !mOk ? "模式未解锁" : "开始冒险";
+  q(".pt", pb).textContent = saved ? "继续冒险" : pm.daily ? "每日梦境" : !charOk ? "未解锁" : !mOk ? "模式未解锁" : pm.world ? "进入大陆" : "开始冒险";
 
 }
 

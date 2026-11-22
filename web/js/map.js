@@ -237,7 +237,7 @@ export function los(m, ax, ay, bx, by) {
 
 /** BFS distance field from target positions (array of {x,y}) over walkable tiles. */
 export function flowField(m, targets) {
-  const { W, H } = m, D = new Int16Array(W * H).fill(-1), q = [];
+  const { W, H } = m, D = new Int16Array(W * H).fill(-1), q = [], max = m.flowMax || 0; // flowMax: 梦境大陆 stops the search that many tiles out
   for (const p of targets) {
     const i = Math.floor(p.y / T) * W + Math.floor(p.x / T);
     if (i >= 0 && i < W * H && D[i] < 0) {
@@ -248,6 +248,7 @@ export function flowField(m, targets) {
   let h = 0;
   while (h < q.length) {
     const i = q[h++], x = i % W, y = (i / W) | 0;
+    if (max && D[i] >= max) continue;
     for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
       const nx = x + dx, ny = y + dy, j = ny * W + nx;
       if (nx < 0 || ny < 0 || nx >= W || ny >= H || D[j] >= 0 || SOLID(m.t[j])) continue;
