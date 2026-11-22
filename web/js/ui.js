@@ -401,7 +401,7 @@ export function updateHud(game, me) {
   set("banner", bn, () => {
     const slot = hud.querySelector(".banner-slot");
     slot.innerHTML = "";
-    if (game.banner) slot.appendChild(el("div", "banner outline" + (game.banner.boss ? " boss" : ""), game.banner.boss ? `<i class="bb-bar t"></i><i class="bb-bar b"></i><small class="bb-kick">首领登场</small><b>${game.banner.text}</b><small>${game.banner.sub || ""}</small>` : `<b>${game.banner.text}</b><small>${game.banner.sub || ""}</small>`));
+    if (game.banner) slot.appendChild(el("div", "banner outline" + (game.banner.boss ? " boss" : ""), game.banner.boss ? `<small class="bb-kick">首领登场</small><b>${game.banner.text}</b><small>${game.banner.sub || ""}</small>` : `<b>${game.banner.text}</b><small>${game.banner.sub || ""}</small>`));
   });
   // cooldowns (PC widgets + touch buttons)
   const c = CHARS[me.cid];

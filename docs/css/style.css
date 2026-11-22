@@ -2589,14 +2589,11 @@ body.touchmode .pet-ride-btn small { display:none; }
 .c-evo { margin-top: 3px; font-size: 11px; line-height: 1.25; color: #d62aa8; -webkit-text-stroke: 0; text-shadow: none; }
 .card2.UR .c-evo { color: #8a2aa0; }
 
-/* boss name card: letterbox bars slide in, a red kicker, the name big, its title under it */
+/* boss name card: a red kicker, the name big, its title under it */
 .banner.boss { top: 30%; animation: bossCardIn .6s cubic-bezier(.2,1.4,.4,1); }
 .banner.boss b { font-size: 46px; padding: 4px 48px; color: #fff; background: linear-gradient(90deg, transparent, rgba(60,6,20,.82) 18%, rgba(60,6,20,.82) 82%, transparent); letter-spacing: 4px; }
 .banner.boss small { font-size: 16px; color: #ffd0d8; }
 .banner.boss .bb-kick { color: #ff5a6a; font-size: 13px; letter-spacing: 6px; margin: 0 0 4px; }
-.bb-bar { position: fixed; left: 0; right: 0; height: 9vh; background: #08040c; animation: bbBar 3s ease-in-out forwards; pointer-events: none; }
-.bb-bar.t { top: 0; transform-origin: top; } .bb-bar.b { bottom: 0; transform-origin: bottom; }
-@keyframes bbBar { 0% { transform: scaleY(0); } 12%, 82% { transform: scaleY(1); } 100% { transform: scaleY(0); } }
 @keyframes bossCardIn { 0% { transform: scale(1.6); opacity: 0; filter: blur(4px); } 60% { transform: scale(.96); opacity: 1; filter: none; } 100% { transform: scale(1); } }
 
 /* 噩梦契约: a square chip beside 开始冒险, and its panel */

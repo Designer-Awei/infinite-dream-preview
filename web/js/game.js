@@ -317,7 +317,7 @@ export class Game {
     if (kind === "event") this.npc = { x: this.map.center.x - 5 * T, y: this.map.center.y - 20, id: NPCS[def.event] ? def.event : "altar", talked: false };
     const floor = this.endless ? `无尽回廊 · 第 ${idx + 1} 层` : `第 ${idx + 1} 层 · ${md.name}`;
     this.banner = { text: this.pvp ? `竞技场 · ${this.pvpRule.name}` : kind === "boss" ? (this.endless ? `第 ${idx + 1} 层 · 首领` : `首领 · ${(ENEMIES[def.boss] || ENEMIES.boss_eye).name}`) : kind === "shop" ? "补给站" : floor, sub: this.pvp ? this.pvpRule.goalText : kind === "shop" ? "扭蛋机 / 补给 · 准备好后进入传送门" : kind === "boss" ? "击败它！" : md.hazardText || "清除所有敌人", t: 2.4 };
-    // a boss arrives with a name card: letterbox bars, its name and title
+    // a boss arrives with a name card: its name and title
     if (kind === "boss" && !this.pvp) { const bd = ENEMIES[def.boss] || ENEMIES.boss_eye; this.banner = { text: bd.name, sub: (this.endless ? `第 ${idx + 1} 层 · ` : "") + (bd.title || "首领"), t: 3, boss: true }; }
     if (this.twinBoss) this.banner = { text: `${(ENEMIES[def.boss] || ENEMIES.boss_eye).name} ×2`, sub: "双首领 · 击败两只首领 · 奖励翻倍", t: 3, boss: true };
     if (def.event) this.banner = { text: EVENTS[def.event].name, sub: `走近${NPCS[def.event].name}，按攻击键交谈`, t: 2.4 };
