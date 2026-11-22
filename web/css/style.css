@@ -3010,3 +3010,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .pact-chip .outline { text-shadow: none; -webkit-text-stroke: 3px var(--ink); paint-order: stroke fill; }
 .pact-chip .pc-n.outline { -webkit-text-stroke-width: 4px; }
 .lb .lb-right .lb-play { gap: 4px; } /* (with the stats line shown, the button still ends level with the roster) */
+/* polish: the 委托 progress number fits its bar; every row button in the world's panels is the same width */
+.qt-bar { height: 15px; }
+.qt-bar em { line-height: 11px; font-size: 10px; }
+.wshop-p .st-it .btn.st-go, .hm-row .btn.st-go, .hm-build .hm-row .btn.st-go { width: 96px; flex: none; }

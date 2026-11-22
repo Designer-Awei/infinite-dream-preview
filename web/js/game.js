@@ -1056,6 +1056,7 @@ export class Game {
     }
     n = this.scaleHurt(n, src) + (this.pact.dmg ? 1 : 0); // 噩梦契约·凶猛噩梦
     p.lastHit = 0;
+    p.hurtAt = this.time; // (梦境大陆: 3 s without a hit = out of combat)
     this.runStats.hurt = (this.runStats.hurt || 0) + n;
     p.invuln = BAL.hurtInvuln + (p.tfx?.inv || 0); // 称号·地心之王
     p.hurtT = 0.3;

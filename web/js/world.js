@@ -754,8 +754,10 @@ export function worldEnter(g) {
     mats: [0, 1, 2, 3].map((k) => sv.mats?.[k] || 0), nodeDay: sv.nodeDay || {}, miles: sv.miles || [], shopArmed: true,
     cracked: (sv.cracked || []).filter((i) => m.cracked.has(i)), home: homeTick(homeState()), arm: {},
     quests: sv.quests?.day === dayKey() ? sv.quests : questsFor(dayKey()) };
-  const ok = sv.x != null && m.reach[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] && m.t[Math.floor(sv.y / T) * m.W + Math.floor(sv.x / T)] === F;
-  const sp = ok ? { x: sv.x, y: sv.y } : m.spawn;
+  // every visit starts at home, by the 派遣告示板 (the camp if that spot were ever blocked);
+  // your flag and the 传送门 take you back out
+  const H0 = m.home && { x: (m.home.board.x + m.home.quest.x) / 2, y: (m.home.board.y + m.home.quest.y) / 2 + 30 }, hi = H0 && tileIdx(m, H0.x, H0.y); // (between the board and the guild girl, clear of the NPCs)
+  const sp = H0 && m.t[hi] === F ? H0 : m.spawn;
   g.players.forEach((p, i) => ((p.x = sp.x + (i % 2) * 26), (p.y = sp.y + (i >> 1) * 26)));
   revealAround(g);
 }
@@ -1605,7 +1607,9 @@ function mounts(g, ws, m, dt) {
 // exploration milestones: [%, reward, amount, title]
 const MILES = [[10, "gems", 150], [25, "egg_ur", 1], [50, "hur", 1, "world_explorer"], [75, "egg_hur", 1], [100, "hur", 3, "world_cartographer"]];
 // ---------------------------------------------------------------- travel: 回营地 / 旗帜 / 传送门
-export const inCombat = (g) => g.enemies.some((e) => e.aggro && !e.dead);
+/** in combat = hurt in the last 3 seconds (anyone in the party); 3 s without taking damage is out of combat */
+export const COMBAT_HOLD = 3;
+export const inCombat = (g) => g.players.some((p) => !p.dead && p.hurtAt != null && g.time - p.hurtAt < COMBAT_HOLD);
 /** jump to a point (the map panel's buttons); refused while something is chasing you or on the boat */
 export function worldTeleport(g, to, name) {
   const me = g.players.find((q) => q.local) || g.players[0];
