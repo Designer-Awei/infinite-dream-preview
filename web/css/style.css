@@ -3014,3 +3014,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .qt-bar { height: 15px; }
 .qt-bar em { line-height: 11px; font-size: 10px; }
 .wshop-p .st-it .btn.st-go, .hm-row .btn.st-go, .hm-build .hm-row .btn.st-go { width: 96px; flex: none; }
+/* the mode card 2px taller, taken from the gap above it (its bottom, the tabs and the buttons stay put) */
+.lb .lb-right .lm-track { padding-top: 6px; }
+.guide.single .hp-main { flex: 1; }

@@ -117,14 +117,15 @@ export function showGuide(title, SECS, app, cls = "") {
   const nav = $(".hp-nav", md), main = $(".hp-main", md);
   const open = (i) => {
     nav.querySelectorAll("button").forEach((b, k) => b.classList.toggle("on", k === i));
-    main.innerHTML = `<div class="hp-t">${SECS[i][0]}</div>` + SECS[i][1];
+    main.innerHTML = (SECS.length > 1 ? `<div class="hp-t">${SECS[i][0]}</div>` : "") + SECS[i][1];
     main.scrollTop = 0;
   };
-  SECS.forEach(([t], i) => {
+  if (SECS.length > 1) SECS.forEach(([t], i) => {
     const b = el("button", "hp-tab", t);
     b.onclick = () => (sfx("click"), open(i));
     nav.appendChild(b);
   });
+  else (nav.remove(), md.classList.add("single")); // (one section: no tabs, the text takes the whole width)
   open(0);
   const restore = () => app && (app.paused = was);
   $(".x-btn", md).onclick = () => (sfx("click"), md.remove(), restore());
