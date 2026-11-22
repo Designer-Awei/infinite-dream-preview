@@ -1374,7 +1374,17 @@ export class Game {
     // 子弹时间 (完美闪避, solo): enemies, enemy shots and enemy zones run slow; players, pets and their shots don't
     const edt = this.witchT > 0 ? dt * 0.3 : dt;
     if (this.witchT > 0) this.witchT -= dt;
-    for (const e of this.enemies) if (!e.dead && (!this.world || worldAwake(this, e, edt))) updateEnemy(this, e, edt); // (梦境大陆: residents sleep until you come near)
+    for (const e of this.enemies) if (!e.dead && (!this.world || worldAwake(this, e, edt))) { // (梦境大陆: residents sleep until you come near)
+      const px = e.x, py = e.y;
+      updateEnemy(this, e, edt);
+      // 梦境大陆: no monster sets foot (or wing) on the water — a step, a knockback or a leap that would end there stops
+      // at the shore instead (a leap's landing spot is pulled back to where it stopped)
+      if (this.world && tileAt(this.map, e.x, e.y) === WATER) {
+        e.x = px; e.y = py;
+        if (e.lx !== undefined) (e.lx = e.ox = px), (e.ly = e.oy = py);
+        if (e.tx !== undefined) (e.tx = px), (e.ty = py);
+      }
+    }
     // lava burns walking enemies too
     if ((this.hazard === "lava" || this.world) && this.host)
       for (const e of this.enemies) if (!e.dead && !e.def.fly && e.spawnT <= 0 && mudAt(this.map, e.x, e.y) && this.hazardAt(e.x, e.y) === "lava" && (e.lavaCd || 0) < this.time) (e.lavaCd = this.time + 1), this.hit(e, 8, { noReact: true });

@@ -161,8 +161,6 @@ export function eventSprites(ws, out, imgs) {
     }
   } });
   else if (ev.kind === "trader") out.push({ y: ev.y + 10, draw: (g, t) => {
-    const im = imgs.trader;
-    g.fillStyle = "rgba(10,8,20,0.32)"; g.beginPath(); g.ellipse(ev.x, ev.y + 10, 20, 6, 0, 0, Math.PI * 2); g.fill();
-    if (im?.complete && im.naturalWidth) (g.imageSmoothingEnabled = false), g.drawImage(im, Math.round(ev.x - im.naturalWidth / 2), Math.round(ev.y + 12 - im.naturalHeight + Math.sin(t * 2) * 1));
+    imgs.npc(g, "trader", ev.x, ev.y + 12, t, 3.1);
   } });
 }

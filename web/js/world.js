@@ -234,14 +234,51 @@ export function buildWorld(seed) {
         }
       }
       const [x, y] = at(s0 + dir * 3);
-      return { x: x * T + T, y: y * T + T };
+      return { x: x * T + T, y: y * T + T, ox: ux * dir, oy: uy * dir }; // (ox, oy: out over the water, where the boat waits)
     };
     m.ferries.push({ a: pier(a1, 1), b: pier(b1, -1), name });
     return { a: at(a1 - 1), b: at(b1 + 1) };
   };
+  // a ferry between two islands of the same region (or any two shores): leave A's land along the line, cross the water
+  // to the next land; piers from both shores
+  const isleFerry = (A, B, name) => {
+    const l = Math.hypot(B.x - A.x, B.y - A.y), ux = (B.x - A.x) / l, uy = (B.y - A.y) / l, at = (s2) => [Math.round(A.x + ux * s2), Math.round(A.y + uy * s2)];
+    const wet = (s2) => { const [x, y] = at(s2); return m.t[y * W + x] === WATER; };
+    let a1 = 0;
+    while (a1 < l && !wet(a1 + 1)) a1++;
+    let b1 = a1 + 1;
+    while (b1 < l && wet(b1)) b1++;
+    if (b1 - a1 < 8 || b1 >= l) return;
+    const pier = (s0, dir) => {
+      for (let s3 = 1; s3 <= 3; s3++) {
+        const [x, y] = at(s0 + dir * s3);
+        for (const [dx, dy] of [[0, 0], [1, 0], [0, 1]]) {
+          const j = (y + dy) * W + x + dx;
+          if (m.t[j] === WATER) (m.t[j] = F), (m.road[j] = 2), (m.bdir[j] = Math.abs(ux) > Math.abs(uy) ? 1 : 0);
+        }
+      }
+      const [x, y] = at(s0 + dir * 3);
+      return { x: x * T + T, y: y * T + T, ox: ux * dir, oy: uy * dir };
+    };
+    m.ferries.push({ a: pier(a1, 1), b: pier(b1, -1), name });
+  };
   const hub = (P) => nudge(P.x, P.y, P.b);
   const G = PLATES[0], I = PLATES[1], L = PLATES[2], main = { x: isles[0][0], y: isles[0][1], b: 3 };
   const toIce = cross(G, I, "冰原长桥", 1), toLava = cross(G, L, "熔炉长桥", 2), toIsle = cross(G, main, "幻梦渡口", 3);
+  // more boat routes: the big isle to its two neighbours, and the grassland's south coast straight to the west isle
+  isleFerry(main, { x: isles[1][0], y: isles[1][1] }, "东屿渡口");
+  isleFerry(main, { x: isles[2][0], y: isles[2][1] }, "南屿渡口");
+  { // (from the grassland shore nearest the west isle: walk from the isle towards the grassland's middle to its coast)
+    const [bx, by] = isles[2], l = Math.hypot(G.x - bx, G.y - by);
+    for (let s2 = 0; s2 < l; s2++) {
+      const x = Math.round(bx + ((G.x - bx) / l) * s2), y = Math.round(by + ((G.y - by) / l) * s2);
+      if (m.biome[y * W + x] === 0 && m.t[y * W + x] !== WATER) {
+        const x2 = Math.round(x + ((G.x - bx) / l) * 3), y2 = Math.round(y + ((G.y - by) / l) * 3);
+        isleFerry({ x: x2, y: y2 }, { x: bx, y: by }, "草原南渡口");
+        break;
+      }
+    }
+  }
   const [gx, gy] = hub(G), [ix, iy] = hub(I), [lx, ly] = hub(L);
   path(sx, sy, gx, gy, 1);
   path(gx, gy, ...toIce.a, 2); path(...toIce.b, ix, iy, 3);
@@ -1009,6 +1046,17 @@ export function worldUpdate(g, dt) {
   if (ws.tick <= 0) (ws.tick = 0.25), residents(g, ws, m, alive);
   ferry(g, ws, m, me, dt);
   mounts(g, ws, m, dt);
+  // no monster ends a frame on the water, whatever moved it (a push from a crowd, a knockback, a blink): back to the
+  // last dry spot it stood on (the movement step already stops steps and leaps at the shore)
+  for (const e of g.enemies) {
+    if (e.dead) continue;
+    const i = tileIdx(m, e.x, e.y);
+    if (m.t[i] === WATER) {
+      const d = e.dry || e.home;
+      if (d) (e.x = d.x), (e.y = d.y);
+      if (e.lx !== undefined) (e.lx = e.ox = e.x), (e.ly = e.oy = e.y);
+    } else e.dry = { x: e.x, y: e.y };
+  }
   updateDrops(g, ws, me, dt);
   // 采集点: walk into one to gather it (back tomorrow)
   const today = dayKey();
@@ -1176,13 +1224,11 @@ export function drawWorldFloor(g, game, me, t) {
     g.ellipse(B.x, B.y, 9 * T - 10, 7 * T - 10, 0, 0, Math.PI * 2);
     g.stroke();
   }
-  for (const f of m.ferries) {
-    if (ws.ride) boatSprite(g, me.x, me.y + 6, Math.sin(t * 3) * 1);
-    else {
-      // the boat waits at whichever pier you are nearer
-      const near = Math.hypot(me.x - f.a.x, me.y - f.a.y) < Math.hypot(me.x - f.b.x, me.y - f.b.y) ? f.a : f.b;
-      boatSprite(g, near.x + 38, near.y + 30, Math.sin(t * 2) * 1.5);
-    }
+  if (ws.ride) boatSprite(g, me.x, me.y + 6, Math.sin(t * 3) * 1);
+  else for (const f of m.ferries) {
+    // the boat waits on the water just past the end of whichever pier you are nearer
+    const P = Math.hypot(me.x - f.a.x, me.y - f.a.y) < Math.hypot(me.x - f.b.x, me.y - f.b.y) ? f.a : f.b;
+    if (Math.abs(P.x - me.x) < 700 && Math.abs(P.y - me.y) < 480) boatSprite(g, P.x + P.ox * 60, P.y + P.oy * 52 + 8, Math.sin(t * 2) * 1.5);
   }
   const h = ws.hint;
   if (h && !ws.ride) {
@@ -1201,11 +1247,27 @@ export function drawWorldFloor(g, game, me, t) {
 // 家园 art (PixelLab, static): buildings on their plots once built, the board and the steward; an unbuilt plot is a
 // staked-out patch of earth drawn in code
 const HOME_IMG = Object.fromEntries(["steward", "quest", "hut", "store", "spring", "tower", "board", "trader", "meteor"].map((k) => [k, typeof Image === "undefined" ? null : Object.assign(new Image(), { src: `assets/home/${k}.png` })]));
-function img(g, k, x, y, bob = 0) { // feet at (x, y)
+function img(g, k, x, y, shadow = 0.42) { // feet at (x, y), on a soft ground shadow
   const im = HOME_IMG[k];
   if (!im?.complete || !im.naturalWidth) return;
+  if (shadow) (g.fillStyle = "rgba(10,8,20,0.3)"), g.beginPath(), g.ellipse(x, y - 3, im.naturalWidth * shadow, Math.max(6, im.naturalWidth * 0.1), 0, 0, Math.PI * 2), g.fill();
   g.imageSmoothingEnabled = false;
-  g.drawImage(im, Math.round(x - im.naturalWidth / 2), Math.round(y - im.naturalHeight + bob));
+  g.drawImage(im, Math.round(x - im.naturalWidth / 2), Math.round(y - im.naturalHeight));
+}
+// an NPC standing idle (static art, no frames): breathing — a slow stretch from the feet — and every few seconds she
+// turns to look the other way; a shadow under her
+export function npcImg(g, k, x, y, t, seed = 0) {
+  const im = HOME_IMG[k];
+  if (!im?.complete || !im.naturalWidth) return;
+  const w = im.naturalWidth, h = im.naturalHeight, br = Math.sin(t * 2.3 + seed), flip = Math.floor((t + seed * 2.7) / 4.5) % 3 === 2 ? -1 : 1;
+  g.fillStyle = "rgba(10,8,20,0.32)";
+  g.beginPath(); g.ellipse(x, y - 2, w * 0.3 * (1 - br * 0.03), 5, 0, 0, Math.PI * 2); g.fill();
+  g.save();
+  g.translate(Math.round(x), Math.round(y));
+  g.scale(flip * (1 - br * 0.012), 1 + br * 0.024);
+  g.imageSmoothingEnabled = false;
+  g.drawImage(im, -Math.round(w / 2), -h);
+  g.restore();
 }
 function plotSprite(g, x, y) {
   g.fillStyle = "#1a1020"; g.fillRect(x - 42, y - 22, 84, 36);
@@ -1217,9 +1279,9 @@ function plotSprite(g, x, y) {
 function homeSprites(m, ws, out) {
   const H = ws.home, P = m.home.plots;
   pastureSprites(m, out, MAT_IMG);
-  out.push({ y: m.home.board.y + 14, draw: (g) => img(g, "board", m.home.board.x, m.home.board.y + 16) });
-  out.push({ y: m.home.steward.y + 10, draw: (g, t) => img(g, "steward", m.home.steward.x, m.home.steward.y + 12, Math.round(Math.sin(t * 2) * 1)) });
-  out.push({ y: m.home.quest.y + 10, draw: (g, t) => img(g, "quest", m.home.quest.x, m.home.quest.y + 12, Math.round(Math.sin(t * 2 + 1) * 1)) });
+  out.push({ y: m.home.board.y + 14, draw: (g) => img(g, "board", m.home.board.x, m.home.board.y + 16, 0.4) });
+  out.push({ y: m.home.steward.y + 10, draw: (g, t) => npcImg(g, "steward", m.home.steward.x, m.home.steward.y + 12, t, 0) });
+  out.push({ y: m.home.quest.y + 10, draw: (g, t) => npcImg(g, "quest", m.home.quest.x, m.home.quest.y + 12, t, 1.7) });
   for (const k of ["hut", "store", "spring", "tower"]) {
     const o = P[k];
     if (H.lv[k] > 0) out.push({ y: o.y + (k === "spring" ? -10 : 18), draw: (g) => img(g, k, o.x, o.y + (k === "spring" ? 30 : 20)) });
@@ -1306,7 +1368,7 @@ export function worldSprites(game, me) {
   for (const n of m.nodes) if (ws.nodeDay[n.id] !== today && near(n)) out.push({ y: n.y, draw: (g, t) => nodeSprite(g, n.x, n.y, n.b, t) });
   if (near(m.shop)) out.push({ y: m.shop.y + 22, draw: (g, t) => shopSprite(g, m.shop.x, m.shop.y, t) });
   if (near({ x: m.home.pen.x1, y: m.home.pen.y1 })) homeSprites(m, ws, out);
-  if (ws.ev && near(ws.ev)) eventSprites(ws, out, HOME_IMG);
+  if (ws.ev && near(ws.ev)) eventSprites(ws, out, { ...HOME_IMG, npc: npcImg });
   for (const w of m.waypoints) if (near(w)) out.push({ y: w.y + 6, draw: (g, t) => gateSprite(g, w.x, w.y, ws.gates.has(w.id), t) });
   if (ws.flag && near(ws.flag)) out.push({ y: ws.flag.y, draw: (g, t) => flagSprite(g, ws.flag.x, ws.flag.y, t) });
   return out;
@@ -1521,7 +1583,7 @@ function mounts(g, ws, m, dt) {
       }
     } else {
       p.stam = Math.min(STAMINA, p.stam + dt * (wet ? 0 : 3));
-      if (!wet && !zapTouch(m, p)) p.lastLand = { x: p.x, y: p.y };
+      if (!wet && !zapTouch(m, p) && m.reach[i] && !BIOMES[m.biome[i]].locked) p.lastLand = { x: p.x, y: p.y }; // (never a reserved continent's shore)
     }
     if (!m.zap.size) continue;
     if (zapTouch(m, p) && !foxRider(p) && !p.downed) {
