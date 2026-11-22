@@ -650,7 +650,13 @@ function renderModes(s) {
   let t = 0;
   track.addEventListener("scroll", () => {
     clearTimeout(t);
-    t = setTimeout(() => !drag && choose(nearest(track.scrollLeft)), 90);
+    t = setTimeout(() => {
+      if (drag) return;
+      const k = nearest(track.scrollLeft), want = posOf(k);
+      // snapping measures the scaled-down (unselected) card, so the end cards stop a few px short: finish the slide
+      if (Math.abs(track.scrollLeft - want) > 0.5 && Math.abs(track.scrollLeft - want) < 24) track.scrollTo({ left: want, behavior: "auto" });
+      choose(k);
+    }, 90);
   });
   // mouse drag on desktop (touch scrolls natively)
   if (modesAbort) modesAbort.abort();
