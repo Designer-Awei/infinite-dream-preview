@@ -2857,3 +2857,9 @@ body.touchmode .pet-ride-btn small { display:none; }
 .stash-p { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
 .stash-p .st-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; overscroll-behavior: contain; }
 .stash-p .st-it { flex: none; min-height: 46px; box-sizing: border-box; } .stash-p .st-it.ttl-row { padding-top: 4px; padding-bottom: 4px; }
+/* 宠物图鉴 · 收集奖励: 领取 and 已领取 the same width, so the bars line up */
+.pdx-r { grid-template-columns: 78px 1fr 30% 92px; }
+.pdx-r .pdx-b .btn { width: 92px; box-sizing: border-box; padding-left: 4px; padding-right: 4px; justify-content: center; }
+.dl-day .dl-ic .st-ico { width: 17px; height: 20px; border-width: 2px; }
+.dl-day .dl-ic .st-ico.hur { transform: rotate(45deg) scale(.78); }
+.dl-day .dl-ic .st-ico { width: 18px; height: 21px; } .dl-day .dl-ic .st-ico.hur { width: 20px; height: 22px; transform: rotate(45deg) scale(.86); }

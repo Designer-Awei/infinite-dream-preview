@@ -7,8 +7,9 @@ import { btn, uiRoot } from "./ui.js";
 import { el } from "./util.js";
 import { sfx } from "./audio.js";
 
+// 淬灵露 / 流彩晶 drawn as in 积攒兑换 (.st-ico), so an item looks the same everywhere
 const rwIcon = (k) =>
-  k === "dew" ? `<img src="assets/ui/dew.png" alt="">` : k === "egg" ? `<i class="dl-egg"></i>` : k === "flow" ? `<i class="dl-flow"></i>` : `<i class="cur gem"></i>`;
+  k === "dew" ? `<i class="st-ico ur"></i>` : k === "egg" ? `<i class="dl-egg"></i>` : k === "flow" ? `<i class="st-ico hur"></i>` : `<i class="cur gem"></i>`;
 
 export function showDaily(onStart, mapPreview) {
   const dd = dailyOf(), c = CHARS[dd.cid], st = dailyState(), day = st.days[dd.key] || { runs: 0, best: 0, win: false };
