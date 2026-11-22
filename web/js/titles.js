@@ -11,7 +11,8 @@ export const TITLE_RARITY = {
   r: { name: "稀有", col: "#5aa8ff", bg: "#12244a", fx: "pulse" },
   e: { name: "史诗", col: "#c27bff", bg: "#2a1248", fx: "shine" },
   l: { name: "传说", col: "#ffcf4a", bg: "#3a2408", fx: "shine spark" },
-  x: { name: "流彩", col: "#ff8ad8", bg: "#2a1030", fx: "rainbow spark" },
+  // the top tier is a fixed red (no colour cycling anywhere): 噩梦主宰, 流彩之主, 积攒之王
+  x: { name: "流彩", col: "#ff4a4a", bg: "#3a0a12", fx: "spark" },
 };
 export const TITLE_TABS = [["adv", "冒险"], ["mine", "矿场"], ["pet", "宠物"], ["shop", "兑换"]];
 
@@ -98,7 +99,7 @@ export function titleHTML(id, extra = "") {
   // 传说 / 流彩: a hexagonal tag (pointed ends) built from three stacked layers — black ring, frame colour, fill — so the
   // points share the plate's outline at every size
   const hex = T.r === "l" || T.r === "x";
-  return `<span class="ttl t-${T.r}${hex ? " hex" : ""}${T.still ? " still" : ""} ${extra}" data-r="${T.r}"${own}>${hex ? `<i class="tt-hx"></i>` : ""}<i class="tt-sh"></i><b>${T.name}</b></span>`;
+  return `<span class="ttl t-${T.r}${hex ? " hex" : ""}${T.still || T.r === "x" ? " still" : ""} ${extra}" data-r="${T.r}"${own}>${hex ? `<i class="tt-hx"></i>` : ""}<i class="tt-sh"></i><b>${T.name}</b></span>`;
 }
 
 /** apply the worn title's effect to a new player (PVE only; the plate is shown in every mode) */
@@ -127,7 +128,7 @@ export function drawTitlePlate(g, id, x, y, t) {
   g.font = "10px Cubic, 'PingFang SC', sans-serif";
   const w = Math.ceil(g.measureText(T.name).width) + 10, h = 13, x0 = Math.round(x - w / 2), y0 = Math.round(y - h / 2);
   let col = T.col || R.col;
-  if (T.r === "x" && !T.still) col = `hsl(${(t * 120) % 360},90%,72%)`;
+  // (the top tier used to cycle colours here; it is a fixed red now)
   if (T.r === "l" || T.r === "x") {
     // hexagonal tag: black ring, frame colour, fill — the same three layers as the HTML plate
     const hexp = (d, sh) => {
