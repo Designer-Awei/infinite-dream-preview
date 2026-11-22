@@ -2853,3 +2853,7 @@ body.touchmode .pet-ride-btn small { display:none; }
 .stash-p .st-list { gap: 5px; }
 .stash-p .st-it { padding: 4px 10px; }
 .stash-p .st-sub { font-size: 11px; text-align: center; }
+/* 积攒兑换: one page; the list scrolls inside the panel (pet items first, then the exchange titles) */
+.stash-p { max-height: calc(100vh - 24px); max-height: calc(100dvh - 24px); }
+.stash-p .st-list { flex: 1; min-height: 0; overflow-y: auto; padding-right: 2px; overscroll-behavior: contain; }
+.stash-p .st-it { flex: none; min-height: 46px; box-sizing: border-box; } .stash-p .st-it.ttl-row { padding-top: 4px; padding-bottom: 4px; }

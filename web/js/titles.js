@@ -40,9 +40,8 @@ export const TITLES = {
   beast_master: { name: "驯兽大师", r: "l", tab: "pet", how: `宠物图鉴收集全部 ${DEX_TOTAL} 种`, prog: () => [dexCount(), DEX_TOTAL], fx: { dmg: 0.1, crit: 0.08 }, fxText: "伤害 +10%，暴击率 +8%" },
   rainbow_lord: { name: "流彩之主", r: "x", col: "#ff4a4a", bg: "#3a0a12", still: true, tab: "pet", how: `集齐全部 ${PET_ORDER.length} 种宠物的流彩`, prog: () => [petState().stats.rbKinds.length, PET_ORDER.length], fx: { dmg: 0.08 }, fxText: "伤害 +8%" },
   // 积攒兑换 titles: bought with 积攒点 in the 扭蛋机's exchange (stash: its price), never earned otherwise
-  stash_luck: { name: "幸运积攒者", r: "r", tab: "shop", stash: 3, how: "扭蛋机「积攒」兑换 3 点", prog: () => [0, 1], fx: { coin0: 30 }, fxText: "开局金币 +30" },
-  stash_star: { name: "梦境收藏家", r: "e", tab: "shop", stash: 8, how: "扭蛋机「积攒」兑换 8 点", prog: () => [0, 1], fx: { mag: 0.2, coin: 0.1 }, fxText: "拾取范围 +20%，局内金币 +10%" },
-  stash_king: { name: "积攒之王", r: "l", tab: "shop", stash: 20, how: "扭蛋机「积攒」兑换 20 点", prog: () => [0, 1], fx: { dmg: 0.06, crit: 0.04 }, fxText: "伤害 +6%，暴击率 +4%" },
+  stash_star: { name: "梦境收藏家", r: "l", tab: "shop", stash: 20, how: "扭蛋机「积攒」兑换 20 点", prog: () => [0, 1], fx: { mag: 0.2, coin: 0.15 }, fxText: "拾取范围 +20%，局内金币 +15%" },
+  stash_king: { name: "积攒之王", r: "x", tab: "shop", stash: 50, how: "扭蛋机「积攒」兑换 50 点", prog: () => [0, 1], fx: { dmg: 0.08, crit: 0.05 }, fxText: "伤害 +8%，暴击率 +5%" },
 };
 export const TITLE_ORDER = Object.keys(TITLES);
 
@@ -54,6 +53,8 @@ export function titleState() {
   t.own = t.own && typeof t.own === "object" ? t.own : {};
   t.seen = Array.isArray(t.seen) ? t.seen : [];
   if (m.title && /主宰/.test(m.title) && !t.own.nightmare) t.own.nightmare = Date.now(); // 契约 milestone before titles existed
+  // 幸运积攒者 (3 点) was on sale for an hour on 11-22: it's gone, its points come back
+  if (t.own.stash_luck) delete t.own.stash_luck, (m.stash = (m.stash || 0) + 3);
   if (t.eq && !t.own[t.eq]) t.eq = null;
   return t;
 }

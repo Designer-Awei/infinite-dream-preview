@@ -58,19 +58,17 @@ export function grantEggs(n, kind = "base") {
   return k;
 }
 /** 积攒兑换: "egg_ur" / "egg_hur" (宠物蛋) or "item_ur" / "item_hur" (淬灵露 / 流彩晶) */
-export const STASH_GEMS = 200; // 晶石 per 积攒点 in the exchange's 晶石 row
 export function stashExchange(what, titleDef) {
   const m = load(), [type, r] = what.split(/_(.+)/);
-  // 称号 (titles.js passes the title's line in) and 晶石
-  if (type === "title" || type === "gem") {
-    const cost = type === "gem" ? 1 : titleDef?.stash;
+  // 称号 (titles.js passes the title's line in)
+  if (type === "title") {
+    const cost = titleDef?.stash;
     if (!cost) return { ok: false, reason: "无效兑换" };
-    if (type === "title" && titleDef.owned) return { ok: false, reason: "已拥有这个称号" };
+    if (titleDef.owned) return { ok: false, reason: "已拥有这个称号" };
     if (!Number.isFinite(m.stash) || m.stash < cost) return { ok: false, reason: "积攒点不足" };
     m.stash -= cost;
-    if (type === "gem") m.tokens += STASH_GEMS;
     save();
-    return { ok: true, name: type === "gem" ? `${STASH_GEMS} 晶石` : `称号「${titleDef.name}」` };
+    return { ok: true, name: `称号「${titleDef.name}」` };
   }
   const state = petState(), def = type === "egg" ? EGGS[r] : PET_ITEMS[r];
   if (!def || !def.cost) return { ok: false, reason: "无效兑换" };
