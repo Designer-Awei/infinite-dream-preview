@@ -264,7 +264,7 @@ export function showWorldMap(game, me, app) {
   };
   // side: progress, materials, bosses
   const opened = m.chests.filter((c) => ws.opened.has(c.id)).length;
-  md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened} / ${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size} / ${m.waypoints.length}</b></div>`;
+  md.querySelector(".wm-stats").innerHTML = `<div><span>探索度</span><b>${explored(ws.fog)}%</b></div><div><span>宝箱</span><b>${opened}/${m.chests.length}</b></div><div><span>传送门</span><b>${ws.gates.size}/${m.waypoints.length}</b></div>`;
   md.querySelector(".wm-mats").innerHTML = MATS.map((t, k) => `<span title="${t.name}"><img class="mat-ic" src="${matSrc(k)}" alt=""><b>${ws.mats[k] || 0}</b></span>`).join(""); // (icon + count: fits any count)
   md.querySelector(".wm-boss").innerHTML = m.bosses.map((B) => {
     const down = ws.bossDay[B.id] === today;

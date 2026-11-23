@@ -3057,3 +3057,6 @@ body.touchmode .pet-ride-btn small { display:none; }
 .wmap-p .btn, .wmap-p .btn:active, .wmap-p .btn.press { box-shadow: inset 0 2px 0 rgba(255,255,255,.6), inset 0 -4px 0 rgba(0,0,0,.15); }
 .wmap-p .btn:active, .wmap-p .btn.press { transform: translateY(1px); }
 .hm-build .ws-cost:empty { width: 0; margin-left: -10px; } /* (a maxed row gives its cost column to the text) */
+/* 大地图: 探索度 / 宝箱 / 传送门 each on one line, whatever the counts */
+.wmap-p .wm-stats div { white-space: nowrap; gap: 3px; padding: 1px 3px; min-width: 0; }
+.wmap-p .wm-stats span, .wmap-p .wm-stats b { white-space: nowrap; flex: none; }
