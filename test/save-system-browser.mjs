@@ -57,6 +57,14 @@ try{
  // Full source world loader restores fog, opened chests, gates and seven materials (not just the raw JSON).
  assert.equal(after.world.fog,fixture.world.fog);assert.deepEqual(after.world.mats,fixture.world.mats);assert.deepEqual(after.world.gates,fixture.world.gates);
  const desktop=await create('桌面测试',1280);await desktop.p.evaluate(async()=>{(await import('./js/saveui.js')).showSaveExport();});await desktop.p.screenshot({path:out+'/export-1280.png'});
+ // Existing rename UI must enforce eight Unicode code points without charging for a rejected name.
+ await desktop.p.getByRole('button',{name:'关闭',exact:true}).click();
+ await desktop.p.locator('.name-pill').click();await desktop.p.locator('.rn-in').fill('一二三四五六七八九');
+ await desktop.p.locator('.rn-in').dispatchEvent('input');assert.match(await desktop.p.locator('.rn-err').innerText(),/最多 8 个字/);
+ const beforeName=await desktop.p.evaluate(()=>localStorage.getItem('ai-girls-dungeon-v1'));
+ await desktop.p.locator('.rn-acts .btn:last-child').click();assert.equal(await desktop.p.evaluate(()=>localStorage.getItem('ai-girls-dungeon-v1')),beforeName);
+ await desktop.p.locator('.rn-in').fill('一二三四五六七八');await desktop.p.locator('.rn-acts .btn:last-child').click();
+ assert.equal(await desktop.p.evaluate(()=>JSON.parse(localStorage.getItem('ai-girls-dungeon-v1')).name),'一二三四五六七八');
  assert.deepEqual(errors,[]);
  const report={status:'PASS',separateDeviceContexts:true,allFourModulesAfterReload:true,worldLoaderRestored:true,confirmationRequired:true,staticSingleBackdrop:true,corruptRejectedWithoutWrites:true,clipboard:'copy-complete',layouts:[667,804,1280],pageErrors:errors};
  await writeFile(out+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

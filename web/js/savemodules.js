@@ -32,5 +32,5 @@ export function validateSnapshot(s){
 }
 export function saveSummary(s){
   const m=s.modules.main.data,w=s.modules.world.data,h=s.modules.home.data;
-  return{name:m.name||'玩家',tokens:m.tokens,characters:m.chars.length,bossKills:m.stats?.bossKills||0,world:!!w,chests:w?.opened?.length||0,gates:w?.gates?.length||0,home:!!h,dispatches:h?.slots?.length||0,run:!!s.modules.run.data};
+  return{name:m.name||'玩家',tokens:m.tokens,characters:m.chars.length,pets:Array.isArray(m.pets?.list)?m.pets.list.length:0,bossKills:m.stats?.bossKills||0,world:!!w,chests:w?.opened?.length||0,gates:w?.gates?.length||0,home:!!h,dispatches:h?.slots?.length||0,run:!!s.modules.run.data};
 }

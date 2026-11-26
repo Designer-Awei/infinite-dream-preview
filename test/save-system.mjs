@@ -43,6 +43,12 @@ for(const [label,count] of [['normal',3],['high-progress',2500]]){
   if(count>1000)assert.throws(()=>String.fromCharCode(...new TextEncoder().encode(JSON.stringify(f.main))),RangeError);
   reports.push({label,jsonBytes:artifact.jsonBytes,gzipBytes:artifact.compressedBytes,codeChars:artifact.code.length,oldMainOnlyCodeChars:legacy.length,reductionPercent:+(100*(1-artifact.compressedBytes/artifact.jsonBytes)).toFixed(2)});
 }
+// Warehouse count excludes unhatched eggs, active incubation slots and lifetime hatch totals.
+{
+ const s=new Storage(),f=fixture();f.main.pets.eggs={base:100,ur:100,hur:100};f.main.pets.slots=[{kind:'base',at:1700000000000}];f.main.pets.stats.hatch=999;
+ seed(s,f);const b=manager(s),out=b.export();assert.equal(out.summary.pets,3);assert.equal(b.prepare(out.code).summary.pets,3);
+ f.main.pets.list=[];seed(s,f);assert.equal(b.export().summary.pets,0);
+}
 const baseStore=new Storage();seed(baseStore,fixture());const a=manager(baseStore),artifact=a.export(),parts=artifact.code.split('.');
 for(const bad of ['IDSAVE2',artifact.code.slice(0,-10),parts.slice(0,2).join('.'),`IDSAVE2.${parts[1]}.`])expectError(()=>a.prepare(bad),['TRUNCATED']);
 expectError(()=>a.prepare(`IDSAVE2.${parts[1].slice(0,20)}${parts[1][20]==='A'?'B':'A'}${parts[1].slice(21)}.${parts[2]}`),['CHECKSUM']);

@@ -3,10 +3,11 @@ import {btn,toast,uiRoot} from './ui.js';
 import {saveManager} from './savemanager.js';
 import {copySaveCode} from './saveclipboard.js';
 import {localVersion} from './updater.js';
+import {PLAYER_NAME_MAX} from './save.js';
 import {SAVE_LIMITS} from './saveformat.js';
 function showSummary(node,s){
   const fields=[
-    ['玩家',s?.name,'save-field-name'],['角色',s?.characters],
+    ['玩家',s?.name?[...s.name].slice(0,PLAYER_NAME_MAX).join(''):''],['宠物',s?.pets],['角色',s?.characters],
     ['晶石',s?.tokens],['通关',s?.bossKills],['宝箱',s?.chests],
     ['传送门',s?.gates],['派遣',s?.dispatches],['续玩',s?(s.run?'有':'无'):null],
   ];
@@ -42,7 +43,7 @@ export function showSaveExport(){
   try{
     saveManager.version=localVersion||'IDSAVE2';
     const artifact=saveManager.export(),preview=text('save-summary o1','');
-    showSummary(preview,artifact.summary);body.append(preview,text('save-valid o1','存档校验通过'));
+    showSummary(preview,artifact.summary);body.append(preview,text('save-valid o1','导出校验通过'));
     const ta=el('textarea','save-code');ta.readOnly=true;ta.spellcheck=false;ta.value=artifact.code;ta.setAttribute('aria-label','完整压缩存档码');ta.onclick=()=>{ta.select();ta.setSelectionRange(0,ta.value.length);};body.append(ta);
     const copy=btn('复制存档码','',async()=>{
       copy.disabled=true;
@@ -68,6 +69,10 @@ export function showSaveImport(){
     }catch(e){status.className='save-msg save-error o1';status.textContent=`${e.message}（收到 ${ta.value.replace(/\s/g,'').length} 字符）`;}
   };
   const ok=btn('覆盖存档','',()=>{check();if(prepared){const selected=prepared;confirmImport(selected,()=>saveManager.apply(selected),md);}});ok.disabled=true;
-  ta.oninput=()=>{prepared=null;ok.disabled=true;clearTimeout(timer);timer=setTimeout(check,180);};
+  ta.oninput=()=>{
+    prepared=null;ok.disabled=true;clearTimeout(timer);showSummary(preview);
+    status.className='save-msg o1';status.textContent=ta.value.trim()?'正在校验存档码…':'请先粘贴存档码';
+    timer=setTimeout(check,180);
+  };
   acts.append(ok,btn('取消','gray',()=>{clearTimeout(timer);md.remove();}));
 }

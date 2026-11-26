@@ -6,6 +6,7 @@ import { collectionBonuses } from "./collection.js";
 import { normalizePets, equippedPet } from "./petdata.js";
 import { saveManager } from "./savemanager.js";
 
+export const PLAYER_NAME_MAX = 8;
 const KEY = "ai-girls-dungeon-v1";
 const fresh = () => ({
   tokens: START_TOKENS,

@@ -4,7 +4,7 @@ import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_O
 import { STASH_ITEM, redeemExchangeCard } from "./save.js";
 import { characterProgress } from "./save.js";
 import { claimable } from "./minequests.js";
-import { load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, mineState } from "./save.js";
+import { PLAYER_NAME_MAX, load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, mineState } from "./save.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
@@ -832,7 +832,7 @@ function showSettings() {
 }
 
 /** rename: the first change is free, every later one costs RENAME_COST 晶石 */
-export const RENAME_COST = 500, NAME_MAX = 12;
+export const RENAME_COST = 500, NAME_MAX = PLAYER_NAME_MAX;
 export function showRename(lobby) {
   const m = load(), free = !m.renamed;
   const md = el("div", "modal");

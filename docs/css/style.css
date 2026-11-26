@@ -1045,7 +1045,6 @@ body.touchmode .c-key { display: none; }
 .save-body > * { flex-shrink:0; }
 .save-summary { background:#20164e;border-radius:8px;padding:10px 12px;height:88px;flex:none;font-size:12px;line-height:18px;text-align:left;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,18px);column-gap:18px;row-gap:6px; }
 .save-field { display:grid;grid-template-columns:3em minmax(0,1fr);gap:8px;min-width:0;align-items:center; }
-.save-field-name { grid-column:span 2; }
 .save-field-label { color:#d4c9f3;white-space:nowrap; }
 .save-field-value { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .save-msg { font-size:12px;line-height:16px;height:32px;flex:none;text-align:left;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden; }

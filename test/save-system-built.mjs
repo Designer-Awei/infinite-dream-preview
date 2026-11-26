@@ -16,8 +16,8 @@ async function layout(p){
   return{fields,top:box.top,height:box.height,bottom:box.bottom,viewport:innerHeight,scroll:panel.scrollHeight-panel.clientHeight,bodyScroll:body.scrollHeight-body.clientHeight,
    buttons:[...panel.querySelectorAll('.acts button')].map(b=>b.getBoundingClientRect().width),ringSpace:[r.left-box.left,box.right-r.right,r.top-body.getBoundingClientRect().top,body.getBoundingClientRect().bottom-r.bottom],outline:getComputedStyle(ta).outlineStyle};
  });
- assert.equal(l.fields.length,8);assert(l.fields.every(f=>f.gap>=8));
- for(const indexes of [[0,2,5],[1,4,7],[3,6]])assert(indexes.every(i=>Math.abs(l.fields[i].left-l.fields[indexes[0]].left)<1),'summary columns must align');
+ assert.equal(l.fields.length,9);assert(l.fields.every(f=>f.gap>=8));
+ for(const indexes of [[0,3,6],[1,4,7],[2,5,8]])assert(indexes.every(i=>Math.abs(l.fields[i].left-l.fields[indexes[0]].left)<1),'summary columns must align');
  assert(l.top>=0&&l.bottom<=l.viewport,'modal must fit in viewport');assert(l.scroll<=1&&l.bodyScroll<=1,'no modal scrolling');assert.equal(l.buttons.length,2);assert.equal(l.buttons[0],l.buttons[1]);assert(l.ringSpace.every(n=>n>=3),'focus ring must fit fully inside ancestors');return l;
 }
 try{
@@ -51,6 +51,7 @@ try{
   }
   const {ctx:bc,p:b}=await open(false,count);
   await b.locator('.set-btn').click();await b.getByRole('button',{name:'导入存档',exact:true}).click();
+  assert.equal(await b.locator('.save-msg').innerText(),'请先粘贴存档码');assert.equal(await b.locator('.save-msg.save-valid').count(),0);assert(await b.getByRole('button',{name:'覆盖存档'}).isDisabled());
   const layoutBefore=await layout(b);
   await b.screenshot({path:out+'/import-empty.png'});
   // Verify rejection leaves all four target modules intact, then paste using the browser’s native paste shortcut.
@@ -61,11 +62,12 @@ try{
   await b.locator('.save-code').fill('');await b.locator('.save-code').focus();await b.keyboard.press('ControlOrMeta+V');
   await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:first-child').disabled);
   assert.equal(await b.locator('.save-code').inputValue(),code);
+  assert.equal(await b.locator('.save-field').filter({has:b.locator('.save-field-label',{hasText:'宠物'})}).locator('.save-field-value').innerText(),String(count));
   const layoutAfter=await layout(b);assert.equal(layoutAfter.height,layoutBefore.height);assert.equal(layoutAfter.top,layoutBefore.top);
   if(count===8){
     for(const [width,height] of [[804,360],[667,375],[896,400],[1280,720]]){
       await b.setViewportSize({width,height});await layout(b);await b.screenshot({path:out+`/import-filled-${width}.png`});
-      await b.locator('.save-code').fill('');await b.waitForTimeout(220);const empty=await layout(b);
+      await b.locator('.save-code').fill('');assert.equal(await b.locator('.save-msg.save-valid').count(),0);await b.waitForTimeout(220);const empty=await layout(b);
       await b.screenshot({path:out+`/import-empty-${width}.png`});
       await b.locator('.save-code').fill(code);await b.waitForTimeout(220);const full=await layout(b);assert.equal(empty.height,full.height);assert.equal(empty.top,full.top);
     }
