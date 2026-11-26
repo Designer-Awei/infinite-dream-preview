@@ -24,6 +24,7 @@ import { grantPetXP, grantEggs, petState, findPet, addPool } from "./petsave.js"
 import { dailyOf, applyBlessing, finishDaily } from "./daily.js";
 import { showEvent } from "./routeui.js";
 import { worldSaveNow, explored } from "./world.js";
+import { initializeSaveStorage, saveManager } from "./savemanager.js";
 
 const canvas = document.getElementById("view");
 const uiRoot = document.getElementById("ui");
@@ -751,13 +752,15 @@ function rollShovel(rs) {
 // ------------------------------------------------------------ boot
 async function boot() {
   const bar = document.querySelector(".ld-bar i"), tip = document.querySelector(".ld-tip");
+  let m;
+  try { await initializeSaveStorage(); m=load(); }
+  catch(e) {tip.textContent=`存档恢复未完成：${e.message}。原数据未自动重置，请释放存储空间后重开。`;return;}
   resize();
   renderer = new Renderer(canvas, fx);
   addEventListener("resize", resize);
   document.addEventListener("visibilitychange", () => {
     if (document.hidden && app.game && !app.net && !app.ended && !app.cardOpen) app.pause();
   });
-  const m = load();
   setSound(m.sound);
   setMusic(m.music);
   try {
@@ -777,6 +780,7 @@ async function boot() {
   addEventListener("keydown", unlock, { once: false });
   document.getElementById("loading").remove();
   showLobby();
+  if(saveManager.notice)UI.toast(saveManager.notice);
   requestAnimationFrame(frame);
   initUpdater();
   // deep link: #join-ABCD

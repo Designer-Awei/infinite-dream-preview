@@ -10,6 +10,7 @@ import { petState, findPet } from "./petsave.js";
 import { PETS, QUALITY } from "./petdata.js";
 import { drawPet } from "./pets.js";
 import { load, save } from "./save.js";
+import { saveManager } from "./savemanager.js";
 
 const KEY = "ai-girls-dungeon-home-v1";
 const STAGE_MUL = [1, 1.4, 1.8];
@@ -35,6 +36,7 @@ export function homeState() {
 }
 export const homeSave = (h) => {
   try {
+    saveManager.guard();
     localStorage.setItem(KEY, JSON.stringify(h));
   } catch (e) {}
 };

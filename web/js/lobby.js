@@ -4,12 +4,14 @@ import { CHARS, CHAR_ORDER, ELEM, UNLOCKS, GACHA, RARITY, REACTIONS, MAPS, MAP_O
 import { STASH_ITEM, redeemExchangeCard } from "./save.js";
 import { characterProgress } from "./save.js";
 import { claimable } from "./minequests.js";
-import { load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, exportSave, parseSave, importSave, mineState } from "./save.js";
+import { load, save, unlockProgress, pull, checkUnlocks, ssrDone, gachaDone, loadoutOf, setLoadout, mineState } from "./save.js";
 import { sfx, setSound, setMusic, playMusic } from "./audio.js";
 import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { mountItemDemo, hasLiveDemo } from "./itemdemo.js";
 import { localVersion, nativeInfo } from "./updater.js";
+import { showSaveExport, showSaveImport, showSaveBackups } from "./saveui.js";
+export { showSaveExport, showSaveImport } from "./saveui.js";
 import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMask, WALL, BUSH, CRATE, BARREL, LIFT } from "./map.js";
 import { T } from "./data.js";
 import { loadRun, offerResume } from "./runsave.js";
@@ -823,7 +825,7 @@ function showSettings() {
       save();
       const b=ev.target.closest("button");b.innerHTML = `${label}：${m[key] ? "开" : "关"}`;b.classList.toggle("green",m[key]);b.classList.toggle("gray",!m[key]);
     });
-  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("联系作者", "pink", () => showContact()));
+  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("历史备份", "blue", () => showSaveBackups()), btn("联系作者", "pink", () => showContact()));
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
   md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);
@@ -896,80 +898,6 @@ function showContact() {
   }));
   md.onclick = (e) => e.target === md && md.remove();
   md.classList.add("bg-close");
-  uiRoot().appendChild(md);
-}
-
-// ------------------------------------------------------------------ save export / import
-export function showSaveExport() {
-  const code = exportSave();
-  const md = el("div", "modal save-modal");
-  md.innerHTML = `<div class="panel save-panel"><h2 class="outline">导出存档</h2>
-    <div class="muted o1">下面这段存档码包含你的全部进度（晶石、角色、天赋、装配、纪录）。复制后保存在备忘录或发给自己，重装或换设备后在「设置 → 导入存档」粘贴即可恢复。</div>
-    <textarea class="save-code" readonly></textarea>
-    <div class="row acts"></div></div>`;
-  const ta = q(".save-code", md);
-  ta.value = code;
-  const copy = async () => {
-    ta.focus();
-    ta.select();
-    let ok = false;
-    try {
-      await navigator.clipboard.writeText(code);
-      ok = true;
-    } catch {
-      try {
-        ok = document.execCommand("copy");
-      } catch {}
-    }
-    toast(ok ? "已复制存档码" : "请长按上面的文字手动复制");
-  };
-  q(".acts", md).append(btn("复制存档码", "", copy));
-  if (navigator.share) q(".acts", md).append(btn("分享…", "blue small", () => navigator.share({ title: "无限梦境存档", text: code }).catch(() => {})));
-  q(".acts", md).append(btn("关闭", "gray small", () => md.remove()));
-  md.addEventListener("click", (e) => e.target === md && md.remove());
-  uiRoot().appendChild(md);
-  ta.onclick = () => ta.select();
-}
-export function showSaveImport() {
-  const md = el("div", "modal save-modal");
-  md.innerHTML = `<div class="panel save-panel"><h2 class="outline">导入存档</h2>
-    <div class="muted o1">粘贴以 IDSAVE1 开头的存档码。导入会<b style="color:#ff8a9a">覆盖</b>当前设备上的进度。</div>
-    <textarea class="save-code" placeholder="在这里粘贴存档码"></textarea>
-    <div class="save-msg o1"></div>
-    <div class="row acts"></div></div>`;
-  const ta = q(".save-code", md), msg = q(".save-msg", md);
-  const check = () => {
-    if (!ta.value.trim()) return (msg.textContent = ""), null;
-    try {
-      const s = parseSave(ta.value);
-      msg.style.color = "#8cff9a";
-      msg.textContent = `存档有效：${s.name || "玩家"} · 晶石 ${s.tokens} · 角色 ${s.chars.length} 个 · 通关 ${(s.stats && s.stats.bossKills) || 0} 次`;
-      return s;
-    } catch (e) {
-      msg.style.color = "#ff8a9a";
-      msg.textContent = e.message;
-      return null;
-    }
-  };
-  ta.oninput = check;
-  q(".acts", md).append(
-    btn("从剪贴板粘贴", "blue small", async () => {
-      try {
-        ta.value = await navigator.clipboard.readText();
-        check();
-      } catch {
-        toast("无法读取剪贴板，请长按输入框粘贴");
-      }
-    }),
-    btn("导入", "", () => {
-      if (!check()) return toast(msg.textContent || "请先粘贴存档码");
-      importSave(ta.value);
-      toast("存档已导入");
-      md.remove();
-      setTimeout(() => location.reload(), 400);
-    }),
-    btn("取消", "gray small", () => md.remove()),
-  );
   uiRoot().appendChild(md);
 }
 

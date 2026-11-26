@@ -755,6 +755,7 @@ export function refreshWorldTiles(m) {
 }
 
 // ---------------------------------------------------------------- save
+import { saveManager } from "./savemanager.js";
 const KEY = "ai-girls-dungeon-world-v1", FOG = 64; // fog: 64×64 cells of 4×4 tiles
 export function loadWorldSave() {
   try {
@@ -791,6 +792,7 @@ export function worldSaveNow(g) {
   const d = { v: 1, opened: [...ws.opened], fog: fogString(ws.fog), x: p && !p.downed && !ws.ride ? Math.round(p.x) : null, y: p && !p.downed && !ws.ride ? Math.round(p.y) : null, chests: ws.opened.size, visits: ws.visits, gates: [...ws.gates], bossDay: ws.bossDay, flag: ws.flag, mats: ws.mats, nodeDay: ws.nodeDay, miles: ws.miles,
     cracked: [...new Set([...ws.cracked, ...(g.map.brokenWalls || []).filter((i) => g.map.cracked.has(i))])], quests: ws.quests };
   try {
+    saveManager.guard();
     localStorage.setItem(KEY, JSON.stringify(d));
   } catch (e) {}
 }

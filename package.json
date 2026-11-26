@@ -8,9 +8,11 @@
   },
   "dependencies": {
     "@capacitor/android": "^7.0.0",
+    "@capacitor/app": "^7.0.0",
     "@capacitor/core": "^7.0.0",
     "@capacitor/filesystem": "^7.0.0",
-    "@capacitor/app": "^7.0.0"
+    "@noble/hashes": "1.8.0",
+    "fflate": "0.8.3"
   },
   "devDependencies": {
     "@capacitor/cli": "^7.0.0",
