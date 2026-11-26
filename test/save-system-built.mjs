@@ -8,9 +8,18 @@ const fixture=JSON.parse(await readFile('.cache/save-system/fixture.json','utf8'
 const url=process.env.TEST_URL||'http://127.0.0.1:9878',out='.cache/save-system/browser';await mkdir(out,{recursive:true});
 const keys=['ai-girls-dungeon-v1','ai-girls-dungeon-world-v1','ai-girls-dungeon-home-v1','ai-girls-dungeon-run-v1'];
 const browser=await chromium.launch({channel:'chrome',headless:true}),errors=[],reports=[];
+async function layout(p){
+ await p.waitForTimeout(60);
+ const l=await p.locator('.save-panel').evaluate(panel=>{
+  const box=panel.getBoundingClientRect(),body=panel.querySelector('.save-body'),ta=panel.querySelector('.save-code'),r=ta.getBoundingClientRect();
+  return{top:box.top,height:box.height,bottom:box.bottom,viewport:innerHeight,scroll:panel.scrollHeight-panel.clientHeight,bodyScroll:body.scrollHeight-body.clientHeight,
+   buttons:[...panel.querySelectorAll('.acts button')].map(b=>b.getBoundingClientRect().width),ringSpace:[r.left-box.left,box.right-r.right,r.top-body.getBoundingClientRect().top,body.getBoundingClientRect().bottom-r.bottom],outline:getComputedStyle(ta).outlineStyle};
+ });
+ assert(l.top>=0&&l.bottom<=l.viewport,'modal must fit in viewport');assert(l.scroll<=1&&l.bodyScroll<=1,'no modal scrolling');assert.equal(l.buttons.length,2);assert.equal(l.buttons[0],l.buttons[1]);assert(l.ringSpace.every(n=>n>=3),'focus ring must fit fully inside ancestors');return l;
+}
 try{
  const open=async(mobile,count)=>{
-  const ctx=await browser.newContext({viewport:{width:mobile?804:1280,height:mobile?375:720},isMobile:mobile,hasTouch:mobile,permissions:['clipboard-read','clipboard-write'],...(mobile?{userAgent:'Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'}:{})});
+  const ctx=await browser.newContext({viewport:{width:mobile?804:1280,height:mobile?360:720},isMobile:mobile,hasTouch:mobile,permissions:['clipboard-read','clipboard-write'],...(mobile?{userAgent:'Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'}:{})});
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
   await p.addInitScript(({fixture,mobile,rev,count,keys})=>{
    if(mobile){window.Capacitor={isNativePlatform:()=>true,Plugins:{App:{getInfo:async()=>({version:`1.${rev}.test`})}}};Object.defineProperty(globalThis,'crypto',{value:undefined,configurable:true});}
@@ -29,22 +38,36 @@ try{
   const code=await a.locator('.save-code').inputValue();assert(code.startsWith('IDSAVE2.'));
   // Start with an intentionally partial selection: copying must still include the entire SHA trailer.
   await a.locator('.save-code').evaluate(ta=>{ta.focus();ta.setSelectionRange(16,80);});
-  await a.getByRole('button',{name:'复制压缩存档码'}).click();
-  await a.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));
+  await a.getByRole('button',{name:'复制存档码'}).click();
+  await a.waitForFunction(()=>document.querySelector('.toast')?.textContent.includes('已复制存档码'));
   assert.equal(await a.evaluate(()=>navigator.clipboard.readText()),code);
   const expected=await a.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);
-  if(count===8)await a.screenshot({path:out+'/mobile-export.png'});
+  if(count===8){
+    assert.equal(await a.locator('.save-meta,.save-msg,.save-panel .muted').count(),0);
+    for(const [width,height] of [[804,360],[667,375],[896,400]]){await a.setViewportSize({width,height});await a.locator('.save-code').focus();await layout(a);await a.screenshot({path:out+`/export-${width}.png`});}
+  }
   const {ctx:bc,p:b}=await open(false,count);
   await b.locator('.set-btn').click();await b.getByRole('button',{name:'导入存档',exact:true}).click();
-  // Verify rejection leaves all four target modules intact, then paste through the actual clipboard button.
+  const layoutBefore=await layout(b);
+  await b.screenshot({path:out+'/import-empty.png'});
+  // Verify rejection leaves all four target modules intact, then paste using the browser’s native paste shortcut.
   const before=await b.evaluate(keys=>keys.map(k=>localStorage.getItem(k)),keys);
   await b.locator('.save-code').fill(code.slice(0,code.lastIndexOf('.')));await b.waitForTimeout(250);
-  assert(await b.getByRole('button',{name:'预览并覆盖'}).isDisabled());
+  assert(await b.getByRole('button',{name:'覆盖存档'}).isDisabled());
   assert.deepEqual(await b.evaluate(keys=>keys.map(k=>localStorage.getItem(k)),keys),before);
-  await b.getByRole('button',{name:'从剪贴板粘贴'}).click();
-  await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:nth-child(2)').disabled);
+  await b.locator('.save-code').fill('');await b.locator('.save-code').focus();await b.keyboard.press('ControlOrMeta+V');
+  await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:first-child').disabled);
   assert.equal(await b.locator('.save-code').inputValue(),code);
-  await b.getByRole('button',{name:'预览并覆盖'}).click();await b.getByRole('button',{name:'确认覆盖',exact:true}).click();
+  const layoutAfter=await layout(b);assert.equal(layoutAfter.height,layoutBefore.height);assert.equal(layoutAfter.top,layoutBefore.top);
+  if(count===8){
+    for(const [width,height] of [[804,360],[667,375],[896,400],[1280,720]]){
+      await b.setViewportSize({width,height});await layout(b);await b.screenshot({path:out+`/import-filled-${width}.png`});
+      await b.locator('.save-code').fill('');await b.waitForTimeout(220);const empty=await layout(b);
+      await b.screenshot({path:out+`/import-empty-${width}.png`});
+      await b.locator('.save-code').fill(code);await b.waitForTimeout(220);const full=await layout(b);assert.equal(empty.height,full.height);assert.equal(empty.top,full.top);
+    }
+  }
+  await b.getByRole('button',{name:'覆盖存档'}).click();await b.getByRole('button',{name:'确认覆盖',exact:true}).click();
   await b.waitForTimeout(700);await b.locator('.play-btn').waitFor({timeout:60000});
   const actual=await b.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);assert.deepEqual(actual,expected);
   const extra=await b.evaluate(()=>Object.keys(localStorage).filter(k=>/backups|save-txn|save-meta/.test(k)));assert.deepEqual(extra,[]);
@@ -53,6 +76,6 @@ try{
   reports.push({pets:count,codeChars:code.length,realClipboard:true,allFourModulesAfterReload:true,truncatedRejected:true,noHistory:true});await ac.close();await bc.close();
  }
  assert.deepEqual(errors,[]);
- const report={status:'PASS',bundle:true,direction:'mobile-to-desktop',reports,androidShellSimulated:true,physicalAndroid:false,pageErrors:errors};
+ const report={status:'PASS',bundle:true,direction:'mobile-to-desktop',layouts:[[804,360],[667,375],[896,400],[1280,720]],equalButtons:true,stableImportHeight:true,unclippedFocusRing:true,noModalScroll:true,reports,androidShellSimulated:true,physicalAndroid:false,pageErrors:errors};
  await writeFile(out+'/built-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();}

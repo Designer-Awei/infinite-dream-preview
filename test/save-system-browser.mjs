@@ -26,11 +26,21 @@ try{
  const before=await a.evaluate(async()=>{const S=await import('./js/save.js'),{saveManager}=await import('./js/savemanager.js');const code=S.exportSave();return{code,snapshot:saveManager.prepare(code).snapshot};});
  const {p:b}=await create('目标玩家',667);
  await b.evaluate(async()=>{(await import('./js/saveui.js')).showSaveImport();});
- await b.locator('.save-code').fill(before.code.slice(0,-10));await b.waitForTimeout(250);assert(await b.getByRole('button',{name:'预览并覆盖'}).isDisabled());
+ await b.locator('.save-code').fill(before.code.slice(0,-10));await b.waitForTimeout(250);assert(await b.getByRole('button',{name:'覆盖存档'}).isDisabled());
  assert.match(await b.locator('.save-msg').innerText(),/完整|校验/);assert.equal(await b.evaluate(()=>JSON.parse(localStorage.getItem('ai-girls-dungeon-v1')).tokens),11);
- await b.locator('.save-code').fill(before.code);await b.getByRole('button',{name:'预览并覆盖'}).waitFor();await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:nth-child(2)').disabled);
+ await b.locator('.save-code').fill(before.code);await b.getByRole('button',{name:'覆盖存档'}).waitFor();await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:first-child').disabled);
  assert.match(await b.locator('.save-summary').innerText(),/源玩家/);
- await b.getByRole('button',{name:'预览并覆盖'}).click();assert.equal(await b.locator('.save-modal').count(),2);
+ // Opening and cancelling confirmation reuses one static backdrop and preserves the typed code.
+ const backdrop=await b.locator('.save-modal').evaluate(md=>getComputedStyle(md).backgroundColor);
+ for(let i=0;i<3;i++){
+   await b.getByRole('button',{name:'覆盖存档'}).click();assert.equal(await b.locator('.save-modal').count(),1);
+   const frames=await b.locator('.save-modal').evaluate(async md=>{
+     const rows=[];for(let n=0;n<15;n++){await new Promise(requestAnimationFrame);rows.push([getComputedStyle(md).backgroundColor,md.getAnimations().length]);}return rows;
+   });assert(frames.every(([color,animations])=>color===backdrop&&animations===0));
+   const widths=await b.locator('.save-panel .acts button').evaluateAll(bs=>bs.map(b=>b.getBoundingClientRect().width));assert.equal(widths[0],widths[1]);
+   await b.getByRole('button',{name:'取消',exact:true}).click();assert.equal(await b.locator('.save-code').inputValue(),before.code);
+ }
+ await b.getByRole('button',{name:'覆盖存档'}).click();assert.equal(await b.locator('.save-modal').count(),1);
  await b.screenshot({path:out+'/confirm-667.png'});await b.getByRole('button',{name:'确认覆盖',exact:true}).click();
  await b.waitForTimeout(700);await b.locator('.play-btn').waitFor({timeout:60000});
  const after=await b.evaluate(async()=>{
@@ -40,17 +50,14 @@ try{
  assert.deepEqual(after.snapshot.modules,before.snapshot.modules);assert.deepEqual(after.world,before.snapshot.modules.world.data);assert.deepEqual(after.home,before.snapshot.modules.home.data);assert.deepEqual(after.run,before.snapshot.modules.run.data);
  await b.evaluate(()=>document.querySelector('.resume-md')?.remove());
  await b.evaluate(async()=>{(await import('./js/saveui.js')).showSaveExport();});
- await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));assert.match(await b.locator('.save-msg').innerText(),/回读一致/);
+ await b.getByRole('button',{name:'复制存档码'}).click();
+ await b.waitForFunction(()=>!!window.__clip);assert.equal(await b.evaluate(()=>window.__clip),await b.locator('.save-code').inputValue());
  await b.screenshot({path:out+'/export-667.png'});
- await b.evaluate(()=>{navigator.clipboard.readText=async()=>{throw new DOMException('denied','NotAllowedError');};});
- await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('未验证'));assert.match(await b.locator('.save-msg').innerText(),/未验证/);
- await b.evaluate(()=>{navigator.clipboard.readText=async()=>window.__clip.slice(0,-13);});
- await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('不完整'));assert.match(await b.locator('.save-msg').innerText(),/不完整/);
  assert.equal(await b.getByRole('button',{name:'历史备份',exact:true}).count(),0);
  // Full source world loader restores fog, opened chests, gates and seven materials (not just the raw JSON).
  assert.equal(after.world.fog,fixture.world.fog);assert.deepEqual(after.world.mats,fixture.world.mats);assert.deepEqual(after.world.gates,fixture.world.gates);
  const desktop=await create('桌面测试',1280);await desktop.p.evaluate(async()=>{(await import('./js/saveui.js')).showSaveExport();});await desktop.p.screenshot({path:out+'/export-1280.png'});
  assert.deepEqual(errors,[]);
- const report={status:'PASS',separateDeviceContexts:true,allFourModulesAfterReload:true,worldLoaderRestored:true,confirmationRequired:true,corruptRejectedWithoutWrites:true,clipboard:['verified','permission-denied-unverified','truncation-mismatch'],layouts:[667,804,1280],pageErrors:errors};
+ const report={status:'PASS',separateDeviceContexts:true,allFourModulesAfterReload:true,worldLoaderRestored:true,confirmationRequired:true,staticSingleBackdrop:true,corruptRejectedWithoutWrites:true,clipboard:'copy-complete',layouts:[667,804,1280],pageErrors:errors};
  await writeFile(out+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();}
