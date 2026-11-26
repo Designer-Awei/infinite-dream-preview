@@ -13,6 +13,7 @@ try{
   await p.route('**/update.json',r=>r.fulfill({status:200,contentType:'application/json',body:manifest}));
   await p.addInitScript(({fixture,name})=>{
    Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async v=>{window.__clip=v;},readText:async()=>window.__clip||''}});
+   document.execCommand=()=>false; // Exercise the async clipboard path in this unit-style UI test.
    // Seed once; don't reseed on reload, otherwise the test would hide an import failure.
    if(localStorage.getItem('test-seeded'))return;localStorage.setItem('test-seeded','yes');
    const data=JSON.parse(JSON.stringify(fixture));data.main.name=name;data.main.tutorialSeen=true;data.main.seenUnlock=[...data.main.chars];data.main.music=false;data.main.sound=false;
@@ -34,9 +35,9 @@ try{
  await b.waitForTimeout(700);await b.locator('.play-btn').waitFor({timeout:60000});
  const after=await b.evaluate(async()=>{
   const {saveManager}=await import('./js/savemanager.js'),W=await import('./js/world.js'),H=await import('./js/home.js'),S=await import('./js/save.js'),R=await import('./js/runsave.js');
-  return{snapshot:saveManager.prepare(S.exportSave()).snapshot,world:W.loadWorldSave(),home:H.homeState(),run:R.loadRun(),backups:saveManager.backups()};
+  return{snapshot:saveManager.prepare(S.exportSave()).snapshot,world:W.loadWorldSave(),home:H.homeState(),run:R.loadRun()};
  });
- assert.deepEqual(after.snapshot.modules,before.snapshot.modules);assert.deepEqual(after.world,before.snapshot.modules.world.data);assert.deepEqual(after.home,before.snapshot.modules.home.data);assert.deepEqual(after.run,before.snapshot.modules.run.data);assert(after.backups.some(x=>x.reason==='before-import'&&x.summary.name==='目标玩家'));
+ assert.deepEqual(after.snapshot.modules,before.snapshot.modules);assert.deepEqual(after.world,before.snapshot.modules.world.data);assert.deepEqual(after.home,before.snapshot.modules.home.data);assert.deepEqual(after.run,before.snapshot.modules.run.data);
  await b.evaluate(()=>document.querySelector('.resume-md')?.remove());
  await b.evaluate(async()=>{(await import('./js/saveui.js')).showSaveExport();});
  await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));assert.match(await b.locator('.save-msg').innerText(),/回读一致/);
@@ -44,9 +45,8 @@ try{
  await b.evaluate(()=>{navigator.clipboard.readText=async()=>{throw new DOMException('denied','NotAllowedError');};});
  await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('未验证'));assert.match(await b.locator('.save-msg').innerText(),/未验证/);
  await b.evaluate(()=>{navigator.clipboard.readText=async()=>window.__clip.slice(0,-13);});
- await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('不一致'));assert.match(await b.locator('.save-msg').innerText(),/不一致/);
- await b.getByRole('button',{name:'历史备份',exact:true}).click();assert((await b.locator('.save-backup').count())>0);
- await b.screenshot({path:out+'/backups-667.png'});
+ await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('不完整'));assert.match(await b.locator('.save-msg').innerText(),/不完整/);
+ assert.equal(await b.getByRole('button',{name:'历史备份',exact:true}).count(),0);
  // Full source world loader restores fog, opened chests, gates and seven materials (not just the raw JSON).
  assert.equal(after.world.fog,fixture.world.fog);assert.deepEqual(after.world.mats,fixture.world.mats);assert.deepEqual(after.world.gates,fixture.world.gates);
  const desktop=await create('桌面测试',1280);await desktop.p.evaluate(async()=>{(await import('./js/saveui.js')).showSaveExport();});await desktop.p.screenshot({path:out+'/export-1280.png'});

@@ -4,7 +4,6 @@
 import { MAPS, CHARS } from "./data.js";
 import { el } from "./util.js";
 import { uiRoot, btn } from "./ui.js";
-import { saveManager } from "./savemanager.js";
 
 const KEY = "ai-girls-dungeon-run-v1";
 // what is carried over: the run's own state on the game and on the player (everything else is rebuilt by the room)
@@ -21,7 +20,6 @@ export function saveRun(app) {
   if (!canCheckpoint(app)) return;
   const g = app.game, p = app.me;
   try {
-    saveManager.guard();
     localStorage.setItem(KEY, JSON.stringify({
       v: 1, at: Date.now(),
       cfg: { mode: "solo", pvp: false, seed: app.cfg.seed, players: app.cfg.players, myId: app.cfg.myId, opt: app.cfg.opt || {} },
@@ -39,7 +37,6 @@ export function loadRun() {
 }
 export function clearRun() {
   try {
-    saveManager.guard();
     localStorage.removeItem(KEY);
   } catch {}
 }

@@ -1,38 +1,58 @@
-// Test the shipped bundle via real settings buttons; do not import unbundled game modules.
+// Shipped bundle: mobile -> real Chrome clipboard -> independent desktop context -> reload.
+// Android WebView bridge/UA are simulated; clipboard and copy events are NOT mocked.
 import {createRequire} from 'node:module';
-import {readFile,writeFile} from 'node:fs/promises';
+import {readFile,writeFile,mkdir} from 'node:fs/promises';
 import assert from 'node:assert/strict';
 const require=createRequire(import.meta.url),{chromium}=require(process.env.PLAYWRIGHT_PATH||'playwright');
 const fixture=JSON.parse(await readFile('.cache/save-system/fixture.json','utf8')),manifest=JSON.parse(await readFile('docs/update.json','utf8'));
-const url=process.env.TEST_URL||'http://127.0.0.1:9878';
-const browser=await chromium.launch({channel:'chrome',headless:true}),errors=[];
+const url=process.env.TEST_URL||'http://127.0.0.1:9878',out='.cache/save-system/browser';await mkdir(out,{recursive:true});
+const keys=['ai-girls-dungeon-v1','ai-girls-dungeon-world-v1','ai-girls-dungeon-home-v1','ai-girls-dungeon-run-v1'];
+const browser=await chromium.launch({channel:'chrome',headless:true}),errors=[],reports=[];
 try{
- const open=async(native=false)=>{
-  const ctx=await browser.newContext({viewport:{width:native?667:804,height:375},isMobile:true,hasTouch:true,...(native?{userAgent:'Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'}:{})});
+ const open=async(mobile,count)=>{
+  const ctx=await browser.newContext({viewport:{width:mobile?804:1280,height:mobile?375:720},isMobile:mobile,hasTouch:mobile,permissions:['clipboard-read','clipboard-write'],...(mobile?{userAgent:'Mozilla/5.0 (Linux; Android 13; Pixel 6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0.0.0 Mobile Safari/537.36'}:{})});
   const p=await ctx.newPage();p.on('pageerror',e=>errors.push(e.message));
-  await p.addInitScript(({fixture,native,rev})=>{
-   Object.defineProperty(navigator,'clipboard',{configurable:true,value:{writeText:async v=>{window.__clip=v;},readText:async()=>window.__clip||''}});
-   if(native){window.Capacitor={isNativePlatform:()=>true,Plugins:{App:{getInfo:async()=>({version:`1.${rev}.test`})}}};Object.defineProperty(globalThis,'crypto',{value:undefined,configurable:true});}
+  await p.addInitScript(({fixture,mobile,rev,count,keys})=>{
+   if(mobile){window.Capacitor={isNativePlatform:()=>true,Plugins:{App:{getInfo:async()=>({version:`1.${rev}.test`})}}};Object.defineProperty(globalThis,'crypto',{value:undefined,configurable:true});}
    if(localStorage.getItem('test-seeded'))return;localStorage.setItem('test-seeded','yes');
-   const d=JSON.parse(JSON.stringify(fixture));d.main.name=native?'目标原进度':'新版源进度';d.main.tutorialSeen=true;d.main.seenUnlock=[...d.main.chars];d.main.sound=false;d.main.music=false;
-   if(native){d.main.tokens=17;d.world.opened=[99999];d.home.lv.hut=0;}
-   for(const [id,key] of Object.entries({main:'ai-girls-dungeon-v1',world:'ai-girls-dungeon-world-v1',home:'ai-girls-dungeon-home-v1',run:'ai-girls-dungeon-run-v1'}))localStorage.setItem(key,JSON.stringify(d[id]));
-  },{fixture,native,rev:manifest.native});
-  await p.goto(url);await p.locator('.play-btn').waitFor({timeout:60000});await p.evaluate(()=>document.querySelector('.resume-md')?.remove());return p;
+   const d=JSON.parse(JSON.stringify(fixture));d.main.name=mobile?'手机源进度🐉':'电脑原进度';d.main.tutorialSeen=true;d.main.seenUnlock=[...d.main.chars];d.main.sound=false;d.main.music=false;
+   if(mobile&&count>8)d.main.pets.list=Array.from({length:count},(_,i)=>({...d.main.pets.list[i%8],uid:'p'+i.toString(36),xp:i%1200,t:1700000000000+i*23871}));
+   if(!mobile){d.main.tokens=17;d.world.opened=[99999];d.home.lv.hut=0;}
+   ['main','world','home','run'].forEach((id,i)=>localStorage.setItem(keys[i],JSON.stringify(d[id])));
+  },{fixture,mobile,rev:manifest.native,count,keys});
+  await p.goto(url);await p.locator('.play-btn').waitFor({timeout:60000});await p.evaluate(()=>document.querySelector('.resume-md')?.remove());return{ctx,p};
  };
- const a=await open();await a.locator('.set-btn').click();await a.getByRole('button',{name:'导出存档',exact:true}).click();
- const code=await a.locator('.save-code').inputValue();assert(code.startsWith('IDSAVE2.'));await a.getByRole('button',{name:'复制压缩存档码'}).click();await a.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));
- await a.screenshot({path:'.cache/save-system/browser/built-export-804.png'});
- const keys=['ai-girls-dungeon-v1','ai-girls-dungeon-world-v1','ai-girls-dungeon-home-v1','ai-girls-dungeon-run-v1'];
- const expected=await a.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);
- const b=await open(true);await b.locator('.set-btn').click();await b.getByRole('button',{name:'导入存档',exact:true}).click();await b.locator('.save-code').fill(code);
- await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:nth-child(2)').disabled);await b.getByRole('button',{name:'预览并覆盖'}).click();await b.getByRole('button',{name:'确认覆盖',exact:true}).click();
- await b.waitForTimeout(700);await b.locator('.play-btn').waitFor({timeout:60000});
- const actual=await b.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);assert.deepEqual(actual,expected);
- await b.evaluate(()=>document.querySelector('.resume-md')?.remove());await b.locator('.set-btn').click();await b.getByRole('button',{name:'导出存档',exact:true}).click();
- assert.match(await b.locator('.save-summary').innerText(),/新版源进度/);assert.match(await b.locator('.save-meta').innerText(),new RegExp(manifest.version.replaceAll('.','\\.')));
- await b.getByRole('button',{name:'复制压缩存档码'}).click();await b.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));
- await b.screenshot({path:'.cache/save-system/browser/built-native-simulated-667.png'});assert.deepEqual(errors,[]);
- const report={status:'PASS',bundle:true,realSettingsButtons:true,separateStoresAfterReload:true,modules:4,withoutWebCrypto:true,androidShellSimulated:true,physicalAndroid:false,identityAndNativeRevisionUnchanged:true,pageErrors:errors};
- await writeFile('.cache/save-system/browser/built-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
+ for(const count of [8,2500]){
+  const {ctx:ac,p:a}=await open(true,count);
+  await a.locator('.set-btn').click();assert.equal(await a.getByRole('button',{name:'历史备份',exact:true}).count(),0);
+  await a.getByRole('button',{name:'导出存档',exact:true}).click();
+  const code=await a.locator('.save-code').inputValue();assert(code.startsWith('IDSAVE2.'));
+  // Start with an intentionally partial selection: copying must still include the entire SHA trailer.
+  await a.locator('.save-code').evaluate(ta=>{ta.focus();ta.setSelectionRange(16,80);});
+  await a.getByRole('button',{name:'复制压缩存档码'}).click();
+  await a.waitForFunction(()=>document.querySelector('.save-msg')?.textContent.includes('回读一致'));
+  assert.equal(await a.evaluate(()=>navigator.clipboard.readText()),code);
+  const expected=await a.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);
+  if(count===8)await a.screenshot({path:out+'/mobile-export.png'});
+  const {ctx:bc,p:b}=await open(false,count);
+  await b.locator('.set-btn').click();await b.getByRole('button',{name:'导入存档',exact:true}).click();
+  // Verify rejection leaves all four target modules intact, then paste through the actual clipboard button.
+  const before=await b.evaluate(keys=>keys.map(k=>localStorage.getItem(k)),keys);
+  await b.locator('.save-code').fill(code.slice(0,code.lastIndexOf('.')));await b.waitForTimeout(250);
+  assert(await b.getByRole('button',{name:'预览并覆盖'}).isDisabled());
+  assert.deepEqual(await b.evaluate(keys=>keys.map(k=>localStorage.getItem(k)),keys),before);
+  await b.getByRole('button',{name:'从剪贴板粘贴'}).click();
+  await b.waitForFunction(()=>!document.querySelector('.save-panel .acts button:nth-child(2)').disabled);
+  assert.equal(await b.locator('.save-code').inputValue(),code);
+  await b.getByRole('button',{name:'预览并覆盖'}).click();await b.getByRole('button',{name:'确认覆盖',exact:true}).click();
+  await b.waitForTimeout(700);await b.locator('.play-btn').waitFor({timeout:60000});
+  const actual=await b.evaluate(keys=>Object.fromEntries(keys.map(k=>[k,JSON.parse(localStorage.getItem(k))])),keys);assert.deepEqual(actual,expected);
+  const extra=await b.evaluate(()=>Object.keys(localStorage).filter(k=>/backups|save-txn|save-meta/.test(k)));assert.deepEqual(extra,[]);
+  await b.evaluate(()=>document.querySelector('.resume-md')?.remove());await b.locator('.set-btn').click();await b.getByRole('button',{name:'导出存档',exact:true}).click();
+  assert.match(await b.locator('.save-summary').innerText(),/手机源进度/);if(count===8)await b.screenshot({path:out+'/desktop-restored.png'});
+  reports.push({pets:count,codeChars:code.length,realClipboard:true,allFourModulesAfterReload:true,truncatedRejected:true,noHistory:true});await ac.close();await bc.close();
+ }
+ assert.deepEqual(errors,[]);
+ const report={status:'PASS',bundle:true,direction:'mobile-to-desktop',reports,androidShellSimulated:true,physicalAndroid:false,pageErrors:errors};
+ await writeFile(out+'/built-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();}

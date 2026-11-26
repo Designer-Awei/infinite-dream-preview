@@ -7,7 +7,7 @@ const require=createRequire(import.meta.url),{build}=require('esbuild');
 const root=path.resolve('.'),cache=path.join(root,'.cache/save-system');await mkdir(cache,{recursive:true});
 await build({stdin:{contents:'export * from "./web/js/savemanager.js";export * from "./web/js/saveformat.js";export * from "./web/js/savemodules.js";export {CHAR_ORDER} from "./web/js/data.js";export {TITLE_ORDER} from "./web/js/titles.js";',resolveDir:root},bundle:true,format:'esm',platform:'node',outfile:cache+'/module.mjs'});
 const M=await import(pathToFileURL(cache+'/module.mjs'));
-const {SaveManager,SAVE_MODULES,TRANSACTION_KEY,BACKUP_KEY,encodeSave,decodeCode,migrateSave,canonical,digest,SAVE_LIMITS}=M;
+const {SaveManager,SAVE_MODULES,encodeSave,decodeCode,validateSnapshot,canonical,digest,SAVE_LIMITS}=M;
 const {gzipSync}=require('fflate');
 class Storage {
   constructor(){this.data=new Map();this.fail=null;this.corrupt=null;}
@@ -38,19 +38,17 @@ for(const [label,count] of [['normal',3],['high-progress',2500]]){
   assert.equal(t.getItem('updRemote'),'KEEP TARGET CONFIG');assert.equal(s.getItem('other-game'),'KEEP OTHER GAME');
   const first=canonical(b.prepare(artifact.code).snapshot);b.apply(b.prepare(artifact.code));assert.equal(canonical(b.prepare(artifact.code).snapshot),first);
   assert.equal(JSON.parse(t.getItem(SAVE_MODULES[0].key)).tokens,987654);assert.deepEqual(JSON.parse(t.getItem(SAVE_MODULES[0].key)).pets.dexClaim,[3,6]);
-  assert.equal(canonical(migrateSave(p.snapshot).snapshot),canonical(migrateSave(migrateSave(p.snapshot).snapshot).snapshot));
-  const legacy=oldCode(f.main),legacyP=b.prepare(legacy);assert.equal(legacyP.checksum,'legacy-fnv');b.apply(legacyP);
-  for(const mod of SAVE_MODULES.slice(1))assert.equal(t.getItem(mod.key),null,'legacy cannot inherit target map/home/run');
+  assert.equal(canonical(validateSnapshot(p.snapshot)),canonical(p.snapshot));
+  const legacy=oldCode(f.main);expectError(()=>b.prepare(legacy),['VERSION']);
   if(count>1000)assert.throws(()=>String.fromCharCode(...new TextEncoder().encode(JSON.stringify(f.main))),RangeError);
   reports.push({label,jsonBytes:artifact.jsonBytes,gzipBytes:artifact.compressedBytes,codeChars:artifact.code.length,oldMainOnlyCodeChars:legacy.length,reductionPercent:+(100*(1-artifact.compressedBytes/artifact.jsonBytes)).toFixed(2)});
 }
 const baseStore=new Storage();seed(baseStore,fixture());const a=manager(baseStore),artifact=a.export(),parts=artifact.code.split('.');
-baseStore.setItem('ai-girls-dungeon-future-v1','{}');expectError(()=>a.export(),['MODULE_MISSING']);baseStore.removeItem('ai-girls-dungeon-future-v1');
 for(const bad of ['IDSAVE2',artifact.code.slice(0,-10),parts.slice(0,2).join('.'),`IDSAVE2.${parts[1]}.`])expectError(()=>a.prepare(bad),['TRUNCATED']);
 expectError(()=>a.prepare(`IDSAVE2.${parts[1].slice(0,20)}${parts[1][20]==='A'?'B':'A'}${parts[1].slice(21)}.${parts[2]}`),['CHECKSUM']);
 expectError(()=>a.prepare('IDSAVE3.x.y'),['VERSION']);expectError(()=>a.prepare('{}'),['FORMAT']);
 expectError(()=>a.prepare('x'.repeat(SAVE_LIMITS.text+1)),['LIMIT']);
-for(const change of [s=>s.saveVersion++,s=>s.modules.world.version++,s=>s.modules.future={version:1,data:{}},s=>s.modules.main.data.pets.v=99]){
+for(const change of [s=>s.saveVersion++,s=>s.modules.world.version++,s=>s.modules.future={version:1,data:{}}]){
   const s=structuredClone(artifact.snapshot);change(s);
   const code=codeForBytes(gzipSync(Buffer.from(JSON.stringify(s))));expectError(()=>a.prepare(code),['VERSION']);
 }
@@ -71,46 +69,21 @@ expectError(()=>a.prepare(codeForBytes(compressed.slice(0,-3))),['CORRUPT','TRUN
 // A large literal-heavy block exercises fflate streaming boundaries, not only repetitive data.
 let rand=123456789;const noisy=Array.from({length:180000},()=>{rand=(Math.imul(rand,1664525)+1013904223)>>>0;return String.fromCharCode(32+rand%90);}).join('');
 const literal=structuredClone(artifact.snapshot);literal.modules.main.data.notes=noisy;assert.equal(decodeCode(encodeSave(literal).code).snapshot.modules.main.data.notes,noisy);
-// Fail each module write once, and also fail a post-write readback: every key must be restored exactly.
-for(const key of [...SAVE_MODULES.map(m=>m.key),'readback','commit-readback','cleanup']){
+// Any synchronous write/readback failure restores all stores, without persistent backup keys.
+for(const key of [...SAVE_MODULES.map(m=>m.key),'readback']){
   const s=new Storage();seed(s,fixture('目标'));const b=manager(s),before=b.readRaw();let fired=false,corruptNext=false;
-  if(key==='commit-readback'){
-    const set=s.setItem.bind(s);s.setItem=(k,v)=>{set(k,v);if(!fired&&k===TRANSACTION_KEY&&JSON.parse(v).phase==='committed'){fired=true;corruptNext=true;}};
-    s.corrupt=(k,v)=>{if(corruptNext&&k===TRANSACTION_KEY){corruptNext=false;return'{bad marker';}return v;};
-  }else if(key==='cleanup')s.fail=(k,v)=>{if(k===TRANSACTION_KEY&&v===null&&!fired){fired=true;return true;}return false;};
-  else if(key==='readback'){
+  if(key==='readback'){
     const set=s.setItem.bind(s);s.setItem=(k,v)=>{set(k,v);if(!fired&&k===SAVE_MODULES[1].key){fired=true;corruptNext=true;}};
     s.corrupt=(k,v)=>{if(corruptNext&&k===SAVE_MODULES[1].key){corruptNext=false;return'{broken';}return v;};
   }else s.fail=(k,v)=>{if(k===key&&!fired){fired=true;return true;}return false;};
-  expectError(()=>b.apply(b.prepare(artifact.code)),['ROLLED_BACK']);assert.deepEqual(b.readRaw(),before);assert.equal(s.getItem(TRANSACTION_KEY),null);
+  expectError(()=>b.apply(b.prepare(artifact.code)),['ROLLED_BACK']);assert.deepEqual(b.readRaw(),before);assert.equal(s.length,4);
 }
-// Quota failure before establishing the journal changes no player data.
-for(const key of [TRANSACTION_KEY,BACKUP_KEY]){
-  const s=new Storage();seed(s,fixture('原档'));const b=manager(s),before=b.readRaw();s.fail=k=>k===key;
-  expectError(()=>b.apply(b.prepare(artifact.code)),['STORAGE','BACKUP']);assert.deepEqual(b.readRaw(),before);
-}
-// Crash at an arbitrary partial write, followed by a new app instance.
+// Explicit null removes target-only world/home/run data; it must not inherit another player's map.
 {
-  const s=new Storage();seed(s,fixture('原始数据'));const b=manager(s),before=b.readRaw();
-  const j={v:1,phase:'pending',before,hash:digest(new TextEncoder().encode(canonical(before)))};
-  s.setItem(TRANSACTION_KEY,JSON.stringify(j));s.setItem(SAVE_MODULES[0].key,JSON.stringify(fixture('半导入').main));
-  manager(s).recover();assert.deepEqual(b.readRaw(),before);assert.equal(s.getItem(TRANSACTION_KEY),null);
-}
-// Rollback failure keeps the journal; retry on next launch restores all modules.
-{
-  const s=new Storage();seed(s,fixture('保留旧档'));const b=manager(s),before=b.readRaw();let mode=0;
-  s.fail=(k,v)=>{if(k===SAVE_MODULES[1].key)mode=1;return mode===1&&SAVE_MODULES.some(m=>m.key===k);};
-  expectError(()=>b.apply(b.prepare(artifact.code)),['RECOVERY']);assert(s.getItem(TRANSACTION_KEY));
-  s.fail=null;manager(s).recover();assert.deepEqual(b.readRaw(),before);
-}
-// Bounded valid archive and restore make a fresh pre-restore backup.
-for(let i=0;i<9;i++)a.backup('manual');assert.equal(a.backups().length,6);assert(a.backups().every(x=>x.valid));
-const id=a.backups()[0].id;a.restore(id);assert.equal(a.backups()[0].reason,'before-restore');
-// Update backup captures all existing modules; subsequent initialization of the same version is not duplicated.
-{
-  const s=new Storage();seed(s,fixture('升级前'));const b=manager(s),before=b.readRaw();b.initialize('new-version');
-  assert.equal(b.backups()[0].reason,'before-update');assert.deepEqual(b.readRaw(),before);const count=b.backups().length;b.initialize('new-version');assert.equal(b.backups().length,count);
+  const s=new Storage();seed(s,fixture('旧目标'));const b=manager(s),empty=structuredClone(artifact.snapshot);
+  for(const id of ['world','home','run'])empty.modules[id].data=null;
+  b.apply(b.prepare(encodeSave(empty).code));for(const m of SAVE_MODULES.slice(1))assert.equal(s.getItem(m.key),null);
 }
 await writeFile(cache+'/fixture.json',JSON.stringify(fixture('跨设备测试',8)));
-await writeFile(cache+'/report.json',JSON.stringify({reports,crossDeviceModules:4,rollbackCases:11,limits:true,migrationsIdempotent:true,sha256AndGzipCRC:true},null,2));
-console.log(JSON.stringify({status:'PASS',reports,crossDeviceModules:4,rollback:true,crashRecovery:true,corruptAndFutureRejected:true,legacySupported:true}));
+const report={status:'PASS',reports,crossDeviceModules:4,writeFailureCases:5,noHistoryKeys:true,limits:true,sha256AndGzipCRC:true};
+await writeFile(cache+'/report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));

@@ -10,7 +10,7 @@ import { el } from "./util.js";
 import { iconURL, skillIcon } from "./icons.js";
 import { mountItemDemo, hasLiveDemo } from "./itemdemo.js";
 import { localVersion, nativeInfo } from "./updater.js";
-import { showSaveExport, showSaveImport, showSaveBackups } from "./saveui.js";
+import { showSaveExport, showSaveImport } from "./saveui.js";
 export { showSaveExport, showSaveImport } from "./saveui.js";
 import { bushSprite, crateSprite, generateRoom, renderGround, wallSprite, wallMask, WALL, BUSH, CRATE, BARREL, LIFT } from "./map.js";
 import { T } from "./data.js";
@@ -825,7 +825,7 @@ function showSettings() {
       save();
       const b=ev.target.closest("button");b.innerHTML = `${label}：${m[key] ? "开" : "关"}`;b.classList.toggle("green",m[key]);b.classList.toggle("gray",!m[key]);
     });
-  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("历史备份", "blue", () => showSaveBackups()), btn("联系作者", "pink", () => showContact()));
+  q(".set-g", md).append(tg("音效", "sound", setSound), tg("音乐", "music", setMusic), btn("导出存档", "blue", () => showSaveExport()), btn("导入存档", "green", () => showSaveImport()), btn("联系作者", "pink", () => showContact()));
   q(".set-v", md).textContent = `版本 ${localVersion || "dev"}${nativeInfo.version ? " · 安装包 " + nativeInfo.version : ""}${window.Capacitor ? " · 启动时自动增量更新" : ""}`;
   md.onclick = (e) => e.target === md && md.remove();
   uiRoot().appendChild(md);

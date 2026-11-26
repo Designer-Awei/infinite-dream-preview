@@ -1046,7 +1046,6 @@ body.touchmode .c-key { display: none; }
 .save-meta { color:#d4c9f3;font-family:system-ui,sans-serif; }
 .save-valid { color:#8cff9a;font-size:12px; }.save-warning { color:#ffd56e;font-size:12px;white-space:pre-wrap;line-height:1.5; }.save-error { color:#ff9aa8;font-size:12px;white-space:pre-wrap; }
 .save-panel .acts { flex-wrap:wrap;justify-content:center;gap:8px;flex-shrink:0; }.save-panel .acts .btn { font-size:14px; }
-.save-backups { display:flex;flex-direction:column;gap:6px; }.save-backup { display:flex;align-items:center;justify-content:space-between;gap:8px;border-top:1px solid #78669c;padding:7px 0; }.save-backup .save-meta { flex:1;min-width:0; }
 .save-panel button:disabled { opacity:.5;cursor:default; }
 @media (max-height: 420px) { .save-code { height: 60px; } .save-panel { gap: 5px; } }
 /* carousel: edge-aligned first/last card, no side padding; selection shown with the border (outline would be clipped) */

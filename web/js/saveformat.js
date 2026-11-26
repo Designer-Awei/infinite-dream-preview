@@ -87,16 +87,11 @@ export function encodeSave(snapshot){
   if(canonical(decodeCode(code).snapshot)!==json)fail('ROUNDTRIP','导出反向校验失败，已停止导出');
   return{snapshot:clone(snapshot),code,hash,jsonBytes:raw.length,compressedBytes:compressed.length,verified:true};
 }
-function legacyCRC(s){let h=2166136261;for(let i=0;i<s.length;i++)h=Math.imul(h^s.charCodeAt(i),16777619);return(h>>>0).toString(36);}
 export function decodeCode(input){
   if(typeof input!=='string'||input.length>SAVE_LIMITS.text)fail('LIMIT','存档码超过长度限制');
   const text=input.replace(/[\s\u200b\ufeff]+/g,''),parts=text.split('.');
-  if(!/^IDSAVE\d+$/.test(parts[0]))fail('FORMAT','这不是无限梦境的存档码（应以 IDSAVE1 或 IDSAVE2 开头）');
-  if(!['IDSAVE1','IDSAVE2'].includes(parts[0]))fail('VERSION','存档封装版本较新，请更新游戏');
+  if(!/^IDSAVE\d+$/.test(parts[0]))fail('FORMAT','这不是无限梦境的存档码（应以 IDSAVE2 开头）');
+  if(parts[0]!=='IDSAVE2')fail('VERSION','请在最新预览版重新导出 IDSAVE2 存档码');
   if(parts.length!==3||!parts[1]||!parts[2])fail('TRUNCATED','存档码不完整：缺少载荷或末尾校验值，请重新导出或传输');
-  if(parts[0]==='IDSAVE2')return decodePayload(fromBase64(parts[1],SAVE_LIMITS.compressed),parts[2]);
-  if(legacyCRC(parts[1])!==parts[2])fail('CHECKSUM','旧存档校验失败，可能被截断或修改');
-  const raw=fromBase64(parts[1],SAVE_LIMITS.json),main=parseJSON(raw);
-  if(!isObject(main)||!Array.isArray(main.chars))fail('STRUCTURE','旧存档内容无效');
-  return{snapshot:{format:'infinite-dream',envelopeVersion:2,saveVersion:0,gameVersion:'legacy IDSAVE1',exportedAt:new Date(0).toISOString(),modules:{main:{version:0,data:main}}},checksum:'legacy-fnv',jsonBytes:raw.length,compressedBytes:raw.length};
+  return decodePayload(fromBase64(parts[1],SAVE_LIMITS.compressed),parts[2]);
 }

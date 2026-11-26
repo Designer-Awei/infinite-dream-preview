@@ -4,7 +4,6 @@
 // copies the unchanged ones locally, verifies every hash, and switches the WebView to the new folder.
 // The new folder is made permanent only after it boots successfully (so a broken update can't brick the app).
 import { el } from "./util.js";
-import { saveManager } from "./savemanager.js";
 
 const OVERRIDE = (() => {
   try {
@@ -80,7 +79,6 @@ async function folderOK(FS, dir, version) {
   return man;
 }
 async function switchTo(FS, WV, dir, version) {
-  if(saveManager.storage.getItem('ai-girls-dungeon-v1'))saveManager.backup('before-update');
   // remember the attempt: if this folder never boots (2 tries) we give up on it instead of looping
   const t = lsGet(LS_TRY);
   const n = t && t.v === version ? t.n + 1 : 1;

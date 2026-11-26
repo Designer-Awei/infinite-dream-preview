@@ -5,8 +5,6 @@ import { progressFromXP, MAX_CHARACTER_XP } from "./progression.js";
 import { collectionBonuses } from "./collection.js";
 import { normalizePets, equippedPet } from "./petdata.js";
 import { saveManager } from "./savemanager.js";
-import { migrateMain } from "./savemodules.js";
-import { SaveError } from "./saveformat.js";
 
 const KEY = "ai-girls-dungeon-v1";
 const fresh = () => ({
@@ -29,13 +27,14 @@ const fresh = () => ({
 
 let mem = null;
 export function load() {
-  saveManager.guard();
   if (mem) return mem;
-  let s;
-  try { s = JSON.parse(localStorage.getItem(KEY) || "null"); }
-  catch { throw new SaveError('STORAGE','本机主存档无法读取，已停止自动覆盖'); }
-  mem = s ? migrateMain(s) : fresh();
-  mem.stats = Object.assign(fresh().stats, (s && s.stats) || {});
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || "null");
+    mem = Object.assign(fresh(), s || {});
+    mem.stats = Object.assign(fresh().stats, (s && s.stats) || {});
+  } catch {
+    mem = fresh();
+  }
   // first time with loadouts: put the SSR talents the player already owns on every page (they used to be always on)
   if (!mem.loadout) {
     const own = GACHA.pool.filter((it) => it.eq && mem.talents[it.id]).map((it) => it.id).slice(0, LOADOUT_SLOTS);
@@ -56,8 +55,6 @@ export function load() {
 }
 export function save() {
   try {
-    saveManager.guard();
-    if(!mem)return;
     localStorage.setItem(KEY, JSON.stringify(mem));
   } catch {}
 }
@@ -186,22 +183,20 @@ export function pull(rand = Math.random) {
   return { item, r, dup, refund, lv: m.talents[item.id] || 0 };
 }
 
-// ---------------------------------------------------------------- save export / import (move to a new install / device)
-/** Compatibility exports for callers; all new transport goes through the manager. */
-export function exportSave() {
-  return saveManager.export().code;
-}
-/** returns the decoded save or throws a readable error (does not apply it) */
-export function parseSave(code) {
-  return saveManager.prepare(code).snapshot.modules.main.data;
-}
+// ---------------------------------------------------------------- save transfer (runtime storage stays independent)
+export const exportSave = () => saveManager.export().code;
+export const parseSave = code => saveManager.prepare(code).snapshot.modules.main.data;
 export function importSave(code) {
   saveManager.apply(saveManager.prepare(code));
   return load();
 }
 saveManager.connect({
-  flush:()=>{const text=JSON.stringify(load());localStorage.setItem(KEY,text);if(localStorage.getItem(KEY)!==text)throw new Error('主存档保存后回读失败');},
-  invalidate:()=>{mem=null;},
+  flush: () => {
+    const text = JSON.stringify(load());
+    localStorage.setItem(KEY, text);
+    if (localStorage.getItem(KEY) !== text) throw new Error('主存档保存后回读失败');
+  },
+  invalidate: () => { mem = null; },
 });
 
 // ---------------------------------------------------------------- 梦境矿场 (mine) meta
