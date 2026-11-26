@@ -12,9 +12,12 @@ async function layout(p){
  await p.waitForTimeout(60);
  const l=await p.locator('.save-panel').evaluate(panel=>{
   const box=panel.getBoundingClientRect(),body=panel.querySelector('.save-body'),ta=panel.querySelector('.save-code'),r=ta.getBoundingClientRect();
-  return{top:box.top,height:box.height,bottom:box.bottom,viewport:innerHeight,scroll:panel.scrollHeight-panel.clientHeight,bodyScroll:body.scrollHeight-body.clientHeight,
+  const fields=[...panel.querySelectorAll('.save-field')].map(f=>{const label=f.querySelector('.save-field-label').getBoundingClientRect(),value=f.querySelector('.save-field-value').getBoundingClientRect();return{left:label.left,gap:value.left-label.right};});
+  return{fields,top:box.top,height:box.height,bottom:box.bottom,viewport:innerHeight,scroll:panel.scrollHeight-panel.clientHeight,bodyScroll:body.scrollHeight-body.clientHeight,
    buttons:[...panel.querySelectorAll('.acts button')].map(b=>b.getBoundingClientRect().width),ringSpace:[r.left-box.left,box.right-r.right,r.top-body.getBoundingClientRect().top,body.getBoundingClientRect().bottom-r.bottom],outline:getComputedStyle(ta).outlineStyle};
  });
+ assert.equal(l.fields.length,8);assert(l.fields.every(f=>f.gap>=8));
+ for(const indexes of [[0,2,5],[1,4,7],[3,6]])assert(indexes.every(i=>Math.abs(l.fields[i].left-l.fields[indexes[0]].left)<1),'summary columns must align');
  assert(l.top>=0&&l.bottom<=l.viewport,'modal must fit in viewport');assert(l.scroll<=1&&l.bodyScroll<=1,'no modal scrolling');assert.equal(l.buttons.length,2);assert.equal(l.buttons[0],l.buttons[1]);assert(l.ringSpace.every(n=>n>=3),'focus ring must fit fully inside ancestors');return l;
 }
 try{
@@ -76,6 +79,6 @@ try{
   reports.push({pets:count,codeChars:code.length,realClipboard:true,allFourModulesAfterReload:true,truncatedRejected:true,noHistory:true});await ac.close();await bc.close();
  }
  assert.deepEqual(errors,[]);
- const report={status:'PASS',bundle:true,direction:'mobile-to-desktop',layouts:[[804,360],[667,375],[896,400],[1280,720]],equalButtons:true,stableImportHeight:true,unclippedFocusRing:true,noModalScroll:true,reports,androidShellSimulated:true,physicalAndroid:false,pageErrors:errors};
+ const report={status:'PASS',bundle:true,direction:'mobile-to-desktop',layouts:[[804,360],[667,375],[896,400],[1280,720]],alignedSummaryColumns:true,equalButtons:true,stableImportHeight:true,unclippedFocusRing:true,noModalScroll:true,reports,androidShellSimulated:true,physicalAndroid:false,pageErrors:errors};
  await writeFile(out+'/built-report.json',JSON.stringify(report,null,2));console.log(JSON.stringify(report));
 }finally{await browser.close();}

@@ -4,11 +4,17 @@ import {saveManager} from './savemanager.js';
 import {copySaveCode} from './saveclipboard.js';
 import {localVersion} from './updater.js';
 import {SAVE_LIMITS} from './saveformat.js';
-const summary=s=>`玩家：${s?.name??''} · 晶石 ${s?.tokens??''} · 角色 ${s?.characters??''} · 通关 ${s?.bossKills??''}
-地图：宝箱 ${s?.chests??''} · 传送门 ${s?.gates??''}
-家园：派遣 ${s?.dispatches??''} · 冒险续玩：${s?(s.run?'有':'无'):''}`;
 function showSummary(node,s){
-  node.replaceChildren(...summary(s).split('\n').map(line=>text('save-summary-line',line)));
+  const fields=[
+    ['玩家',s?.name,'save-field-name'],['角色',s?.characters],
+    ['晶石',s?.tokens],['通关',s?.bossKills],['宝箱',s?.chests],
+    ['传送门',s?.gates],['派遣',s?.dispatches],['续玩',s?(s.run?'有':'无'):null],
+  ];
+  node.replaceChildren(...fields.map(([label,value,cls=''])=>{
+    const field=text(`save-field ${cls}`,'');
+    field.append(text('save-field-label',label),text('save-field-value',value??''));
+    return field;
+  }));
 }
 function modal(title,existing){
   const md=existing||el('div','modal save-modal');

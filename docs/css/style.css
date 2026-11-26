@@ -1043,8 +1043,11 @@ body.touchmode .c-key { display: none; }
 /* Keep space for the focus ring on every side; only the textarea itself scrolls. */
 .save-body { display:flex;flex-direction:column;gap:7px;min-width:0;min-height:0;text-align:left;overflow:visible;padding:4px; }
 .save-body > * { flex-shrink:0; }
-.save-summary { background:#20164e;border-radius:8px;padding:7px 9px;height:68px;flex:none;font-size:12px;line-height:18px;text-align:left; }
-.save-summary-line { white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.save-summary { background:#20164e;border-radius:8px;padding:10px 12px;height:88px;flex:none;font-size:12px;line-height:18px;text-align:left;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-template-rows:repeat(3,18px);column-gap:18px;row-gap:6px; }
+.save-field { display:grid;grid-template-columns:3em minmax(0,1fr);gap:8px;min-width:0;align-items:center; }
+.save-field-name { grid-column:span 2; }
+.save-field-label { color:#d4c9f3;white-space:nowrap; }
+.save-field-value { min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
 .save-msg { font-size:12px;line-height:16px;height:32px;flex:none;text-align:left;display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden; }
 .save-valid { color:#8cff9a;font-size:12px;line-height:18px; }.save-error { color:#ff9aa8;font-size:12px;white-space:pre-wrap; }
 .save-panel .acts { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));width:100%;gap:10px;flex-shrink:0; }.save-panel .acts .btn { width:100%;min-width:0;font-size:14px;white-space:nowrap; }
